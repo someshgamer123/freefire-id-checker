@@ -4,13 +4,12 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
-        
+        /* ===== SYSTEM FONTS (NO GOOGLE FONTS) ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         }
         
         body {
@@ -288,17 +287,20 @@
             left: 0;
             width: 100%;
             height: 100%;
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 20;
             color: #fff;
             font-size: 14px;
             padding: 20px;
             text-align: center;
-            display: none;
+        }
+        
+        .video-error.show {
+            display: flex;
         }
         
         .video-error .icon {
@@ -317,6 +319,31 @@
             cursor: pointer;
         }
         
+        .video-error .retry-btn:hover {
+            background: #5a6fd6;
+        }
+        
+        /* ===== FULLSCREEN BUTTON ===== */
+        .fullscreen-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: 0.3s;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(102, 126, 234, 0.4);
+        }
+        
         @media (max-width: 600px) {
             body { padding: 8px; }
             .video-wrapper { padding: 6px; border-radius: 14px; }
@@ -332,6 +359,7 @@
             .chat-message .text { font-size: 9px; }
             .chat-message .time { font-size: 7px; }
             .chat-container { padding: 4px 8px; }
+            .fullscreen-btn { font-size: 10px; padding: 4px 10px; }
         }
         
         @media (max-width: 400px) {
@@ -343,12 +371,6 @@
             .chat-message .text { font-size: 8px; }
             .chat-message .time { font-size: 6px; }
         }
-        
-        :-webkit-full-screen .video-container { border-radius: 0; }
-        :-webkit-full-screen .video-wrapper { border-radius: 0; padding: 0; border: none; box-shadow: none; background: transparent; }
-        :-webkit-full-screen .video-container::before { display: none; }
-        :-webkit-full-screen .top-section { max-width: 100%; }
-        :-webkit-full-screen .chat-section { max-width: 100%; border-radius: 0; }
     </style>
 </head>
 <body>
@@ -358,6 +380,10 @@
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container" id="videoContainer">
+                <!-- Fullscreen Button -->
+                <button class="fullscreen-btn" onclick="enterFullscreen()">⛶ Fullscreen</button>
+                
+                <!-- Error Message -->
                 <div class="video-error" id="videoError">
                     <div class="icon">⚠️</div>
                     <div>Video failed to load</div>
@@ -388,14 +414,30 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== LOAD VIDEO (FIXED) ====================
+        // ==================== FULLSCREEN (USER GESTURE BASED) ====================
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // ==================== LOAD VIDEO ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             const errorEl = document.getElementById('videoError');
-            errorEl.style.display = 'none';
+            errorEl.classList.remove('show');
             
-            // Clear previous content
+            // Keep fullscreen button
+            const fsBtn = container.querySelector('.fullscreen-btn');
+            
+            // Clear previous content (keep fullscreen button)
             container.innerHTML = '';
+            container.appendChild(fsBtn);
             container.appendChild(errorEl);
             
             console.log('🎬 Loading video:', videoUrl);
@@ -408,28 +450,16 @@
                 const videoId = youtubeMatch[1];
                 console.log('📺 YouTube Video ID:', videoId);
                 
-                // Create iframe
                 const iframe = document.createElement('iframe');
                 iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=${videoId}`;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
-                iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
                 
                 container.appendChild(iframe);
                 
-                // Fallback if YouTube fails
-                setTimeout(() => {
-                    // Check if video loaded by checking iframe content
-                    try {
-                        // If iframe has no content, show error
-                    } catch (e) {
-                        // YouTube iframe error
-                    }
-                }, 5000);
-                
             } else if (videoUrl.match(/\.(mp4|webm|ogg|m4v|mov|avi)$/i)) {
-                // ===== MP4 / DIRECT VIDEO =====
+                // ===== MP4 =====
                 console.log('🎥 MP4 Video URL:', videoUrl);
                 
                 const video = document.createElement('video');
@@ -437,36 +467,32 @@
                 video.autoplay = true;
                 video.loop = true;
                 video.controls = true;
-                video.muted = false;
                 video.playsInline = true;
                 video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;';
                 
                 video.onloadeddata = function() {
-                    console.log('✅ Video loaded successfully');
+                    console.log('✅ Video loaded');
                     video.play().catch(e => console.log('Play error:', e));
                 };
                 
-                video.onerror = function(e) {
-                    console.error('❌ Video error:', e);
-                    errorEl.style.display = 'flex';
+                video.onerror = function() {
+                    console.error('❌ Video error');
+                    errorEl.classList.add('show');
                 };
                 
                 container.appendChild(video);
                 
-                // Auto play with error handling
                 video.play().catch(function(e) {
-                    console.log('Auto-play blocked:', e);
-                    // Try muted autoplay
+                    console.log('Auto-play blocked, trying muted');
                     video.muted = true;
                     video.play().catch(function(e2) {
-                        console.log('Muted autoplay also blocked:', e2);
+                        console.log('Muted autoplay blocked');
                     });
                 });
                 
             } else {
-                // ===== TRY AS DIRECT IFRAME =====
-                console.log('🔗 Trying as direct iframe:', videoUrl);
-                
+                // ===== TRY AS IFRAME =====
+                console.log('🔗 Trying as direct iframe');
                 const iframe = document.createElement('iframe');
                 iframe.src = videoUrl;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
@@ -474,14 +500,6 @@
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
                 container.appendChild(iframe);
             }
-            
-            // Hide error after 8 seconds if video loads
-            setTimeout(() => {
-                const hasChild = container.children.length > 1;
-                if (hasChild) {
-                    errorEl.style.display = 'none';
-                }
-            }, 8000);
         }
 
         // ==================== FAKE CHAT ====================
@@ -589,18 +607,6 @@
             } catch (e) {}
         }
         keepAwake();
-
-        // ==================== FULLSCREEN ====================
-        function requestFullscreen() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-        }
-        setTimeout(requestFullscreen, 500);
-
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) setTimeout(requestFullscreen, 500);
-        });
 
         // ==================== INIT ====================
         loadVideo();
