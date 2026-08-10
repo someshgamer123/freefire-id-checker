@@ -585,7 +585,6 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
-        <!-- CREATE LINK -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -601,7 +600,7 @@
                 </div>
             </div>
             <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
-            <input type="text" id="headline" placeholder="Headline (e.g., 🎬 Watch Video)" value="🎬 Watch Video">
+            <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
 
             <div style="margin-top:12px;">
                 <label style="font-weight:600;color:#f6ad55;font-size:13px;">📅 Schedule Expiry</label>
@@ -630,7 +629,6 @@
             </div>
         </div>
 
-        <!-- BACKGROUND UPLOAD -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
@@ -645,13 +643,11 @@
             </div>
         </div>
 
-        <!-- ALL LINKS -->
         <div class="card">
             <h3>📋 All Links</h3>
             <div id="linksList"></div>
         </div>
 
-        <!-- ADMIN SETTINGS -->
         <div class="card">
             <h3>🔐 Admin Settings</h3>
             <div class="grid-2">
@@ -665,10 +661,8 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==================== CSRF TOKEN ====================
         let csrfToken = window.csrfToken || '';
 
-        // ==================== SECURE FETCH ====================
         async function secureFetch(url, options = {}) {
             const response = await fetch(url, {
                 ...options,
@@ -687,7 +681,6 @@
             return response;
         }
 
-        // ==================== CHECK AUTH ====================
         async function checkAuth() {
             try {
                 const response = await fetch('/api/links', {
@@ -701,7 +694,6 @@
             }
         }
 
-        // ==================== PWA INSTALL ====================
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -724,7 +716,6 @@
             }
         }
 
-        // ==================== TOAST ====================
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -733,7 +724,6 @@
             t._timeout = setTimeout(() => t.className = 'toast', 4000);
         }
 
-        // ==================== SCHEDULE ====================
         let selectedExpiry = null;
 
         function updateSchedulePreset() {
@@ -772,7 +762,6 @@
             }
         }
 
-        // ==================== BACKGROUND UPLOAD ====================
         async function loadBackground() {
             try {
                 const r = await fetch('/api/settings');
@@ -785,9 +774,7 @@
                     document.getElementById('bgStatus').textContent = '✅ Background set';
                     document.getElementById('bgStatus').className = 'bg-status success';
                 }
-            } catch (e) {
-                console.log('Background load error');
-            }
+            } catch (e) {}
         }
 
         function resizeImage(file, maxWidth, maxHeight, callback) {
@@ -798,27 +785,21 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-
                     const targetRatio = 9 / 16;
                     const currentRatio = width / height;
-
                     if (currentRatio > targetRatio) {
                         width = height * targetRatio;
                     } else {
                         height = width / targetRatio;
                     }
-
                     canvas.width = 400;
                     canvas.height = 400 * (16 / 9);
-
                     const ctx = canvas.getContext('2d');
                     ctx.fillStyle = '#0a0a1a';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
                     const dx = (canvas.width - width) / 2;
                     const dy = (canvas.height - height) / 2;
                     ctx.drawImage(img, dx, dy, width, height);
-
                     callback(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = e.target.result;
@@ -829,21 +810,17 @@
         async function uploadBackground(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             if (!file.type.startsWith('image/')) {
                 showToast('❌ Please upload an image file', 'error');
                 return;
             }
-
             if (file.size > 1024 * 1024) {
                 showToast('❌ Image too large (max 1MB)', 'error');
                 return;
             }
-
             const statusEl = document.getElementById('bgStatus');
             statusEl.textContent = '⏳ Uploading...';
             statusEl.className = 'bg-status';
-
             resizeImage(file, 400, 700, async function(base64) {
                 try {
                     const r = await secureFetch('/api/admin/background', {
@@ -857,7 +834,7 @@
                         const container = document.getElementById('bgPreviewContainer');
                         preview.src = base64;
                         container.classList.add('show');
-                        statusEl.textContent = '✅ Background uploaded successfully! (9:16)';
+                        statusEl.textContent = '✅ Background uploaded successfully!';
                         statusEl.className = 'bg-status success';
                         showToast('✅ Background uploaded!', 'success');
                     } else {
@@ -892,7 +869,13 @@
             }
         }
 
-        // ==================== LOAD LINKS ====================
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         async function loadLinks() {
             try {
                 const r = await secureFetch('/api/links');
@@ -901,23 +884,19 @@
                 const c = document.getElementById('linksList');
                 c.innerHTML = '';
                 const active = links.filter(l => l.status === 'active').length;
-                const expired = links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled')
-                    .length;
+                const expired = links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled').length;
                 document.getElementById('totalLinks').textContent = links.length;
                 document.getElementById('activeLinks').textContent = active;
                 document.getElementById('totalVisits').textContent = links.reduce((s, l) => s + (l.visits || 0), 0);
                 document.getElementById('expiredLinks').textContent = expired;
                 if (links.length === 0) {
-                    c.innerHTML =
-                        `<div class="empty-state"><span class="icon">📭</span>No links yet<br><span style="font-size:13px;">Create your first link above</span></div>`;
+                    c.innerHTML = `<div class="empty-state"><span class="icon">📭</span>No links yet</div>`;
                     return;
                 }
                 links.forEach((link, index) => {
-                    const sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' :
-                        'disabled';
+                    const sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
                     const isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
-                    const expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() :
-                        'No expiry';
+                    const expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() : 'No expiry';
                     const d = document.createElement('div');
                     d.className = 'link-item';
                     d.innerHTML = `
@@ -939,9 +918,9 @@
                                 <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspend</option>
                                 <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disable</option>
                             </select>
-                            <button onclick="toggleEdit('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
-                            <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
-                            <button onclick="deleteLink('${link.id}')" class="btn btn-danger btn-sm" title="Delete">🗑️</button>
+                            <button onclick="toggleEdit('${link.id}')" class="btn btn-warning btn-sm">✏️</button>
+                            <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm">📋</button>
+                            <button onclick="deleteLink('${link.id}')" class="btn btn-danger btn-sm">🗑️</button>
                         </div>
                         <div class="edit-form" id="edit-${link.id}">
                             <div class="edit-grid">
@@ -973,20 +952,10 @@
             }
         }
 
-        // ==================== HTML ESCAPE ====================
-        function escapeHTML(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        // ==================== CREATE LINK ====================
         async function createLink() {
             const name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
             if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
-
             try {
                 const r = await secureFetch('/api/links', {
                     method: 'POST',
@@ -1001,10 +970,8 @@
                 });
                 if (!r) return;
                 const link = await r.json();
-
                 document.getElementById('generatedLink').classList.add('show');
                 document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
-
                 document.getElementById('linkName').value = '';
                 document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
                 document.getElementById('claim').value = '#';
@@ -1014,13 +981,11 @@
                 document.getElementById('customExpiry').style.display = 'none';
                 document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
                 selectedExpiry = null;
-
                 loadLinks();
                 showToast('✅ Link created successfully!', 'success');
             } catch (e) { showToast('❌ Failed to create link', 'error'); }
         }
 
-        // ==================== COPY LINK ====================
         function copyLink() {
             const i = document.getElementById('generatedLinkInput');
             i.select();
@@ -1043,10 +1008,8 @@
             });
         }
 
-        // ==================== EDIT LINK ====================
         function toggleEdit(id) {
-            const form = document.getElementById('edit-' + id);
-            form.classList.toggle('show');
+            document.getElementById('edit-' + id).classList.toggle('show');
         }
 
         function cancelEdit(id) {
@@ -1062,7 +1025,6 @@
                     date.setDate(date.getDate() + parseInt(scheduleVal));
                     expiryDate = date.toISOString();
                 }
-
                 const r = await secureFetch(`/api/links/${id}`, {
                     method: 'PUT',
                     body: JSON.stringify({
@@ -1086,7 +1048,6 @@
             } catch (e) { showToast('❌ Failed to update', 'error'); }
         }
 
-        // ==================== UPDATE STATUS ====================
         async function updateStatus(id, status) {
             try {
                 const r = await secureFetch(`/api/links/${id}/status`, {
@@ -1104,7 +1065,6 @@
             } catch (e) { showToast('❌ Failed to update status', 'error'); }
         }
 
-        // ==================== DELETE LINK ====================
         async function deleteLink(id) {
             if (confirm('⚠️ Delete this link permanently?')) {
                 try {
@@ -1119,18 +1079,15 @@
             }
         }
 
-        // ==================== CHANGE PASSWORD ====================
         async function changePassword() {
             const old = document.getElementById('oldPassword').value;
             const New = document.getElementById('newPassword').value;
-
             if (!old || !New) { showToast('❌ Please fill both fields', 'error'); return; }
             if (New.length < 8) { showToast('❌ Password must be at least 8 characters', 'error'); return; }
             if (!/[a-z]/.test(New) || !/[A-Z]/.test(New) || !/[0-9]/.test(New)) {
                 showToast('❌ Password must contain uppercase, lowercase, and numbers', 'error');
                 return;
             }
-
             try {
                 const r = await secureFetch('/api/admin/password', {
                     method: 'POST',
@@ -1138,19 +1095,15 @@
                 });
                 if (!r) return;
                 const data = await r.json();
-
                 if (data.success) {
                     showToast('✅ Password changed! Please login again.', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
+                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
                 } else {
                     showToast('❌ ' + (data.error || 'Failed to change password'), 'error');
                 }
             } catch (e) { showToast('❌ Failed to change password', 'error'); }
         }
 
-        // ==================== THEME ====================
         async function setTheme(theme) {
             document.body.className = theme;
             const r = await secureFetch('/api/admin/theme', {
@@ -1173,17 +1126,13 @@
             } catch (e) {}
         }
 
-        // ==================== LOGOUT ====================
         async function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await fetch('/api/admin/logout', { method: 'POST' });
-                } catch (e) {}
+                try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
                 window.location.href = 'login.html';
             }
         }
 
-        // ==================== INIT ====================
         loadTheme();
         loadBackground();
         loadLinks();

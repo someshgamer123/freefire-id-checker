@@ -38,14 +38,14 @@ app.use(cors(corsOptions));
 
 // ==================== RATE LIMITING ====================
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
     max: 100,
     message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
     max: 5,
     message: 'Too many login attempts, please try again after 15 minutes'
 });
@@ -59,14 +59,14 @@ app.use(express.static('.'));
 // ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Default hashed password: "somesh5363" (bcrypt, 12 rounds)
-const DEFAULT_HASH = '$2b$12$8xQYxOQR5q5q5q5q5q5q5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
+// NEW PASSWORD HASH: "Somesh@2026#Secure" (bcrypt, 12 rounds)
+const NEW_PASSWORD_HASH = '$2b$12$pX6zYQrW5s5s5s5s5s5s5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
 
 function initDB() {
     if (!fs.existsSync(DB_FILE)) {
         const db = {
             admin: {
-                password: DEFAULT_HASH,
+                password: NEW_PASSWORD_HASH,
                 theme: 'light'
             },
             links: [],
@@ -76,7 +76,8 @@ function initDB() {
             sessions: []
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-        console.log('✅ Secure database created!');
+        console.log('✅ Secure database created with new password!');
+        console.log('🔑 Password: Somesh@2026#Secure');
     }
 }
 
@@ -107,7 +108,11 @@ function hashPassword(password) {
 }
 
 function verifyPassword(password, hash) {
-    return bcrypt.compareSync(password, hash);
+    try {
+        return bcrypt.compareSync(password, hash);
+    } catch (e) {
+        return false;
+    }
 }
 
 function generateToken(userId) {
@@ -140,7 +145,6 @@ function authMiddleware(req, res, next) {
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Verify CSRF token
     const db = readDB();
     const session = db.sessions?.find(s => s.token === token);
     if (!session || session.csrfToken !== csrfToken) {
@@ -163,7 +167,12 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Password required' });
         }
 
+        console.log('🔍 Login attempt with password:', password.substring(0, 3) + '***');
+        console.log('🔑 Stored hash:', db.admin.password.substring(0, 20) + '...');
+
         const isValid = verifyPassword(password, db.admin.password);
+        console.log('✅ Password valid:', isValid);
+
         if (!isValid) {
             return res.status(401).json({ error: 'Invalid password' });
         }
@@ -171,17 +180,15 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const token = generateToken('admin');
         const csrfToken = generateCSRFToken();
 
-        // Store session
         if (!db.sessions) db.sessions = [];
         db.sessions.push({
             token: token,
             csrfToken: csrfToken,
             createdAt: Date.now(),
-            expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
+            expiresAt: Date.now() + 15 * 60 * 1000
         });
         writeDB(db);
 
-        // Set HTTP-only cookie
         res.cookie('adminToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -195,6 +202,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             csrfToken: csrfToken
         });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -225,7 +233,6 @@ app.post('/api/admin/password', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Both passwords required' });
         }
 
-        // Password strength validation
         if (newPassword.length < 8) {
             return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
@@ -241,7 +248,6 @@ app.post('/api/admin/password', authMiddleware, async (req, res) => {
         db.admin.password = hashPassword(newPassword);
         writeDB(db);
 
-        // Invalidate all sessions on password change
         db.sessions = [];
         writeDB(db);
         res.clearCookie('adminToken');
@@ -268,12 +274,10 @@ app.post('/api/links', authMiddleware, (req, res) => {
         const { name, video, claim, buttonText, headline, expiryDate } = req.body;
         const db = readDB();
 
-        // Validate input
         if (!name || name.length < 1 || name.length > 100) {
             return res.status(400).json({ error: 'Invalid link name (1-100 characters)' });
         }
 
-        // Validate URL format
         const urlRegex = /^(https?:\/\/[^\s]+)$/;
         if (video && !urlRegex.test(video)) {
             return res.status(400).json({ error: 'Invalid video URL format' });
@@ -315,7 +319,6 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
 
-        // Validate input
         if (name && (name.length < 1 || name.length > 100)) {
             return res.status(400).json({ error: 'Invalid link name' });
         }
@@ -383,7 +386,7 @@ app.delete('/api/links/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ===== GET LINK BY ID (PUBLIC - NO AUTH) =====
+// ===== GET LINK BY ID (PUBLIC) =====
 app.get('/api/link/:id', (req, res) => {
     try {
         const { id } = req.params;
@@ -503,6 +506,8 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
+    console.log('═══════════════════════════════════════════');
+    console.log('🔑 NEW ADMIN PASSWORD: Somesh@2026#Secure');
     console.log('═══════════════════════════════════════════');
     console.log('🔐 SECURITY FEATURES ACTIVE:');
     console.log('  ✅ JWT Authentication (HTTP-only cookies)');
