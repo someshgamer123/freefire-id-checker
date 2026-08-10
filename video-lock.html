@@ -4,7 +4,6 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* ===== NO GOOGLE FONTS - SYSTEM FONTS ===== */
         * {
             margin: 0;
             padding: 0;
@@ -43,6 +42,7 @@
             50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
         }
 
+        /* ===== TOP SECTION - VIDEO + HEADLINE + CLAIM ===== */
         .top-section {
             position: relative;
             z-index: 1;
@@ -50,15 +50,15 @@
             width: 100%;
             max-width: 800px;
             margin: 0 auto;
-            padding: 0 0 8px 0;
+            padding: 0 0 6px 0;
         }
 
         .video-wrapper {
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
+            border-radius: 16px;
             border: 2px solid rgba(102, 126, 234, 0.2);
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.08);
-            padding: 10px;
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.06);
+            padding: 8px;
             backdrop-filter: blur(10px);
             animation: fadeInUp 0.8s ease;
         }
@@ -73,9 +73,9 @@
             width: 100%;
             padding-bottom: 56.25%;
             background: #000;
-            border-radius: 14px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 2px solid rgba(102, 126, 234, 0.12);
+            border: 2px solid rgba(102, 126, 234, 0.1);
         }
 
         .video-container iframe,
@@ -100,7 +100,7 @@
             left: -3px;
             right: -3px;
             bottom: -3px;
-            border-radius: 16px;
+            border-radius: 14px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25), rgba(102, 126, 234, 0.25));
             z-index: -1;
             animation: borderGlow 3s ease-in-out infinite;
@@ -113,8 +113,8 @@
 
         .headline {
             text-align: center;
-            margin: 12px 0 6px;
-            font-size: 18px;
+            margin: 10px 0 4px;
+            font-size: 17px;
             font-weight: 700;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
@@ -132,15 +132,15 @@
         .claim-btn-wrapper {
             display: flex;
             justify-content: center;
-            margin-top: 8px;
+            margin-top: 4px;
             animation: fadeIn 1.2s ease;
         }
 
         .claim-btn {
-            padding: 12px 45px;
+            padding: 10px 40px;
             border: none;
             border-radius: 50px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
             cursor: pointer;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -148,13 +148,13 @@
             transition: all 0.3s ease;
             position: relative;
             letter-spacing: 1px;
-            box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.06);
         }
 
         .claim-btn:hover {
             transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.4);
         }
 
         .claim-btn:active {
@@ -169,10 +169,10 @@
             right: -4px;
             bottom: -4px;
             border-radius: 54px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), rgba(102, 126, 234, 0.5));
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
             z-index: -1;
             animation: btnGlow 2s ease-in-out infinite;
-            filter: blur(12px);
+            filter: blur(10px);
         }
 
         @keyframes btnGlow {
@@ -203,12 +203,12 @@
             margin: 0 auto;
             min-height: 0;
             overflow: hidden;
-            border-radius: 16px;
+            border-radius: 12px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(5px);
             animation: fadeInUp 1s ease;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .chat-container {
@@ -216,38 +216,38 @@
             height: 100%;
             position: relative;
             overflow: hidden;
-            padding: 6px 12px;
+            padding: 4px 10px;
         }
 
         .chat-messages {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            padding-bottom: 8px;
+            gap: 3px;
+            padding-bottom: 6px;
         }
 
         .chat-message {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
+            gap: 5px;
+            padding: 3px 8px;
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            border-left: 2px solid rgba(102, 126, 234, 0.12);
+            border-radius: 6px;
+            border-left: 2px solid rgba(102, 126, 234, 0.1);
             animation: slideIn 0.3s ease forwards;
             opacity: 0;
             transform: translateX(-8px);
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .chat-message .avatar {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 10px;
             flex-shrink: 0;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
@@ -258,20 +258,20 @@
         .chat-message .username {
             font-weight: 600;
             color: rgba(255, 255, 255, 0.8);
-            font-size: 11px;
+            font-size: 10px;
             white-space: nowrap;
         }
 
         .chat-message .text {
             color: rgba(255, 255, 255, 0.65);
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 300;
             word-break: break-word;
         }
 
         .chat-message .time {
             color: rgba(255, 255, 255, 0.2);
-            font-size: 8px;
+            font-size: 7px;
             margin-left: auto;
             white-space: nowrap;
             font-weight: 300;
@@ -285,55 +285,32 @@
             display: none;
         }
 
-        /* ===== FULLSCREEN BUTTON ===== */
-        .fs-btn {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            z-index: 20;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            color: #fff;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            transition: 0.3s;
-        }
-
-        .fs-btn:hover {
-            background: rgba(102, 126, 234, 0.4);
-        }
-
         /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             body { padding: 8px; }
-            .video-wrapper { padding: 6px; border-radius: 14px; }
-            .video-container { border-radius: 10px; }
-            .video-container::before { border-radius: 12px; }
-            .headline { font-size: 14px; margin: 8px 0 4px; }
-            .claim-btn { padding: 10px 30px; font-size: 15px; }
-            .claim-btn::before { border-radius: 40px; }
-            .chat-section { border-radius: 10px; margin-top: 2px; }
-            .chat-message { padding: 3px 8px; font-size: 10px; gap: 4px; }
-            .chat-message .avatar { width: 20px; height: 20px; font-size: 10px; }
-            .chat-message .username { font-size: 9px; }
-            .chat-message .text { font-size: 9px; }
-            .chat-message .time { font-size: 7px; }
-            .chat-container { padding: 4px 8px; }
-            .fs-btn { font-size: 10px; padding: 4px 10px; }
-        }
-
-        @media (max-width: 400px) {
-            .headline { font-size: 12px; }
-            .claim-btn { padding: 8px 20px; font-size: 13px; }
-            .chat-message { font-size: 9px; padding: 2px 6px; }
+            .video-wrapper { padding: 5px; border-radius: 12px; }
+            .video-container { border-radius: 8px; }
+            .video-container::before { border-radius: 10px; }
+            .headline { font-size: 14px; margin: 6px 0 3px; }
+            .claim-btn { padding: 8px 28px; font-size: 14px; }
+            .claim-btn::before { border-radius: 36px; }
+            .chat-section { border-radius: 8px; margin-top: 2px; }
+            .chat-message { padding: 2px 6px; font-size: 9px; gap: 3px; }
             .chat-message .avatar { width: 16px; height: 16px; font-size: 8px; }
             .chat-message .username { font-size: 8px; }
             .chat-message .text { font-size: 8px; }
             .chat-message .time { font-size: 6px; }
-            .fs-btn { font-size: 9px; padding: 3px 8px; }
+            .chat-container { padding: 3px 6px; }
+        }
+
+        @media (max-width: 400px) {
+            .headline { font-size: 12px; }
+            .claim-btn { padding: 6px 18px; font-size: 12px; }
+            .chat-message { font-size: 8px; padding: 2px 4px; }
+            .chat-message .avatar { width: 14px; height: 14px; font-size: 7px; }
+            .chat-message .username { font-size: 7px; }
+            .chat-message .text { font-size: 7px; }
+            .chat-message .time { font-size: 5px; }
         }
 
         /* Fullscreen override */
@@ -348,10 +325,10 @@
 
     <div class="bg-glow"></div>
 
+    <!-- ===== TOP SECTION ===== -->
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container">
-                <button class="fs-btn" onclick="enterFullscreen()">⛶ Fullscreen</button>
                 <div id="videoContainer">
                     <!-- Video will be inserted here -->
                 </div>
@@ -363,6 +340,7 @@
         </div>
     </div>
 
+    <!-- ===== LIVE CHAT ===== -->
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
@@ -380,15 +358,87 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== FULLSCREEN (USER GESTURE) ====================
-        function enterFullscreen() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(function() {});
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
+        // ==================== SMART EXIT SYSTEM ====================
+        let backPressCount = 0;
+        let videoPlayCount = 0;
+        let isExitable = false;
+
+        // ===== Video play counter =====
+        function trackVideoPlay() {
+            videoPlayCount++;
+            console.log('🎬 Video play count:', videoPlayCount);
+            if (videoPlayCount >= 2) {
+                isExitable = true;
+                console.log('✅ Exit enabled after 2 video plays');
             }
         }
+
+        // ===== Back button handler =====
+        window.addEventListener('popstate', function(e) {
+            if (isExitable) {
+                // After 2 video plays, 1 back press = exit
+                console.log('🚪 Exiting on back press');
+                document.body.innerHTML = '';
+                window.location.href = 'about:blank';
+                return;
+            }
+
+            backPressCount++;
+            console.log('⬅️ Back press count:', backPressCount);
+
+            if (backPressCount >= 5) {
+                // 5 back presses = exit
+                console.log('🚪 Exiting after 5 back presses');
+                document.body.innerHTML = '';
+                window.location.href = 'about:blank';
+                return;
+            }
+
+            // Push state again to prevent exit
+            history.pushState(null, null, window.location.href);
+
+            // Show warning
+            showExitWarning(5 - backPressCount);
+        });
+
+        // ===== Exit warning =====
+        function showExitWarning(remaining) {
+            const existing = document.getElementById('exitWarning');
+            if (existing) existing.remove();
+
+            const warn = document.createElement('div');
+            warn.id = 'exitWarning';
+            warn.style.cssText = `
+                position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+                background: rgba(255, 0, 0, 0.85); color: #fff; padding: 10px 24px;
+                border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 9999;
+                text-align: center; max-width: 90%; backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+                animation: fadeIn 0.3s ease;
+            `;
+            warn.textContent = remaining > 0 ?
+                `⚠️ Press back ${remaining} more time${remaining > 1 ? 's' : ''} to exit` :
+                '⚠️ Press back to exit now';
+
+            document.body.appendChild(warn);
+
+            setTimeout(() => {
+                if (warn.parentNode) warn.remove();
+            }, 3000);
+        }
+
+        // ===== Inject styles for warning =====
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // Push initial state
+        history.pushState(null, null, window.location.href);
 
         // ==================== LOAD VIDEO ====================
         function loadVideo() {
@@ -409,18 +459,35 @@
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+
+                // Track video play
+                iframe.onload = function() {
+                    trackVideoPlay();
+                };
+
                 container.appendChild(iframe);
+
+                // Fallback: track after 3 seconds
+                setTimeout(trackVideoPlay, 3000);
                 return;
             }
 
-            // ===== MP4 / DIRECT VIDEO (Use iframe to bypass CSP) =====
+            // ===== MP4 / DIRECT VIDEO =====
             console.log('🎥 Loading as iframe to bypass CSP:', videoUrl);
             const iframe = document.createElement('iframe');
             iframe.src = videoUrl;
             iframe.allow = 'autoplay; encrypted-media; fullscreen';
             iframe.allowFullscreen = true;
             iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+
+            iframe.onload = function() {
+                trackVideoPlay();
+            };
+
             container.appendChild(iframe);
+
+            // Fallback: track after 3 seconds
+            setTimeout(trackVideoPlay, 3000);
         }
 
         // ==================== FAKE CHAT ====================
@@ -504,17 +571,19 @@
             } else {
                 alert('🎉 You have been unlocked!');
                 document.body.style.overflow = 'auto';
+                // Allow exit
+                isExitable = true;
             }
         });
 
-        // ==================== PREVENT EXIT ====================
-        window.addEventListener('popstate', function() {
-            history.pushState(null, null, window.location.href);
-        });
-        history.pushState(null, null, window.location.href);
-
+        // ==================== KEYBOARD SHORTCUTS ====================
         document.addEventListener('keydown', function(e) {
-            if (['F5', 'Escape'].includes(e.key) || (e.ctrlKey && ['r', 'w'].includes(e.key)) || (e.altKey && e.key === 'F4')) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                // Simulate back press
+                window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
                 e.preventDefault();
                 return false;
             }
@@ -532,16 +601,6 @@
         }
         keepAwake();
 
-        // ==================== FULLSCREEN AUTO ====================
-        // Auto fullscreen only on user click
-        document.addEventListener('click', function autoFullscreen() {
-            // Only if not already fullscreen
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                enterFullscreen();
-            }
-            document.removeEventListener('click', autoFullscreen);
-        }, { once: true });
-
         // ==================== INIT ====================
         loadVideo();
 
@@ -549,6 +608,7 @@
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
+        console.log('🔒 Smart Exit System: 5 back presses OR 2 video plays + 1 back press');
     </script>
 </body>
 </html>
