@@ -1,0 +1,24 @@
+{
+  "admin": {
+    "passcode": "$2b$10$EHUFAzruUKKPbZ6WUTQuze6qfYaath01GCxjKy0vu/Hsv9d.FM5S6",
+    "theme": "light"
+  },
+  "links": [],
+  "settings": {
+    "background": null
+  },
+  "sessions": [
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzg2Mzc5MDc4LCJleHAiOjE3ODYzNzk5Nzh9.x0ADJDtla0DMOIs8GMxhgVP4kWVXksLXGTe1fenurGA",
+      "csrfToken": "a8465c1fd853a7d73739c324632c5457cfab1b0ac8619a27047ad3856fef0c59",
+      "createdAt": 1786379078508,
+      "expiresAt": 1786379978508
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzg2Mzc5MDc4LCJleHAiOjE3ODYzNzk5Nzh9.x0ADJDtla0DMOIs8GMxhgVP4kWVXksLXGTe1fenurGA",
+      "csrfToken": "289eacba6a7689a339b458baf6ab0d5b400c3fb028134c5e74c53780df66e445",
+      "createdAt": 1786379078571,
+      "expiresAt": 1786379978571
+    }
+  ]
+}

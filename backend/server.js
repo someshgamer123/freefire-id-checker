@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// ==================== SECURITY HEADERS ====================
+// ==================== SECURITY ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -27,16 +27,13 @@ app.use(helmet({
     }
 }));
 
-// ==================== CORS ====================
-const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'https://*.onrender.com'],
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://*.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
-};
-app.use(cors(corsOptions));
+}));
 
-// ==================== RATE LIMITING ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -50,7 +47,6 @@ const authLimiter = rateLimit({
     message: 'Too many login attempts, please try again after 15 minutes'
 });
 
-// ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -59,14 +55,27 @@ app.use(express.static('.'));
 // ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// PASSCODE HASH: "951753" (bcrypt, 12 rounds)
-const DEFAULT_PASSCODE_HASH = '$2b$12$WJxYzQrW5s5s5s5s5s5s5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
+// ===== GENERATE HASH DYNAMICALLY (NO HARDCODED HASH) =====
+function getPasscodeHash(passcode) {
+    // Hash with 10 rounds (faster)
+    return bcrypt.hashSync(passcode, 10);
+}
+
+function verifyPasscode(passcode, hash) {
+    try {
+        return bcrypt.compareSync(passcode, hash);
+    } catch (e) {
+        console.error('❌ Verification error:', e);
+        return false;
+    }
+}
 
 function initDB() {
     if (!fs.existsSync(DB_FILE)) {
+        const hashedPasscode = getPasscodeHash('951753');
         const db = {
             admin: {
-                passcode: DEFAULT_PASSCODE_HASH,
+                passcode: hashedPasscode,
                 theme: 'light'
             },
             links: [],
@@ -76,8 +85,11 @@ function initDB() {
             sessions: []
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-        console.log('✅ Database created!');
+        console.log('═══════════════════════════════════════════');
+        console.log('✅ DATABASE CREATED SUCCESSFULLY!');
         console.log('🔑 PASSCODE: 951753');
+        console.log('📌 HASH GENERATED DYNAMICALLY');
+        console.log('═══════════════════════════════════════════');
     }
 }
 
@@ -87,12 +99,17 @@ function readDB() {
         const data = fs.readFileSync(DB_FILE, 'utf8');
         return JSON.parse(data);
     } catch (e) {
+        console.error('❌ Database read error:', e);
         return null;
     }
 }
 
 function writeDB(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error('❌ Database write error:', e);
+    }
 }
 
 function generateLinkId() {
@@ -104,15 +121,7 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 const JWT_EXPIRY = '15m';
 
 function hashPasscode(passcode) {
-    return bcrypt.hashSync(passcode, 12);
-}
-
-function verifyPasscode(passcode, hash) {
-    try {
-        return bcrypt.compareSync(passcode, hash);
-    } catch (e) {
-        return false;
-    }
+    return bcrypt.hashSync(passcode, 10);
 }
 
 function generateToken(userId) {
@@ -146,6 +155,10 @@ function authMiddleware(req, res, next) {
     }
 
     const db = readDB();
+    if (!db) {
+        return res.status(500).json({ error: 'Database error' });
+    }
+
     const session = db.sessions?.find(s => s.token === token);
     if (!session || session.csrfToken !== csrfToken) {
         return res.status(403).json({ error: 'Invalid CSRF token' });
@@ -157,23 +170,31 @@ function authMiddleware(req, res, next) {
 
 // ==================== ROUTES ====================
 
-// ===== ADMIN LOGIN (PASSCODE) =====
+// ===== ADMIN LOGIN =====
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
-        const db = readDB();
+        console.log('═══════════════════════════════════════════');
+        console.log('🔐 LOGIN ATTEMPT');
 
         if (!passcode) {
             return res.status(400).json({ error: 'Passcode required' });
         }
 
-        // Check if passcode is numeric
-        if (!/^\d+$/.test(passcode)) {
-            return res.status(400).json({ error: 'Invalid passcode format' });
+        if (!/^\d+$/.test(passcode) || passcode.length !== 6) {
+            return res.status(400).json({ error: 'Invalid passcode format (6 digits required)' });
+        }
+
+        const db = readDB();
+        if (!db) {
+            return res.status(500).json({ error: 'Database error' });
         }
 
         const isValid = verifyPasscode(passcode, db.admin.passcode);
+        console.log('📌 Verification result:', isValid);
+
         if (!isValid) {
+            console.log('❌ Invalid passcode');
             return res.status(401).json({ error: 'Invalid passcode' });
         }
 
@@ -197,12 +218,14 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             path: '/'
         });
 
+        console.log('✅ LOGIN SUCCESSFUL!');
+        console.log('═══════════════════════════════════════════');
         res.json({
             success: true,
             csrfToken: csrfToken
         });
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -212,7 +235,7 @@ app.post('/api/admin/logout', authMiddleware, (req, res) => {
     try {
         const db = readDB();
         const token = req.cookies?.adminToken;
-        if (db.sessions) {
+        if (db && db.sessions) {
             db.sessions = db.sessions.filter(s => s.token !== token);
             writeDB(db);
         }
@@ -259,7 +282,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
 app.get('/api/links', authMiddleware, (req, res) => {
     try {
         const db = readDB();
-        res.json(db.links || []);
+        res.json(db?.links || []);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch links' });
     }
@@ -466,7 +489,7 @@ app.get('/api/settings', (req, res) => {
     }
 });
 
-// ===== SERVE VISITOR PAGES =====
+// ===== SERVE PAGES =====
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -491,7 +514,6 @@ app.get('/sw.js', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'sw.js'));
 });
 
-// ===== ROOT =====
 app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
 });
@@ -505,15 +527,5 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
-    console.log('═══════════════════════════════════════════');
-    console.log('🔐 SECURITY FEATURES ACTIVE:');
-    console.log('  ✅ JWT Authentication (HTTP-only cookies)');
-    console.log('  ✅ CSRF Protection');
-    console.log('  ✅ Rate Limiting (5 req/min for auth)');
-    console.log('  ✅ Passcode Hashing (bcrypt, 12 rounds)');
-    console.log('  ✅ Input Validation & Sanitization');
-    console.log('  ✅ Content Security Policy');
-    console.log('  ✅ XSS Protection');
-    console.log('  ✅ Session Management (15 min expiry)');
     console.log('═══════════════════════════════════════════');
 });
