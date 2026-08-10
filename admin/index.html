@@ -5,7 +5,6 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
-        /* ===== ALL STYLES (same as before) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         :root {
             --primary: #667eea; --secondary: #764ba2; --success: #48bb78;
@@ -351,6 +350,11 @@
                 return false;
             }
         }
+
+        // ==================== PERIODIC SESSION CHECK ====================
+        setInterval(() => {
+            checkAuth();
+        }, 5 * 60 * 1000);
 
         // ==================== PWA INSTALL ====================
         let deferredPrompt;

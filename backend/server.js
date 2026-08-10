@@ -123,7 +123,7 @@ function generateLinkId() {
 
 // ==================== AUTH FUNCTIONS ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-const JWT_EXPIRY = '60m'; // 60 minutes
+const JWT_EXPIRY = '7d';
 
 function hashPasscode(passcode) {
     return bcrypt.hashSync(passcode, 10);
@@ -179,8 +179,6 @@ function authMiddleware(req, res, next) {
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
-        console.log('═══════════════════════════════════════════');
-        console.log('🔐 LOGIN ATTEMPT');
 
         if (!passcode) {
             return res.status(400).json({ error: 'Passcode required' });
@@ -196,35 +194,31 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         }
 
         const isValid = verifyPasscode(passcode, db.admin.passcode);
-        console.log('📌 Verification result:', isValid);
-
         if (!isValid) {
-            console.log('❌ Invalid passcode');
             return res.status(401).json({ error: 'Invalid passcode' });
         }
 
         const token = generateToken('admin');
         const csrfToken = generateCSRFToken();
 
-        if (!db.sessions) db.sessions = [];
+        // Clear old sessions
+        db.sessions = [];
         db.sessions.push({
             token: token,
             csrfToken: csrfToken,
             createdAt: Date.now(),
-            expiresAt: Date.now() + 60 * 60 * 1000 // 60 minutes
+            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
         });
         writeDB(db);
 
         res.cookie('adminToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'none',
-            maxAge: 60 * 60 * 1000, // 60 minutes
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
 
-        console.log('✅ LOGIN SUCCESSFUL!');
-        console.log('═══════════════════════════════════════════');
         res.json({
             success: true,
             csrfToken: csrfToken
@@ -532,6 +526,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
-    console.log('⏰ Session: 60 minutes');
+    console.log('⏰ Session: 7 DAYS');
     console.log('═══════════════════════════════════════════');
 });
