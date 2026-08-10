@@ -4,8 +4,15 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
-        
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
         body {
             background: #0a0a1a;
             color: #fff;
@@ -19,7 +26,7 @@
             flex-direction: column;
             padding: 12px;
         }
-        
+
         .bg-glow {
             position: fixed;
             top: 50%;
@@ -31,9 +38,20 @@
             z-index: 0;
             animation: pulseGlow 3s ease-in-out infinite;
         }
-        
-        @keyframes pulseGlow { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; } 50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } }
-        
+
+        @keyframes pulseGlow {
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        /* ===== TOP SECTION ===== */
         .top-section {
             position: relative;
             z-index: 1;
@@ -43,7 +61,7 @@
             margin: 0 auto;
             padding: 0 0 8px 0;
         }
-        
+
         .video-wrapper {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
@@ -53,9 +71,18 @@
             backdrop-filter: blur(10px);
             animation: fadeInUp 0.8s ease;
         }
-        
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .video-container {
             position: relative;
             width: 100%;
@@ -65,8 +92,9 @@
             overflow: hidden;
             border: 2px solid rgba(102, 126, 234, 0.12);
         }
-        
-        .video-container iframe, .video-container video {
+
+        .video-container iframe,
+        .video-container video {
             position: absolute;
             top: 0;
             left: 0;
@@ -75,9 +103,7 @@
             border: none;
             background: #000;
         }
-        
-        .video-container iframe { z-index: 5; }
-        
+
         .video-container::before {
             content: '';
             position: absolute;
@@ -90,9 +116,17 @@
             z-index: -1;
             animation: borderGlow 3s ease-in-out infinite;
         }
-        
-        @keyframes borderGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-        
+
+        @keyframes borderGlow {
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
         .headline {
             text-align: center;
             margin: 12px 0 6px;
@@ -105,16 +139,25 @@
             animation: fadeIn 1s ease;
             letter-spacing: 0.5px;
         }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .claim-btn-wrapper {
             display: flex;
             justify-content: center;
             margin-top: 8px;
             animation: fadeIn 1.2s ease;
         }
-        
+
         .claim-btn {
             padding: 12px 45px;
             border: none;
@@ -130,10 +173,16 @@
             box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
             border: 2px solid rgba(255, 255, 255, 0.08);
         }
-        
-        .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.5); }
-        .claim-btn:active { transform: scale(0.97); }
-        
+
+        .claim-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+        }
+
+        .claim-btn:active {
+            transform: scale(0.97);
+        }
+
         .claim-btn::before {
             content: '';
             position: absolute;
@@ -147,9 +196,19 @@
             animation: btnGlow 2s ease-in-out infinite;
             filter: blur(12px);
         }
-        
-        @keyframes btnGlow { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
-        
+
+        @keyframes btnGlow {
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.04);
+            }
+        }
+
         .claim-btn .ripple {
             position: absolute;
             border-radius: 50%;
@@ -158,9 +217,15 @@
             animation: rippleAnim 0.6s linear;
             pointer-events: none;
         }
-        
-        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
-        
+
+        @keyframes rippleAnim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* ===== LIVE CHAT - LIGHTWEIGHT (NO LAG) ===== */
         .chat-section {
             position: relative;
             z-index: 1;
@@ -177,7 +242,7 @@
             animation: fadeInUp 1s ease;
             margin-top: 4px;
         }
-        
+
         .chat-container {
             width: 100%;
             height: 100%;
@@ -185,14 +250,14 @@
             overflow: hidden;
             padding: 6px 12px;
         }
-        
+
         .chat-messages {
             display: flex;
             flex-direction: column;
             gap: 4px;
             padding-bottom: 8px;
         }
-        
+
         .chat-message {
             display: flex;
             align-items: center;
@@ -206,7 +271,7 @@
             transform: translateX(-8px);
             font-size: 12px;
         }
-        
+
         .chat-message .avatar {
             width: 24px;
             height: 24px;
@@ -221,80 +286,142 @@
             font-weight: 700;
             text-transform: uppercase;
         }
-        
-        .chat-message .username { font-weight: 600; color: rgba(255, 255, 255, 0.8); font-size: 11px; white-space: nowrap; }
-        .chat-message .text { color: rgba(255, 255, 255, 0.65); font-size: 11px; font-weight: 300; word-break: break-word; }
-        .chat-message .time { color: rgba(255, 255, 255, 0.2); font-size: 8px; margin-left: auto; white-space: nowrap; font-weight: 300; }
-        
-        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-        ::-webkit-scrollbar { display: none; }
-        
-        .video-error {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+
+        .chat-message .username {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .chat-message .text {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 11px;
+            font-weight: 300;
+            word-break: break-word;
+        }
+
+        .chat-message .time {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 8px;
+            margin-left: auto;
+            white-space: nowrap;
+            font-weight: 300;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 20;
-            color: #fff;
-            font-size: 14px;
-            padding: 20px;
-            text-align: center;
         }
-        
-        .video-error.show { display: flex; }
-        .video-error .icon { font-size: 40px; margin-bottom: 10px; }
-        .video-error .retry-btn { margin-top: 12px; padding: 8px 24px; background: #667eea; border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; }
-        
-        .fullscreen-btn {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            z-index: 15;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            color: #fff;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            transition: 0.3s;
-        }
-        
-        .fullscreen-btn:hover { background: rgba(102, 126, 234, 0.4); }
-        
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
-            body { padding: 8px; }
-            .video-wrapper { padding: 6px; border-radius: 14px; }
-            .video-container { border-radius: 10px; }
-            .video-container::before { border-radius: 12px; }
-            .headline { font-size: 14px; margin: 8px 0 4px; }
-            .claim-btn { padding: 10px 30px; font-size: 15px; }
-            .claim-btn::before { border-radius: 40px; }
-            .chat-section { border-radius: 10px; margin-top: 2px; }
-            .chat-message { padding: 3px 8px; font-size: 10px; gap: 4px; }
-            .chat-message .avatar { width: 20px; height: 20px; font-size: 10px; }
-            .chat-message .username { font-size: 9px; }
-            .chat-message .text { font-size: 9px; }
-            .chat-message .time { font-size: 7px; }
-            .chat-container { padding: 4px 8px; }
-            .fullscreen-btn { font-size: 10px; padding: 4px 10px; }
+            body {
+                padding: 8px;
+            }
+            .video-wrapper {
+                padding: 6px;
+                border-radius: 14px;
+            }
+            .video-container {
+                border-radius: 10px;
+            }
+            .video-container::before {
+                border-radius: 12px;
+            }
+            .headline {
+                font-size: 14px;
+                margin: 8px 0 4px;
+            }
+            .claim-btn {
+                padding: 10px 30px;
+                font-size: 15px;
+            }
+            .claim-btn::before {
+                border-radius: 40px;
+            }
+            .chat-section {
+                border-radius: 10px;
+                margin-top: 2px;
+            }
+            .chat-message {
+                padding: 3px 8px;
+                font-size: 10px;
+                gap: 4px;
+            }
+            .chat-message .avatar {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
+            .chat-message .username {
+                font-size: 9px;
+            }
+            .chat-message .text {
+                font-size: 9px;
+            }
+            .chat-message .time {
+                font-size: 7px;
+            }
+            .chat-container {
+                padding: 4px 8px;
+            }
         }
-        
+
         @media (max-width: 400px) {
-            .headline { font-size: 12px; }
-            .claim-btn { padding: 8px 20px; font-size: 13px; }
-            .chat-message { font-size: 9px; padding: 2px 6px; }
-            .chat-message .avatar { width: 16px; height: 16px; font-size: 8px; }
-            .chat-message .username { font-size: 8px; }
-            .chat-message .text { font-size: 8px; }
-            .chat-message .time { font-size: 6px; }
+            .headline {
+                font-size: 12px;
+            }
+            .claim-btn {
+                padding: 8px 20px;
+                font-size: 13px;
+            }
+            .chat-message {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            .chat-message .avatar {
+                width: 16px;
+                height: 16px;
+                font-size: 8px;
+            }
+            .chat-message .username {
+                font-size: 8px;
+            }
+            .chat-message .text {
+                font-size: 8px;
+            }
+            .chat-message .time {
+                font-size: 6px;
+            }
+        }
+
+        /* Fullscreen */
+        :-webkit-full-screen .video-container {
+            border-radius: 0;
+        }
+        :-webkit-full-screen .video-wrapper {
+            border-radius: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+        }
+        :-webkit-full-screen .video-container::before {
+            display: none;
+        }
+        :-webkit-full-screen .top-section {
+            max-width: 100%;
+        }
+        :-webkit-full-screen .chat-section {
+            max-width: 100%;
+            border-radius: 0;
         }
     </style>
 </head>
@@ -302,15 +429,11 @@
 
     <div class="bg-glow"></div>
 
+    <!-- TOP SECTION -->
     <div class="top-section">
         <div class="video-wrapper">
-            <div class="video-container" id="videoContainer">
-                <button class="fullscreen-btn" onclick="enterFullscreen()">⛶ Fullscreen</button>
-                <div class="video-error" id="videoError">
-                    <div class="icon">⚠️</div>
-                    <div>Video failed to load</div>
-                    <button class="retry-btn" onclick="loadVideo()">🔄 Retry</button>
-                </div>
+            <div class="video-container">
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <div class="claim-btn-wrapper">
@@ -319,6 +442,7 @@
         </div>
     </div>
 
+    <!-- LIVE CHAT -->
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
@@ -326,7 +450,7 @@
     </div>
 
     <script>
-        // ==================== GET PARAMS ====================
+        // ==================== PARAMS ====================
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
         const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
@@ -336,100 +460,53 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== FULLSCREEN ====================
-        function enterFullscreen() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-        }
-
-        // ==================== LOAD VIDEO (PEHLE JAISA) ====================
+        // ==================== LOAD VIDEO ====================
         function loadVideo() {
-            const container = document.getElementById('videoContainer');
-            const errorEl = document.getElementById('videoError');
-            errorEl.classList.remove('show');
-            
-            const fsBtn = container.querySelector('.fullscreen-btn');
-            container.innerHTML = '';
-            container.appendChild(fsBtn);
-            container.appendChild(errorEl);
-            
-            console.log('🎬 Loading video:', videoUrl);
-            
-            // ===== YOUTUBE =====
+            const frame = document.getElementById('videoFrame');
             const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-            
+
             if (youtubeMatch) {
-                const videoId = youtubeMatch[1];
-                console.log('📺 YouTube Video ID:', videoId);
-                
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=${videoId}`;
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                container.appendChild(iframe);
-                return;
-            }
-            
-            // ===== MP4 =====
-            if (videoUrl.match(/\.(mp4|webm|ogg|m4v|mov|avi)$/i)) {
-                console.log('🎥 MP4 Video URL:', videoUrl);
-                
+                frame.src =
+                    `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}`;
+            } else if (videoUrl.match(/\.(mp4|webm|ogg)$/i)) {
                 const video = document.createElement('video');
                 video.src = videoUrl;
                 video.autoplay = true;
                 video.loop = true;
-                video.controls = true;
-                video.muted = true;
+                video.controls = false;
                 video.playsInline = true;
-                video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;z-index:5;';
-                
-                video.onloadeddata = function() {
-                    console.log('✅ Video loaded');
-                    video.play().catch(e => console.log('Play error:', e));
-                };
-                
-                video.onerror = function() {
-                    console.error('❌ Video error');
-                    errorEl.classList.add('show');
-                };
-                
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                const container = document.querySelector('.video-container');
+                container.innerHTML = '';
                 container.appendChild(video);
-                
-                video.play().catch(function(e) {
-                    console.log('Autoplay blocked:', e);
-                    // Fallback: try muted
-                    video.muted = true;
-                    video.play().catch(function(e2) {
-                        console.log('Muted autoplay also blocked:', e2);
-                    });
-                });
-                return;
+                video.play().catch(() => {});
+            } else {
+                frame.src = videoUrl;
             }
-            
-            // ===== OTHER =====
-            console.log('🔗 Trying as direct iframe');
-            const iframe = document.createElement('iframe');
-            iframe.src = videoUrl;
-            iframe.allow = 'autoplay; encrypted-media; fullscreen';
-            iframe.allowFullscreen = true;
-            iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-            container.appendChild(iframe);
         }
 
-        // ==================== FAKE CHAT ====================
+        // ==================== FAKE CHAT (LIGHTWEIGHT) ====================
         const users = [
-            { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' },
-            { name: 'NightWolf', emoji: '🐺' }, { name: 'ShadowX', emoji: '🌙' },
-            { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
-            { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' },
-            { name: 'DarkKnight', emoji: '🦇' }, { name: 'StarGamer', emoji: '⭐' },
-            { name: 'ThunderX', emoji: '⚡' }, { name: 'IceQueen', emoji: '❄️' },
-            { name: 'FireLord', emoji: '🔥' }, { name: 'CryptoKing', emoji: '💰' },
-            { name: 'GhostRider', emoji: '👻' }, { name: 'Venom', emoji: '🕷️' },
-            { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
-            { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
+            { name: 'GamerPro', emoji: '🎮' },
+            { name: 'KingSlayer', emoji: '👑' },
+            { name: 'NightWolf', emoji: '🐺' },
+            { name: 'ShadowX', emoji: '🌙' },
+            { name: 'BlazeIt', emoji: '🔥' },
+            { name: 'SniperPro', emoji: '🎯' },
+            { name: 'DemonKing', emoji: '😈' },
+            { name: 'Phoenix', emoji: '🐦' },
+            { name: 'DarkKnight', emoji: '🦇' },
+            { name: 'StarGamer', emoji: '⭐' },
+            { name: 'ThunderX', emoji: '⚡' },
+            { name: 'IceQueen', emoji: '❄️' },
+            { name: 'FireLord', emoji: '🔥' },
+            { name: 'CryptoKing', emoji: '💰' },
+            { name: 'GhostRider', emoji: '👻' },
+            { name: 'Venom', emoji: '🕷️' },
+            { name: 'WizardX', emoji: '🧙' },
+            { name: 'NinjaPro', emoji: '🥷' },
+            { name: 'DragonSlayer', emoji: '🐉' },
+            { name: 'MysticMoon', emoji: '🌙' }
         ];
 
         const messages = [
@@ -443,7 +520,9 @@
 
         const chatContainer = document.getElementById('chatMessages');
 
-        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function getRandom(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
 
         function getRandomTime() {
             const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
@@ -471,11 +550,17 @@
             }
         }
 
-        for (let i = 0; i < 8; i++) { setTimeout(addChat, i * 150); }
+        // Start chat
+        for (let i = 0; i < 8; i++) {
+            setTimeout(addChat, i * 150);
+        }
 
         setInterval(() => {
             addChat();
-            if (Math.random() > 0.6) { setTimeout(addChat, 300); }
+            // Sometimes add extra chat
+            if (Math.random() > 0.6) {
+                setTimeout(addChat, 300);
+            }
         }, 800 + Math.random() * 1200);
 
         // ==================== CLAIM BUTTON ====================
@@ -511,18 +596,26 @@
 
         // ==================== KEEP AWAKE ====================
         async function keepAwake() {
-            try { await navigator.wakeLock.request('screen'); } catch (e) {}
+            try {
+                await navigator.wakeLock.request('screen');
+            } catch (e) {}
         }
         keepAwake();
 
+        // ==================== FULLSCREEN ====================
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+        }
+        setTimeout(requestFullscreen, 500);
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) setTimeout(requestFullscreen, 500);
+        });
+
         // ==================== INIT ====================
         loadVideo();
-
-        console.log('🎬 Video URL:', videoUrl);
-        console.log('🎁 Claim URL:', claimUrl);
-        console.log('🔘 Button Text:', buttonText);
-        console.log('📝 Headline:', headline);
-        console.log('💡 Using autoplay with muted fallback');
     </script>
 </body>
 </html>
