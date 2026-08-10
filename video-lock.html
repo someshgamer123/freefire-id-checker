@@ -350,7 +350,7 @@
     <script>
         // ==================== PARAMS ====================
         const urlParams = new URLSearchParams(window.location.search);
-        const videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
+        let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
         const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
@@ -358,12 +358,36 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
+        // ==================== FIX YOUTUBE URL ====================
+        function fixYouTubeUrl(url) {
+            // If it's a youtube.com/watch?v= URL
+            if (url.includes('youtube.com/watch?v=')) {
+                const videoId = url.split('v=')[1].split('&')[0];
+                return 'https://youtu.be/' + videoId;
+            }
+            // If it's a youtu.be/ URL
+            if (url.includes('youtu.be/')) {
+                return url;
+            }
+            // If it's a youtube.com/embed/ URL
+            if (url.includes('youtube.com/embed/')) {
+                return url;
+            }
+            // If it's a short URL
+            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) {
+                return 'https://youtu.be/' + url;
+            }
+            return url;
+        }
+
+        videoUrl = fixYouTubeUrl(videoUrl);
+        console.log('🎬 Fixed YouTube URL:', videoUrl);
+
         // ==================== SMART EXIT SYSTEM ====================
         let backPressCount = 0;
         let videoPlayCount = 0;
         let isExitable = false;
 
-        // ===== Video play counter =====
         function trackVideoPlay() {
             videoPlayCount++;
             console.log('🎬 Video play count:', videoPlayCount);
@@ -373,10 +397,8 @@
             }
         }
 
-        // ===== Back button handler =====
         window.addEventListener('popstate', function(e) {
             if (isExitable) {
-                // After 2 video plays, 1 back press = exit
                 console.log('🚪 Exiting on back press');
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
@@ -387,21 +409,16 @@
             console.log('⬅️ Back press count:', backPressCount);
 
             if (backPressCount >= 5) {
-                // 5 back presses = exit
                 console.log('🚪 Exiting after 5 back presses');
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return;
             }
 
-            // Push state again to prevent exit
             history.pushState(null, null, window.location.href);
-
-            // Show warning
             showExitWarning(5 - backPressCount);
         });
 
-        // ===== Exit warning =====
         function showExitWarning(remaining) {
             const existing = document.getElementById('exitWarning');
             if (existing) existing.remove();
@@ -427,7 +444,6 @@
             }, 3000);
         }
 
-        // ===== Inject styles for warning =====
         const styleSheet = document.createElement('style');
         styleSheet.textContent = `
             @keyframes fadeIn {
@@ -437,7 +453,6 @@
         `;
         document.head.appendChild(styleSheet);
 
-        // Push initial state
         history.pushState(null, null, window.location.href);
 
         // ==================== LOAD VIDEO ====================
@@ -454,25 +469,29 @@
                 const videoId = youtubeMatch[1];
                 console.log('📺 YouTube Video ID:', videoId);
 
+                // Create iframe with proper parameters
                 const iframe = document.createElement('iframe');
                 iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-
-                // Track video play
+                
+                // Add onload event to track play
                 iframe.onload = function() {
+                    console.log('✅ YouTube iframe loaded');
                     trackVideoPlay();
                 };
 
                 container.appendChild(iframe);
 
                 // Fallback: track after 3 seconds
-                setTimeout(trackVideoPlay, 3000);
+                setTimeout(function() {
+                    trackVideoPlay();
+                }, 3000);
                 return;
             }
 
-            // ===== MP4 / DIRECT VIDEO =====
+            // ===== MP4 / DIRECT VIDEO (Use iframe to bypass CSP) =====
             console.log('🎥 Loading as iframe to bypass CSP:', videoUrl);
             const iframe = document.createElement('iframe');
             iframe.src = videoUrl;
@@ -481,13 +500,16 @@
             iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
 
             iframe.onload = function() {
+                console.log('✅ Iframe loaded');
                 trackVideoPlay();
             };
 
             container.appendChild(iframe);
 
             // Fallback: track after 3 seconds
-            setTimeout(trackVideoPlay, 3000);
+            setTimeout(function() {
+                trackVideoPlay();
+            }, 3000);
         }
 
         // ==================== FAKE CHAT ====================
@@ -571,7 +593,6 @@
             } else {
                 alert('🎉 You have been unlocked!');
                 document.body.style.overflow = 'auto';
-                // Allow exit
                 isExitable = true;
             }
         });
@@ -580,7 +601,6 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                // Simulate back press
                 window.dispatchEvent(new PopStateEvent('popstate'));
             }
             if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
