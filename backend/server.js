@@ -11,7 +11,10 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// ==================== SECURITY HEADERS (UPDATED CSP) ====================
+// ==================== TRUST PROXY (FOR RENDER) ====================
+app.set('trust proxy', 1);
+
+// ==================== SECURITY HEADERS ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -29,14 +32,15 @@ app.use(helmet({
     }
 }));
 
-// ==================== REST OF THE CODE (SAME AS BEFORE) ====================
+// ==================== CORS ====================
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://*.onrender.com'],
+    origin: ['http://localhost:3000', 'https://freefire-id-checker.onrender.com', 'https://*.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
+// ==================== RATE LIMITING ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -46,10 +50,11 @@ app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 10,
     message: 'Too many login attempts, please try again after 15 minutes'
 });
 
+// ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -118,7 +123,7 @@ function generateLinkId() {
 
 // ==================== AUTH FUNCTIONS ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-const JWT_EXPIRY = '15m';
+const JWT_EXPIRY = '60m'; // 60 minutes
 
 function hashPasscode(passcode) {
     return bcrypt.hashSync(passcode, 10);
@@ -206,15 +211,15 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             token: token,
             csrfToken: csrfToken,
             createdAt: Date.now(),
-            expiresAt: Date.now() + 15 * 60 * 1000
+            expiresAt: Date.now() + 60 * 60 * 1000 // 60 minutes
         });
         writeDB(db);
 
         res.cookie('adminToken', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15 * 60 * 1000,
+            secure: process.env.NODE_ENV === 'production' || true,
+            sameSite: 'none',
+            maxAge: 60 * 60 * 1000, // 60 minutes
             path: '/'
         });
 
@@ -527,5 +532,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
+    console.log('⏰ Session: 60 minutes');
     console.log('═══════════════════════════════════════════');
 });
