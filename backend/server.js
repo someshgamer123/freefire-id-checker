@@ -11,13 +11,15 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// ==================== SECURITY ====================
+// ==================== SECURITY HEADERS (UPDATED CSP) ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'", "https://www.youtube.com"],
@@ -27,6 +29,7 @@ app.use(helmet({
     }
 }));
 
+// ==================== REST OF THE CODE (SAME AS BEFORE) ====================
 app.use(cors({
     origin: ['http://localhost:3000', 'https://*.onrender.com'],
     credentials: true,
@@ -55,9 +58,7 @@ app.use(express.static('.'));
 // ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// ===== GENERATE HASH DYNAMICALLY (NO HARDCODED HASH) =====
 function getPasscodeHash(passcode) {
-    // Hash with 10 rounds (faster)
     return bcrypt.hashSync(passcode, 10);
 }
 
@@ -88,7 +89,6 @@ function initDB() {
         console.log('═══════════════════════════════════════════');
         console.log('✅ DATABASE CREATED SUCCESSFULLY!');
         console.log('🔑 PASSCODE: 951753');
-        console.log('📌 HASH GENERATED DYNAMICALLY');
         console.log('═══════════════════════════════════════════');
     }
 }
