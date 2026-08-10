@@ -40,15 +40,8 @@
         }
         
         @keyframes pulseGlow {
-            0%,
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.6;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.1);
-                opacity: 1;
-            }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
         }
         
         .top-section {
@@ -72,14 +65,8 @@
         }
         
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.97);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
         .video-container {
@@ -117,13 +104,8 @@
         }
         
         @keyframes borderGlow {
-            0%,
-            100% {
-                opacity: 0.4;
-            }
-            50% {
-                opacity: 1;
-            }
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
         }
         
         .headline {
@@ -140,14 +122,8 @@
         }
         
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .claim-btn-wrapper {
@@ -197,15 +173,8 @@
         }
         
         @keyframes btnGlow {
-            0%,
-            100% {
-                opacity: 0.4;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1.04);
-            }
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.04); }
         }
         
         .claim-btn .ripple {
@@ -218,10 +187,7 @@
         }
         
         @keyframes rippleAnim {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
+            to { transform: scale(4); opacity: 0; }
         }
         
         .chat-section {
@@ -308,117 +274,79 @@
         }
         
         @keyframes slideIn {
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            to { opacity: 1; transform: translateX(0); }
         }
         
         ::-webkit-scrollbar {
             display: none;
         }
         
+        /* ===== LOADING OVERLAY ===== */
+        .video-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+        
+        .video-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .video-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 600px) {
-            body {
-                padding: 8px;
-            }
-            .video-wrapper {
-                padding: 6px;
-                border-radius: 14px;
-            }
-            .video-container {
-                border-radius: 10px;
-            }
-            .video-container::before {
-                border-radius: 12px;
-            }
-            .headline {
-                font-size: 14px;
-                margin: 8px 0 4px;
-            }
-            .claim-btn {
-                padding: 10px 30px;
-                font-size: 15px;
-            }
-            .claim-btn::before {
-                border-radius: 40px;
-            }
-            .chat-section {
-                border-radius: 10px;
-                margin-top: 2px;
-            }
-            .chat-message {
-                padding: 3px 8px;
-                font-size: 10px;
-                gap: 4px;
-            }
-            .chat-message .avatar {
-                width: 20px;
-                height: 20px;
-                font-size: 10px;
-            }
-            .chat-message .username {
-                font-size: 9px;
-            }
-            .chat-message .text {
-                font-size: 9px;
-            }
-            .chat-message .time {
-                font-size: 7px;
-            }
-            .chat-container {
-                padding: 4px 8px;
-            }
+            body { padding: 8px; }
+            .video-wrapper { padding: 6px; border-radius: 14px; }
+            .video-container { border-radius: 10px; }
+            .video-container::before { border-radius: 12px; }
+            .headline { font-size: 14px; margin: 8px 0 4px; }
+            .claim-btn { padding: 10px 30px; font-size: 15px; }
+            .claim-btn::before { border-radius: 40px; }
+            .chat-section { border-radius: 10px; margin-top: 2px; }
+            .chat-message { padding: 3px 8px; font-size: 10px; gap: 4px; }
+            .chat-message .avatar { width: 20px; height: 20px; font-size: 10px; }
+            .chat-message .username { font-size: 9px; }
+            .chat-message .text { font-size: 9px; }
+            .chat-message .time { font-size: 7px; }
+            .chat-container { padding: 4px 8px; }
         }
         
         @media (max-width: 400px) {
-            .headline {
-                font-size: 12px;
-            }
-            .claim-btn {
-                padding: 8px 20px;
-                font-size: 13px;
-            }
-            .chat-message {
-                font-size: 9px;
-                padding: 2px 6px;
-            }
-            .chat-message .avatar {
-                width: 16px;
-                height: 16px;
-                font-size: 8px;
-            }
-            .chat-message .username {
-                font-size: 8px;
-            }
-            .chat-message .text {
-                font-size: 8px;
-            }
-            .chat-message .time {
-                font-size: 6px;
-            }
+            .headline { font-size: 12px; }
+            .claim-btn { padding: 8px 20px; font-size: 13px; }
+            .chat-message { font-size: 9px; padding: 2px 6px; }
+            .chat-message .avatar { width: 16px; height: 16px; font-size: 8px; }
+            .chat-message .username { font-size: 8px; }
+            .chat-message .text { font-size: 8px; }
+            .chat-message .time { font-size: 6px; }
         }
         
-        :-webkit-full-screen .video-container {
-            border-radius: 0;
-        }
-        :-webkit-full-screen .video-wrapper {
-            border-radius: 0;
-            padding: 0;
-            border: none;
-            box-shadow: none;
-            background: transparent;
-        }
-        :-webkit-full-screen .video-container::before {
-            display: none;
-        }
-        :-webkit-full-screen .top-section {
-            max-width: 100%;
-        }
-        :-webkit-full-screen .chat-section {
-            max-width: 100%;
-            border-radius: 0;
-        }
+        :-webkit-full-screen .video-container { border-radius: 0; }
+        :-webkit-full-screen .video-wrapper { border-radius: 0; padding: 0; border: none; box-shadow: none; background: transparent; }
+        :-webkit-full-screen .video-container::before { display: none; }
+        :-webkit-full-screen .top-section { max-width: 100%; }
+        :-webkit-full-screen .chat-section { max-width: 100%; border-radius: 0; }
     </style>
 </head>
 <body>
@@ -428,7 +356,10 @@
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container" id="videoContainer">
-                <!-- Video will be inserted here -->
+                <!-- Loading Spinner -->
+                <div class="video-loading" id="videoLoading">
+                    <div class="spinner"></div>
+                </div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <div class="claim-btn-wrapper">
@@ -454,23 +385,34 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== LOAD VIDEO ====================
+        // ==================== LOAD VIDEO (SMOOTH) ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
+            const loading = document.getElementById('videoLoading');
+            
+            // Clear previous content (keep loading)
             container.innerHTML = '';
-
+            container.appendChild(loading);
+            
             // Check if YouTube URL
             const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-
+            
             if (youtubeMatch) {
-                // YouTube embed with autoplay
+                // YouTube embed with autoplay and minimal controls
                 const iframe = document.createElement('iframe');
-                iframe.src =
-                    `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}`;
+                iframe.src = `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}&enablejsapi=1`;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
+                iframe.onload = function() {
+                    loading.classList.add('hidden');
+                };
                 container.appendChild(iframe);
+                
+                // Fallback: hide loading after 3 seconds even if iframe doesn't load
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                }, 3000);
             } else if (videoUrl.match(/\.(mp4|webm|ogg)$/i)) {
                 // MP4 video with autoplay
                 const video = document.createElement('video');
@@ -481,11 +423,15 @@
                 video.muted = false;
                 video.playsInline = true;
                 video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;';
-                container.appendChild(video);
-
+                
+                video.onloadeddata = function() {
+                    loading.classList.add('hidden');
+                };
+                
                 video.onerror = function() {
-                    console.error('Video load error, trying fallback');
-                    // Fallback: try to load as iframe
+                    console.warn('MP4 load error, trying fallback');
+                    loading.classList.add('hidden');
+                    // Try loading as iframe
                     const iframe = document.createElement('iframe');
                     iframe.src = videoUrl;
                     iframe.allow = 'autoplay; encrypted-media; fullscreen';
@@ -494,12 +440,23 @@
                     container.innerHTML = '';
                     container.appendChild(iframe);
                 };
-
+                
+                container.appendChild(video);
+                
                 // Try to play
                 video.play().catch(function(e) {
-                    console.log('Auto-play blocked, user interaction needed');
-                    // Show play button overlay if autoplay blocked
+                    console.log('Auto-play blocked, waiting for user interaction');
+                    // Auto-play blocked - try again after user clicks
+                    document.addEventListener('click', function playOnClick() {
+                        video.play().catch(() => {});
+                        document.removeEventListener('click', playOnClick);
+                    }, { once: true });
                 });
+                
+                // Fallback: hide loading after 5 seconds
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                }, 5000);
             } else {
                 // Try as iframe
                 const iframe = document.createElement('iframe');
@@ -507,7 +464,14 @@
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
+                iframe.onload = function() {
+                    loading.classList.add('hidden');
+                };
                 container.appendChild(iframe);
+                
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                }, 3000);
             }
         }
 
