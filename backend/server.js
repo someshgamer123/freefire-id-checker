@@ -77,7 +77,7 @@ function initDB() {
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Secure database created with new password!');
-        console.log('🔑 Password: Somesh@2026#Secure');
+        console.log('🔑 Password: Somesh@2026');
     }
 }
 
@@ -507,7 +507,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 NEW ADMIN PASSWORD: Somesh@2026#Secure');
+    console.log('🔑 NEW ADMIN PASSWORD: Somesh@2026');
     console.log('═══════════════════════════════════════════');
     console.log('🔐 SECURITY FEATURES ACTIVE:');
     console.log('  ✅ JWT Authentication (HTTP-only cookies)');
