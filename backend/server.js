@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const path = require('path');
 const fs = require('fs');
 
@@ -18,57 +18,33 @@ function initDB() {
                 password: 'somesh5363',
                 theme: 'light'
             },
-            links: []
+            links: [],
+            settings: {
+                background: null // 9:16 background image URL
+            }
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Database created!');
     }
 }
 
-// Read database
 function readDB() {
     initDB();
-    const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
 }
 
-// Write database
 function writeDB(data) {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-// Generate unique link ID
 function generateLinkId() {
     return 'link_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
-
-// Check and update expired links
-function checkExpiredLinks() {
-    const db = readDB();
-    let updated = false;
-    db.links.forEach(link => {
-        if (link.expiryDate && link.status === 'active') {
-            const expiry = new Date(link.expiryDate);
-            if (new Date() > expiry) {
-                link.status = 'disabled';
-                updated = true;
-                console.log(`⏰ Link "${link.name}" expired`);
-            }
-        }
-    });
-    if (updated) {
-        writeDB(db);
-    }
-}
-
-// Run expiry check every minute
-setInterval(checkExpiredLinks, 60000);
 
 // ==================== API ROUTES ====================
 
 // Get all links
 app.get('/api/links', (req, res) => {
-    checkExpiredLinks();
     const db = readDB();
     res.json(db.links);
 });
@@ -76,7 +52,7 @@ app.get('/api/links', (req, res) => {
 // Create new link
 app.post('/api/links', (req, res) => {
     const db = readDB();
-    const { name, video, claim, buttonText, expiryDate } = req.body;
+    const { name, video, claim, buttonText, headline, expiryDate } = req.body;
     
     const newLink = {
         id: generateLinkId(),
@@ -84,6 +60,7 @@ app.post('/api/links', (req, res) => {
         video: video || 'https://youtu.be/dQw4w9WgXcQ',
         claim: claim || '#',
         buttonText: buttonText || 'Claim Now',
+        headline: headline || '',
         created: new Date().toISOString(),
         expiryDate: expiryDate || null,
         status: 'active',
@@ -98,13 +75,14 @@ app.post('/api/links', (req, res) => {
 // Update link
 app.put('/api/links/:id', (req, res) => {
     const db = readDB();
-    const { name, video, claim, buttonText, status, expiryDate } = req.body;
+    const { name, video, claim, buttonText, headline, status, expiryDate } = req.body;
     const link = db.links.find(l => l.id === req.params.id);
     if (link) {
         if (name !== undefined) link.name = name;
         if (video !== undefined) link.video = video;
         if (claim !== undefined) link.claim = claim;
         if (buttonText !== undefined) link.buttonText = buttonText;
+        if (headline !== undefined) link.headline = headline;
         if (status !== undefined) link.status = status;
         if (expiryDate !== undefined) link.expiryDate = expiryDate;
         writeDB(db);
@@ -114,7 +92,7 @@ app.put('/api/links/:id', (req, res) => {
     }
 });
 
-// Update link status only
+// Update link status
 app.put('/api/links/:id/status', (req, res) => {
     const db = readDB();
     const { status } = req.body;
@@ -136,9 +114,8 @@ app.delete('/api/links/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// Get link by ID (for visitors)
+// Get link by ID
 app.get('/api/link/:id', (req, res) => {
-    checkExpiredLinks();
     const db = readDB();
     const link = db.links.find(l => l.id === req.params.id);
     if (link && link.status === 'active') {
@@ -190,7 +167,16 @@ app.post('/api/admin/theme', (req, res) => {
 // Get settings
 app.get('/api/settings', (req, res) => {
     const db = readDB();
-    res.json({ theme: db.admin.theme });
+    res.json({ theme: db.admin.theme, background: db.settings.background || null });
+});
+
+// Update background
+app.post('/api/admin/background', (req, res) => {
+    const { background } = req.body;
+    const db = readDB();
+    db.settings.background = background;
+    writeDB(db);
+    res.json({ success: true });
 });
 
 // Serve visitor pages
@@ -205,16 +191,6 @@ app.get('/v/:id', (req, res) => {
 // Root - Redirect to admin
 app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
-});
-
-// Serve manifest.json
-app.get('/manifest.json', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'manifest.json'));
-});
-
-// Serve service worker
-app.get('/sw.js', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'sw.js'));
 });
 
 app.listen(port, () => {

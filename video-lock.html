@@ -4,308 +4,462 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
+
         body {
-            background: #000;
-            color: white;
-            font-family: Arial, sans-serif;
+            background: #0a0a1a;
+            color: #fff;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
             position: fixed;
             top: 0;
             left: 0;
-        }
-        .lock-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.98);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 99999;
             padding: 20px;
         }
-        .lock-header {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            text-align: center;
-            color: #ff6b6b;
-            font-size: 14px;
+
+        /* ===== BACKGROUND GLOW ===== */
+        .bg-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+            z-index: 0;
+            animation: pulseGlow 3s ease-in-out infinite;
         }
-        .lock-header .timer {
-            font-size: 32px;
-            font-weight: bold;
-            color: #ff6b6b;
-        }
-        .lock-header .timer.unlocked {
-            color: #4CAF50;
-        }
-        .video-container {
-            width: 100%;
-            max-width: 800px;
-            background: black;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.3);
-        }
-        .video-container iframe {
-            width: 100%;
-            height: 400px;
-            border: none;
-        }
-        .lock-info {
-            color: #888;
-            margin: 20px 0;
-            font-size: 14px;
-            text-align: center;
-        }
-        .claim-btn {
-            background: #666;
-            color: white;
-            padding: 18px 60px;
-            border: none;
-            border-radius: 12px;
-            font-size: 22px;
-            font-weight: bold;
-            cursor: not-allowed;
-            transition: 0.3s;
-            margin-top: 10px;
-            opacity: 0.5;
-            position: relative;
-            overflow: hidden;
-        }
-        .claim-btn.unlocked {
-            background: #4CAF50;
-            cursor: pointer;
-            opacity: 1;
-            animation: pulse 1.5s infinite;
-        }
-        .claim-btn.unlocked:hover {
-            transform: scale(1.05);
-        }
-        .claim-btn:active {
-            transform: scale(0.95);
-        }
-        @keyframes pulse {
+
+        @keyframes pulseGlow {
             0%,
             100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        /* ===== CONTAINER ===== */
+        .video-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 0 60px rgba(102, 126, 234, 0.1), inset 0 0 60px rgba(102, 126, 234, 0.05);
+            padding: 12px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ===== VIDEO CONTAINER ===== */
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            /* 16:9 */
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.15), inset 0 0 40px rgba(102, 126, 234, 0.05);
+            border: 2px solid rgba(102, 126, 234, 0.15);
+        }
+
+        .video-container iframe,
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        /* ===== VIDEO BORDER GLOW ===== */
+        .video-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3), rgba(102, 126, 234, 0.3));
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* ===== HEADLINE ===== */
+        .headline {
+            text-align: center;
+            margin: 18px 0 8px;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 1s ease;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 40px rgba(102, 126, 234, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== CLAIM BUTTON ===== */
+        .claim-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+            animation: fadeIn 1.2s ease;
+        }
+
+        .claim-btn {
+            padding: 16px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 1px;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.3), 0 0 60px rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .claim-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5), 0 0 100px rgba(102, 126, 234, 0.2);
+        }
+
+        .claim-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ===== BUTTON GLOW ===== */
+        .claim-btn::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 54px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.6), rgba(118, 75, 162, 0.6), rgba(102, 126, 234, 0.6));
+            z-index: -1;
+            animation: btnGlow 2s ease-in-out infinite;
+            filter: blur(10px);
+        }
+
+        @keyframes btnGlow {
+            0%,
+            100% {
+                opacity: 0.5;
                 transform: scale(1);
             }
             50% {
-                transform: scale(1.03);
+                opacity: 1;
+                transform: scale(1.05);
             }
         }
+
         .claim-btn .ripple {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(0);
             animation: rippleAnim 0.6s linear;
             pointer-events: none;
         }
+
         @keyframes rippleAnim {
             to {
                 transform: scale(4);
                 opacity: 0;
             }
         }
-        .lock-status {
-            color: #ff6b6b;
-            font-size: 16px;
-            margin: 10px 0;
-            font-weight: bold;
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .video-wrapper {
+                padding: 8px;
+                border-radius: 16px;
+            }
+            .video-container {
+                border-radius: 10px;
+            }
+            .video-container::before {
+                border-radius: 12px;
+            }
+            .headline {
+                font-size: 16px;
+                margin: 12px 0 4px;
+            }
+            .claim-btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+            .claim-btn::before {
+                border-radius: 40px;
+            }
         }
-        .lock-status.unlocked {
-            color: #4CAF50;
+
+        @media (max-width: 400px) {
+            .headline {
+                font-size: 13px;
+            }
+            .claim-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            .video-wrapper {
+                padding: 4px;
+            }
         }
-        .progress-bar {
-            width: 80%;
-            max-width: 400px;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-            margin: 10px 0;
-            overflow: hidden;
+
+        /* ===== HIDE YOUTUBE CONTROLS (via CSS) ===== */
+        .video-container iframe {
+            pointer-events: auto;
         }
-        .progress-bar .fill {
-            height: 100%;
-            background: #ff6b6b;
-            border-radius: 2px;
-            transition: width 1s linear;
-            width: 0%;
-        }
-        .progress-bar .fill.unlocked {
-            background: #4CAF50;
-        }
+
+        /* ===== SCROLLBAR HIDE ===== */
         ::-webkit-scrollbar {
             display: none;
         }
-        @media (max-width: 600px) {
-            .video-container iframe {
-                height: 250px;
-            }
-            .claim-btn {
-                padding: 15px 40px;
-                font-size: 18px;
-            }
-            .lock-header .timer {
-                font-size: 24px;
-            }
+
+        /* ===== FULLSCREEN FIX ===== */
+        :-webkit-full-screen .video-container {
+            border-radius: 0;
+        }
+        :-webkit-full-screen .video-wrapper {
+            border-radius: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+        }
+        :-webkit-full-screen .video-container::before {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="lock-overlay" id="lockOverlay">
-        <div class="lock-header">
-            🔒 Screen Locked
-            <div>
-                <span class="timer" id="timer">10:00</span>
-            </div>
-        </div>
+
+    <div class="bg-glow"></div>
+
+    <div class="video-wrapper">
         <div class="video-container">
-            <iframe id="videoFrame" src="" allowfullscreen></iframe>
+            <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
         </div>
-        <div class="progress-bar">
-            <div class="fill" id="progressFill"></div>
+
+        <div class="headline" id="headline">🎬 Watch Video</div>
+
+        <div class="claim-btn-wrapper">
+            <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
         </div>
-        <div class="lock-status" id="lockStatus">🔒 Screen Locked - Watch video to unlock</div>
-        <button class="claim-btn" id="claimBtn">⏳ Please Wait 10 Minutes</button>
-        <div class="lock-info">⚠️ Do not close this page • Screen locked for 10 minutes</div>
     </div>
 
     <script>
-        const LOCK_DURATION = 10;
-        let timeLeft = LOCK_DURATION * 60,
-            isUnlocked = false,
-            timerInterval, progressInterval;
+        // ==================== GET PARAMS ====================
         const urlParams = new URLSearchParams(window.location.search);
         const videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
         const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
+        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
 
+        // ==================== SET HEADLINE ====================
+        document.getElementById('headline').textContent = headline;
+
+        // ==================== SET BUTTON TEXT ====================
+        document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
+
+        // ==================== LOAD VIDEO ====================
         function loadVideo() {
-            const id = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-            document.getElementById('videoFrame').src = id ?
-                `https://www.youtube.com/embed/${id[1]}?autoplay=1&controls=1&rel=0` :
-                videoUrl;
+            const frame = document.getElementById('videoFrame');
+            let src = '';
+
+            // Check if YouTube URL
+            const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+
+            if (youtubeMatch) {
+                // YouTube - autoplay, controls=0, modestbranding=1, rel=0
+                src = `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}`;
+            } else if (videoUrl.match(/\.(mp4|webm|ogg)$/i)) {
+                // MP4 video
+                src = videoUrl;
+                // Use video element for MP4
+                const video = document.createElement('video');
+                video.src = videoUrl;
+                video.autoplay = true;
+                video.loop = true;
+                video.controls = false;
+                video.playsInline = true;
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                const container = document.querySelector('.video-container');
+                container.innerHTML = '';
+                container.appendChild(video);
+                video.play().catch(() => {});
+                return;
+            } else {
+                // Direct URL
+                src = videoUrl;
+            }
+
+            frame.src = src;
         }
 
-        function startLock() {
-            updateDisplay();
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                updateDisplay();
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    clearInterval(progressInterval);
-                    unlockScreen();
-                }
-            }, 1000);
-            progressInterval = setInterval(() => {
-                document.getElementById('progressFill').style.width = ((LOCK_DURATION * 60 - timeLeft) / (LOCK_DURATION *
-                    60) * 100) + '%';
-            }, 100);
-        }
+        // ==================== CLAIM BUTTON ====================
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            // Ripple effect
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
 
-        function updateDisplay() {
-            const m = Math.floor(timeLeft / 60),
-                s = timeLeft % 60;
-            document.getElementById('timer').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-            document.getElementById('claimBtn').textContent = `⏳ Please Wait ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        }
+            // Redirect
+            if (claimUrl && claimUrl !== '#') {
+                window.location.href = claimUrl;
+            } else {
+                alert('🎉 You have been unlocked! Screen is now free.');
+                document.body.style.overflow = 'auto';
+            }
+        });
 
-        function unlockScreen() {
-            isUnlocked = true;
-            document.getElementById('timer').classList.add('unlocked');
-            document.getElementById('lockStatus').textContent = '✅ Screen Unlocked! Click Claim Now!';
-            document.getElementById('lockStatus').classList.add('unlocked');
-            document.getElementById('progressFill').classList.add('unlocked');
-            const btn = document.getElementById('claimBtn');
-            btn.textContent = buttonText || '🎁 Claim Now!';
-            btn.classList.add('unlocked');
-            btn.disabled = false;
-            btn.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                ripple.className = 'ripple';
-                const rect = this.getBoundingClientRect();
-                ripple.style.left = (e.clientX - rect.left) + 'px';
-                ripple.style.top = (e.clientY - rect.top) + 'px';
-                this.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 600);
-                if (claimUrl && claimUrl !== '#') window.location.href = claimUrl;
-                else {
-                    alert('🎉 Unlocked!');
-                    document.getElementById('lockOverlay').style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        }
-
+        // ==================== PREVENT EXIT ====================
+        // Block back button
         window.addEventListener('popstate', function(e) {
-            if (!isUnlocked) { history.pushState(null, null, window.location.href);
-                showExitWarning(); }
+            history.pushState(null, null, window.location.href);
         });
         history.pushState(null, null, window.location.href);
+
+        // Block keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (!isUnlocked && (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || (e.ctrlKey && e.key === 'w') || (e
-                    .altKey && e.key === 'F4') || e.key === 'Escape')) {
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || (e.ctrlKey && e.key === 'w') ||
+                (e.altKey && e.key === 'F4') || e.key === 'Escape') {
                 e.preventDefault();
-                showExitWarning();
                 return false;
             }
         });
-        document.addEventListener('contextmenu', e => { if (!isUnlocked) e.preventDefault(); });
+
+        // Block right click
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Block touch gestures
         let touchStartX = 0;
-        document.addEventListener('touchstart', e => { if (!isUnlocked) touchStartX = e.touches[0].clientX; });
-        document.addEventListener('touchmove', e => {
-            if (!isUnlocked && Math.abs(e.touches[0].clientX - touchStartX) > 50) {
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (Math.abs(e.touches[0].clientX - touchStartX) > 50) {
                 e.preventDefault();
-                showExitWarning();
             }
         }, { passive: false });
+
+        // Block tab switch
         document.addEventListener('visibilitychange', function() {
-            if (!isUnlocked && document.hidden) {
-                showExitWarning();
+            if (document.hidden) {
                 setTimeout(() => window.focus(), 100);
             }
         });
-        async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
-        keepAwake();
 
-        function showExitWarning() {
-            if (!isUnlocked) {
-                const status = document.getElementById('lockStatus');
-                status.textContent = '🚫 Cannot Exit! Wait 10 minutes!';
-                status.style.color = '#ff6b6b';
-                setTimeout(() => {
-                    status.textContent = '🔒 Screen Locked - Watch video to unlock';
-                    status.style.color = '#ff6b6b';
-                }, 2000);
+        // ==================== KEEP AWAKE ====================
+        async function keepAwake() {
+            try {
+                const wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Screen wake lock active');
+            } catch (e) {
+                console.log('Wake lock not supported');
             }
         }
+        keepAwake();
 
+        // ==================== FULLSCREEN ====================
         function requestFullscreen() {
             const elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-            else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
         }
-        setTimeout(requestFullscreen, 1000);
+        setTimeout(requestFullscreen, 500);
+
         document.addEventListener('fullscreenchange', function() {
-            if (!document.fullscreenElement && !isUnlocked) setTimeout(requestFullscreen, 500);
+            if (!document.fullscreenElement) {
+                setTimeout(requestFullscreen, 500);
+            }
         });
+
+        // ==================== INIT ====================
         loadVideo();
-        startLock();
+
+        console.log('🎬 Video:', videoUrl);
+        console.log('🎁 Claim:', claimUrl);
+        console.log('🔘 Button:', buttonText);
+        console.log('📝 Headline:', headline);
     </script>
+
 </body>
 </html>
