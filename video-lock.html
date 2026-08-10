@@ -4,7 +4,6 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* ===== SYSTEM FONTS (NO GOOGLE FONTS) ===== */
         * {
             margin: 0;
             padding: 0;
@@ -87,6 +86,10 @@
             height: 100%;
             border: none;
             background: #000;
+        }
+        
+        .video-container iframe {
+            z-index: 5;
         }
         
         .video-container::before {
@@ -280,7 +283,6 @@
             display: none;
         }
         
-        /* ===== VIDEO ERROR ===== */
         .video-error {
             position: absolute;
             top: 0;
@@ -319,11 +321,6 @@
             cursor: pointer;
         }
         
-        .video-error .retry-btn:hover {
-            background: #5a6fd6;
-        }
-        
-        /* ===== FULLSCREEN BUTTON ===== */
         .fullscreen-btn {
             position: absolute;
             bottom: 10px;
@@ -344,6 +341,45 @@
             background: rgba(102, 126, 234, 0.4);
         }
         
+        /* ===== TAP TO PLAY OVERLAY ===== */
+        .tap-to-play {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        
+        .tap-to-play.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .tap-to-play .play-icon {
+            font-size: 60px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .tap-to-play .play-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: 300;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        
         @media (max-width: 600px) {
             body { padding: 8px; }
             .video-wrapper { padding: 6px; border-radius: 14px; }
@@ -360,6 +396,8 @@
             .chat-message .time { font-size: 7px; }
             .chat-container { padding: 4px 8px; }
             .fullscreen-btn { font-size: 10px; padding: 4px 10px; }
+            .tap-to-play .play-icon { font-size: 40px; }
+            .tap-to-play .play-text { font-size: 12px; }
         }
         
         @media (max-width: 400px) {
@@ -370,6 +408,7 @@
             .chat-message .username { font-size: 8px; }
             .chat-message .text { font-size: 8px; }
             .chat-message .time { font-size: 6px; }
+            .tap-to-play .play-icon { font-size: 30px; }
         }
     </style>
 </head>
@@ -382,6 +421,12 @@
             <div class="video-container" id="videoContainer">
                 <!-- Fullscreen Button -->
                 <button class="fullscreen-btn" onclick="enterFullscreen()">⛶ Fullscreen</button>
+                
+                <!-- Tap to Play -->
+                <div class="tap-to-play" id="tapToPlay" onclick="playVideo()">
+                    <div class="play-icon">▶</div>
+                    <div class="play-text">Tap to Play</div>
+                </div>
                 
                 <!-- Error Message -->
                 <div class="video-error" id="videoError">
@@ -414,15 +459,37 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== FULLSCREEN (USER GESTURE BASED) ====================
+        let videoElement = null;
+        let iframeElement = null;
+
+        // ==================== FULLSCREEN ====================
         function enterFullscreen() {
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => {});
             } else if (elem.webkitRequestFullscreen) {
                 elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
+            }
+        }
+
+        // ==================== PLAY VIDEO (TAP TO PLAY) ====================
+        function playVideo() {
+            const tapEl = document.getElementById('tapToPlay');
+            tapEl.classList.add('hidden');
+            
+            // If video element exists, play it
+            if (videoElement) {
+                videoElement.play().catch(e => console.log('Play error:', e));
+            }
+            
+            // If iframe exists, reload with autoplay
+            if (iframeElement) {
+                const src = iframeElement.src;
+                if (src.includes('autoplay=0')) {
+                    iframeElement.src = src.replace('autoplay=0', 'autoplay=1');
+                } else if (!src.includes('autoplay=1')) {
+                    iframeElement.src = src + '&autoplay=1';
+                }
             }
         }
 
@@ -430,76 +497,87 @@
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             const errorEl = document.getElementById('videoError');
-            errorEl.classList.remove('show');
+            const tapEl = document.getElementById('tapToPlay');
             
-            // Keep fullscreen button
+            errorEl.classList.remove('show');
+            tapEl.classList.remove('hidden');
+            
+            // Keep buttons
             const fsBtn = container.querySelector('.fullscreen-btn');
             
-            // Clear previous content (keep fullscreen button)
+            // Clear previous content
             container.innerHTML = '';
             container.appendChild(fsBtn);
+            container.appendChild(tapEl);
             container.appendChild(errorEl);
             
             console.log('🎬 Loading video:', videoUrl);
             
-            // Check if YouTube URL
+            // Check YouTube URL
             const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             
             if (youtubeMatch) {
-                // ===== YOUTUBE =====
                 const videoId = youtubeMatch[1];
                 console.log('📺 YouTube Video ID:', videoId);
                 
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=${videoId}`;
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
+                iframeElement = document.createElement('iframe');
+                iframeElement.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=${videoId}`;
+                iframeElement.allow = 'autoplay; encrypted-media; fullscreen';
+                iframeElement.allowFullscreen = true;
+                iframeElement.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 
-                container.appendChild(iframe);
+                container.appendChild(iframeElement);
                 
-            } else if (videoUrl.match(/\.(mp4|webm|ogg|m4v|mov|avi)$/i)) {
-                // ===== MP4 =====
-                console.log('🎥 MP4 Video URL:', videoUrl);
-                
-                const video = document.createElement('video');
-                video.src = videoUrl;
-                video.autoplay = true;
-                video.loop = true;
-                video.controls = true;
-                video.playsInline = true;
-                video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;';
-                
-                video.onloadeddata = function() {
-                    console.log('✅ Video loaded');
-                    video.play().catch(e => console.log('Play error:', e));
+                // Hide tap overlay after iframe loads
+                iframeElement.onload = function() {
+                    setTimeout(() => {
+                        tapEl.classList.add('hidden');
+                    }, 1000);
                 };
                 
-                video.onerror = function() {
+            } else if (videoUrl.match(/\.(mp4|webm|ogg|m4v|mov|avi)$/i)) {
+                console.log('🎥 MP4 Video URL:', videoUrl);
+                
+                videoElement = document.createElement('video');
+                videoElement.src = videoUrl;
+                videoElement.autoplay = false;
+                videoElement.loop = true;
+                videoElement.controls = true;
+                videoElement.playsInline = true;
+                videoElement.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;z-index:5;';
+                
+                videoElement.onloadeddata = function() {
+                    console.log('✅ Video loaded');
+                    tapEl.classList.add('hidden');
+                    videoElement.play().catch(e => console.log('Play error:', e));
+                };
+                
+                videoElement.onerror = function() {
                     console.error('❌ Video error');
                     errorEl.classList.add('show');
                 };
                 
-                container.appendChild(video);
-                
-                video.play().catch(function(e) {
-                    console.log('Auto-play blocked, trying muted');
-                    video.muted = true;
-                    video.play().catch(function(e2) {
-                        console.log('Muted autoplay blocked');
-                    });
-                });
+                container.appendChild(videoElement);
                 
             } else {
-                // ===== TRY AS IFRAME =====
+                // Try as iframe
                 console.log('🔗 Trying as direct iframe');
-                const iframe = document.createElement('iframe');
-                iframe.src = videoUrl;
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
-                container.appendChild(iframe);
+                iframeElement = document.createElement('iframe');
+                iframeElement.src = videoUrl;
+                iframeElement.allow = 'autoplay; encrypted-media; fullscreen';
+                iframeElement.allowFullscreen = true;
+                iframeElement.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+                container.appendChild(iframeElement);
+                
+                iframeElement.onload = function() {
+                    tapEl.classList.add('hidden');
+                };
             }
+            
+            // Hide tap overlay after 5 seconds as fallback
+            setTimeout(() => {
+                tapEl.classList.add('hidden');
+            }, 5000);
         }
 
         // ==================== FAKE CHAT ====================
