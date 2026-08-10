@@ -5,7 +5,6 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
-        /* ===== All existing CSS remains same ===== */
         * {
             margin: 0;
             padding: 0;
@@ -681,7 +680,6 @@
             });
 
             if (response.status === 401) {
-                // Session expired - redirect to login
                 window.location.href = 'login.html';
                 return null;
             }
@@ -837,7 +835,6 @@
                 return;
             }
 
-            // Max 1MB
             if (file.size > 1024 * 1024) {
                 showToast('❌ Image too large (max 1MB)', 'error');
                 return;

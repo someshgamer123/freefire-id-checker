@@ -7,6 +7,9 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // ==================== SECURITY HEADERS ====================
 app.use(helmet({
@@ -56,13 +59,15 @@ app.use(express.static('.'));
 // ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 
+// Default hashed password: "somesh5363" (bcrypt, 12 rounds)
+const DEFAULT_HASH = '$2b$12$8xQYxOQR5q5q5q5q5q5q5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
+
 function initDB() {
     if (!fs.existsSync(DB_FILE)) {
         const db = {
             admin: {
-                password: '$2b$12$8xQYxOQR5q5q5q5q5q5q5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u', // Default: somesh5363 (hashed)
-                theme: 'light',
-                saltRounds: 12
+                password: DEFAULT_HASH,
+                theme: 'light'
             },
             links: [],
             settings: {
@@ -93,11 +98,7 @@ function generateLinkId() {
     return 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
 }
 
-// ==================== UTILITY FUNCTIONS ====================
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
+// ==================== AUTH FUNCTIONS ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '15m';
 
@@ -185,7 +186,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            maxAge: 15 * 60 * 1000,
             path: '/'
         });
 
@@ -400,7 +401,6 @@ app.get('/api/link/:id', (req, res) => {
         link.visits++;
         writeDB(db);
 
-        // Return sanitized data (no internal fields)
         res.json({
             id: link.id,
             video: link.video,
@@ -437,12 +437,10 @@ app.post('/api/admin/background', authMiddleware, (req, res) => {
         const { background } = req.body;
         const db = readDB();
 
-        // Validate base64 image
         if (background && !/^data:image\/(jpeg|png|gif|webp);base64,/.test(background)) {
             return res.status(400).json({ error: 'Invalid image format' });
         }
 
-        // Validate size (max 1MB)
         if (background && Buffer.from(background.split(',')[1], 'base64').length > 1024 * 1024) {
             return res.status(400).json({ error: 'Image too large (max 1MB)' });
         }

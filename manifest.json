@@ -1,0 +1,24 @@
+{
+    "name": "Admin Panel - FF Checker",
+    "short_name": "FF Admin",
+    "description": "Free Fire ID Checker Admin Panel",
+    "start_url": "/admin/index.html",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#667eea",
+    "background_color": "#f0f2f5",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23667eea' width='100' height='100' rx='20'/><text y='.75em' font-size='70' text-anchor='middle' x='50%'>⚙️</text></svg>",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23667eea' width='100' height='100' rx='20'/><text y='.75em' font-size='70' text-anchor='middle' x='50%'>⚙️</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
