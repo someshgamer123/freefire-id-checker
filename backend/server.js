@@ -11,10 +11,10 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// ==================== TRUST PROXY (FOR RENDER) ====================
+// ==================== TRUST PROXY ====================
 app.set('trust proxy', 1);
 
-// ==================== SECURITY HEADERS ====================
+// ==================== SECURITY HEADERS (UPDATED CSP) ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -23,9 +23,10 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             styleSrcAttr: ["'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "blob:"],
+            imgSrc: ["'self'", "data:", "blob:", "*"],
             connectSrc: ["'self'"],
-            frameSrc: ["'self'", "https://www.youtube.com"],
+            frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
+            mediaSrc: ["'self'", "https://*.image2url.com", "https://*.terabox.com", "*"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
         }
@@ -54,7 +55,6 @@ const authLimiter = rateLimit({
     message: 'Too many login attempts, please try again after 15 minutes'
 });
 
-// ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -201,7 +201,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const token = generateToken('admin');
         const csrfToken = generateCSRFToken();
 
-        // Clear old sessions
         db.sessions = [];
         db.sessions.push({
             token: token,
