@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Admin Login</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
         * {
             margin: 0;
@@ -88,6 +90,10 @@
             color: #fc8181;
             margin: 10px 0;
             font-weight: 600;
+            min-height: 24px;
+        }
+        .error:empty {
+            display: none;
         }
     </style>
 </head>
@@ -101,24 +107,43 @@
         <div id="error" class="error"></div>
     </div>
     <script>
+        // ==================== SECURE LOGIN ====================
         async function login() {
-            const pwd = document.getElementById('password').value;
-            if (!pwd) { document.getElementById('error').textContent = '❌ Please enter password!'; return; }
-            const r = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pwd })
-            });
-            const data = await r.json();
-            if (data.success) {
-                localStorage.setItem('adminToken', data.token);
-                window.location.href = 'index.html';
-            } else {
-                document.getElementById('error').textContent = '❌ Invalid password!';
-                document.getElementById('password').value = '';
-                document.getElementById('password').focus();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = '';
+
+            if (!password) {
+                errorEl.textContent = '❌ Please enter password!';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store CSRF token in memory (not localStorage)
+                    window.csrfToken = data.csrfToken;
+                    window.location.href = 'index.html';
+                } else {
+                    errorEl.textContent = '❌ ' + (data.error || 'Invalid password!');
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                }
+            } catch (e) {
+                errorEl.textContent = '❌ Connection error. Please try again.';
             }
         }
+
+        // Enter key support
         document.getElementById('password').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') login();
         });

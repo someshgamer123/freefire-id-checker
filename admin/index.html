@@ -2,7 +2,10 @@
 <html>
 <head>
     <title>Admin Panel</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
+        /* ===== All existing CSS remains same ===== */
         * {
             margin: 0;
             padding: 0;
@@ -95,6 +98,17 @@
         }
         .btn-logout:hover {
             background: #e53e3e;
+        }
+        .btn-install {
+            background: var(--success);
+            color: white;
+            display: none;
+        }
+        .btn-install:hover {
+            background: #38a169;
+        }
+        .btn-install.show {
+            display: inline-block;
         }
         .theme-toggle {
             display: flex;
@@ -452,7 +466,6 @@
             color: var(--danger);
         }
 
-        /* ===== BACKGROUND UPLOAD ===== */
         .bg-upload-area {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -464,15 +477,23 @@
         .bg-upload-area:hover {
             border-color: var(--primary);
         }
-        .bg-upload-area .preview {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 8px;
-            margin-top: 10px;
+        .bg-upload-area .preview-container {
+            position: relative;
+            max-width: 200px;
+            margin: 10px auto;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 9 / 16;
+            background: #000;
             display: none;
         }
-        .bg-upload-area .preview.show {
+        .bg-upload-area .preview-container.show {
             display: block;
+        }
+        .bg-upload-area .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .bg-upload-area input[type="file"] {
             display: none;
@@ -490,6 +511,17 @@
         .bg-upload-area .upload-label:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        }
+        .bg-upload-area .bg-status {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        .bg-upload-area .bg-status.success {
+            color: var(--success);
+        }
+        .bg-upload-area .bg-status.error {
+            color: var(--danger);
         }
 
         @media (max-width: 768px) {
@@ -538,6 +570,7 @@
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
+                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
                     <button onclick="setTheme('light')" id="theme-light">☀️</button>
                     <button onclick="setTheme('dark')" id="theme-dark">🌙</button>
@@ -553,11 +586,10 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
-        <!-- ===== CREATE LINK ===== -->
+        <!-- CREATE LINK -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
-
             <div class="grid-2">
                 <div>
                     <label style="font-weight:600;color:#48bb78;font-size:13px;">🎬 Video URL</label>
@@ -569,10 +601,7 @@
                     <input type="text" id="claim" placeholder="Claim URL" value="#">
                 </div>
             </div>
-
             <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
-
-            <!-- ===== HEADLINE ===== -->
             <input type="text" id="headline" placeholder="Headline (e.g., 🎬 Watch Video)" value="🎬 Watch Video">
 
             <div style="margin-top:12px;">
@@ -602,32 +631,33 @@
             </div>
         </div>
 
-        <!-- ===== BACKGROUND UPLOAD ===== -->
+        <!-- BACKGROUND UPLOAD -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
-                <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">Upload a 9:16 image for UID page background</p>
+                <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">Upload any image - auto fit to 9:16</p>
                 <input type="file" id="bgFileInput" accept="image/*" onchange="uploadBackground(event)">
                 <label for="bgFileInput" class="upload-label">📤 Choose Image</label>
-                <img id="bgPreview" class="preview" alt="Background Preview">
-                <br>
-                <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:10px;">Remove Background</button>
-                <div id="bgStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
+                <div class="preview-container" id="bgPreviewContainer">
+                    <img id="bgPreview" alt="Background Preview">
+                </div>
+                <div id="bgStatus" class="bg-status">No background set</div>
+                <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:10px;">🗑️ Remove Background</button>
             </div>
         </div>
 
-        <!-- ===== ALL LINKS ===== -->
+        <!-- ALL LINKS -->
         <div class="card">
             <h3>📋 All Links</h3>
             <div id="linksList"></div>
         </div>
 
-        <!-- ===== ADMIN SETTINGS ===== -->
+        <!-- ADMIN SETTINGS -->
         <div class="card">
             <h3>🔐 Admin Settings</h3>
             <div class="grid-2">
                 <input type="password" id="oldPassword" placeholder="Current Password">
-                <input type="password" id="newPassword" placeholder="New Password">
+                <input type="password" id="newPassword" placeholder="New Password (min 8 chars, mix of letters & numbers)">
             </div>
             <button onclick="changePassword()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:8px;">Change Password</button>
         </div>
@@ -636,8 +666,67 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        if (!localStorage.getItem('adminToken')) window.location.href = 'login.html';
+        // ==================== CSRF TOKEN ====================
+        let csrfToken = window.csrfToken || '';
 
+        // ==================== SECURE FETCH ====================
+        async function secureFetch(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                }
+            });
+
+            if (response.status === 401) {
+                // Session expired - redirect to login
+                window.location.href = 'login.html';
+                return null;
+            }
+
+            return response;
+        }
+
+        // ==================== CHECK AUTH ====================
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/links', {
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
+                if (response.status === 401) {
+                    window.location.href = 'login.html';
+                }
+            } catch (e) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ==================== PWA INSTALL ====================
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.add('show');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        showToast('✅ App installed successfully!', 'success');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').classList.remove('show');
+                });
+            } else {
+                showToast('📲 Use Chrome browser to install', 'info');
+            }
+        }
+
+        // ==================== TOAST ====================
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -646,6 +735,7 @@
             t._timeout = setTimeout(() => t.className = 'toast', 4000);
         }
 
+        // ==================== SCHEDULE ====================
         let selectedExpiry = null;
 
         function updateSchedulePreset() {
@@ -685,66 +775,121 @@
         }
 
         // ==================== BACKGROUND UPLOAD ====================
+        async function loadBackground() {
+            try {
+                const r = await fetch('/api/settings');
+                const data = await r.json();
+                if (data && data.background) {
+                    const preview = document.getElementById('bgPreview');
+                    const container = document.getElementById('bgPreviewContainer');
+                    preview.src = data.background;
+                    container.classList.add('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background set';
+                    document.getElementById('bgStatus').className = 'bg-status success';
+                }
+            } catch (e) {
+                console.log('Background load error');
+            }
+        }
+
+        function resizeImage(file, maxWidth, maxHeight, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    const targetRatio = 9 / 16;
+                    const currentRatio = width / height;
+
+                    if (currentRatio > targetRatio) {
+                        width = height * targetRatio;
+                    } else {
+                        height = width / targetRatio;
+                    }
+
+                    canvas.width = 400;
+                    canvas.height = 400 * (16 / 9);
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#0a0a1a';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    const dx = (canvas.width - width) / 2;
+                    const dy = (canvas.height - height) / 2;
+                    ctx.drawImage(img, dx, dy, width, height);
+
+                    callback(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function uploadBackground(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // Check if image
             if (!file.type.startsWith('image/')) {
                 showToast('❌ Please upload an image file', 'error');
                 return;
             }
 
-            // Check 9:16 ratio
-            const img = new Image();
-            img.onload = function() {
-                const ratio = img.width / img.height;
-                const targetRatio = 9 / 16;
-                if (Math.abs(ratio - targetRatio) > 0.1) {
-                    showToast('⚠️ Best ratio is 9:16, but will still work', 'info');
-                }
-                // Show preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('bgPreview').src = e.target.result;
-                    document.getElementById('bgPreview').classList.add('show');
-                };
-                reader.readAsDataURL(file);
-            };
-            img.src = URL.createObjectURL(file);
+            // Max 1MB
+            if (file.size > 1024 * 1024) {
+                showToast('❌ Image too large (max 1MB)', 'error');
+                return;
+            }
 
-            // Upload to server (convert to base64 or URL)
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64 = e.target.result;
+            const statusEl = document.getElementById('bgStatus');
+            statusEl.textContent = '⏳ Uploading...';
+            statusEl.className = 'bg-status';
+
+            resizeImage(file, 400, 700, async function(base64) {
                 try {
-                    const r = await fetch('/api/admin/background', {
+                    const r = await secureFetch('/api/admin/background', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ background: base64 })
                     });
+                    if (!r) return;
                     const data = await r.json();
                     if (data.success) {
+                        const preview = document.getElementById('bgPreview');
+                        const container = document.getElementById('bgPreviewContainer');
+                        preview.src = base64;
+                        container.classList.add('show');
+                        statusEl.textContent = '✅ Background uploaded successfully! (9:16)';
+                        statusEl.className = 'bg-status success';
                         showToast('✅ Background uploaded!', 'success');
-                        document.getElementById('bgStatus').textContent = '✅ Background set';
+                    } else {
+                        statusEl.textContent = '❌ Failed to upload';
+                        statusEl.className = 'bg-status error';
+                        showToast('❌ Failed to upload', 'error');
                     }
                 } catch (err) {
-                    showToast('❌ Failed to upload background', 'error');
+                    statusEl.textContent = '❌ Server error';
+                    statusEl.className = 'bg-status error';
+                    showToast('❌ Server error', 'error');
                 }
-            };
-            reader.readAsDataURL(file);
+            });
         }
 
         async function removeBackground() {
             try {
-                await fetch('/api/admin/background', {
+                const r = await secureFetch('/api/admin/background', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ background: null })
                 });
-                document.getElementById('bgPreview').classList.remove('show');
-                document.getElementById('bgStatus').textContent = 'Background removed';
-                showToast('✅ Background removed', 'success');
+                if (!r) return;
+                const data = await r.json();
+                if (data.success) {
+                    document.getElementById('bgPreviewContainer').classList.remove('show');
+                    document.getElementById('bgStatus').textContent = 'Background removed';
+                    document.getElementById('bgStatus').className = 'bg-status';
+                    showToast('✅ Background removed', 'success');
+                }
             } catch (err) {
                 showToast('❌ Failed to remove background', 'error');
             }
@@ -753,7 +898,8 @@
         // ==================== LOAD LINKS ====================
         async function loadLinks() {
             try {
-                const r = await fetch('/api/links');
+                const r = await secureFetch('/api/links');
+                if (!r) return;
                 const links = await r.json();
                 const c = document.getElementById('linksList');
                 c.innerHTML = '';
@@ -766,7 +912,7 @@
                 document.getElementById('expiredLinks').textContent = expired;
                 if (links.length === 0) {
                     c.innerHTML =
-                    `<div class="empty-state"><span class="icon">📭</span>No links yet<br><span style="font-size:13px;">Create your first link above</span></div>`;
+                        `<div class="empty-state"><span class="icon">📭</span>No links yet<br><span style="font-size:13px;">Create your first link above</span></div>`;
                     return;
                 }
                 links.forEach((link, index) => {
@@ -774,19 +920,19 @@
                         'disabled';
                     const isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
                     const expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() :
-                    'No expiry';
+                        'No expiry';
                     const d = document.createElement('div');
                     d.className = 'link-item';
                     d.innerHTML = `
                         <div class="info">
-                            <div class="name">${link.name}</div>
+                            <div class="name">${escapeHTML(link.name)}</div>
                             <div class="details">
                                 <span>📅 ${new Date(link.created).toLocaleDateString()}</span>
                                 <span>👁️ ${link.visits || 0}</span>
-                                <span>🎬 <a href="${link.video}" target="_blank">Video</a></span>
-                                <span>🔗 <a href="${link.claim}" target="_blank">Claim</a></span>
-                                <span>📝 ${link.headline || 'No headline'}</span>
-                                <span class="${isExpired ? 'expiry-badge expired' : 'expiry-badge'}">${expiryDisplay}</span>
+                                <span>🎬 <a href="${escapeHTML(link.video)}" target="_blank">Video</a></span>
+                                <span>🔗 <a href="${escapeHTML(link.claim)}" target="_blank">Claim</a></span>
+                                <span>📝 ${escapeHTML(link.headline || 'No headline')}</span>
+                                <span class="${isExpired ? 'expiry-badge expired' : 'expiry-badge'}">${escapeHTML(expiryDisplay)}</span>
                             </div>
                         </div>
                         <div class="actions">
@@ -802,11 +948,11 @@
                         </div>
                         <div class="edit-form" id="edit-${link.id}">
                             <div class="edit-grid">
-                                <input type="text" id="edit-name-${link.id}" value="${link.name}" placeholder="Name">
-                                <input type="text" id="edit-video-${link.id}" value="${link.video}" placeholder="Video">
-                                <input type="text" id="edit-claim-${link.id}" value="${link.claim}" placeholder="Claim">
-                                <input type="text" id="edit-btn-${link.id}" value="${link.buttonText || 'Claim Now'}" placeholder="Button">
-                                <input type="text" id="edit-headline-${link.id}" value="${link.headline || ''}" placeholder="Headline">
+                                <input type="text" id="edit-name-${link.id}" value="${escapeHTML(link.name)}" placeholder="Name">
+                                <input type="text" id="edit-video-${link.id}" value="${escapeHTML(link.video)}" placeholder="Video">
+                                <input type="text" id="edit-claim-${link.id}" value="${escapeHTML(link.claim)}" placeholder="Claim">
+                                <input type="text" id="edit-btn-${link.id}" value="${escapeHTML(link.buttonText || 'Claim Now')}" placeholder="Button">
+                                <input type="text" id="edit-headline-${link.id}" value="${escapeHTML(link.headline || '')}" placeholder="Headline">
                             </div>
                             <div style="margin-top:10px;">
                                 <select id="edit-schedule-${link.id}" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;">
@@ -830,15 +976,23 @@
             }
         }
 
+        // ==================== HTML ESCAPE ====================
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         // ==================== CREATE LINK ====================
         async function createLink() {
             const name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
+            if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
 
             try {
-                const r = await fetch('/api/links', {
+                const r = await secureFetch('/api/links', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         name: name,
                         video: document.getElementById('video').value.trim(),
@@ -848,6 +1002,7 @@
                         expiryDate: selectedExpiry
                     })
                 });
+                if (!r) return;
                 const link = await r.json();
 
                 document.getElementById('generatedLink').classList.add('show');
@@ -911,9 +1066,8 @@
                     expiryDate = date.toISOString();
                 }
 
-                await fetch(`/api/links/${id}`, {
+                const r = await secureFetch(`/api/links/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         name: document.getElementById('edit-name-' + id).value,
                         video: document.getElementById('edit-video-' + id).value,
@@ -923,7 +1077,12 @@
                         expiryDate: expiryDate
                     })
                 });
-
+                if (!r) return;
+                const data = await r.json();
+                if (data.error) {
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
                 document.getElementById('edit-' + id).classList.remove('show');
                 loadLinks();
                 showToast('✅ Link updated!', 'success');
@@ -933,11 +1092,16 @@
         // ==================== UPDATE STATUS ====================
         async function updateStatus(id, status) {
             try {
-                await fetch(`/api/links/${id}/status`, {
+                const r = await secureFetch(`/api/links/${id}/status`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
+                if (!r) return;
+                const data = await r.json();
+                if (data.error) {
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
                 loadLinks();
                 showToast('✅ Status updated to: ' + status, 'success');
             } catch (e) { showToast('❌ Failed to update status', 'error'); }
@@ -947,9 +1111,13 @@
         async function deleteLink(id) {
             if (confirm('⚠️ Delete this link permanently?')) {
                 try {
-                    await fetch(`/api/links/${id}`, { method: 'DELETE' });
-                    loadLinks();
-                    showToast('✅ Link deleted!', 'success');
+                    const r = await secureFetch(`/api/links/${id}`, { method: 'DELETE' });
+                    if (!r) return;
+                    const data = await r.json();
+                    if (data.success) {
+                        loadLinks();
+                        showToast('✅ Link deleted!', 'success');
+                    }
                 } catch (e) { showToast('❌ Failed to delete', 'error'); }
             }
         }
@@ -958,21 +1126,29 @@
         async function changePassword() {
             const old = document.getElementById('oldPassword').value;
             const New = document.getElementById('newPassword').value;
+
             if (!old || !New) { showToast('❌ Please fill both fields', 'error'); return; }
-            if (New.length < 4) { showToast('❌ Password must be at least 4 characters', 'error'); return; }
+            if (New.length < 8) { showToast('❌ Password must be at least 8 characters', 'error'); return; }
+            if (!/[a-z]/.test(New) || !/[A-Z]/.test(New) || !/[0-9]/.test(New)) {
+                showToast('❌ Password must contain uppercase, lowercase, and numbers', 'error');
+                return;
+            }
+
             try {
-                const r = await fetch('/api/admin/password', {
+                const r = await secureFetch('/api/admin/password', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ oldPassword: old, newPassword: New })
                 });
+                if (!r) return;
                 const data = await r.json();
+
                 if (data.success) {
-                    showToast('✅ Password changed successfully!', 'success');
-                    document.getElementById('oldPassword').value = '';
-                    document.getElementById('newPassword').value = '';
+                    showToast('✅ Password changed! Please login again.', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 } else {
-                    showToast('❌ Current password is wrong!', 'error');
+                    showToast('❌ ' + (data.error || 'Failed to change password'), 'error');
                 }
             } catch (e) { showToast('❌ Failed to change password', 'error'); }
         }
@@ -980,11 +1156,11 @@
         // ==================== THEME ====================
         async function setTheme(theme) {
             document.body.className = theme;
-            await fetch('/api/admin/theme', {
+            const r = await secureFetch('/api/admin/theme', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ theme })
             });
+            if (!r) return;
             document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
             document.getElementById('theme-' + theme).classList.add('active');
         }
@@ -1001,17 +1177,21 @@
         }
 
         // ==================== LOGOUT ====================
-        function logout() {
+        async function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('adminToken');
+                try {
+                    await fetch('/api/admin/logout', { method: 'POST' });
+                } catch (e) {}
                 window.location.href = 'login.html';
             }
         }
 
         // ==================== INIT ====================
         loadTheme();
+        loadBackground();
         loadLinks();
         setInterval(loadLinks, 30000);
+        checkAuth();
     </script>
 </body>
 </html>
