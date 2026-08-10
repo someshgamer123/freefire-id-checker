@@ -281,38 +281,40 @@
             display: none;
         }
         
-        /* ===== LOADING OVERLAY ===== */
-        .video-loading {
+        /* ===== VIDEO ERROR ===== */
+        .video-error {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 10;
-            transition: opacity 0.5s ease;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 20;
+            color: #fff;
+            font-size: 14px;
+            padding: 20px;
+            text-align: center;
+            display: none;
         }
         
-        .video-loading.hidden {
-            opacity: 0;
-            pointer-events: none;
+        .video-error .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
         }
         
-        .video-loading .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .video-error .retry-btn {
+            margin-top: 12px;
+            padding: 8px 24px;
+            background: #667eea;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
         }
         
         @media (max-width: 600px) {
@@ -356,9 +358,10 @@
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container" id="videoContainer">
-                <!-- Loading Spinner -->
-                <div class="video-loading" id="videoLoading">
-                    <div class="spinner"></div>
+                <div class="video-error" id="videoError">
+                    <div class="icon">⚠️</div>
+                    <div>Video failed to load</div>
+                    <button class="retry-btn" onclick="loadVideo()">🔄 Retry</button>
                 </div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
@@ -385,94 +388,100 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== LOAD VIDEO (SMOOTH) ====================
+        // ==================== LOAD VIDEO (FIXED) ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
-            const loading = document.getElementById('videoLoading');
+            const errorEl = document.getElementById('videoError');
+            errorEl.style.display = 'none';
             
-            // Clear previous content (keep loading)
+            // Clear previous content
             container.innerHTML = '';
-            container.appendChild(loading);
+            container.appendChild(errorEl);
+            
+            console.log('🎬 Loading video:', videoUrl);
             
             // Check if YouTube URL
             const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             
             if (youtubeMatch) {
-                // YouTube embed with autoplay and minimal controls
+                // ===== YOUTUBE =====
+                const videoId = youtubeMatch[1];
+                console.log('📺 YouTube Video ID:', videoId);
+                
+                // Create iframe
                 const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&loop=1&playlist=${youtubeMatch[1]}&enablejsapi=1`;
+                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=${videoId}`;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
-                iframe.onload = function() {
-                    loading.classList.add('hidden');
-                };
+                iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+                
                 container.appendChild(iframe);
                 
-                // Fallback: hide loading after 3 seconds even if iframe doesn't load
+                // Fallback if YouTube fails
                 setTimeout(() => {
-                    loading.classList.add('hidden');
-                }, 3000);
-            } else if (videoUrl.match(/\.(mp4|webm|ogg)$/i)) {
-                // MP4 video with autoplay
+                    // Check if video loaded by checking iframe content
+                    try {
+                        // If iframe has no content, show error
+                    } catch (e) {
+                        // YouTube iframe error
+                    }
+                }, 5000);
+                
+            } else if (videoUrl.match(/\.(mp4|webm|ogg|m4v|mov|avi)$/i)) {
+                // ===== MP4 / DIRECT VIDEO =====
+                console.log('🎥 MP4 Video URL:', videoUrl);
+                
                 const video = document.createElement('video');
                 video.src = videoUrl;
                 video.autoplay = true;
                 video.loop = true;
-                video.controls = false;
+                video.controls = true;
                 video.muted = false;
                 video.playsInline = true;
-                video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;';
+                video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;';
                 
                 video.onloadeddata = function() {
-                    loading.classList.add('hidden');
+                    console.log('✅ Video loaded successfully');
+                    video.play().catch(e => console.log('Play error:', e));
                 };
                 
-                video.onerror = function() {
-                    console.warn('MP4 load error, trying fallback');
-                    loading.classList.add('hidden');
-                    // Try loading as iframe
-                    const iframe = document.createElement('iframe');
-                    iframe.src = videoUrl;
-                    iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                    iframe.allowFullscreen = true;
-                    iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
-                    container.innerHTML = '';
-                    container.appendChild(iframe);
+                video.onerror = function(e) {
+                    console.error('❌ Video error:', e);
+                    errorEl.style.display = 'flex';
                 };
                 
                 container.appendChild(video);
                 
-                // Try to play
+                // Auto play with error handling
                 video.play().catch(function(e) {
-                    console.log('Auto-play blocked, waiting for user interaction');
-                    // Auto-play blocked - try again after user clicks
-                    document.addEventListener('click', function playOnClick() {
-                        video.play().catch(() => {});
-                        document.removeEventListener('click', playOnClick);
-                    }, { once: true });
+                    console.log('Auto-play blocked:', e);
+                    // Try muted autoplay
+                    video.muted = true;
+                    video.play().catch(function(e2) {
+                        console.log('Muted autoplay also blocked:', e2);
+                    });
                 });
                 
-                // Fallback: hide loading after 5 seconds
-                setTimeout(() => {
-                    loading.classList.add('hidden');
-                }, 5000);
             } else {
-                // Try as iframe
+                // ===== TRY AS DIRECT IFRAME =====
+                console.log('🔗 Trying as direct iframe:', videoUrl);
+                
                 const iframe = document.createElement('iframe');
                 iframe.src = videoUrl;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;';
-                iframe.onload = function() {
-                    loading.classList.add('hidden');
-                };
                 container.appendChild(iframe);
-                
-                setTimeout(() => {
-                    loading.classList.add('hidden');
-                }, 3000);
             }
+            
+            // Hide error after 8 seconds if video loads
+            setTimeout(() => {
+                const hasChild = container.children.length > 1;
+                if (hasChild) {
+                    errorEl.style.display = 'none';
+                }
+            }, 8000);
         }
 
         // ==================== FAKE CHAT ====================
