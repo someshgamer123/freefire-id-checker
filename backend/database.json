@@ -1,0 +1,18 @@
+{
+  "admin": {
+    "password": "somesh5363",
+    "theme": "light"
+  },
+  "links": [
+    {
+      "id": "link_1786341762284_bskyxn",
+      "name": "Somu",
+      "video": "https://youtu.be/dQw4w9WgXcQ",
+      "claim": "https://youtu.be/dQw4w9WgXcQ",
+      "buttonText": "Claim Now",
+      "created": "2026-08-10T06:02:42.284Z",
+      "status": "active",
+      "visits": 0
+    }
+  ]
+}

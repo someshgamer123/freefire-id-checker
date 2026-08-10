@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UID Checker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .uid-input-wrapper {
+            position: relative;
+        }
+        .uid-input-wrapper input {
+            width: 100%;
+            padding: 16px;
+            padding-right: 50px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            background: #f7fafc;
+        }
+        .uid-input-wrapper input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        .clear-btn {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 22px;
+            cursor: pointer;
+            display: none;
+        }
+        .clear-btn.show {
+            display: block;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 20px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .loading-container {
+            display: none;
+            margin: 30px 0;
+            padding: 20px;
+        }
+        .loading-container.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .success-icon {
+            display: none;
+            margin: 20px 0;
+        }
+        .success-icon.show {
+            display: block;
+            animation: bounceIn 0.6s ease;
+        }
+        .success-icon .icon {
+            font-size: 70px;
+        }
+        .success-icon .label {
+            font-weight: 600;
+            color: #48bb78;
+            font-size: 18px;
+            margin-top: 8px;
+        }
+
+        .buttons-container {
+            display: none;
+            margin-top: 20px;
+            gap: 12px;
+        }
+        .buttons-container.show {
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+        .action-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+            color: white;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        .action-btn.btn-1 {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+        .action-btn.btn-1:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(72, 187, 120, 0.3);
+        }
+        .action-btn.btn-2 {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+        }
+        .action-btn.btn-2:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(66, 153, 225, 0.3);
+        }
+        .action-btn.tap-effect {
+            animation: tapPulse 0.3s ease;
+        }
+        @keyframes tapPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.95);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .uid-input-wrapper input {
+                font-size: 18px;
+                padding: 14px;
+            }
+            .btn {
+                font-size: 18px;
+                padding: 14px;
+            }
+            .action-btn {
+                font-size: 16px;
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="uid-input-wrapper">
+            <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus>
+            <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
+        </div>
+        <button onclick="checkUID()" class="btn" id="checkBtn">➜ Check</button>
+
+        <div class="loading-container" id="loadingContainer">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="success-icon" id="successIcon">
+            <div class="icon">✅</div>
+            <div class="label">UID Verified</div>
+        </div>
+
+        <div class="buttons-container" id="buttonsContainer">
+            <button class="action-btn btn-1" id="btn1" onclick="handleButtonClick(1)">Watch Video</button>
+            <button class="action-btn btn-2" id="btn2" onclick="handleButtonClick(2)">Get Reward</button>
+        </div>
+    </div>
+
+    <script>
+        let linkData = null;
+
+        async function loadLinkData() {
+            const linkId = new URLSearchParams(window.location.search).get('link');
+            if (linkId) {
+                try {
+                    const r = await fetch(`/api/link/${linkId}`);
+                    if (r.status === 403) { alert('❌ ' + (await r.json()).error);
+                        window.location.href = '/'; return; }
+                    const data = await r.json();
+                    if (data && data.id) {
+                        linkData = data;
+                        document.getElementById('btn1').textContent = data.button1 || 'Watch Video';
+                        document.getElementById('btn2').textContent = data.button2 || 'Get Reward';
+                    }
+                } catch (e) {}
+            }
+        }
+
+        function checkUID() {
+            const uid = document.getElementById('uidInput').value.trim();
+            if (uid.length < 8 || !/^\d+$/.test(uid)) {
+                alert('❌ Enter valid UID (8-12 digits)');
+                return;
+            }
+            localStorage.setItem('playerUID', uid);
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('loadingContainer').classList.add('show');
+            document.getElementById('successIcon').classList.remove('show');
+            document.getElementById('buttonsContainer').classList.remove('show');
+
+            const delay = 2000 + Math.random() * 2000;
+            setTimeout(() => {
+                document.getElementById('loadingContainer').classList.remove('show');
+                document.getElementById('successIcon').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('buttonsContainer').classList.add('show');
+                }, 500);
+            }, delay);
+        }
+
+        function handleButtonClick(num) {
+            const btn = document.getElementById('btn' + num);
+            btn.classList.add('tap-effect');
+            setTimeout(() => btn.classList.remove('tap-effect'), 300);
+
+            let videoUrl, claimUrl;
+            if (linkData) {
+                videoUrl = num === 1 ? linkData.video : linkData.video2 || linkData.video;
+                claimUrl = num === 1 ? linkData.claim : linkData.claim2 || linkData.claim;
+            } else {
+                videoUrl = 'https://youtu.be/dQw4w9WgXcQ';
+                claimUrl = '#';
+            }
+            localStorage.setItem('videoUrl', videoUrl);
+            localStorage.setItem('claimUrl', claimUrl);
+            window.location.href = `/v/${linkData ? linkData.id : 'default'}?video=${encodeURIComponent(videoUrl)}&claim=${encodeURIComponent(claimUrl)}`;
+        }
+
+        function clearInput() {
+            document.getElementById('uidInput').value = '';
+            document.getElementById('clearBtn').classList.remove('show');
+            document.getElementById('uidInput').focus();
+        }
+
+        document.getElementById('uidInput').addEventListener('input', function() {
+            document.getElementById('clearBtn').classList.toggle('show', this.value.length > 0);
+        });
+        document.getElementById('uidInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkUID();
+        });
+
+        loadLinkData();
+    </script>
+</body>
+</html>

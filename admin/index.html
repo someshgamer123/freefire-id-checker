@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* ===== RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* ===== ROOT VARIABLES ===== */
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --danger: #fc8181;
+            --warning: #f6ad55;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: var(--transition);
+            padding: 20px;
+        }
+
+        /* ===== DARK THEME ===== */
+        body.dark {
+            --bg: #1a202c;
+            --card-bg: #2d3748;
+            --text: #f7fafc;
+            --text-light: #a0aec0;
+            --border: #4a5568;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .animate-slide-in {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ===== CONTAINER ===== */
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: var(--card-bg);
+            padding: 18px 28px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 13px;
+        }
+
+        .header-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-logout {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-logout:hover {
+            background: #e53e3e;
+        }
+
+        .btn-install {
+            background: var(--success);
+            color: white;
+            display: none;
+        }
+        .btn-install:hover {
+            background: #38a169;
+        }
+        .btn-install.show {
+            display: inline-block;
+        }
+
+        /* ===== THEME TOGGLE ===== */
+        .theme-toggle {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .theme-toggle button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-light);
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 13px;
+        }
+
+        .theme-toggle button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        /* ===== STATS ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            animation: fadeInUp 0.6s ease forwards;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            color: var(--text-light);
+            font-size: 13px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--card-bg);
+            padding: 24px 28px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+            transition: var(--transition);
+            animation: fadeInUp 0.7s ease forwards;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card h3 {
+            color: var(--text);
+            font-size: 18px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+
+        .info-text {
+            color: var(--text-light);
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .card input,
+        .card select {
+            width: 100%;
+            padding: 12px 16px;
+            margin: 6px 0;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+            transition: var(--transition);
+        }
+
+        .card input:focus,
+        .card select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .card input::placeholder {
+            color: var(--text-light);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #2d3748;
+        }
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* ===== GENERATED LINK ===== */
+        .generated-link {
+            background: rgba(102, 126, 234, 0.06);
+            padding: 18px;
+            border-radius: 12px;
+            margin-top: 14px;
+            display: none;
+            border: 2px dashed rgba(102, 126, 234, 0.2);
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .generated-link.show {
+            display: block;
+        }
+
+        .generated-link .link-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .generated-link input {
+            flex: 1;
+            min-width: 180px;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .generated-link .link-label {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 15px;
+        }
+
+        /* ===== LINK ITEMS ===== */
+        .link-item {
+            background: var(--bg);
+            padding: 16px 18px;
+            margin: 10px 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        .link-item:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow);
+        }
+
+        .link-item .info {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .link-item .info .name {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text);
+        }
+
+        .link-item .info .details {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 3px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .link-item .info .details a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .link-item .info .details a:hover {
+            text-decoration: underline;
+        }
+
+        .link-item .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        /* ===== STATUS BADGES ===== */
+        .status-badge {
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status-disabled {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+        .status-suspended {
+            background: #feebc8;
+            color: #9c4221;
+        }
+
+        body.dark .status-active {
+            background: #1a3a2a;
+            color: #68d391;
+        }
+        body.dark .status-disabled {
+            background: #3a1a1a;
+            color: #fc8181;
+        }
+        body.dark .status-suspended {
+            background: #3a2a1a;
+            color: #f6ad55;
+        }
+
+        /* ===== SCHEDULE SELECT ===== */
+        .schedule-select {
+            padding: 5px 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* ===== EXPIRY BADGE ===== */
+        .expiry-badge {
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: rgba(102, 126, 234, 0.12);
+            color: var(--primary);
+        }
+
+        .expiry-badge.expired {
+            background: rgba(252, 129, 129, 0.12);
+            color: var(--danger);
+        }
+
+        /* ===== EDIT FORM ===== */
+        .edit-form {
+            display: none;
+            width: 100%;
+            padding-top: 12px;
+            margin-top: 12px;
+            border-top: 2px solid var(--border);
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .edit-form.show {
+            display: block;
+        }
+
+        .edit-form .edit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .edit-form .edit-grid input {
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        @media (max-width: 768px) {
+            .edit-form .edit-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state .icon {
+            font-size: 50px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            box-shadow: var(--shadow-hover);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            max-width: 400px;
+            font-size: 14px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+        .toast.error {
+            background: linear-gradient(135deg, #fc8181, #e53e3e);
+        }
+        .toast.info {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                padding: 16px 20px;
+            }
+            .header-actions {
+                justify-content: center;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .link-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .link-item .actions {
+                justify-content: flex-start;
+            }
+            body {
+                padding: 12px;
+            }
+            .card {
+                padding: 18px 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            .stat-card .number {
+                font-size: 26px;
+            }
+            .toast {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- HEADER -->
+        <header class="header animate-fade-in">
+            <h1>⚙️ Admin Panel</h1>
+            <div class="header-actions">
+                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
+                <div class="theme-toggle">
+                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
+                    <button onclick="setTheme('dark')" id="theme-dark">🌙</button>
+                </div>
+                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+            </div>
+        </header>
+
+        <!-- STATS -->
+        <div class="stats">
+            <div class="stat-card animate-fade-in" style="animation-delay:0.1s">
+                <div class="number" id="totalLinks">0</div>
+                <div class="label">📦 Total</div>
+            </div>
+            <div class="stat-card animate-fade-in" style="animation-delay:0.2s">
+                <div class="number" id="activeLinks">0</div>
+                <div class="label">✅ Active</div>
+            </div>
+            <div class="stat-card animate-fade-in" style="animation-delay:0.3s">
+                <div class="number" id="totalVisits">0</div>
+                <div class="label">👁️ Visits</div>
+            </div>
+            <div class="stat-card animate-fade-in" style="animation-delay:0.4s">
+                <div class="number" id="expiredLinks">0</div>
+                <div class="label">⏰ Expired</div>
+            </div>
+        </div>
+
+        <!-- CREATE LINK -->
+        <div class="card animate-fade-in" style="animation-delay:0.5s">
+            <h3>🔗 Create Link</h3>
+            <input type="text" id="linkName" placeholder="Link Name (e.g., Event 1)">
+
+            <div class="grid-2">
+                <div>
+                    <label style="font-weight:600;color:#48bb78;font-size:13px;">🎬 Video URL</label>
+                    <input type="text" id="video" placeholder="YouTube URL" value="https://youtu.be/dQw4w9WgXcQ">
+                </div>
+                <div>
+                    <label style="font-weight:600;color:#fc8181;font-size:13px;">🎁 Claim URL</label>
+                    <input type="text" id="claim" placeholder="Claim URL" value="#">
+                </div>
+            </div>
+
+            <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
+
+            <div style="margin-top:12px;">
+                <label style="font-weight:600;color:#f6ad55;font-size:13px;">📅 Schedule Expiry</label>
+                <div class="grid-2">
+                    <select id="schedulePreset" onchange="updateSchedulePreset()" style="padding:12px 16px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;">
+                        <option value="">No Expiry</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days</option>
+                        <option value="15">15 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="custom">Custom Date</option>
+                    </select>
+                    <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
+                </div>
+                <div style="margin-top:6px;font-size:13px;color:var(--text-light);" id="expiryDisplay">⏰ No expiry set</div>
+            </div>
+
+            <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;font-size:17px;padding:14px;">
+                🚀 Generate Link
+            </button>
+
+            <div class="generated-link" id="generatedLink">
+                <div class="link-label">✅ Link Generated!</div>
+                <div class="link-box">
+                    <input type="text" id="generatedLinkInput" readonly>
+                    <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALL LINKS -->
+        <div class="card animate-fade-in" style="animation-delay:0.6s">
+            <h3>📋 All Links</h3>
+            <div id="linksList"></div>
+        </div>
+
+        <!-- ADMIN SETTINGS -->
+        <div class="card animate-fade-in" style="animation-delay:0.7s">
+            <h3>🔐 Admin Settings</h3>
+            <div class="grid-2">
+                <input type="password" id="oldPassword" placeholder="Current Password">
+                <input type="password" id="newPassword" placeholder="New Password">
+            </div>
+            <button onclick="changePassword()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:8px;">Change Password</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== AUTH CHECK ====================
+        if (!localStorage.getItem('adminToken')) {
+            window.location.href = 'login.html';
+        }
+
+        // ==================== PWA INSTALL ====================
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.add('show');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').classList.remove('show');
+                });
+            }
+        }
+
+        // ==================== TOAST ====================
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.className = 'toast', 4000);
+        }
+
+        // ==================== SCHEDULE ====================
+        let selectedExpiry = null;
+
+        function updateSchedulePreset() {
+            const preset = document.getElementById('schedulePreset').value;
+            const customInput = document.getElementById('customExpiry');
+            const display = document.getElementById('expiryDisplay');
+
+            if (preset === 'custom') {
+                customInput.style.display = 'block';
+                customInput.value = '';
+                display.textContent = '📅 Select custom date';
+                selectedExpiry = null;
+                return;
+            }
+
+            customInput.style.display = 'none';
+
+            if (preset) {
+                const days = parseInt(preset);
+                const date = new Date();
+                date.setDate(date.getDate() + days);
+                selectedExpiry = date.toISOString();
+                display.textContent = '📅 Expires: ' + date.toLocaleString();
+            } else {
+                selectedExpiry = null;
+                display.textContent = '⏰ No expiry set';
+            }
+        }
+
+        function updateCustomExpiry() {
+            const val = document.getElementById('customExpiry').value;
+            if (val) {
+                const date = new Date(val);
+                selectedExpiry = date.toISOString();
+                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
+            } else {
+                selectedExpiry = null;
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+            }
+        }
+
+        // ==================== LOAD LINKS ====================
+        async function loadLinks() {
+            try {
+                const r = await fetch('/api/links');
+                const links = await r.json();
+                const c = document.getElementById('linksList');
+                c.innerHTML = '';
+
+                const active = links.filter(l => l.status === 'active').length;
+                const expired = links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date() && l.status ===
+                'disabled').length;
+
+                document.getElementById('totalLinks').textContent = links.length;
+                document.getElementById('activeLinks').textContent = active;
+                document.getElementById('totalVisits').textContent = links.reduce((s, l) => s + (l.visits || 0), 0);
+                document.getElementById('expiredLinks').textContent = expired;
+
+                if (links.length === 0) {
+                    c.innerHTML =
+                        `<div class="empty-state"><span class="icon">📭</span>No links yet<br><span style="font-size:13px;">Create your first link above</span></div>`;
+                    return;
+                }
+
+                links.forEach((link, index) => {
+                    const sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' :
+                        'disabled';
+                    const isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
+                    const expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() :
+                    'No expiry';
+
+                    const d = document.createElement('div');
+                    d.className = 'link-item';
+                    d.style.animationDelay = (index * 0.05) + 's';
+                    d.innerHTML = `
+                        <div class="info">
+                            <div class="name">${link.name}</div>
+                            <div class="details">
+                                <span>📅 ${new Date(link.created).toLocaleDateString()}</span>
+                                <span>👁️ ${link.visits || 0}</span>
+                                <span>🎬 <a href="${link.video}" target="_blank">Video</a></span>
+                                <span>🔗 <a href="${link.claim}" target="_blank">Claim</a></span>
+                                <span class="${isExpired ? 'expiry-badge expired' : 'expiry-badge'}">${expiryDisplay}</span>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <span class="status-badge status-${sc}">${link.status}</span>
+                            <select onchange="updateStatus('${link.id}', this.value)" class="schedule-select">
+                                <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
+                                <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspend</option>
+                                <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disable</option>
+                            </select>
+                            <button onclick="toggleEdit('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
+                            <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
+                            <button onclick="deleteLink('${link.id}')" class="btn btn-danger btn-sm" title="Delete">🗑️</button>
+                        </div>
+                        <div class="edit-form" id="edit-${link.id}">
+                            <div class="edit-grid">
+                                <input type="text" id="edit-name-${link.id}" value="${link.name}" placeholder="Name">
+                                <input type="text" id="edit-video-${link.id}" value="${link.video}" placeholder="Video">
+                                <input type="text" id="edit-claim-${link.id}" value="${link.claim}" placeholder="Claim">
+                                <input type="text" id="edit-btn-${link.id}" value="${link.buttonText || 'Claim Now'}" placeholder="Button">
+                            </div>
+                            <div style="margin-top:10px;">
+                                <select id="edit-schedule-${link.id}" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;">
+                                    <option value="">No Expiry</option>
+                                    <option value="3" ${link.expiryDate ? 'selected' : ''}>3 Days</option>
+                                    <option value="7">7 Days</option>
+                                    <option value="15">15 Days</option>
+                                    <option value="30">30 Days</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;gap:10px;margin-top:10px;">
+                                <button onclick="saveEdit('${link.id}')" class="btn btn-success btn-sm">💾 Save</button>
+                                <button onclick="cancelEdit('${link.id}')" class="btn btn-danger btn-sm">Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                    c.appendChild(d);
+                });
+            } catch (e) {
+                showToast('❌ Error loading links', 'error');
+            }
+        }
+
+        // ==================== CREATE LINK ====================
+        async function createLink() {
+            const name = document.getElementById('linkName').value.trim();
+            if (!name) {
+                showToast('❌ Please enter a link name', 'error');
+                document.getElementById('linkName').focus();
+                return;
+            }
+
+            try {
+                const r = await fetch('/api/links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        video: document.getElementById('video').value.trim(),
+                        claim: document.getElementById('claim').value.trim(),
+                        buttonText: document.getElementById('buttonText').value.trim(),
+                        expiryDate: selectedExpiry
+                    })
+                });
+                const link = await r.json();
+
+                document.getElementById('generatedLink').classList.add('show');
+                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
+
+                // Reset form
+                document.getElementById('linkName').value = '';
+                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
+                document.getElementById('claim').value = '#';
+                document.getElementById('buttonText').value = 'Claim Now';
+                document.getElementById('schedulePreset').value = '';
+                document.getElementById('customExpiry').style.display = 'none';
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+                selectedExpiry = null;
+
+                loadLinks();
+                showToast('✅ Link created successfully!', 'success');
+            } catch (e) {
+                showToast('❌ Failed to create link', 'error');
+            }
+        }
+
+        // ==================== COPY LINK ====================
+        function copyLink() {
+            const i = document.getElementById('generatedLinkInput');
+            i.select();
+            document.execCommand('copy');
+            showToast('✅ Link copied!', 'success');
+        }
+
+        function copyLinkUrl(id) {
+            const url = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('✅ Link copied!', 'success');
+            }).catch(() => {
+                // Fallback
+                const t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('✅ Link copied!', 'success');
+            });
+        }
+
+        // ==================== EDIT LINK ====================
+        function toggleEdit(id) {
+            const form = document.getElementById('edit-' + id);
+            form.classList.toggle('show');
+        }
+
+        function cancelEdit(id) {
+            document.getElementById('edit-' + id).classList.remove('show');
+        }
+
+        async function saveEdit(id) {
+            try {
+                const scheduleVal = document.getElementById('edit-schedule-' + id).value;
+                let expiryDate = null;
+                if (scheduleVal) {
+                    const date = new Date();
+                    date.setDate(date.getDate() + parseInt(scheduleVal));
+                    expiryDate = date.toISOString();
+                }
+
+                await fetch(`/api/links/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('edit-name-' + id).value,
+                        video: document.getElementById('edit-video-' + id).value,
+                        claim: document.getElementById('edit-claim-' + id).value,
+                        buttonText: document.getElementById('edit-btn-' + id).value,
+                        expiryDate: expiryDate
+                    })
+                });
+
+                document.getElementById('edit-' + id).classList.remove('show');
+                loadLinks();
+                showToast('✅ Link updated!', 'success');
+            } catch (e) {
+                showToast('❌ Failed to update', 'error');
+            }
+        }
+
+        // ==================== UPDATE STATUS ====================
+        async function updateStatus(id, status) {
+            try {
+                await fetch(`/api/links/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                loadLinks();
+                showToast('✅ Status updated to: ' + status, 'success');
+            } catch (e) {
+                showToast('❌ Failed to update status', 'error');
+            }
+        }
+
+        // ==================== DELETE LINK ====================
+        async function deleteLink(id) {
+            if (confirm('⚠️ Delete this link permanently?')) {
+                try {
+                    await fetch(`/api/links/${id}`, { method: 'DELETE' });
+                    loadLinks();
+                    showToast('✅ Link deleted!', 'success');
+                } catch (e) {
+                    showToast('❌ Failed to delete', 'error');
+                }
+            }
+        }
+
+        // ==================== CHANGE PASSWORD ====================
+        async function changePassword() {
+            const old = document.getElementById('oldPassword').value;
+            const New = document.getElementById('newPassword').value;
+
+            if (!old || !New) {
+                showToast('❌ Please fill both fields', 'error');
+                return;
+            }
+            if (New.length < 4) {
+                showToast('❌ Password must be at least 4 characters', 'error');
+                return;
+            }
+
+            try {
+                const r = await fetch('/api/admin/password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ oldPassword: old, newPassword: New })
+                });
+                const data = await r.json();
+
+                if (data.success) {
+                    showToast('✅ Password changed successfully!', 'success');
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    showToast('❌ Current password is wrong!', 'error');
+                }
+            } catch (e) {
+                showToast('❌ Failed to change password', 'error');
+            }
+        }
+
+        // ==================== THEME ====================
+        async function setTheme(theme) {
+            document.body.className = theme;
+            await fetch('/api/admin/theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme })
+            });
+            document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+            document.getElementById('theme-' + theme).classList.add('active');
+        }
+
+        async function loadTheme() {
+            try {
+                const r = await fetch('/api/settings');
+                const data = await r.json();
+                if (data && data.theme) {
+                    document.body.className = data.theme;
+                    document.getElementById('theme-' + data.theme).classList.add('active');
+                }
+            } catch (e) {}
+        }
+
+        // ==================== LOGOUT ====================
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminToken');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ==================== INIT ====================
+        loadTheme();
+        loadLinks();
+        setInterval(loadLinks, 30000);
+    </script>
+</body>
+</html>

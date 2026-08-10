@@ -1,0 +1,37 @@
+{
+  "name": "freefire-id-checker",
+  "version": "1.0.0",
+  "description": "Free Fire ID Checker with Admin Panel - Generate video links with UID verification",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/freefire-id-checker.git"
+  },
+  "keywords": [
+    "freefire",
+    "id-checker",
+    "admin-panel",
+    "video-lock",
+    "uid-verification"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/your-username/freefire-id-checker/issues"
+  },
+  "homepage": "https://github.com/your-username/freefire-id-checker#readme",
+  "dependencies": {
+    "express": "^4.22.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
