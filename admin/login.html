@@ -20,14 +20,8 @@
             padding: 20px;
         }
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
@@ -48,21 +42,9 @@
             text-align: center;
             animation: fadeInUp 0.6s ease;
         }
-        .login-box .logo {
-            font-size: 60px;
-            margin-bottom: 10px;
-        }
-        .login-box h2 {
-            color: #333;
-            margin-bottom: 6px;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .login-box .sub-title {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
+        .login-box .logo { font-size: 60px; margin-bottom: 10px; }
+        .login-box h2 { color: #333; margin-bottom: 6px; font-size: 24px; font-weight: 700; }
+        .login-box .sub-title { color: #666; margin-bottom: 25px; font-size: 14px; }
         .login-box .passcode-inputs {
             display: flex;
             gap: 10px;
@@ -114,9 +96,7 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
-        .login-box .btn:active {
-            transform: scale(0.97);
-        }
+        .login-box .btn:active { transform: scale(0.97); }
         .login-box .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -129,9 +109,7 @@
             min-height: 24px;
             font-size: 14px;
         }
-        .error:empty {
-            display: none;
-        }
+        .error:empty { display: none; }
         .passcode-hint {
             color: #999;
             font-size: 13px;
@@ -149,48 +127,23 @@
             background: #ddd;
             transition: 0.3s;
         }
-        .passcode-hint .dot.filled {
-            background: #667eea;
-        }
+        .passcode-hint .dot.filled { background: #667eea; }
         .passcode-hint .dot.active {
             background: #667eea;
             animation: pulse 1s infinite;
         }
-        .footer-text {
-            color: #aaa;
-            font-size: 12px;
-            margin-top: 20px;
-        }
-        .footer-text a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        .footer-text a:hover {
-            text-decoration: underline;
-        }
+        .footer-text { color: #aaa; font-size: 12px; margin-top: 20px; }
+        .footer-text a { color: #667eea; text-decoration: none; }
+        .footer-text a:hover { text-decoration: underline; }
 
         @media (max-width: 480px) {
-            .login-box {
-                padding: 30px 20px;
-            }
-            .login-box .passcode-inputs input {
-                width: 42px;
-                height: 50px;
-                font-size: 20px;
-            }
-            .login-box .passcode-inputs {
-                gap: 8px;
-            }
+            .login-box { padding: 30px 20px; }
+            .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
+            .login-box .passcode-inputs { gap: 8px; }
         }
         @media (max-width: 380px) {
-            .login-box .passcode-inputs input {
-                width: 35px;
-                height: 42px;
-                font-size: 16px;
-            }
-            .login-box .passcode-inputs {
-                gap: 5px;
-            }
+            .login-box .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
+            .login-box .passcode-inputs { gap: 5px; }
         }
     </style>
 </head>
@@ -226,69 +179,49 @@
     </div>
     
     <script>
-        // ==================== DOM REFERENCES ====================
         const inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
         const dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
         const errorEl = document.getElementById('error');
         const loginBtn = document.getElementById('loginBtn');
 
-        // ==================== FOCUS FIRST INPUT ON LOAD ====================
         window.addEventListener('load', () => {
             document.getElementById('pin1').focus();
         });
 
-        // ==================== INPUT HANDLING ====================
         inputs.forEach((id, index) => {
             const input = document.getElementById(id);
             const dot = document.getElementById(dots[index]);
             
-            // Input event
             input.addEventListener('input', function() {
-                // Only allow digits
                 this.value = this.value.replace(/\D/g, '');
-                
                 if (this.value.length === 1) {
                     this.classList.add('filled');
                     dot.classList.add('filled');
                     dot.classList.remove('active');
                     errorEl.textContent = '';
-                    
-                    // Auto-focus next input
                     if (index < 5) {
                         document.getElementById(inputs[index + 1]).focus();
                     } else {
-                        // All filled - auto login
-                        setTimeout(() => {
-                            login();
-                        }, 300);
+                        setTimeout(() => { login(); }, 300);
                     }
                 } else {
                     this.classList.remove('filled');
                     dot.classList.remove('filled');
                 }
-                
-                // Update dots
                 updateDots();
             });
 
-            // Keydown event (Backspace support)
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Backspace' && this.value === '' && index > 0) {
                     document.getElementById(inputs[index - 1]).focus();
                     document.getElementById(inputs[index - 1]).select();
                 }
-                if (e.key === 'Enter') {
-                    login();
-                }
-                if (e.key === 'Escape') {
-                    clearAll();
-                }
+                if (e.key === 'Enter') login();
+                if (e.key === 'Escape') clearAll();
             });
 
-            // Focus event
             input.addEventListener('focus', function() {
                 this.select();
-                // Highlight current dot
                 dots.forEach((d, i) => {
                     const dotEl = document.getElementById(d);
                     if (i === index && !dotEl.classList.contains('filled')) {
@@ -299,7 +232,6 @@
                 });
             });
 
-            // Blur event
             input.addEventListener('blur', function() {
                 dots.forEach((d) => {
                     const dotEl = document.getElementById(d);
@@ -309,7 +241,6 @@
                 });
             });
 
-            // Paste support
             input.addEventListener('paste', function(e) {
                 e.preventDefault();
                 const paste = (e.clipboardData || window.clipboardData).getData('text');
@@ -320,7 +251,6 @@
                         inp.value = digits[i];
                         inp.classList.add('filled');
                     }
-                    // Focus next empty or last
                     const nextIndex = Math.min(digits.length, 5);
                     document.getElementById(inputs[nextIndex]).focus();
                     updateDots();
@@ -331,7 +261,6 @@
             });
         });
 
-        // ==================== UPDATE DOTS ====================
         function updateDots() {
             dots.forEach((id, index) => {
                 const dot = document.getElementById(id);
@@ -345,7 +274,6 @@
             });
         }
 
-        // ==================== GET PASSCODE ====================
         function getPasscode() {
             let code = '';
             for (let i = 0; i < 6; i++) {
@@ -356,7 +284,6 @@
             return code;
         }
 
-        // ==================== CLEAR ALL ====================
         function clearAll() {
             for (let i = 0; i < 6; i++) {
                 const input = document.getElementById(inputs[i]);
@@ -370,22 +297,17 @@
             loginBtn.disabled = false;
         }
 
-        // ==================== SHOW ERROR ====================
         function showError(message) {
             errorEl.textContent = '❌ ' + message;
             for (let i = 0; i < 6; i++) {
                 const input = document.getElementById(inputs[i]);
                 input.classList.add('error');
-                setTimeout(() => {
-                    input.classList.remove('error');
-                }, 600);
+                setTimeout(() => { input.classList.remove('error'); }, 600);
             }
-            setTimeout(() => {
-                clearAll();
-            }, 800);
+            setTimeout(() => { clearAll(); }, 800);
         }
 
-        // ==================== LOGIN ====================
+        // ==================== MAIN LOGIN FUNCTION ====================
         async function login() {
             const passcode = getPasscode();
             errorEl.textContent = '';
@@ -400,16 +322,16 @@
             try {
                 const response = await fetch('/api/admin/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ passcode: passcode })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
+                    // ===== CSRF TOKEN STORE =====
                     window.csrfToken = data.csrfToken;
+                    localStorage.setItem('csrfToken', data.csrfToken);
                     window.location.href = 'index.html';
                 } else {
                     showError(data.error || 'Invalid passcode!');
@@ -423,21 +345,17 @@
 
         // ==================== KEYBOARD SHORTCUTS ====================
         document.addEventListener('keydown', function(e) {
-            // Ctrl+Shift+C to clear
             if (e.ctrlKey && e.shiftKey && e.key === 'C') {
                 clearAll();
                 e.preventDefault();
             }
-            // Ctrl+Enter to login
             if (e.ctrlKey && e.key === 'Enter') {
                 login();
                 e.preventDefault();
             }
         });
 
-        // ==================== AUTO-DETECT COMPLETE PASSCODE ====================
-        // This is already handled in the input event for the last input
-        // But also check on any input change
+        // Auto-detect complete passcode
         document.addEventListener('input', function() {
             let allFilled = true;
             for (let i = 0; i < 6; i++) {
@@ -447,22 +365,14 @@
                 }
             }
             if (allFilled) {
-                // Auto login after small delay
                 clearTimeout(window._loginTimeout);
-                window._loginTimeout = setTimeout(() => {
-                    login();
-                }, 400);
+                window._loginTimeout = setTimeout(() => { login(); }, 400);
             }
         });
 
-        // ==================== CONSOLE WELCOME ====================
         console.log('🔐 Admin Login Panel');
         console.log('📌 Enter 6-digit passcode');
-        console.log('💡 Tips:');
-        console.log('  - Auto-login when all 6 digits filled');
-        console.log('  - Press ESC to clear');
-        console.log('  - Ctrl+Shift+C to clear');
-        console.log('  - Ctrl+Enter to login');
+        console.log('💡 Auto-login when all digits filled');
     </script>
 </body>
 </html>
