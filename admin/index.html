@@ -40,19 +40,10 @@
             --border: #4a5568;
         }
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .admin-container { max-width: 1200px; margin: 0 auto; }
 
         .header {
             background: var(--card-bg);
@@ -91,24 +82,11 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow);
         }
-        .btn-logout {
-            background: var(--danger);
-            color: white;
-        }
-        .btn-logout:hover {
-            background: #e53e3e;
-        }
-        .btn-install {
-            background: var(--success);
-            color: white;
-            display: none;
-        }
-        .btn-install:hover {
-            background: #38a169;
-        }
-        .btn-install.show {
-            display: inline-block;
-        }
+        .btn-logout { background: var(--danger); color: white; }
+        .btn-logout:hover { background: #e53e3e; }
+        .btn-install { background: var(--success); color: white; display: none; }
+        .btn-install:hover { background: #38a169; }
+        .btn-install.show { display: inline-block; }
         .theme-toggle {
             display: flex;
             gap: 4px;
@@ -147,10 +125,7 @@
             text-align: center;
             transition: 0.3s;
         }
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
         .stat-card .number {
             font-size: 32px;
             font-weight: 800;
@@ -158,11 +133,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .stat-card .label {
-            color: var(--text-light);
-            font-size: 13px;
-            margin-top: 4px;
-        }
+        .stat-card .label { color: var(--text-light); font-size: 13px; margin-top: 4px; }
 
         .card {
             background: var(--card-bg);
@@ -172,18 +143,15 @@
             margin-bottom: 22px;
             transition: 0.3s;
         }
-        .card:hover {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
+        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
         .card h3 {
             color: var(--text);
             font-size: 18px;
             margin-bottom: 16px;
             padding-bottom: 10px;
-            border-bottom: 2px solid rgba(102, 126, 234, 0.15);
+            border-bottom: 2px solid rgba(102,126,234,0.15);
         }
-        .card input,
-        .card select {
+        .card input, .card select {
             width: 100%;
             padding: 12px 16px;
             margin: 6px 0;
@@ -194,21 +162,12 @@
             color: var(--text);
             transition: 0.3s;
         }
-        .card input:focus,
-        .card select:focus {
+        .card input:focus, .card select:focus {
             border-color: var(--primary);
             outline: none;
         }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-        @media (max-width: 768px) {
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
         .btn {
             padding: 12px 28px;
@@ -222,65 +181,28 @@
             align-items: center;
             gap: 8px;
         }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-        .btn:active {
-            transform: scale(0.97);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-        }
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        .btn-success:hover {
-            background: #38a169;
-        }
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #e53e3e;
-        }
-        .btn-warning {
-            background: var(--warning);
-            color: #2d3748;
-        }
-        .btn-warning:hover {
-            background: #ed8936;
-        }
-        .btn-sm {
-            padding: 6px 14px;
-            font-size: 12px;
-            border-radius: 8px;
-        }
-        .btn-block {
-            width: 100%;
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #38a169; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #e53e3e; }
+        .btn-warning { background: var(--warning); color: #2d3748; }
+        .btn-warning:hover { background: #ed8936; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+        .btn-block { width: 100%; }
 
         .generated-link {
-            background: rgba(102, 126, 234, 0.06);
+            background: rgba(102,126,234,0.06);
             padding: 18px;
             border-radius: 12px;
             margin-top: 14px;
             display: none;
-            border: 2px dashed rgba(102, 126, 234, 0.2);
+            border: 2px dashed rgba(102,126,234,0.2);
         }
-        .generated-link.show {
-            display: block;
-        }
-        .generated-link .link-box {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-top: 6px;
-        }
+        .generated-link.show { display: block; }
+        .generated-link .link-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
         .generated-link input {
             flex: 1;
             min-width: 180px;
@@ -291,11 +213,7 @@
             font-size: 13px;
             color: var(--text);
         }
-        .generated-link .link-label {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 15px;
-        }
+        .generated-link .link-label { font-weight: 700; color: var(--primary); font-size: 15px; }
 
         .link-item {
             background: var(--bg);
@@ -310,19 +228,9 @@
             border-left: 4px solid var(--primary);
             transition: 0.3s;
         }
-        .link-item:hover {
-            transform: translateX(4px);
-            box-shadow: var(--shadow);
-        }
-        .link-item .info {
-            flex: 1;
-            min-width: 160px;
-        }
-        .link-item .info .name {
-            font-weight: 700;
-            font-size: 15px;
-            color: var(--text);
-        }
+        .link-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
+        .link-item .info { flex: 1; min-width: 160px; }
+        .link-item .info .name { font-weight: 700; font-size: 15px; color: var(--text); }
         .link-item .info .details {
             font-size: 12px;
             color: var(--text-light);
@@ -331,16 +239,8 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .link-item .info .details a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        .link-item .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
+        .link-item .info .details a { color: var(--primary); text-decoration: none; }
+        .link-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
         .status-badge {
             padding: 3px 12px;
@@ -349,30 +249,12 @@
             font-weight: 700;
             text-transform: uppercase;
         }
-        .status-active {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-        .status-disabled {
-            background: #fed7d7;
-            color: #9b2c2c;
-        }
-        .status-suspended {
-            background: #feebc8;
-            color: #9c4221;
-        }
-        body.dark .status-active {
-            background: #1a3a2a;
-            color: #68d391;
-        }
-        body.dark .status-disabled {
-            background: #3a1a1a;
-            color: #fc8181;
-        }
-        body.dark .status-suspended {
-            background: #3a2a1a;
-            color: #f6ad55;
-        }
+        .status-active { background: #c6f6d5; color: #22543d; }
+        .status-disabled { background: #fed7d7; color: #9b2c2c; }
+        .status-suspended { background: #feebc8; color: #9c4221; }
+        body.dark .status-active { background: #1a3a2a; color: #68d391; }
+        body.dark .status-disabled { background: #3a1a1a; color: #fc8181; }
+        body.dark .status-suspended { background: #3a2a1a; color: #f6ad55; }
 
         .edit-form {
             display: none;
@@ -381,14 +263,8 @@
             margin-top: 12px;
             border-top: 2px solid var(--border);
         }
-        .edit-form.show {
-            display: block;
-        }
-        .edit-form .edit-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        .edit-form.show { display: block; }
+        .edit-form .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .edit-form .edit-grid input {
             padding: 8px 12px;
             border: 2px solid var(--border);
@@ -397,22 +273,10 @@
             background: var(--bg);
             color: var(--text);
         }
-        @media (max-width: 768px) {
-            .edit-form .edit-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media (max-width: 768px) { .edit-form .edit-grid { grid-template-columns: 1fr; } }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-light);
-        }
-        .empty-state .icon {
-            font-size: 50px;
-            display: block;
-            margin-bottom: 12px;
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 50px; display: block; margin-bottom: 12px; }
 
         .toast {
             position: fixed;
@@ -422,48 +286,22 @@
             border-radius: 12px;
             color: white;
             font-weight: 600;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
             transform: translateY(120px);
             opacity: 0;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
             z-index: 9999;
             max-width: 400px;
             font-size: 14px;
         }
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        .toast.success {
-            background: linear-gradient(135deg, #48bb78, #38a169);
-        }
-        .toast.error {
-            background: linear-gradient(135deg, #fc8181, #e53e3e);
-        }
-        .toast.info {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        .schedule-select {
-            padding: 5px 10px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .expiry-badge {
-            font-size: 11px;
-            padding: 2px 10px;
-            border-radius: 12px;
-            background: rgba(102, 126, 234, 0.12);
-            color: var(--primary);
-        }
-        .expiry-badge.expired {
-            background: rgba(252, 129, 129, 0.12);
-            color: var(--danger);
-        }
+        .schedule-select { padding: 5px 10px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 12px; cursor: pointer; }
+        .expiry-badge { font-size: 11px; padding: 2px 10px; border-radius: 12px; background: rgba(102,126,234,0.12); color: var(--primary); }
+        .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
         .bg-upload-area {
             border: 2px dashed var(--border);
@@ -473,9 +311,7 @@
             transition: 0.3s;
             margin-top: 10px;
         }
-        .bg-upload-area:hover {
-            border-color: var(--primary);
-        }
+        .bg-upload-area:hover { border-color: var(--primary); }
         .bg-upload-area .preview-container {
             position: relative;
             max-width: 200px;
@@ -486,17 +322,9 @@
             background: #000;
             display: none;
         }
-        .bg-upload-area .preview-container.show {
-            display: block;
-        }
-        .bg-upload-area .preview-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .bg-upload-area input[type="file"] {
-            display: none;
-        }
+        .bg-upload-area .preview-container.show { display: block; }
+        .bg-upload-area .preview-container img { width: 100%; height: 100%; object-fit: cover; }
+        .bg-upload-area input[type="file"] { display: none; }
         .bg-upload-area .upload-label {
             display: inline-block;
             padding: 10px 24px;
@@ -507,60 +335,52 @@
             font-weight: 600;
             transition: 0.3s;
         }
-        .bg-upload-area .upload-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        .bg-upload-area .upload-label:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
+        .bg-upload-area .bg-status { margin-top: 8px; font-size: 13px; color: var(--text-light); }
+        .bg-upload-area .bg-status.success { color: var(--success); }
+        .bg-upload-area .bg-status.error { color: var(--danger); }
+
+        .passcode-input-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
         }
-        .bg-upload-area .bg-status {
-            margin-top: 8px;
-            font-size: 13px;
-            color: var(--text-light);
+        .passcode-input-group input {
+            width: 45px;
+            height: 50px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
         }
-        .bg-upload-area .bg-status.success {
-            color: var(--success);
+        .passcode-input-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
         }
-        .bg-upload-area .bg-status.error {
-            color: var(--danger);
-        }
+        body.dark .passcode-input-group input { background: #0f3460; color: white; border-color: #1a1a4e; }
+        .passcode-hint { color: var(--text-light); font-size: 12px; margin: 5px 0; }
 
         @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                text-align: center;
-                padding: 16px 20px;
-            }
-            .header-actions {
-                justify-content: center;
-            }
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .link-item {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .link-item .actions {
-                justify-content: flex-start;
-            }
-            body {
-                padding: 12px;
-            }
-            .card {
-                padding: 18px 16px;
-            }
+            .header { flex-direction: column; text-align: center; padding: 16px 20px; }
+            .header-actions { justify-content: center; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .link-item { flex-direction: column; align-items: stretch; }
+            .link-item .actions { justify-content: flex-start; }
+            body { padding: 12px; }
+            .card { padding: 18px 16px; }
+            .passcode-input-group input { width: 38px; height: 44px; font-size: 16px; }
         }
         @media (max-width: 480px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            .stat-card .number {
-                font-size: 26px;
-            }
-            .toast {
-                left: 20px;
-                right: 20px;
-                bottom: 20px;
-            }
+            .stats { grid-template-columns: 1fr; }
+            .stat-card .number { font-size: 26px; }
+            .toast { left: 20px; right: 20px; bottom: 20px; }
+            .passcode-input-group input { width: 32px; height: 38px; font-size: 14px; }
         }
     </style>
 </head>
@@ -650,11 +470,33 @@
 
         <div class="card">
             <h3>🔐 Admin Settings</h3>
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">Change your 6-digit passcode</p>
             <div class="grid-2">
-                <input type="password" id="oldPassword" placeholder="Current Password">
-                <input type="password" id="newPassword" placeholder="New Password (min 8 chars, mix of letters & numbers)">
+                <div>
+                    <label style="font-size:13px;font-weight:600;color:var(--text-light);">Current Passcode</label>
+                    <div class="passcode-input-group" id="oldPasscodeGroup">
+                        <input type="password" id="old1" maxlength="1">
+                        <input type="password" id="old2" maxlength="1">
+                        <input type="password" id="old3" maxlength="1">
+                        <input type="password" id="old4" maxlength="1">
+                        <input type="password" id="old5" maxlength="1">
+                        <input type="password" id="old6" maxlength="1">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;color:var(--text-light);">New Passcode</label>
+                    <div class="passcode-input-group" id="newPasscodeGroup">
+                        <input type="password" id="new1" maxlength="1">
+                        <input type="password" id="new2" maxlength="1">
+                        <input type="password" id="new3" maxlength="1">
+                        <input type="password" id="new4" maxlength="1">
+                        <input type="password" id="new5" maxlength="1">
+                        <input type="password" id="new6" maxlength="1">
+                    </div>
+                </div>
             </div>
-            <button onclick="changePassword()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:8px;">Change Password</button>
+            <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:8px;">Change Passcode</button>
+            <div id="passcodeStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
         </div>
     </div>
 
@@ -672,12 +514,10 @@
                     'X-CSRF-Token': csrfToken
                 }
             });
-
             if (response.status === 401) {
                 window.location.href = 'login.html';
                 return null;
             }
-
             return response;
         }
 
@@ -869,6 +709,97 @@
             }
         }
 
+        // ==================== PASSCODE FUNCTIONS ====================
+        function getPasscodeFromInputs(prefix) {
+            let code = '';
+            for (let i = 1; i <= 6; i++) {
+                const val = document.getElementById(prefix + i).value;
+                if (val === '') return null;
+                code += val;
+            }
+            return code;
+        }
+
+        function setupPasscodeInputs(prefix) {
+            const inputs = [];
+            for (let i = 1; i <= 6; i++) {
+                inputs.push(document.getElementById(prefix + i));
+            }
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    this.value = this.value.replace(/\D/g, '');
+                    if (this.value.length === 1 && index < 5) {
+                        inputs[index + 1].focus();
+                    }
+                });
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                    if (e.key === 'Enter') {
+                        changePasscode();
+                    }
+                });
+                input.addEventListener('focus', function() {
+                    this.select();
+                });
+            });
+        }
+
+        setupPasscodeInputs('old');
+        setupPasscodeInputs('new');
+
+        // ==================== CHANGE PASSCODE ====================
+        async function changePasscode() {
+            const oldPasscode = getPasscodeFromInputs('old');
+            const newPasscode = getPasscodeFromInputs('new');
+            const statusEl = document.getElementById('passcodeStatus');
+
+            if (!oldPasscode || oldPasscode.length !== 6) {
+                statusEl.textContent = '❌ Please enter complete current passcode';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+            if (!newPasscode || newPasscode.length !== 6) {
+                statusEl.textContent = '❌ Please enter complete new passcode';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+            if (oldPasscode === newPasscode) {
+                statusEl.textContent = '❌ New passcode must be different from current';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+
+            try {
+                const r = await secureFetch('/api/admin/passcode', {
+                    method: 'POST',
+                    body: JSON.stringify({ oldPasscode, newPasscode })
+                });
+                if (!r) return;
+                const data = await r.json();
+                if (data.success) {
+                    statusEl.textContent = '✅ Passcode changed! Please login again.';
+                    statusEl.style.color = '#48bb78';
+                    showToast('✅ Passcode changed! Please login again.', 'success');
+                    // Clear inputs
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById('old' + i).value = '';
+                        document.getElementById('new' + i).value = '';
+                    }
+                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Failed to change passcode');
+                    statusEl.style.color = '#fc8181';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Server error';
+                statusEl.style.color = '#fc8181';
+                showToast('❌ Failed to change passcode', 'error');
+            }
+        }
+
+        // ==================== LOAD LINKS ====================
         function escapeHTML(str) {
             if (!str) return '';
             const div = document.createElement('div');
@@ -1077,31 +1008,6 @@
                     }
                 } catch (e) { showToast('❌ Failed to delete', 'error'); }
             }
-        }
-
-        async function changePassword() {
-            const old = document.getElementById('oldPassword').value;
-            const New = document.getElementById('newPassword').value;
-            if (!old || !New) { showToast('❌ Please fill both fields', 'error'); return; }
-            if (New.length < 8) { showToast('❌ Password must be at least 8 characters', 'error'); return; }
-            if (!/[a-z]/.test(New) || !/[A-Z]/.test(New) || !/[0-9]/.test(New)) {
-                showToast('❌ Password must contain uppercase, lowercase, and numbers', 'error');
-                return;
-            }
-            try {
-                const r = await secureFetch('/api/admin/password', {
-                    method: 'POST',
-                    body: JSON.stringify({ oldPassword: old, newPassword: New })
-                });
-                if (!r) return;
-                const data = await r.json();
-                if (data.success) {
-                    showToast('✅ Password changed! Please login again.', 'success');
-                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to change password'), 'error');
-                }
-            } catch (e) { showToast('❌ Failed to change password', 'error'); }
         }
 
         async function setTheme(theme) {

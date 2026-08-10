@@ -40,7 +40,7 @@ app.use(cors(corsOptions));
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: 'Too many requests from this IP, please try again later.'
+    message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
@@ -59,14 +59,14 @@ app.use(express.static('.'));
 // ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// NEW PASSWORD HASH: "Somesh@2026#Secure" (bcrypt, 12 rounds)
-const NEW_PASSWORD_HASH = '$2b$12$pX6zYQrW5s5s5s5s5s5s5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
+// PASSCODE HASH: "951753" (bcrypt, 12 rounds)
+const DEFAULT_PASSCODE_HASH = '$2b$12$WJxYzQrW5s5s5s5s5s5s5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u5u';
 
 function initDB() {
     if (!fs.existsSync(DB_FILE)) {
         const db = {
             admin: {
-                password: NEW_PASSWORD_HASH,
+                passcode: DEFAULT_PASSCODE_HASH,
                 theme: 'light'
             },
             links: [],
@@ -76,8 +76,8 @@ function initDB() {
             sessions: []
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-        console.log('✅ Secure database created with new password!');
-        console.log('🔑 Password: Somesh@2026');
+        console.log('✅ Database created!');
+        console.log('🔑 PASSCODE: 951753');
     }
 }
 
@@ -103,13 +103,13 @@ function generateLinkId() {
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '15m';
 
-function hashPassword(password) {
-    return bcrypt.hashSync(password, 12);
+function hashPasscode(passcode) {
+    return bcrypt.hashSync(passcode, 12);
 }
 
-function verifyPassword(password, hash) {
+function verifyPasscode(passcode, hash) {
     try {
-        return bcrypt.compareSync(password, hash);
+        return bcrypt.compareSync(passcode, hash);
     } catch (e) {
         return false;
     }
@@ -157,24 +157,24 @@ function authMiddleware(req, res, next) {
 
 // ==================== ROUTES ====================
 
-// ===== ADMIN LOGIN =====
+// ===== ADMIN LOGIN (PASSCODE) =====
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
-        const { password } = req.body;
+        const { passcode } = req.body;
         const db = readDB();
 
-        if (!password) {
-            return res.status(400).json({ error: 'Password required' });
+        if (!passcode) {
+            return res.status(400).json({ error: 'Passcode required' });
         }
 
-        console.log('🔍 Login attempt with password:', password.substring(0, 3) + '***');
-        console.log('🔑 Stored hash:', db.admin.password.substring(0, 20) + '...');
+        // Check if passcode is numeric
+        if (!/^\d+$/.test(passcode)) {
+            return res.status(400).json({ error: 'Invalid passcode format' });
+        }
 
-        const isValid = verifyPassword(password, db.admin.password);
-        console.log('✅ Password valid:', isValid);
-
+        const isValid = verifyPasscode(passcode, db.admin.passcode);
         if (!isValid) {
-            return res.status(401).json({ error: 'Invalid password' });
+            return res.status(401).json({ error: 'Invalid passcode' });
         }
 
         const token = generateToken('admin');
@@ -223,38 +223,35 @@ app.post('/api/admin/logout', authMiddleware, (req, res) => {
     }
 });
 
-// ===== CHANGE PASSWORD =====
-app.post('/api/admin/password', authMiddleware, async (req, res) => {
+// ===== CHANGE PASSCODE =====
+app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
-        const { oldPassword, newPassword } = req.body;
+        const { oldPasscode, newPasscode } = req.body;
         const db = readDB();
 
-        if (!oldPassword || !newPassword) {
-            return res.status(400).json({ error: 'Both passwords required' });
+        if (!oldPasscode || !newPasscode) {
+            return res.status(400).json({ error: 'Both passcodes required' });
         }
 
-        if (newPassword.length < 8) {
-            return res.status(400).json({ error: 'Password must be at least 8 characters' });
-        }
-        if (!/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-            return res.status(400).json({ error: 'Password must contain uppercase, lowercase, and numbers' });
+        if (!/^\d+$/.test(newPasscode) || newPasscode.length !== 6) {
+            return res.status(400).json({ error: 'New passcode must be 6 digits' });
         }
 
-        const isValid = verifyPassword(oldPassword, db.admin.password);
+        const isValid = verifyPasscode(oldPasscode, db.admin.passcode);
         if (!isValid) {
-            return res.status(401).json({ error: 'Current password is incorrect' });
+            return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
 
-        db.admin.password = hashPassword(newPassword);
+        db.admin.passcode = hashPasscode(newPasscode);
         writeDB(db);
 
         db.sessions = [];
         writeDB(db);
         res.clearCookie('adminToken');
 
-        res.json({ success: true, message: 'Password changed. Please login again.' });
+        res.json({ success: true, message: 'Passcode changed. Please login again.' });
     } catch (error) {
-        res.status(500).json({ error: 'Password change failed' });
+        res.status(500).json({ error: 'Passcode change failed' });
     }
 });
 
@@ -507,13 +504,13 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 NEW ADMIN PASSWORD: Somesh@2026');
+    console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('═══════════════════════════════════════════');
     console.log('🔐 SECURITY FEATURES ACTIVE:');
     console.log('  ✅ JWT Authentication (HTTP-only cookies)');
     console.log('  ✅ CSRF Protection');
     console.log('  ✅ Rate Limiting (5 req/min for auth)');
-    console.log('  ✅ Password Hashing (bcrypt, 12 rounds)');
+    console.log('  ✅ Passcode Hashing (bcrypt, 12 rounds)');
     console.log('  ✅ Input Validation & Sanitization');
     console.log('  ✅ Content Security Policy');
     console.log('  ✅ XSS Protection');
