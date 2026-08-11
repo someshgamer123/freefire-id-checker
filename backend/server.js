@@ -60,8 +60,75 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
-// ==================== DATABASE ====================
+// ==================== DATABASE (PERMANENT STORAGE) ====================
 const DB_FILE = path.join(__dirname, 'database.json');
+
+function writeDB(data) {
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+        console.log('✅ Database saved at:', new Date().toISOString());
+        return true;
+    } catch (e) {
+        console.error('❌ Database write error:', e);
+        return false;
+    }
+}
+
+function readDB() {
+    try {
+        if (!fs.existsSync(DB_FILE)) {
+            console.log('📁 Creating new database...');
+            const db = getDefaultDB();
+            writeDB(db);
+            return db;
+        }
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        if (!data || data.trim() === '') {
+            console.warn('⚠️ Empty database, reinitializing...');
+            const db = getDefaultDB();
+            writeDB(db);
+            return db;
+        }
+        return JSON.parse(data);
+    } catch (e) {
+        console.error('❌ Database read error:', e);
+        const db = getDefaultDB();
+        writeDB(db);
+        return db;
+    }
+}
+
+function getDefaultDB() {
+    const hashedPasscode = bcrypt.hashSync('951753', 10);
+    return {
+        admin: {
+            passcode: hashedPasscode,
+            theme: 'light'
+        },
+        links: [],
+        settings: {
+            background: null
+        },
+        sessions: [],
+        parentLink: null,
+        pricing: {
+            '3days': 50,
+            '7days': 100,
+            '15days': 200,
+            '1month': 500,
+            '3months': 1200,
+            '6months': 2000,
+            '12months': 3500
+        },
+        paymentSettings: {
+            method: 'UPI',
+            details: {
+                upiId: 'admin@upi'
+            }
+        },
+        renewalRequests: []
+    };
+}
 
 function getPasscodeHash(passcode) {
     return bcrypt.hashSync(passcode, 10);
@@ -73,70 +140,6 @@ function verifyPasscode(passcode, hash) {
     } catch (e) {
         console.error('❌ Verification error:', e);
         return false;
-    }
-}
-
-function initDB() {
-    if (!fs.existsSync(DB_FILE)) {
-        const hashedPasscode = getPasscodeHash('951753');
-        const db = {
-            admin: {
-                passcode: hashedPasscode,
-                theme: 'light'
-            },
-            links: [],
-            settings: {
-                background: null
-            },
-            sessions: [],
-            parentLink: null,
-            pricing: {
-                '3days': 50,
-                '7days': 100,
-                '15days': 200,
-                '1month': 500,
-                '3months': 1200,
-                '6months': 2000,
-                '12months': 3500
-            },
-            paymentSettings: {
-                method: 'UPI',
-                details: {
-                    upiId: 'admin@upi'
-                }
-            },
-            renewalRequests: []
-        };
-        fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-        console.log('═══════════════════════════════════════════');
-        console.log('✅ DATABASE CREATED SUCCESSFULLY!');
-        console.log('🔑 PASSCODE: 951753');
-        console.log('═══════════════════════════════════════════');
-    }
-}
-
-function readDB() {
-    initDB();
-    try {
-        const data = fs.readFileSync(DB_FILE, 'utf8');
-        if (!data || data.trim() === '') {
-            console.warn('⚠️ Empty database, reinitializing...');
-            initDB();
-            return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-        }
-        return JSON.parse(data);
-    } catch (e) {
-        console.error('❌ Database read error:', e);
-        return null;
-    }
-}
-
-function writeDB(data) {
-    try {
-        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-        console.log('✅ Database saved successfully');
-    } catch (e) {
-        console.error('❌ Database write error:', e);
     }
 }
 
@@ -295,6 +298,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
 
         res.json({ success: true, message: 'Passcode changed. Please login again.' });
     } catch (error) {
+        console.error('❌ Passcode change error:', error);
         res.status(500).json({ error: 'Passcode change failed' });
     }
 });
@@ -387,6 +391,7 @@ app.post('/api/links', authMiddleware, (req, res) => {
         writeDB(db);
         res.json(newLink);
     } catch (error) {
+        console.error('❌ Create link error:', error);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
@@ -428,6 +433,7 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
         writeDB(db);
         res.json(link);
     } catch (error) {
+        console.error('❌ Update link error:', error);
         res.status(500).json({ error: 'Failed to update link' });
     }
 });
@@ -485,7 +491,6 @@ app.get('/api/link/:id', (req, res) => {
             return res.status(403).json({ error: `Link is ${link.status}` });
         }
 
-        // Track visit
         link.visits++;
         const today = new Date().toISOString().split('T')[0];
         if (!link.dailyVisits) link.dailyVisits = {};
@@ -572,9 +577,9 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
     });
 });
 
-// ==================== RENEWAL ROUTES (WITH PAYMENT) ====================
+// ==================== RENEWAL ROUTES ====================
 
-// ===== REQUEST RENEWAL WITH UPI =====
+// ===== REQUEST RENEWAL =====
 app.post('/api/renewal/request', (req, res) => {
     const { linkId, plan } = req.body;
     const db = readDB();
@@ -605,13 +610,51 @@ app.post('/api/renewal/request', (req, res) => {
         return res.status(400).json({ error: 'Price not set for this plan' });
     }
     
-    // Check existing pending request
     const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
     if (existing) {
         return res.status(400).json({ 
             error: 'You already have a pending renewal request',
             existingRequest: existing
         });
+    }
+    
+    res.json({
+        success: true,
+        message: 'Please complete payment to submit renewal request',
+        amount: amount,
+        plan: plan,
+        days: days,
+        requiresPayment: true
+    });
+});
+
+// ===== CONFIRM PAYMENT =====
+app.post('/api/renewal/confirm-payment', (req, res) => {
+    const { linkId, plan, transactionId } = req.body;
+    const db = readDB();
+    
+    const link = db.links.find(l => l.id === linkId);
+    if (!link) {
+        return res.status(404).json({ error: 'Link not found' });
+    }
+    
+    const pricing = db.pricing || {};
+    const planDays = {
+        '3days': 3,
+        '7days': 7,
+        '15days': 15,
+        '1month': 30,
+        '3months': 90,
+        '6months': 180,
+        '12months': 365
+    };
+    
+    const days = planDays[plan];
+    const amount = pricing[plan] || 0;
+    
+    const existing = db.renewalRequests?.find(r => r.linkId === linkId && r.status === 'pending');
+    if (existing) {
+        return res.status(400).json({ error: 'You already have a pending renewal request' });
     }
     
     const renewalRequest = {
@@ -621,62 +664,30 @@ app.post('/api/renewal/request', (req, res) => {
         plan: plan,
         days: days,
         amount: amount,
-        status: 'pending', // pending → paid → approved/rejected
+        status: 'paid',
         createdAt: new Date().toISOString(),
-        paidAt: null,
+        paidAt: new Date().toISOString(),
         approvedAt: null,
-        upiId: db.paymentSettings?.details?.upiId || 'admin@upi',
-        paymentMethod: db.paymentSettings?.method || 'UPI'
+        transactionId: transactionId || 'TXN_' + Date.now(),
+        upiId: db.paymentSettings?.details?.upiId || 'admin@upi'
     };
     
     if (!db.renewalRequests) db.renewalRequests = [];
     db.renewalRequests.push(renewalRequest);
     writeDB(db);
     
-    // Return UPI details for payment
     res.json({
         success: true,
         requestId: renewalRequest.id,
-        amount: amount,
-        plan: plan,
-        days: days,
-        upiId: renewalRequest.upiId,
-        paymentMethod: renewalRequest.paymentMethod,
-        message: 'Payment request created. Please complete payment using UPI.'
-    });
-});
-
-// ===== CONFIRM PAYMENT (User marks as paid) =====
-app.post('/api/renewal/confirm-payment/:requestId', (req, res) => {
-    const { requestId } = req.params;
-    const { transactionId } = req.body;
-    const db = readDB();
-    
-    const request = db.renewalRequests?.find(r => r.id === requestId);
-    if (!request) {
-        return res.status(404).json({ error: 'Request not found' });
-    }
-    
-    if (request.status !== 'pending') {
-        return res.status(400).json({ error: 'Request already processed' });
-    }
-    
-    request.status = 'paid';
-    request.paidAt = new Date().toISOString();
-    request.transactionId = transactionId || 'TXN_' + Date.now();
-    writeDB(db);
-    
-    res.json({ 
-        success: true, 
-        message: 'Payment confirmed! Waiting for admin approval.',
-        requestId: request.id
+        message: 'Payment confirmed! Waiting for admin approval.'
     });
 });
 
 // ===== GET RENEWAL REQUESTS (ADMIN) =====
 app.get('/api/renewal/requests', authMiddleware, (req, res) => {
     const db = readDB();
-    res.json(db.renewalRequests || []);
+    const activeRequests = db.renewalRequests?.filter(r => r.status === 'pending' || r.status === 'paid') || [];
+    res.json(activeRequests);
 });
 
 // ===== GET RENEWAL STATUS (USER) =====
@@ -711,7 +722,7 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
     res.json({ success: true, message: 'Payment marked as paid' });
 });
 
-// ===== APPROVE RENEWAL (ADMIN) =====
+// ===== APPROVE RENEWAL =====
 app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
     const { requestId } = req.params;
     const db = readDB();
@@ -723,7 +734,6 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
         return res.status(400).json({ error: 'Payment not confirmed yet' });
     }
     
-    // Extend link expiry
     const link = db.links.find(l => l.id === request.linkId);
     if (link) {
         const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
@@ -740,7 +750,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
     res.json({ success: true, message: 'Renewal approved! Link extended.' });
 });
 
-// ===== REJECT RENEWAL (ADMIN) =====
+// ===== REJECT RENEWAL =====
 app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
     const { requestId } = req.params;
     const db = readDB();
@@ -753,7 +763,22 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
     res.json({ success: true, message: 'Renewal rejected' });
 });
 
-// ===== UPDATE PRICING (ADMIN) =====
+// ===== DELETE PROCESSED REQUEST =====
+app.delete('/api/renewal/request/:requestId', authMiddleware, (req, res) => {
+    const { requestId } = req.params;
+    const db = readDB();
+    
+    const index = db.renewalRequests?.findIndex(r => r.id === requestId);
+    if (index === -1 || index === undefined) {
+        return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    db.renewalRequests.splice(index, 1);
+    writeDB(db);
+    res.json({ success: true, message: 'Request removed' });
+});
+
+// ===== UPDATE PRICING =====
 app.post('/api/admin/pricing', authMiddleware, (req, res) => {
     const { pricing, paymentSettings } = req.body;
     const db = readDB();
@@ -763,7 +788,7 @@ app.post('/api/admin/pricing', authMiddleware, (req, res) => {
     res.json({ success: true });
 });
 
-// ===== GET PRICING (PUBLIC) =====
+// ===== GET PRICING =====
 app.get('/api/pricing', (req, res) => {
     const db = readDB();
     res.json({
@@ -772,7 +797,7 @@ app.get('/api/pricing', (req, res) => {
     });
 });
 
-// ===== GET SETTINGS (PUBLIC) =====
+// ===== GET SETTINGS =====
 app.get('/api/settings', (req, res) => {
     try {
         const db = readDB();
@@ -833,5 +858,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
+    console.log('💾 Data: Permanent storage enabled');
     console.log('═══════════════════════════════════════════');
 });

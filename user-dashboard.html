@@ -288,9 +288,7 @@
             display: none;
         }
         .modal-content .payment-detail .value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #48bb78;
+            font-size: 18px; font-weight: 700; color: #48bb78;
             word-break: break-all;
         }
         
@@ -530,8 +528,8 @@
     <div class="success-overlay" id="successOverlay">
         <div class="success-content">
             <span class="icon">🎉</span>
-            <h2>Renewal Request Sent!</h2>
-            <p>Your payment request has been sent to admin</p>
+            <h2>Payment Confirmed!</h2>
+            <p>Your renewal request has been sent to admin</p>
             <div class="renewed-days" id="renewedDays">+30 Days</div>
             <p style="color:#888;font-size:14px;" id="renewedLinkName">Link: Your Link</p>
             <p style="color:#f6ad55;font-size:13px;margin-top:8px;">⏳ Status: Pending Admin Approval</p>
@@ -547,6 +545,7 @@
         let currentLinkData = null;
         let pollInterval = null;
         let currentRequestId = null;
+        let isPaymentCancelled = false;
         
         const planNames = {
             '3days': '3 Days', '7days': '7 Days', '15days': '15 Days',
@@ -700,6 +699,7 @@
         // ===== Modal Functions =====
         function openRenewalModal() {
             if (!currentLinkId) { alert('Please check a link first'); return; }
+            isPaymentCancelled = false;
             selectedPlan = null;
             selectedApp = null;
             document.getElementById('renewalModal').classList.add('show');
@@ -711,7 +711,12 @@
             selectedApp = 'phonepe';
         }
         
-        function closeRenewalModal() { document.getElementById('renewalModal').classList.remove('show'); }
+        function closeRenewalModal() { 
+            document.getElementById('renewalModal').classList.remove('show');
+            if (!isPaymentCancelled) {
+                showPaymentCancelled();
+            }
+        }
         
         function selectUPIApp(app) {
             document.querySelectorAll('.upi-app').forEach(el => el.classList.remove('active'));
@@ -721,7 +726,30 @@
             if (selectedPlan) document.getElementById('payBtn').disabled = false;
         }
         
-        // ===== Confirm Payment (UPI Fixed) =====
+        // ===== Show Payment Cancelled =====
+        function showPaymentCancelled() {
+            const existing = document.getElementById('paymentCancelToast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.id = 'paymentCancelToast';
+            toast.style.cssText = `
+                position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+                background: rgba(252,129,129,0.95); color: #fff; padding: 16px 30px;
+                border-radius: 12px; font-size: 15px; font-weight: 600; z-index: 99999;
+                text-align: center; max-width: 90%; backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+                animation: fadeIn 0.3s ease;
+            `;
+            toast.textContent = '❌ Payment cancelled. No request sent to admin.';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 4000);
+        }
+        
+        // ===== Confirm Payment =====
         async function confirmPayment() {
             if (!selectedPlan) { alert('Please select a plan'); return; }
             if (!selectedApp) { document.getElementById('appSelectError').style.display = 'block'; return; }
@@ -731,84 +759,70 @@
             payBtn.disabled = true;
             
             try {
-                // Get admin UPI from database
                 const pricingRes = await fetch('/api/pricing');
                 const pricingData = await pricingRes.json();
                 const adminUpi = pricingData.paymentSettings?.details?.upiId || 'admin@upi';
+                const amount = currentPricing[selectedPlan] || 0;
                 
-                // Create renewal request
-                const r = await fetch('/api/renewal/request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ linkId: currentLinkId, plan: selectedPlan })
-                });
-                const data = await r.json();
+                const appUrls = {
+                    'phonepe': `phonepe://pay?pa=${adminUpi}&am=${amount}&cu=INR`,
+                    'gpay': `gpay://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`,
+                    'paytm': `paytm://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`
+                };
                 
-                if (data.success) {
-                    currentRequestId = data.requestId;
-                    const amount = data.amount || 0;
+                const appUrl = appUrls[selectedApp];
+                const opened = window.open(appUrl, '_blank');
+                
+                if (!opened) {
+                    alert(`Please pay ₹${amount} via ${selectedApp.toUpperCase()}\nAfter payment, click OK to confirm.`);
+                }
+                
+                setTimeout(async () => {
+                    const confirmed = confirm(`Did you complete the payment of ₹${amount}?`);
                     
-                    // Open UPI app with admin UPI and amount
-                    const appUrls = {
-                        'phonepe': `phonepe://pay?pa=${adminUpi}&am=${amount}&cu=INR`,
-                        'gpay': `gpay://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`,
-                        'paytm': `paytm://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`
-                    };
-                    
-                    const appUrl = appUrls[selectedApp];
-                    const opened = window.open(appUrl, '_blank');
-                    
-                    if (!opened) {
-                        alert(`Please pay ₹${amount} via ${selectedApp.toUpperCase()}\nAfter payment, click OK to confirm.`);
-                    }
-                    
-                    // Confirm payment after user returns
-                    setTimeout(async () => {
+                    if (confirmed) {
                         try {
-                            const confirmRes = await fetch('/api/renewal/confirm-payment/' + currentRequestId, {
+                            const confirmRes = await fetch('/api/renewal/confirm-payment', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ transactionId: 'TXN_' + Date.now() })
+                                body: JSON.stringify({ 
+                                    linkId: currentLinkId, 
+                                    plan: selectedPlan,
+                                    transactionId: 'TXN_' + Date.now()
+                                })
                             });
                             const confirmData = await confirmRes.json();
                             
                             if (confirmData.success) {
+                                isPaymentCancelled = false;
                                 closeRenewalModal();
-                                document.getElementById('renewedDays').textContent = `+${data.days} Days`;
+                                document.getElementById('renewedDays').textContent = `+${currentPricing[selectedPlan] ? '30' : '0'} Days`;
                                 document.getElementById('renewedLinkName').textContent = `Link: ${currentLinkData?.name || 'Your Link'}`;
                                 document.getElementById('successOverlay').classList.add('show');
                                 
                                 document.getElementById('renewalStatus').classList.add('show');
-                                document.getElementById('renewalStatusText').textContent = '⏳ Payment sent! Waiting for admin approval.';
+                                document.getElementById('renewalStatusText').textContent = '⏳ Payment confirmed! Waiting for admin approval.';
                                 document.getElementById('renewalStatusText').className = 'paid';
-                                document.getElementById('renewalStatusTime').textContent = `Requested on: ${new Date().toLocaleString()}`;
+                                document.getElementById('renewalStatusTime').textContent = `Paid on: ${new Date().toLocaleString()}`;
                                 
                                 if (pollInterval) clearInterval(pollInterval);
                                 pollInterval = setInterval(() => checkRenewalStatus(currentLinkId), 5000);
                                 
                                 await loadStats(currentLinkId);
+                            } else {
+                                alert('Error: ' + (confirmData.error || 'Unknown error'));
                             }
                         } catch (e) {
                             console.error('Payment confirmation error:', e);
+                            alert('Error confirming payment. Please contact admin.');
                         }
-                    }, 5000);
-                    
-                } else {
-                    if (data.existingRequest) {
-                        alert('You already have a pending renewal request. Please wait for admin approval.');
-                        const req = data.existingRequest;
-                        document.getElementById('renewalStatus').classList.add('show');
-                        document.getElementById('renewalStatusText').textContent = 
-                            req.status === 'pending' ? '⏳ Payment pending. Please wait for admin approval.' :
-                            req.status === 'paid' ? '⏳ Payment confirmed! Waiting for admin approval.' :
-                            req.status === 'approved' ? '✅ Renewal approved!' :
-                            req.status === 'rejected' ? '❌ Renewal rejected. Please contact admin.' : 'Unknown status';
-                        document.getElementById('renewalStatusText').className = req.status;
-                        document.getElementById('renewalStatusTime').textContent = `Requested on: ${new Date(req.createdAt).toLocaleString()}`;
                     } else {
-                        alert('Error: ' + (data.error || 'Unknown error'));
+                        isPaymentCancelled = true;
+                        closeRenewalModal();
+                        showPaymentCancelled();
                     }
-                }
+                }, 3000);
+                
             } catch (e) {
                 console.error('Renewal error:', e);
                 alert('Error processing payment');
@@ -837,6 +851,13 @@
                     const statusEl = document.getElementById('renewalStatusText');
                     const timeEl = document.getElementById('renewalStatusTime');
                     
+                    const paidDate = req.paidAt ? new Date(req.paidAt) : null;
+                    const formattedTime = paidDate ? 
+                        paidDate.toLocaleDateString() + ' ' + 
+                        paidDate.toLocaleTimeString() + ':' + 
+                        String(paidDate.getSeconds()).padStart(2, '0') : 
+                        'Pending';
+                    
                     if (req.status === 'approved') {
                         statusEl.textContent = `✅ Renewal approved! Link extended by ${req.days} days.`;
                         statusEl.className = 'approved';
@@ -846,7 +867,7 @@
                     } else if (req.status === 'paid') {
                         statusEl.textContent = '⏳ Payment confirmed! Waiting for admin approval...';
                         statusEl.className = 'paid';
-                        timeEl.textContent = `Paid on: ${new Date(req.paidAt).toLocaleString()}`;
+                        timeEl.textContent = `Paid on: ${formattedTime}`;
                     } else if (req.status === 'pending') {
                         statusEl.textContent = '⏳ Payment request sent. Waiting for admin approval...';
                         statusEl.className = 'pending';
@@ -924,7 +945,6 @@
         
         console.log('📊 User Dashboard Ready');
         console.log('💡 Paste your link to check stats');
-        console.log('🔒 UPI: Using admin UPI from database');
     </script>
 </body>
 </html>

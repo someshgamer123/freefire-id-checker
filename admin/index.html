@@ -142,7 +142,6 @@
         .bg-upload-area .bg-status.success { color: var(--success); }
         .bg-upload-area .bg-status.error { color: var(--danger); }
 
-        /* ===== PASSCODE INPUT - 2 FIELDS ===== */
         .passcode-2 {
             display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
         }
@@ -153,7 +152,6 @@
         }
         .passcode-2 input:focus { border-color: var(--primary); outline: none; }
 
-        /* ===== RENEWAL MANAGEMENT COLLAPSIBLE ===== */
         .collapse-btn {
             width: 100%; padding: 14px 20px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -173,7 +171,6 @@
             max-height: 2000px; padding: 16px 4px 4px 4px;
         }
 
-        /* ===== PAYMENT SETTINGS DYNAMIC ===== */
         .payment-dynamic {
             margin-top: 8px; padding: 12px 16px; background: var(--bg);
             border-radius: 10px; border: 2px solid var(--border); display: none;
@@ -192,7 +189,6 @@
         }
         .payment-dynamic .preview-qr.show { display: block; }
 
-        /* ===== RENEWAL ITEMS ===== */
         .renewal-item { background: var(--bg); padding: 14px 18px; margin: 10px 0; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid var(--primary); }
         .renewal-item .info { flex: 1; min-width: 150px; }
@@ -215,7 +211,6 @@
         .pricing-grid .pricing-item input { width: 100%; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
         @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
 
-        /* ===== USER DASHBOARD LINK ===== */
         .user-dashboard-box {
             background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
             padding: 14px 18px; border-radius: 12px;
@@ -262,7 +257,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- ===== HEADER ===== -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
@@ -275,7 +269,6 @@
             </div>
         </header>
 
-        <!-- ===== STATS ===== -->
         <div class="stats">
             <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total</div></div>
             <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
@@ -283,7 +276,6 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
-        <!-- ===== CREATE LINK ===== -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -328,7 +320,6 @@
             </div>
         </div>
 
-        <!-- ===== BACKGROUND UPLOAD ===== -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
@@ -343,20 +334,17 @@
             </div>
         </div>
 
-        <!-- ===== ALL LINKS ===== -->
         <div class="card">
             <h3>📋 All Links</h3>
             <div id="linksList"></div>
         </div>
 
-        <!-- ===== RENEWAL MANAGEMENT (COLLAPSIBLE) ===== -->
         <div class="card">
             <button class="collapse-btn" onclick="toggleRenewal()">
                 <span>🔄 Renewal Management</span>
                 <span class="arrow" id="renewalArrow">▼</span>
             </button>
             <div class="collapse-content" id="renewalContent">
-                <!-- User Dashboard Link -->
                 <div style="margin-bottom:16px;">
                     <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📊 User Dashboard</h4>
                     <div class="user-dashboard-box">
@@ -369,7 +357,6 @@
                     <p style="font-size:12px;color:var(--text-light);margin-top:6px;">📌 Users can check their link stats and renew from this dashboard</p>
                 </div>
 
-                <!-- Pricing Settings -->
                 <div style="margin-bottom:16px;">
                     <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💰 Pricing Plans</h4>
                     <div class="pricing-grid">
@@ -384,7 +371,6 @@
                     <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Pricing</button>
                 </div>
 
-                <!-- Payment Settings -->
                 <div style="margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">
                     <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💳 Payment Settings</h4>
                     <div class="grid-2">
@@ -416,7 +402,6 @@
                     <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Payment Settings</button>
                 </div>
 
-                <!-- Renewal Requests -->
                 <div style="padding-top:16px;border-top:1px solid var(--border);">
                     <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📋 Renewal Requests</h4>
                     <div id="renewalRequestsList">
@@ -426,7 +411,6 @@
             </div>
         </div>
 
-        <!-- ===== ADMIN SETTINGS (2 FIELDS) ===== -->
         <div class="card">
             <h3>🔐 Admin Settings</h3>
             <p style="color:var(--text-light);font-size:13px;margin-bottom:12px;">Change your 6-digit passcode</p>
@@ -442,14 +426,12 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==================== CSRF TOKEN ====================
         let csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
         if (!csrfToken) {
             window.location.href = 'login.html';
         }
 
-        // ==================== SECURE FETCH ====================
         async function secureFetch(url, options = {}) {
             try {
                 const response = await fetch(url, {
@@ -473,7 +455,6 @@
             }
         }
 
-        // ==================== TOAST ====================
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -482,7 +463,30 @@
             t._timeout = setTimeout(() => t.className = 'toast', 4000);
         }
 
-        // ==================== RENEWAL COLLAPSE ====================
+        // ===== PWA INSTALL =====
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.add('show');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        showToast('✅ App installed successfully!', 'success');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').classList.remove('show');
+                });
+            } else {
+                showToast('📲 Use Chrome browser to install', 'info');
+            }
+        }
+
+        // ===== TOGGLE RENEWAL =====
         function toggleRenewal() {
             const content = document.getElementById('renewalContent');
             const arrow = document.getElementById('renewalArrow');
@@ -490,24 +494,22 @@
             arrow.classList.toggle('open');
         }
 
-        // ==================== USER DASHBOARD LINK ====================
+        // ===== USER DASHBOARD LINK =====
         async function loadUserDashboardLink() {
             try {
                 const r = await fetch('/api/parent-link');
                 const data = await r.json();
                 const url = window.location.origin + data.url;
                 document.getElementById('userDashboardLink').textContent = url;
-                console.log('✅ User Dashboard Link:', url);
             } catch (e) {
-                console.error('❌ Dashboard link error:', e);
-                document.getElementById('userDashboardLink').textContent = 'Error loading dashboard link';
+                document.getElementById('userDashboardLink').textContent = 'Error loading';
                 setTimeout(loadUserDashboardLink, 2000);
             }
         }
 
         function copyDashboardLink() {
             const text = document.getElementById('userDashboardLink').textContent;
-            if (text === 'Loading...' || text === 'Error loading dashboard link') {
+            if (text === 'Loading...' || text === 'Error loading') {
                 showToast('⏳ Please wait for link to load', 'info');
                 return;
             }
@@ -524,7 +526,7 @@
             });
         }
 
-        // ==================== PAYMENT FIELDS TOGGLE ====================
+        // ===== PAYMENT FIELDS TOGGLE =====
         function togglePaymentFields() {
             const method = document.getElementById('paymentMethod').value;
             document.getElementById('upiField').classList.remove('show');
@@ -553,7 +555,7 @@
             }
         }
 
-        // ==================== SCHEDULE ====================
+        // ===== SCHEDULE =====
         let selectedExpiry = null;
 
         function updateSchedulePreset() {
@@ -592,7 +594,7 @@
             }
         }
 
-        // ==================== BACKGROUND UPLOAD ====================
+        // ===== BACKGROUND =====
         async function loadBackground() {
             try {
                 const r = await fetch('/api/settings');
@@ -700,7 +702,7 @@
             }
         }
 
-        // ==================== CHANGE PASSCODE ====================
+        // ===== CHANGE PASSCODE =====
         async function changePasscode() {
             const oldPasscode = document.getElementById('oldPasscode').value;
             const newPasscode = document.getElementById('newPasscode').value;
@@ -747,7 +749,7 @@
             }
         }
 
-        // ==================== LOAD LINKS ====================
+        // ===== LOAD LINKS =====
         function escapeHTML(str) {
             if (!str) return '';
             const div = document.createElement('div');
@@ -844,7 +846,7 @@
             }
         }
 
-        // ==================== CREATE LINK ====================
+        // ===== CREATE LINK =====
         async function createLink() {
             const name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
@@ -879,7 +881,7 @@
             } catch (e) { showToast('❌ Failed to create link', 'error'); }
         }
 
-        // ==================== COPY LINK ====================
+        // ===== COPY LINK =====
         function copyLink() {
             const i = document.getElementById('generatedLinkInput');
             i.select();
@@ -902,7 +904,7 @@
             });
         }
 
-        // ==================== EDIT LINK ====================
+        // ===== EDIT LINK =====
         function toggleEdit(id) {
             document.getElementById('edit-' + id).classList.toggle('show');
         }
@@ -943,7 +945,7 @@
             } catch (e) { showToast('❌ Failed to update', 'error'); }
         }
 
-        // ==================== UPDATE STATUS ====================
+        // ===== UPDATE STATUS =====
         async function updateStatus(id, status) {
             try {
                 const r = await secureFetch(`/api/links/${id}/status`, {
@@ -961,7 +963,7 @@
             } catch (e) { showToast('❌ Failed to update status', 'error'); }
         }
 
-        // ==================== DELETE LINK ====================
+        // ===== DELETE LINK =====
         async function deleteLink(id) {
             if (confirm('⚠️ Delete this link permanently?')) {
                 try {
@@ -976,7 +978,7 @@
             }
         }
 
-        // ==================== THEME ====================
+        // ===== THEME =====
         async function setTheme(theme) {
             document.body.className = theme;
             const r = await secureFetch('/api/admin/theme', {
@@ -999,7 +1001,7 @@
             } catch (e) {}
         }
 
-        // ==================== LOGOUT ====================
+        // ===== LOGOUT =====
         async function logout() {
             if (confirm('Are you sure you want to logout?')) {
                 try {
@@ -1010,7 +1012,7 @@
             }
         }
 
-        // ==================== RENEWAL MANAGEMENT ====================
+        // ===== RENEWAL MANAGEMENT =====
         async function loadPricingData() {
             try {
                 const r = await fetch('/api/pricing');
@@ -1092,15 +1094,24 @@
                 container.innerHTML = '';
                 requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 requests.forEach(req => {
+                    const paidDate = req.paidAt ? new Date(req.paidAt) : null;
+                    const formattedDate = paidDate ? 
+                        paidDate.toLocaleDateString() + ' ' + 
+                        paidDate.toLocaleTimeString() + ':' + 
+                        String(paidDate.getSeconds()).padStart(2, '0') : 
+                        'Pending';
+                    
                     const div = document.createElement('div');
                     div.className = 'renewal-item';
+                    div.id = 'renewal-' + req.id;
                     div.innerHTML = `
                         <div class="info">
                             <div class="name">${escapeHTML(req.linkName || 'Unknown Link')}</div>
                             <div class="details">
-                                <span>📅 ${new Date(req.createdAt).toLocaleDateString()}</span>
+                                <span>📅 ${formattedDate}</span>
                                 <span>💰 ₹${req.amount}</span>
                                 <span>📆 ${req.days} days</span>
+                                <span>🆔 ${req.transactionId || 'N/A'}</span>
                                 <span class="renewal-status-badge ${req.status}">${req.status.toUpperCase()}</span>
                             </div>
                         </div>
@@ -1131,8 +1142,16 @@
             try {
                 const r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
                 if (r) {
-                    showToast('✅ Renewal approved!', 'success');
-                    loadRenewalRequests();
+                    showToast('✅ Renewal approved! Link extended.', 'success');
+                    const element = document.getElementById('renewal-' + requestId);
+                    if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.opacity = '0';
+                        element.style.transform = 'translateX(50px)';
+                        setTimeout(() => { loadRenewalRequests(); }, 500);
+                    } else {
+                        loadRenewalRequests();
+                    }
                 }
             } catch (e) { showToast('❌ Failed to approve', 'error'); }
         }
@@ -1143,16 +1162,42 @@
                 const r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
                 if (r) {
                     showToast('❌ Renewal rejected', 'error');
-                    loadRenewalRequests();
+                    const element = document.getElementById('renewal-' + requestId);
+                    if (element) {
+                        element.style.transition = 'all 0.5s ease';
+                        element.style.opacity = '0';
+                        element.style.transform = 'translateX(-50px)';
+                        setTimeout(() => { loadRenewalRequests(); }, 500);
+                    } else {
+                        loadRenewalRequests();
+                    }
                 }
             } catch (e) { showToast('❌ Failed to reject', 'error'); }
         }
 
-        // ==================== PERIODIC CHECKS ====================
+        // ===== PERIODIC CHECKS =====
         setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
         setInterval(loadRenewalRequests, 15000);
 
-        // ==================== INIT ====================
+        // ===== CHECK AUTH =====
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/links', {
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('csrfToken');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // ===== INIT =====
         loadTheme();
         loadBackground();
         loadLinks();
