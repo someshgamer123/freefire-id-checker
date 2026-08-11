@@ -113,7 +113,7 @@
             50% { opacity: 1; }
         }
 
-        /* ===== OVERLAY TO BLOCK CLICKS ON VIDEO AREA ===== */
+        /* ===== OVERLAY TO BLOCK CLICKS ===== */
         .video-overlay {
             position: absolute;
             top: 0;
@@ -123,6 +123,7 @@
             z-index: 10;
             background: transparent;
             cursor: default;
+            touch-action: none;
         }
 
         .headline {
@@ -227,7 +228,7 @@
             margin-top: 4px;
         }
 
-        /* ===== TOP FADE GRADIENT (Blue Line Area) ===== */
+        /* ===== TOP FADE GRADIENT (Blue Line Area - Chat Fades Out Here) ===== */
         .chat-section::before {
             content: '';
             position: absolute;
@@ -300,12 +301,30 @@
             }
         }
 
-        /* ===== FADE OUT AT TOP (Blue Line Area) ===== */
+        /* ===== FADE OUT AT TOP (Blue Line Area) - CHATS & REACTIONS BOTH FADE ===== */
         .chat-message.fade-out {
             opacity: 0 !important;
             transform: translateY(-20px) scale(0.9) !important;
             pointer-events: none;
             transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        /* ===== REACTION BUTTONS INSIDE CHAT - FADE WITH CHAT ===== */
+        .chat-message .reaction-btn {
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+            padding: 2px 5px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: none;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .chat-message .reaction-btn:hover {
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .chat-message .avatar {
@@ -347,7 +366,15 @@
             font-weight: 300;
         }
 
-        /* ===== EMOJI PICKER - RIGHT SIDE, STABLE, BELOW CHAT ===== */
+        .chat-message .reactions {
+            display: flex;
+            gap: 3px;
+            margin-left: 6px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        /* ===== EMOJI PICKER - STABLE AT BOTTOM RIGHT ===== */
         .emoji-picker-wrapper {
             position: sticky;
             bottom: 8px;
@@ -427,7 +454,7 @@
             border-radius: 4px;
         }
 
-        /* ===== FLYING REACTIONS - BEHIND VIDEO ===== */
+        /* ===== FLYING REACTIONS - BEHIND VIDEO (z-index: 4) ===== */
         .flying-reaction {
             position: fixed;
             font-size: 28px;
@@ -517,7 +544,7 @@
                 <div id="videoContainer">
                     <!-- Video will be inserted here -->
                 </div>
-                <!-- OVERLAY TO BLOCK CLICKS ON VIDEO -->
+                <!-- OVERLAY TO BLOCK CLICKS - SCREEN LOCK -->
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
@@ -574,19 +601,26 @@
 
         // ==================== SCREEN LOCK - IMMEDIATE ====================
         // Block all touch events on video area
-        document.getElementById('videoOverlay').addEventListener('touchstart', function(e) {
+        const overlay = document.getElementById('videoOverlay');
+        overlay.addEventListener('touchstart', function(e) {
             e.preventDefault();
             e.stopPropagation();
             return false;
         }, { passive: false });
 
-        document.getElementById('videoOverlay').addEventListener('click', function(e) {
+        overlay.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             return false;
         });
 
-        // Lock screen orientation and prevent scrolling
+        overlay.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }, { passive: false });
+
+        // Lock screen orientation
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('portrait').catch(function() {});
         }
@@ -602,6 +636,7 @@
         let isUnlocked = false;
         let pageLoadTime = Date.now();
         let isExiting = false;
+        let backPressTimer = null;
 
         function trackVideoPlay() {
             videoPlayCount++;
@@ -613,25 +648,24 @@
         }
 
         function handleBackPress() {
-            // If already exiting, ignore
             if (isExiting) return true;
 
-            const timeElapsed = (Date.now() - pageLoadTime) / 1000; // in seconds
+            const timeElapsed = (Date.now() - pageLoadTime) / 1000;
 
-            console.log('⬅️ Back press - Time elapsed:', timeElapsed.toFixed(1) + 's');
+            console.log('⬅️ Back press - Time:', timeElapsed.toFixed(1) + 's');
 
-            // If user has been on page for more than 3 minutes (180 seconds)
-            if (timeElapsed >= 180) {
-                console.log('🚪 Exiting after 3+ minutes on page');
+            // Exit if unlocked
+            if (isUnlocked) {
+                console.log('🚪 Exiting (unlocked)');
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
 
-            // If unlocked, allow exit
-            if (isUnlocked) {
-                console.log('🚪 Exiting (unlocked)');
+            // Exit after 3 minutes (180 seconds)
+            if (timeElapsed >= 180) {
+                console.log('🚪 Exiting after 3+ minutes');
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
@@ -642,18 +676,59 @@
             backPressCount++;
             console.log('⬅️ Back press count:', backPressCount);
 
-            // Need 4-5 back presses to exit (simulate Android back button spam)
+            // Show toast message on first back press
+            if (backPressCount === 1) {
+                showToast('Press back 3 more times to exit');
+            } else if (backPressCount === 2) {
+                showToast('2 more back presses to exit');
+            } else if (backPressCount === 3) {
+                showToast('1 more back press to exit');
+            }
+
+            // Exit after 4 back presses
             if (backPressCount >= 4) {
-                console.log('🚪 Exiting after 4+ back presses');
+                console.log('🚪 Exiting after 4 back presses');
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
 
-            // Push state to keep user on page
             history.pushState(null, null, window.location.href);
             return false;
+        }
+
+        // ===== TOAST MESSAGE =====
+        function showToast(msg) {
+            const existing = document.querySelector('.toast-msg');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-msg';
+            toast.textContent = msg;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.8);
+                color: #fff;
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-size: 14px;
+                z-index: 9999;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+                animation: fadeIn 0.3s ease;
+                max-width: 90%;
+                text-align: center;
+                font-weight: 500;
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 2000);
         }
 
         // Push initial state
@@ -883,22 +958,27 @@
             }
         }
 
-        // ===== APPLY FADE EFFECT =====
+        // ===== APPLY FADE EFFECT - CHATS FADE AT BLUE LINE =====
         function applyFadeEffect() {
             const messages = chatContainer.querySelectorAll('.chat-message');
             const total = messages.length;
 
             messages.forEach((msg, index) => {
+                // Bottom 3 messages - Fully visible
                 if (index >= total - 3) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '1';
                     msg.style.transform = 'translateY(0) scale(1)';
                     msg.style.animation = 'none';
-                } else if (index >= total - 8) {
+                } 
+                // Middle messages - Slightly faded
+                else if (index >= total - 8) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '0.8';
                     msg.style.transform = 'translateY(0) scale(0.98)';
-                } else {
+                } 
+                // Old messages (top) - Fade out at blue line
+                else {
                     msg.classList.add('fade-out');
                 }
             });
@@ -1014,6 +1094,7 @@
         console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
         console.log('📍 Emoji Picker: Right side, stable, below chat');
         console.log('🚫 Reactions: Behind video (z-index: 4)');
+        console.log('💬 Chat: Fades out at blue line (top)');
     </script>
 </body>
 </html>
