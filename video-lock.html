@@ -42,7 +42,6 @@
             50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
         }
 
-        /* ===== TOP SECTION ===== */
         .top-section {
             position: relative;
             z-index: 1;
@@ -193,7 +192,7 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* ===== LIVE CHAT - BIGGER + REACTIONS ===== */
+        /* ===== LIVE CHAT ===== */
         .chat-section {
             position: relative;
             z-index: 1;
@@ -286,23 +285,20 @@
             flex-shrink: 0;
         }
 
-        .chat-message .reactions .reaction {
+        .chat-message .reactions .reaction-btn {
             font-size: 14px;
             cursor: pointer;
             transition: 0.3s;
             padding: 2px 4px;
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #fff;
         }
 
-        .chat-message .reactions .reaction:hover {
+        .chat-message .reactions .reaction-btn:hover {
             transform: scale(1.3);
             background: rgba(255, 255, 255, 0.1);
-        }
-
-        .chat-message .reactions .reaction.liked {
-            transform: scale(1.2);
-            background: rgba(255, 215, 0, 0.2);
         }
 
         @keyframes slideIn {
@@ -323,6 +319,69 @@
             border-radius: 4px;
         }
 
+        /* ===== FLYING REACTIONS ===== */
+        .flying-reaction {
+            position: fixed;
+            font-size: 32px;
+            z-index: 9999;
+            pointer-events: none;
+            animation: flyUp 3s ease-out forwards;
+        }
+
+        @keyframes flyUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.5) rotate(0deg);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-100px) scale(1.2) rotate(10deg);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-200px) scale(1) rotate(-5deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-400px) scale(0.8) rotate(15deg);
+            }
+        }
+
+        /* Different animations for different emojis */
+        .flying-reaction.type-1 {
+            animation: flyUp1 2.5s ease-out forwards;
+        }
+        .flying-reaction.type-2 {
+            animation: flyUp2 3.2s ease-out forwards;
+        }
+        .flying-reaction.type-3 {
+            animation: flyUp3 2.8s ease-out forwards;
+        }
+
+        @keyframes flyUp1 {
+            0% { opacity: 1; transform: translateY(0) scale(0.3) rotate(0deg); }
+            20% { transform: translateY(-60px) scale(1.3) rotate(15deg); }
+            50% { transform: translateY(-150px) scale(1.1) rotate(-10deg); }
+            80% { transform: translateY(-250px) scale(0.9) rotate(8deg); }
+            100% { opacity: 0; transform: translateY(-380px) scale(0.5) rotate(-5deg); }
+        }
+
+        @keyframes flyUp2 {
+            0% { opacity: 1; transform: translateY(0) scale(0.5) rotate(-10deg); }
+            25% { transform: translateY(-80px) scale(1.4) rotate(20deg); }
+            55% { transform: translateY(-180px) scale(1.0) rotate(-15deg); }
+            85% { transform: translateY(-280px) scale(0.8) rotate(10deg); }
+            100% { opacity: 0; transform: translateY(-400px) scale(0.4) rotate(-8deg); }
+        }
+
+        @keyframes flyUp3 {
+            0% { opacity: 1; transform: translateY(0) scale(0.4) rotate(5deg); }
+            30% { transform: translateY(-100px) scale(1.5) rotate(-12deg); }
+            60% { transform: translateY(-200px) scale(1.1) rotate(18deg); }
+            90% { transform: translateY(-300px) scale(0.7) rotate(-6deg); }
+            100% { opacity: 0; transform: translateY(-420px) scale(0.3) rotate(12deg); }
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             body { padding: 8px; }
@@ -338,8 +397,9 @@
             .chat-message .username { font-size: 11px; }
             .chat-message .text { font-size: 11px; }
             .chat-message .time { font-size: 8px; }
-            .chat-message .reactions .reaction { font-size: 12px; }
+            .chat-message .reactions .reaction-btn { font-size: 12px; }
             .chat-container { padding: 6px 10px; }
+            .flying-reaction { font-size: 26px; }
         }
 
         @media (max-width: 400px) {
@@ -350,8 +410,9 @@
             .chat-message .username { font-size: 9px; }
             .chat-message .text { font-size: 9px; }
             .chat-message .time { font-size: 7px; }
-            .chat-message .reactions .reaction { font-size: 10px; }
+            .chat-message .reactions .reaction-btn { font-size: 10px; }
             .chat-container { padding: 4px 6px; }
+            .flying-reaction { font-size: 20px; }
         }
 
         /* Fullscreen override */
@@ -537,7 +598,39 @@
             }, 3000);
         }
 
-        // ==================== FAKE CHAT WITH REACTIONS ====================
+        // ==================== ANIMATED FLYING REACTIONS ====================
+        const flyingEmojis = ['🎁', '💎', '🥳', '🔥', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
+
+        function createFlyingReaction() {
+            const emoji = flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
+            const el = document.createElement('div');
+            el.className = 'flying-reaction';
+            el.textContent = emoji;
+            
+            // Random position (bottom area)
+            const x = 10 + Math.random() * 80; // 10% to 90% of screen width
+            const y = 60 + Math.random() * 30; // 60% to 90% of screen height
+            
+            el.style.left = x + '%';
+            el.style.top = y + '%';
+            
+            // Random size
+            const size = 24 + Math.random() * 36;
+            el.style.fontSize = size + 'px';
+            
+            // Random animation type
+            const type = Math.floor(Math.random() * 3) + 1;
+            el.classList.add('type-' + type);
+            
+            document.body.appendChild(el);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (el.parentNode) el.remove();
+            }, 3500);
+        }
+
+        // ==================== FAKE CHAT ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' },
             { name: 'NightWolf', emoji: '🐺' }, { name: 'ShadowX', emoji: '🌙' },
@@ -560,8 +653,6 @@
             'Working! ✅', 'Super! 🚀'
         ];
 
-        const reactionEmojis = ['❤️', '🔥', '👍', '😂', '😍', '👏', '🎉', '💯'];
-
         const chatContainer = document.getElementById('chatMessages');
 
         function getRandom(arr) {
@@ -578,7 +669,6 @@
             const user = getRandom(users);
             const msg = getRandom(messages);
             const time = getRandomTime();
-            const reaction = getRandom(reactionEmojis);
 
             const el = document.createElement('div');
             el.className = 'chat-message';
@@ -588,9 +678,9 @@
                 <span class="text">${msg}</span>
                 <span class="time">${time}</span>
                 <span class="reactions">
-                    <span class="reaction" onclick="toggleReaction(this)">${reaction}</span>
-                    <span class="reaction" onclick="toggleReaction(this)">❤️</span>
-                    <span class="reaction" onclick="toggleReaction(this)">🔥</span>
+                    <button class="reaction-btn" onclick="triggerReaction('🎁')">🎁</button>
+                    <button class="reaction-btn" onclick="triggerReaction('🔥')">🔥</button>
+                    <button class="reaction-btn" onclick="triggerReaction('❤️')">❤️</button>
                 </span>
             `;
             chatContainer.appendChild(el);
@@ -601,19 +691,47 @@
             while (chatContainer.children.length > 40) {
                 chatContainer.removeChild(chatContainer.firstChild);
             }
+
+            // Random flying reaction with chat
+            if (Math.random() > 0.5) {
+                setTimeout(createFlyingReaction, 200);
+            }
         }
 
-        function toggleReaction(el) {
-            el.classList.toggle('liked');
-            el.style.transition = 'transform 0.2s';
-            el.style.transform = 'scale(1.5)';
+        // ==================== TRIGGER REACTION ====================
+        function triggerReaction(emoji) {
+            // Create flying reaction at click position
+            const el = document.createElement('div');
+            el.className = 'flying-reaction';
+            el.textContent = emoji;
+            
+            const x = 20 + Math.random() * 60;
+            const y = 50 + Math.random() * 40;
+            el.style.left = x + '%';
+            el.style.top = y + '%';
+            el.style.fontSize = (30 + Math.random() * 30) + 'px';
+            
+            const type = Math.floor(Math.random() * 3) + 1;
+            el.classList.add('type-' + type);
+            
+            document.body.appendChild(el);
+            
             setTimeout(() => {
-                el.style.transform = 'scale(1)';
-            }, 200);
+                if (el.parentNode) el.remove();
+            }, 3500);
         }
 
-        window.toggleReaction = toggleReaction;
+        window.triggerReaction = triggerReaction;
 
+        // ==================== AUTO FLYING REACTIONS ====================
+        // Random flying reactions every few seconds
+        setInterval(function() {
+            if (Math.random() > 0.4) {
+                createFlyingReaction();
+            }
+        }, 3000);
+
+        // ==================== CHAT INIT ====================
         for (let i = 0; i < 12; i++) {
             setTimeout(addChat, i * 200);
         }
@@ -635,8 +753,15 @@
             this.appendChild(ripple);
             setTimeout(function() { ripple.remove(); }, 600);
 
+            // Create celebration reactions
+            for (let i = 0; i < 15; i++) {
+                setTimeout(createFlyingReaction, i * 100);
+            }
+
             if (claimUrl && claimUrl !== '#') {
-                window.location.href = claimUrl;
+                setTimeout(function() {
+                    window.location.href = claimUrl;
+                }, 1500);
             } else {
                 alert('🎉 You have been unlocked!');
                 document.body.style.overflow = 'auto';
@@ -676,6 +801,7 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
         console.log('🔒 Smart Exit System: 5 back presses OR 2 video plays + 1 back press');
+        console.log('💥 Flying Reactions Active!');
     </script>
 </body>
 </html>
