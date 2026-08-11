@@ -127,18 +127,57 @@
             background: rgba(102,126,234,0.12); color: var(--primary); }
         .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
-        .bg-upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 20px;
-            text-align: center; transition: 0.3s; margin-top: 10px; }
+        /* ===== BACKGROUND UPLOAD - FIXED 9:16 ===== */
+        .bg-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
         .bg-upload-area:hover { border-color: var(--primary); }
-        .bg-upload-area .preview-container { position: relative; max-width: 200px; margin: 10px auto;
-            border-radius: 10px; overflow: hidden; aspect-ratio: 9 / 16; background: #000; display: none; }
-        .bg-upload-area .preview-container.show { display: block; }
-        .bg-upload-area .preview-container img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .bg-upload-area .preview-container {
+            position: relative;
+            max-width: 200px;
+            margin: 10px auto;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 9 / 16;
+            background: #000;
+            display: none;
+        }
+        .bg-upload-area .preview-container.show {
+            display: block;
+        }
+        .bg-upload-area .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
         .bg-upload-area input[type="file"] { display: none; }
-        .bg-upload-area .upload-label { display: inline-block; padding: 10px 24px; background: var(--primary);
-            color: white; border-radius: 10px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        .bg-upload-area .upload-label:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
-        .bg-upload-area .bg-status { margin-top: 8px; font-size: 13px; color: var(--text-light); }
+        .bg-upload-area .upload-label {
+            display: inline-block;
+            padding: 10px 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .bg-upload-area .upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(102,126,234,0.3);
+        }
+        .bg-upload-area .bg-status {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
         .bg-upload-area .bg-status.success { color: var(--success); }
         .bg-upload-area .bg-status.error { color: var(--danger); }
 
@@ -252,11 +291,13 @@
             .toast { left: 20px; right: 20px; bottom: 20px; }
             .pricing-grid { grid-template-columns: 1fr; }
             .user-dashboard-box { padding: 12px; }
+            .bg-upload-area .preview-container { max-width: 150px; }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <!-- HEADER -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
@@ -269,6 +310,7 @@
             </div>
         </header>
 
+        <!-- STATS -->
         <div class="stats">
             <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total</div></div>
             <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
@@ -276,6 +318,7 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
+        <!-- CREATE LINK -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -320,6 +363,7 @@
             </div>
         </div>
 
+        <!-- BACKGROUND UPLOAD - FIXED -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
@@ -334,11 +378,13 @@
             </div>
         </div>
 
+        <!-- ALL LINKS -->
         <div class="card">
             <h3>📋 All Links</h3>
             <div id="linksList"></div>
         </div>
 
+        <!-- RENEWAL MANAGEMENT -->
         <div class="card">
             <button class="collapse-btn" onclick="toggleRenewal()">
                 <span>🔄 Renewal Management</span>
@@ -411,6 +457,7 @@
             </div>
         </div>
 
+        <!-- ADMIN SETTINGS -->
         <div class="card">
             <h3>🔐 Admin Settings</h3>
             <p style="color:var(--text-light);font-size:13px;margin-bottom:12px;">Change your 6-digit passcode</p>
@@ -594,7 +641,7 @@
             }
         }
 
-        // ===== BACKGROUND =====
+        // ===== BACKGROUND UPLOAD - FIXED 9:16 =====
         async function loadBackground() {
             try {
                 const r = await fetch('/api/settings');
@@ -610,30 +657,44 @@
             } catch (e) {}
         }
 
-        function resizeImage(file, maxWidth, maxHeight, callback) {
+        function resizeImage(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
+                    
+                    // Target 9:16 ratio
+                    const targetRatio = 9 / 16;
                     let width = img.width;
                     let height = img.height;
-                    const targetRatio = 9 / 16;
+                    
+                    // Calculate crop to fit 9:16 perfectly
                     const currentRatio = width / height;
+                    
                     if (currentRatio > targetRatio) {
-                        width = height * targetRatio;
+                        // Image is wider - crop sides
+                        const newWidth = height * targetRatio;
+                        const offsetX = (width - newWidth) / 2;
+                        canvas.width = 400;
+                        canvas.height = 400 * (16 / 9);
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#0a0a1a';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, offsetX, 0, newWidth, height, 0, 0, canvas.width, canvas.height);
                     } else {
-                        height = width / targetRatio;
+                        // Image is taller - crop top/bottom
+                        const newHeight = width / targetRatio;
+                        const offsetY = (height - newHeight) / 2;
+                        canvas.width = 400;
+                        canvas.height = 400 * (16 / 9);
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#0a0a1a';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, offsetY, width, newHeight, 0, 0, canvas.width, canvas.height);
                     }
-                    canvas.width = 400;
-                    canvas.height = 400 * (16 / 9);
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#0a0a1a';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    const dx = (canvas.width - width) / 2;
-                    const dy = (canvas.height - height) / 2;
-                    ctx.drawImage(img, dx, dy, width, height);
-                    callback(canvas.toDataURL('image/jpeg', 0.8));
+                    
+                    callback(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.src = e.target.result;
             };
@@ -643,18 +704,22 @@
         async function uploadBackground(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
             if (!file.type.startsWith('image/')) {
                 showToast('❌ Please upload an image file', 'error');
                 return;
             }
-            if (file.size > 1024 * 1024) {
-                showToast('❌ Image too large (max 1MB)', 'error');
+            
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('❌ Image too large (max 2MB)', 'error');
                 return;
             }
+            
             const statusEl = document.getElementById('bgStatus');
-            statusEl.textContent = '⏳ Uploading...';
+            statusEl.textContent = '⏳ Processing image...';
             statusEl.className = 'bg-status';
-            resizeImage(file, 400, 700, async function(base64) {
+            
+            resizeImage(file, async function(base64) {
                 try {
                     const r = await secureFetch('/api/admin/background', {
                         method: 'POST',
@@ -667,7 +732,7 @@
                         const container = document.getElementById('bgPreviewContainer');
                         preview.src = base64;
                         container.classList.add('show');
-                        statusEl.textContent = '✅ Background uploaded successfully!';
+                        statusEl.textContent = '✅ Background uploaded successfully! (9:16)';
                         statusEl.className = 'bg-status success';
                         showToast('✅ Background uploaded!', 'success');
                     } else {
