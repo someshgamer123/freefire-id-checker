@@ -293,9 +293,6 @@
             color: #48bb78;
             word-break: break-all;
         }
-        .modal-content .payment-detail .hidden-upi {
-            display: none;
-        }
         
         .modal-content .btn-pay {
             width: 100%;
@@ -520,7 +517,6 @@
             <div class="payment-detail" id="paymentDetail">
                 <div class="value" id="amountDisplay">Amount: ₹0</div>
                 <div style="font-size:13px;color:#888;margin-top:4px;" id="planDisplay">Plan: -</div>
-                <!-- UPI ID hidden - not shown to user -->
             </div>
             
             <button class="btn-pay" id="payBtn" onclick="confirmPayment()" disabled>
@@ -725,7 +721,7 @@
             if (selectedPlan) document.getElementById('payBtn').disabled = false;
         }
         
-        // ===== Confirm Payment (UPI ID Hidden) =====
+        // ===== Confirm Payment (UPI Fixed) =====
         async function confirmPayment() {
             if (!selectedPlan) { alert('Please select a plan'); return; }
             if (!selectedApp) { document.getElementById('appSelectError').style.display = 'block'; return; }
@@ -735,6 +731,11 @@
             payBtn.disabled = true;
             
             try {
+                // Get admin UPI from database
+                const pricingRes = await fetch('/api/pricing');
+                const pricingData = await pricingRes.json();
+                const adminUpi = pricingData.paymentSettings?.details?.upiId || 'admin@upi';
+                
                 // Create renewal request
                 const r = await fetch('/api/renewal/request', {
                     method: 'POST',
@@ -747,18 +748,17 @@
                     currentRequestId = data.requestId;
                     const amount = data.amount || 0;
                     
-                    // Open UPI app directly with amount (UPI ID hidden)
+                    // Open UPI app with admin UPI and amount
                     const appUrls = {
-                        'phonepe': `phonepe://pay?pa=admin@upi&am=${amount}&cu=INR`,
-                        'gpay': `gpay://upi/pay?pa=admin@upi&am=${amount}&cu=INR`,
-                        'paytm': `paytm://upi/pay?pa=admin@upi&am=${amount}&cu=INR`
+                        'phonepe': `phonepe://pay?pa=${adminUpi}&am=${amount}&cu=INR`,
+                        'gpay': `gpay://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`,
+                        'paytm': `paytm://upi/pay?pa=${adminUpi}&am=${amount}&cu=INR`
                     };
                     
                     const appUrl = appUrls[selectedApp];
                     const opened = window.open(appUrl, '_blank');
                     
                     if (!opened) {
-                        // Fallback - no UPI ID shown
                         alert(`Please pay ₹${amount} via ${selectedApp.toUpperCase()}\nAfter payment, click OK to confirm.`);
                     }
                     
@@ -924,7 +924,7 @@
         
         console.log('📊 User Dashboard Ready');
         console.log('💡 Paste your link to check stats');
-        console.log('🔒 UPI ID hidden - Direct app payment');
+        console.log('🔒 UPI: Using admin UPI from database');
     </script>
 </body>
 </html>
