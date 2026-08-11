@@ -192,7 +192,7 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* ===== LIVE CHAT - CHATS DISAPPEAR AT MARKED LINE ===== */
+        /* ===== LIVE CHAT - OPTIMIZED NO LAG ===== */
         .chat-section {
             position: relative;
             z-index: 1;
@@ -217,7 +217,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 40px;
+            height: 30px;
             background: linear-gradient(to bottom, #0a0a1a, transparent);
             z-index: 10;
             pointer-events: none;
@@ -230,55 +230,55 @@
             overflow-y: auto;
             overflow-x: hidden;
             padding: 8px 14px;
-            padding-top: 30px;
+            padding-top: 25px;
+            scroll-behavior: smooth;
         }
 
         .chat-messages {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding-bottom: 10px;
+            gap: 5px;
+            padding-bottom: 8px;
         }
 
+        /* ===== CHAT FADE - NICHE SE UPER JATE JATE GAYAB ===== */
         .chat-message {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 14px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 7px 12px;
+            background: rgba(255, 255, 255, 0.04);
             border-radius: 10px;
-            border-left: 3px solid rgba(102, 126, 234, 0.2);
-            animation: slideIn 0.3s ease forwards;
+            border-left: 3px solid rgba(102, 126, 234, 0.15);
+            font-size: 13px;
             opacity: 0;
-            transform: translateX(-8px);
-            font-size: 14px;
+            transform: translateX(-10px);
+            animation: slideIn 0.3s ease forwards;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            will-change: transform, opacity;
         }
 
-        /* ===== CHATS DISAPPEAR - FADE OUT AT BOTTOM ===== */
-        .chat-message:nth-last-child(-n+5) {
-            opacity: 0.4 !important;
-            transform: translateY(10px) !important;
-        }
-
-        .chat-message:nth-last-child(-n+3) {
-            opacity: 0.1 !important;
-            transform: translateY(20px) !important;
-        }
-
-        .chat-message:nth-last-child(1) {
+        /* ===== CHATS DISAPPEAR AT BOTTOM (NICHE SE UPER) ===== */
+        .chat-message.fade-out {
             opacity: 0 !important;
-            transform: translateY(30px) !important;
-            animation: none !important;
+            transform: translateY(15px) scale(0.95) !important;
+            pointer-events: none;
+        }
+
+        /* ===== NEW CHATS SLIDE IN ===== */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .chat-message .avatar {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 13px;
             flex-shrink: 0;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
@@ -289,64 +289,64 @@
         .chat-message .username {
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
-            font-size: 13px;
+            font-size: 12px;
             white-space: nowrap;
+            min-width: 50px;
         }
 
         .chat-message .text {
             color: rgba(255, 255, 255, 0.75);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 300;
             word-break: break-word;
             flex: 1;
         }
 
         .chat-message .time {
-            color: rgba(255, 255, 255, 0.25);
-            font-size: 10px;
-            margin-left: auto;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 9px;
+            margin-left: 4px;
             white-space: nowrap;
             font-weight: 300;
         }
 
+        /* ===== REACTIONS - RIGHT SIDE FIX ===== */
         .chat-message .reactions {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             margin-left: 6px;
             flex-shrink: 0;
+            align-items: center;
         }
 
         .chat-message .reactions .reaction-btn {
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.3s;
-            padding: 2px 4px;
+            padding: 2px 5px;
             border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
             border: none;
             color: #fff;
+            line-height: 1;
         }
 
         .chat-message .reactions .reaction-btn:hover {
-            transform: scale(1.3);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        @keyframes slideIn {
-            to { opacity: 1; transform: translateX(0); }
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         ::-webkit-scrollbar {
-            width: 4px;
+            width: 3px;
         }
 
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.3);
+            background: rgba(102, 126, 234, 0.2);
             border-radius: 4px;
         }
 
@@ -360,25 +360,25 @@
             .claim-btn { padding: 8px 28px; font-size: 14px; }
             .claim-btn::before { border-radius: 36px; }
             .chat-section { border-radius: 8px; margin-top: 2px; }
-            .chat-message { padding: 6px 10px; font-size: 12px; gap: 6px; }
+            .chat-message { padding: 5px 10px; font-size: 11px; gap: 6px; }
             .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
-            .chat-message .username { font-size: 11px; }
-            .chat-message .text { font-size: 11px; }
+            .chat-message .username { font-size: 10px; min-width: 40px; }
+            .chat-message .text { font-size: 10px; }
             .chat-message .time { font-size: 8px; }
-            .chat-message .reactions .reaction-btn { font-size: 12px; }
-            .chat-container { padding: 6px 10px; padding-top: 25px; }
+            .chat-message .reactions .reaction-btn { font-size: 11px; }
+            .chat-container { padding: 6px 10px; padding-top: 20px; }
         }
 
         @media (max-width: 400px) {
             .headline { font-size: 12px; }
             .claim-btn { padding: 6px 18px; font-size: 12px; }
             .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
-            .chat-message .avatar { width: 20px; height: 20px; font-size: 9px; }
-            .chat-message .username { font-size: 9px; }
+            .chat-message .avatar { width: 22px; height: 22px; font-size: 9px; }
+            .chat-message .username { font-size: 9px; min-width: 35px; }
             .chat-message .text { font-size: 9px; }
             .chat-message .time { font-size: 7px; }
             .chat-message .reactions .reaction-btn { font-size: 10px; }
-            .chat-container { padding: 4px 6px; padding-top: 20px; }
+            .chat-container { padding: 4px 6px; padding-top: 15px; }
         }
 
         :-webkit-full-screen .video-container { border-radius: 0; }
@@ -605,7 +605,7 @@
             }, 3200);
         }
 
-        // ==================== FAKE CHAT ====================
+        // ==================== CHAT SYSTEM (OPTIMIZED NO LAG) ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' },
             { name: 'KingSlayer', emoji: '👑' },
@@ -650,6 +650,7 @@
             return m + ':' + s;
         }
 
+        // ===== ADD CHAT WITH NO LAG =====
         function addChat() {
             const user = getRandom(users);
             const msg = getRandom(messages);
@@ -670,18 +671,47 @@
             `;
             chatContainer.appendChild(el);
 
+            // Auto scroll to bottom
             const container = document.getElementById('chatContainer');
             container.scrollTop = container.scrollHeight;
 
-            while (chatContainer.children.length > 40) {
+            // Remove old messages (keep last 30)
+            while (chatContainer.children.length > 30) {
                 chatContainer.removeChild(chatContainer.firstChild);
             }
 
+            // Apply fade to oldest messages (niche se uper jate jate gayab)
+            applyFadeEffect();
+
             if (Math.random() > 0.5) {
-                setTimeout(createFlyingReaction, 300);
+                setTimeout(createFlyingReaction, 200);
             }
         }
 
+        // ===== APPLY FADE EFFECT - NICHE SE UPER =====
+        function applyFadeEffect() {
+            const messages = chatContainer.querySelectorAll('.chat-message');
+            const total = messages.length;
+            
+            // Messages ko reverse order me process karo (niche wale pehle)
+            messages.forEach((msg, index) => {
+                // Last 3 messages (niche wale) - zyada fade
+                if (index >= total - 3) {
+                    msg.classList.add('fade-out');
+                } else if (index >= total - 6) {
+                    // Middle messages - thoda fade
+                    msg.style.opacity = '0.5';
+                    msg.style.transform = 'translateY(5px) scale(0.98)';
+                } else {
+                    // Top messages - full visible
+                    msg.classList.remove('fade-out');
+                    msg.style.opacity = '1';
+                    msg.style.transform = 'translateY(0) scale(1)';
+                }
+            });
+        }
+
+        // ===== TRIGGER REACTION =====
         function triggerReaction(emoji, event) {
             const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
             const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
@@ -704,26 +734,45 @@
 
         window.triggerReaction = triggerReaction;
 
-        // ==================== AUTO FLYING REACTIONS ====================
+        // ===== AUTO FLYING REACTIONS =====
         setInterval(function() {
             if (Math.random() > 0.5) {
                 createFlyingReaction();
             }
         }, 3500);
 
-        // ==================== CHAT INIT ====================
+        // ===== CHAT INIT =====
+        // Initial chats
         for (let i = 0; i < 12; i++) {
-            setTimeout(addChat, i * 200);
+            setTimeout(addChat, i * 150);
         }
 
-        setInterval(function() {
+        // Interval for new chats (slower = less lag)
+        let chatInterval = setInterval(function() {
             addChat();
             if (Math.random() > 0.6) {
-                setTimeout(addChat, 400);
+                setTimeout(addChat, 300);
             }
-        }, 1200 + Math.random() * 1500);
+        }, 1500 + Math.random() * 1200);
 
-        // ==================== CLAIM BUTTON ====================
+        // ===== OPTIMIZATION: Use requestAnimationFrame for smooth rendering =====
+        let rafId = null;
+        function smoothRender() {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(function() {
+                applyFadeEffect();
+                rafId = null;
+            });
+        }
+
+        // Override addChat to use smooth render
+        const originalAddChat = addChat;
+        addChat = function() {
+            originalAddChat();
+            smoothRender();
+        };
+
+        // ===== CLAIM BUTTON =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -779,7 +828,8 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
         console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
-        console.log('💬 Chats fade out at bottom line');
+        console.log('💬 Chat fade: Niche se uper jate jate gayab (optimized no lag)');
+        console.log('⚡ Reactions: Right side fixed');
     </script>
 </body>
 </html>
