@@ -180,7 +180,6 @@
             50% { opacity: 1; transform: scale(1.04); }
         }
         
-        /* ===== UPI APPS ===== */
         .upi-apps {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -286,8 +285,17 @@
             border-radius: 10px;
             margin: 10px 0;
             border: 1px solid rgba(255,255,255,0.05);
+            display: none;
         }
-        .modal-content .payment-detail .value { font-size: 18px; font-weight: 700; color: #48bb78; word-break: break-all; }
+        .modal-content .payment-detail .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #48bb78;
+            word-break: break-all;
+        }
+        .modal-content .payment-detail .hidden-upi {
+            display: none;
+        }
         
         .modal-content .btn-pay {
             width: 100%;
@@ -509,10 +517,10 @@
                 <div id="appSelectError" style="color:#fc8181;font-size:12px;text-align:center;display:none;">Please select a payment app</div>
             </div>
             
-            <div class="payment-detail" id="paymentDetail" style="display:none;">
-                <div class="value" id="upiDisplay">UPI ID: admin@upi</div>
-                <div style="font-size:13px;color:#888;margin-top:4px;" id="amountDisplay">Amount: ₹0</div>
-                <div style="font-size:12px;color:#888;margin-top:4px;" id="planDisplay">Plan: -</div>
+            <div class="payment-detail" id="paymentDetail">
+                <div class="value" id="amountDisplay">Amount: ₹0</div>
+                <div style="font-size:13px;color:#888;margin-top:4px;" id="planDisplay">Plan: -</div>
+                <!-- UPI ID hidden - not shown to user -->
             </div>
             
             <button class="btn-pay" id="payBtn" onclick="confirmPayment()" disabled>
@@ -679,7 +687,6 @@
                             selectedPlan = plan;
                             const priceVal = currentPricing[plan] || 0;
                             document.getElementById('paymentDetail').style.display = 'block';
-                            document.getElementById('upiDisplay').textContent = `UPI: admin@upi`;
                             document.getElementById('amountDisplay').textContent = `Amount: ₹${priceVal}`;
                             document.getElementById('planDisplay').textContent = `Plan: ${planNames[plan]}`;
                             if (selectedApp) document.getElementById('payBtn').disabled = false;
@@ -718,7 +725,7 @@
             if (selectedPlan) document.getElementById('payBtn').disabled = false;
         }
         
-        // ===== Confirm Payment =====
+        // ===== Confirm Payment (UPI ID Hidden) =====
         async function confirmPayment() {
             if (!selectedPlan) { alert('Please select a plan'); return; }
             if (!selectedApp) { document.getElementById('appSelectError').style.display = 'block'; return; }
@@ -728,7 +735,7 @@
             payBtn.disabled = true;
             
             try {
-                // First, create renewal request
+                // Create renewal request
                 const r = await fetch('/api/renewal/request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -738,27 +745,21 @@
                 
                 if (data.success) {
                     currentRequestId = data.requestId;
-                    
-                    // Open UPI app with admin UPI ID and amount
-                    const upiId = data.upiId || 'admin@upi';
                     const amount = data.amount || 0;
-                    const upiUrl = `upi://pay?pa=${upiId}&am=${amount}&cu=INR&tn=Renewal%20for%20link%20${currentLinkId}`;
                     
-                    // Try to open UPI app
+                    // Open UPI app directly with amount (UPI ID hidden)
                     const appUrls = {
-                        'phonepe': `phonepe://pay?pa=${upiId}&am=${amount}&cu=INR`,
-                        'gpay': `gpay://upi/pay?pa=${upiId}&am=${amount}&cu=INR`,
-                        'paytm': `paytm://upi/pay?pa=${upiId}&am=${amount}&cu=INR`
+                        'phonepe': `phonepe://pay?pa=admin@upi&am=${amount}&cu=INR`,
+                        'gpay': `gpay://upi/pay?pa=admin@upi&am=${amount}&cu=INR`,
+                        'paytm': `paytm://upi/pay?pa=admin@upi&am=${amount}&cu=INR`
                     };
                     
-                    const appUrl = appUrls[selectedApp] || upiUrl;
-                    
-                    // Open UPI app
+                    const appUrl = appUrls[selectedApp];
                     const opened = window.open(appUrl, '_blank');
                     
                     if (!opened) {
-                        // Fallback: copy UPI ID
-                        alert(`Please send ₹${amount} to UPI ID: ${upiId}\nAfter payment, click OK to confirm.`);
+                        // Fallback - no UPI ID shown
+                        alert(`Please pay ₹${amount} via ${selectedApp.toUpperCase()}\nAfter payment, click OK to confirm.`);
                     }
                     
                     // Confirm payment after user returns
@@ -777,13 +778,11 @@
                                 document.getElementById('renewedLinkName').textContent = `Link: ${currentLinkData?.name || 'Your Link'}`;
                                 document.getElementById('successOverlay').classList.add('show');
                                 
-                                // Update renewal status
                                 document.getElementById('renewalStatus').classList.add('show');
                                 document.getElementById('renewalStatusText').textContent = '⏳ Payment sent! Waiting for admin approval.';
                                 document.getElementById('renewalStatusText').className = 'paid';
                                 document.getElementById('renewalStatusTime').textContent = `Requested on: ${new Date().toLocaleString()}`;
                                 
-                                // Start polling for status
                                 if (pollInterval) clearInterval(pollInterval);
                                 pollInterval = setInterval(() => checkRenewalStatus(currentLinkId), 5000);
                                 
@@ -797,7 +796,6 @@
                 } else {
                     if (data.existingRequest) {
                         alert('You already have a pending renewal request. Please wait for admin approval.');
-                        // Show existing status
                         const req = data.existingRequest;
                         document.getElementById('renewalStatus').classList.add('show');
                         document.getElementById('renewalStatusText').textContent = 
@@ -821,7 +819,6 @@
         
         function closeSuccess() { 
             document.getElementById('successOverlay').classList.remove('show');
-            // Refresh stats
             if (currentLinkId) loadStats(currentLinkId);
         }
         
@@ -927,6 +924,7 @@
         
         console.log('📊 User Dashboard Ready');
         console.log('💡 Paste your link to check stats');
+        console.log('🔒 UPI ID hidden - Direct app payment');
     </script>
 </body>
 </html>
