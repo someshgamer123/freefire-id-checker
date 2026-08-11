@@ -504,7 +504,7 @@ app.get('/api/link/:id', (req, res) => {
     }
 });
 
-// ==================== PARENT LINK / USER DASHBOARD ====================
+// ==================== USER DASHBOARD ROUTES ====================
 
 // ===== GET USER DASHBOARD LINK =====
 app.get('/api/parent-link', (req, res) => {
@@ -746,7 +746,12 @@ app.get('/v/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
 });
 
+// ===== USER DASHBOARD ROUTES (FIXED) =====
 app.get('/user-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
+});
+
+app.get('/user-dashboard/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
 });
 

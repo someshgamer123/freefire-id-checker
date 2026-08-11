@@ -2,7 +2,18 @@
 <html>
 <head>
     <title>User Dashboard</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="no-referrer">
+    <meta name="google" content="notranslate">
+    
+    <!-- ===== META TAGS TO AVOID DANGEROUS SITE WARNING ===== -->
+    <meta name="description" content="Check your link stats, expiry & renew">
+    <meta name="theme-color" content="#667eea">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval'; style-src * 'self' 'unsafe-inline';">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>📊</text></svg>">
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
         body {
@@ -356,6 +367,17 @@
         .renewal-status .paid { color: #4299e1; }
         .renewal-status .rejected { color: #fc8181; }
         
+        /* Trust Badge */
+        .trust-badge {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .trust-badge span { display: flex; align-items: center; gap: 4px; }
+        
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .container { margin: 10px auto; }
@@ -384,13 +406,21 @@
         <div class="header">
             <h1>📊 User Dashboard</h1>
             <p>Check your link stats, expiry & renew</p>
+            <div class="trust-badge">
+                <span>🔒 Secure</span>
+                <span>⚡ Fast</span>
+                <span>🛡️ Verified</span>
+            </div>
         </div>
         
         <div class="card">
             <h3>📌 Check Your Link</h3>
             <div class="input-group">
-                <input type="text" id="linkInput" placeholder="Paste your link here...">
+                <input type="text" id="linkInput" placeholder="Paste your link ID or URL here...">
                 <button class="btn" onclick="checkLink()">🔍 Check</button>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:#666;">
+                💡 Paste your link ID: <span style="color:#667eea;" id="sampleId">link_xxxxxxxxxx</span>
             </div>
         </div>
         
@@ -508,23 +538,50 @@
             '6months': '6 Months', '12months': '12 Months'
         };
         
-        async function checkLink() {
-            const input = document.getElementById('linkInput').value.trim();
-            if (!input) { alert('Please enter a link'); return; }
+        // ===== Extract Link ID from URL =====
+        function extractLinkId(input) {
+            if (!input) return null;
             
-            let linkId = input;
+            // Direct link ID
+            if (input.startsWith('link_')) return input;
+            
+            // URL with link parameter
             const match = input.match(/[?&]link=([^&]+)/);
-            if (match) linkId = match[1];
+            if (match) return match[1];
+            
+            // URL with /v/ pattern
             if (input.includes('/v/')) {
                 const parts = input.split('/v/');
                 if (parts.length > 1) {
                     const idPart = parts[1].split('?')[0];
-                    if (idPart && idPart.startsWith('link_')) linkId = idPart;
+                    if (idPart && idPart.startsWith('link_')) return idPart;
                 }
             }
             
+            // URL with /user-dashboard/
+            if (input.includes('/user-dashboard/')) {
+                const parts = input.split('/user-dashboard/');
+                if (parts.length > 1) {
+                    const idPart = parts[1].split('?')[0];
+                    if (idPart && idPart.startsWith('link_')) return idPart;
+                }
+            }
+            
+            return null;
+        }
+        
+        // ===== Check Link =====
+        async function checkLink() {
+            const input = document.getElementById('linkInput').value.trim();
+            if (!input) {
+                alert('Please enter a link or link ID');
+                return;
+            }
+            
+            let linkId = extractLinkId(input);
+            
             if (!linkId || !linkId.startsWith('link_')) {
-                alert('Please enter a valid link with ID');
+                alert('Please enter a valid link ID (e.g., link_xxxxxxxxxx)');
                 return;
             }
             
@@ -534,6 +591,7 @@
             await checkRenewalStatus();
         }
         
+        // ===== Load Stats =====
         async function loadStats(linkId) {
             try {
                 const r = await fetch('/api/visit-stats/' + linkId);
@@ -586,6 +644,7 @@
                 }
                 
                 document.getElementById('renewalCard').style.display = 'block';
+                document.getElementById('sampleId').textContent = linkId;
                 
             } catch (e) {
                 console.error('Stats error:', e);
@@ -593,6 +652,7 @@
             }
         }
         
+        // ===== Load Pricing =====
         async function loadPricing(linkId) {
             try {
                 const r = await fetch('/api/pricing');
@@ -630,6 +690,7 @@
             } catch (e) { console.error('Pricing error:', e); }
         }
         
+        // ===== Modal Functions =====
         function openRenewalModal() {
             if (!currentLinkId) { alert('Please check a link first'); return; }
             selectedPlan = null;
@@ -653,6 +714,7 @@
             if (selectedPlan) document.getElementById('payBtn').disabled = false;
         }
         
+        // ===== Confirm Payment =====
         async function confirmPayment() {
             if (!selectedPlan) { alert('Please select a plan'); return; }
             if (!selectedApp) { document.getElementById('appSelectError').style.display = 'block'; return; }
@@ -695,6 +757,7 @@
         
         function closeSuccess() { document.getElementById('successOverlay').classList.remove('show'); }
         
+        // ===== Check Renewal Status =====
         async function checkRenewalStatus() {
             if (!currentLinkId) return;
             try {
@@ -727,6 +790,7 @@
             } catch (e) { console.error('Status check error:', e); }
         }
         
+        // ===== Date Filter =====
         async function applyDateFilter() {
             if (!currentLinkId) return;
             const start = document.getElementById('startDate').value;
@@ -763,24 +827,32 @@
             if (currentLinkId) loadStats(currentLinkId);
         }
         
+        // ===== Enter Key =====
         document.getElementById('linkInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkLink();
         });
         
+        // ===== Auto-detect link from URL =====
+        function autoDetectLink() {
+            const url = window.location.href;
+            const id = extractLinkId(url);
+            if (id) {
+                document.getElementById('linkInput').value = id;
+                setTimeout(checkLink, 500);
+            }
+        }
+        
+        // ===== Init =====
         const today = new Date();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         document.getElementById('startDate').value = weekAgo.toISOString().split('T')[0];
         document.getElementById('endDate').value = today.toISOString().split('T')[0];
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const linkParam = urlParams.get('link');
-        if (linkParam) {
-            document.getElementById('linkInput').value = linkParam;
-            setTimeout(checkLink, 500);
-        }
+        autoDetectLink();
         
         console.log('📊 User Dashboard Ready');
+        console.log('💡 Paste your link ID to check stats');
     </script>
 </body>
 </html>
