@@ -5,6 +5,7 @@ const urlsToCache = [
     '/admin/index.html',
     '/uid-checker.html',
     '/video-lock.html',
+    '/user-dashboard.html',
     '/manifest.json'
 ];
 

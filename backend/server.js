@@ -88,7 +88,24 @@ function initDB() {
             settings: {
                 background: null
             },
-            sessions: []
+            sessions: [],
+            parentLink: null,
+            pricing: {
+                '3days': 50,
+                '7days': 100,
+                '15days': 200,
+                '1month': 500,
+                '3months': 1200,
+                '6months': 2000,
+                '12months': 3500
+            },
+            paymentSettings: {
+                method: 'UPI',
+                details: {
+                    upiId: 'admin@upi'
+                }
+            },
+            renewalRequests: []
         };
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('═══════════════════════════════════════════');
@@ -179,7 +196,7 @@ function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== ROUTES ====================
+// ==================== ADMIN ROUTES ====================
 
 // ===== ADMIN LOGIN =====
 app.post('/api/admin/login', authLimiter, async (req, res) => {
@@ -282,6 +299,48 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
+// ===== UPDATE THEME =====
+app.post('/api/admin/theme', authMiddleware, (req, res) => {
+    try {
+        const { theme } = req.body;
+        const db = readDB();
+
+        if (!['light', 'dark'].includes(theme)) {
+            return res.status(400).json({ error: 'Invalid theme' });
+        }
+
+        db.admin.theme = theme;
+        writeDB(db);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update theme' });
+    }
+});
+
+// ===== UPDATE BACKGROUND =====
+app.post('/api/admin/background', authMiddleware, (req, res) => {
+    try {
+        const { background } = req.body;
+        const db = readDB();
+
+        if (background && !/^data:image\/(jpeg|png|gif|webp);base64,/.test(background)) {
+            return res.status(400).json({ error: 'Invalid image format' });
+        }
+
+        if (background && Buffer.from(background.split(',')[1], 'base64').length > 1024 * 1024) {
+            return res.status(400).json({ error: 'Image too large (max 1MB)' });
+        }
+
+        db.settings.background = background;
+        writeDB(db);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update background' });
+    }
+});
+
+// ==================== LINK ROUTES ====================
+
 // ===== GET ALL LINKS =====
 app.get('/api/links', authMiddleware, (req, res) => {
     try {
@@ -320,7 +379,8 @@ app.post('/api/links', authMiddleware, (req, res) => {
             created: new Date().toISOString(),
             expiryDate: expiryDate || null,
             status: 'active',
-            visits: 0
+            visits: 0,
+            dailyVisits: {}
         };
 
         db.links.push(newLink);
@@ -425,7 +485,11 @@ app.get('/api/link/:id', (req, res) => {
             return res.status(403).json({ error: `Link is ${link.status}` });
         }
 
+        // Track visit
         link.visits++;
+        const today = new Date().toISOString().split('T')[0];
+        if (!link.dailyVisits) link.dailyVisits = {};
+        link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
         writeDB(db);
 
         res.json({
@@ -440,44 +504,224 @@ app.get('/api/link/:id', (req, res) => {
     }
 });
 
-// ===== UPDATE THEME =====
-app.post('/api/admin/theme', authMiddleware, (req, res) => {
+// ==================== PARENT LINK / USER DASHBOARD ====================
+
+// ===== GET USER DASHBOARD LINK =====
+app.get('/api/parent-link', (req, res) => {
     try {
-        const { theme } = req.body;
         const db = readDB();
-
-        if (!['light', 'dark'].includes(theme)) {
-            return res.status(400).json({ error: 'Invalid theme' });
+        if (!db) {
+            return res.status(500).json({ error: 'Database error' });
         }
-
-        db.admin.theme = theme;
-        writeDB(db);
-        res.json({ success: true });
+        if (!db.parentLink) {
+            db.parentLink = {
+                url: '/user-dashboard/' + generateLinkId(),
+                createdAt: new Date().toISOString()
+            };
+            writeDB(db);
+            console.log('✅ User Dashboard Link generated:', db.parentLink.url);
+        }
+        res.json(db.parentLink);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update theme' });
+        console.error('❌ Dashboard link error:', error);
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
     }
 });
 
-// ===== UPDATE BACKGROUND =====
-app.post('/api/admin/background', authMiddleware, (req, res) => {
-    try {
-        const { background } = req.body;
-        const db = readDB();
-
-        if (background && !/^data:image\/(jpeg|png|gif|webp);base64,/.test(background)) {
-            return res.status(400).json({ error: 'Invalid image format' });
-        }
-
-        if (background && Buffer.from(background.split(',')[1], 'base64').length > 1024 * 1024) {
-            return res.status(400).json({ error: 'Image too large (max 1MB)' });
-        }
-
-        db.settings.background = background;
-        writeDB(db);
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update background' });
+// ===== GET VISIT STATS =====
+app.get('/api/visit-stats/:linkId', (req, res) => {
+    const { linkId } = req.params;
+    const { startDate, endDate } = req.query;
+    const db = readDB();
+    
+    const link = db.links.find(l => l.id === linkId);
+    if (!link) {
+        return res.status(404).json({ error: 'Link not found' });
     }
+    
+    let visits = link.visits || 0;
+    let dailyVisits = link.dailyVisits || {};
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const filtered = {};
+        let total = 0;
+        for (const [date, count] of Object.entries(dailyVisits)) {
+            const d = new Date(date);
+            if (d >= start && d <= end) {
+                filtered[date] = count;
+                total += count;
+            }
+        }
+        visits = total;
+        dailyVisits = filtered;
+    }
+    
+    const expiryDate = link.expiryDate ? new Date(link.expiryDate) : null;
+    const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
+    
+    res.json({
+        linkId: link.id,
+        name: link.name,
+        totalVisits: visits,
+        dailyVisits: dailyVisits,
+        expiryDate: expiryDate,
+        daysLeft: daysLeft,
+        status: link.status
+    });
+});
+
+// ==================== RENEWAL ROUTES ====================
+
+// ===== REQUEST RENEWAL =====
+app.post('/api/renewal/request', (req, res) => {
+    const { linkId, plan } = req.body;
+    const db = readDB();
+    
+    const link = db.links.find(l => l.id === linkId);
+    if (!link) {
+        return res.status(404).json({ error: 'Link not found' });
+    }
+    
+    const pricing = db.pricing || {};
+    const planDays = {
+        '3days': 3,
+        '7days': 7,
+        '15days': 15,
+        '1month': 30,
+        '3months': 90,
+        '6months': 180,
+        '12months': 365
+    };
+    
+    const days = planDays[plan];
+    if (!days) {
+        return res.status(400).json({ error: 'Invalid plan' });
+    }
+    
+    const amount = pricing[plan] || 0;
+    if (amount === 0) {
+        return res.status(400).json({ error: 'Price not set for this plan' });
+    }
+    
+    const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
+    if (existing) {
+        return res.status(400).json({ error: 'You already have a pending renewal request' });
+    }
+    
+    // Auto-approve for demo
+    const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+    const newExpiry = new Date(currentExpiry);
+    newExpiry.setDate(newExpiry.getDate() + days);
+    link.expiryDate = newExpiry.toISOString();
+    link.status = 'active';
+    
+    const renewalRequest = {
+        id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+        linkId: linkId,
+        linkName: link.name,
+        plan: plan,
+        days: days,
+        amount: amount,
+        status: 'approved',
+        createdAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString()
+    };
+    
+    if (!db.renewalRequests) db.renewalRequests = [];
+    db.renewalRequests.push(renewalRequest);
+    writeDB(db);
+    
+    res.json({
+        success: true,
+        requestId: renewalRequest.id,
+        amount: amount,
+        plan: plan,
+        days: days,
+        paymentMethod: db.paymentSettings?.method || 'UPI',
+        paymentDetails: db.paymentSettings?.details || {}
+    });
+});
+
+// ===== GET RENEWAL REQUESTS (ADMIN) =====
+app.get('/api/renewal/requests', authMiddleware, (req, res) => {
+    const db = readDB();
+    res.json(db.renewalRequests || []);
+});
+
+// ===== MARK AS PAID (ADMIN) =====
+app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
+    const { requestId } = req.params;
+    const db = readDB();
+    const request = db.renewalRequests?.find(r => r.id === requestId);
+    if (!request) {
+        return res.status(404).json({ error: 'Request not found' });
+    }
+    request.status = 'paid';
+    request.paidAt = new Date().toISOString();
+    writeDB(db);
+    res.json({ success: true, message: 'Payment marked as paid' });
+});
+
+// ===== APPROVE RENEWAL (ADMIN) =====
+app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
+    const { requestId } = req.params;
+    const db = readDB();
+    const request = db.renewalRequests?.find(r => r.id === requestId);
+    if (!request) {
+        return res.status(404).json({ error: 'Request not found' });
+    }
+    if (request.status !== 'paid') {
+        return res.status(400).json({ error: 'Payment not confirmed yet' });
+    }
+    
+    const link = db.links.find(l => l.id === request.linkId);
+    if (link) {
+        const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+        const newExpiry = new Date(currentExpiry);
+        newExpiry.setDate(newExpiry.getDate() + request.days);
+        link.expiryDate = newExpiry.toISOString();
+        link.status = 'active';
+    }
+    
+    request.status = 'approved';
+    request.approvedAt = new Date().toISOString();
+    writeDB(db);
+    res.json({ success: true, message: 'Renewal approved!' });
+});
+
+// ===== REJECT RENEWAL (ADMIN) =====
+app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
+    const { requestId } = req.params;
+    const db = readDB();
+    const request = db.renewalRequests?.find(r => r.id === requestId);
+    if (!request) {
+        return res.status(404).json({ error: 'Request not found' });
+    }
+    request.status = 'rejected';
+    writeDB(db);
+    res.json({ success: true, message: 'Renewal rejected' });
+});
+
+// ===== UPDATE PRICING (ADMIN) =====
+app.post('/api/admin/pricing', authMiddleware, (req, res) => {
+    const { pricing, paymentSettings } = req.body;
+    const db = readDB();
+    if (pricing) db.pricing = pricing;
+    if (paymentSettings) db.paymentSettings = paymentSettings;
+    writeDB(db);
+    res.json({ success: true });
+});
+
+// ===== GET PRICING (PUBLIC) =====
+app.get('/api/pricing', (req, res) => {
+    const db = readDB();
+    res.json({
+        pricing: db.pricing || {},
+        paymentSettings: db.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } }
+    });
 });
 
 // ===== GET SETTINGS (PUBLIC) =====
@@ -493,13 +737,17 @@ app.get('/api/settings', (req, res) => {
     }
 });
 
-// ===== SERVE PAGES =====
+// ==================== SERVE PAGES ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
 
 app.get('/v/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
+});
+
+app.get('/user-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
 });
 
 app.get('/admin/login.html', (req, res) => {
@@ -522,13 +770,14 @@ app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
 });
 
-// ===== START SERVER =====
+// ==================== START SERVER ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
     console.log('═══════════════════════════════════════════');
     console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
+    console.log(`📊 User Dashboard: http://localhost:${port}/user-dashboard`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');

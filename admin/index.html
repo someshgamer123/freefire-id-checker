@@ -144,87 +144,51 @@
 
         /* ===== PASSCODE INPUT - 2 FIELDS ===== */
         .passcode-2 {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
         }
         .passcode-2 input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 16px;
-            background: var(--bg);
-            color: var(--text);
-            min-width: 150px;
+            flex: 1; padding: 12px 16px; border: 2px solid var(--border);
+            border-radius: 10px; font-size: 16px; background: var(--bg);
+            color: var(--text); min-width: 150px;
         }
         .passcode-2 input:focus { border-color: var(--primary); outline: none; }
 
         /* ===== RENEWAL MANAGEMENT COLLAPSIBLE ===== */
         .collapse-btn {
-            width: 100%;
-            padding: 14px 20px;
+            width: 100%; padding: 14px 20px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: white; border: none; border-radius: 12px; font-size: 16px;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .collapse-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
         .collapse-btn .arrow { transition: 0.3s; }
         .collapse-btn .arrow.open { transform: rotate(180deg); }
 
         .collapse-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease, padding 0.3s ease;
+            max-height: 0; overflow: hidden; transition: max-height 0.5s ease, padding 0.3s ease;
             padding: 0 4px;
         }
         .collapse-content.open {
-            max-height: 2000px;
-            padding: 16px 4px 4px 4px;
+            max-height: 2000px; padding: 16px 4px 4px 4px;
         }
 
         /* ===== PAYMENT SETTINGS DYNAMIC ===== */
         .payment-dynamic {
-            margin-top: 8px;
-            padding: 12px 16px;
-            background: var(--bg);
-            border-radius: 10px;
-            border: 2px solid var(--border);
-            display: none;
+            margin-top: 8px; padding: 12px 16px; background: var(--bg);
+            border-radius: 10px; border: 2px solid var(--border); display: none;
         }
         .payment-dynamic.show { display: block; }
         .payment-dynamic input[type="text"] {
-            width: 100%;
-            padding: 10px 14px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
+            width: 100%; padding: 10px 14px; border: 2px solid var(--border);
+            border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px;
         }
         .payment-dynamic input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
+            width: 100%; padding: 10px; border: 2px solid var(--border);
+            border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px;
         }
         .payment-dynamic .preview-qr {
-            max-width: 150px;
-            margin-top: 8px;
-            border-radius: 8px;
-            display: none;
+            max-width: 150px; margin-top: 8px; border-radius: 8px; display: none;
         }
         .payment-dynamic .preview-qr.show { display: block; }
 
@@ -251,35 +215,26 @@
         .pricing-grid .pricing-item input { width: 100%; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
         @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
 
-        .parent-link-box {
-            background: var(--bg);
-            padding: 12px 16px;
-            border-radius: 10px;
-            border: 2px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 8px;
+        /* ===== USER DASHBOARD LINK ===== */
+        .user-dashboard-box {
+            background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
+            padding: 14px 18px; border-radius: 12px;
+            border: 2px solid rgba(102,126,234,0.15);
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px; margin-top: 8px;
         }
-        .parent-link-box .link {
-            color: var(--primary);
-            word-break: break-all;
-            font-size: 14px;
+        .user-dashboard-box .label {
+            font-size: 13px; color: var(--text-light); font-weight: 600;
         }
-        .parent-link-box .btn-sm {
-            padding: 6px 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: 0.3s;
+        .user-dashboard-box .link {
+            color: var(--primary); word-break: break-all; font-size: 14px; font-weight: 500;
         }
-        .parent-link-box .btn-sm:hover { background: var(--secondary); }
+        .user-dashboard-box .btn-sm {
+            padding: 6px 16px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: 0.3s; white-space: nowrap;
+        }
+        .user-dashboard-box .btn-sm:hover { background: var(--secondary); transform: translateY(-2px); }
 
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 16px 20px; }
@@ -293,13 +248,15 @@
             .passcode-2 input { width: 100%; }
             .renewal-item { flex-direction: column; align-items: stretch; }
             .renewal-item .actions { justify-content: flex-start; }
-            .parent-link-box { flex-direction: column; align-items: stretch; text-align: center; }
+            .user-dashboard-box { flex-direction: column; align-items: stretch; text-align: center; }
+            .user-dashboard-box .link { font-size: 12px; }
         }
         @media (max-width: 480px) {
             .stats { grid-template-columns: 1fr; }
             .stat-card .number { font-size: 26px; }
             .toast { left: 20px; right: 20px; bottom: 20px; }
             .pricing-grid { grid-template-columns: 1fr; }
+            .user-dashboard-box { padding: 12px; }
         }
     </style>
 </head>
@@ -399,13 +356,17 @@
                 <span class="arrow" id="renewalArrow">▼</span>
             </button>
             <div class="collapse-content" id="renewalContent">
-                <!-- Parent Link -->
+                <!-- User Dashboard Link -->
                 <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">🔗 Parent Link</h4>
-                    <div class="parent-link-box">
-                        <span class="link" id="parentLinkDisplay">Loading...</span>
-                        <button class="btn-sm" onclick="copyParentLink()">📋 Copy</button>
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📊 User Dashboard</h4>
+                    <div class="user-dashboard-box">
+                        <div>
+                            <div class="label">🔗 Dashboard Link</div>
+                            <div class="link" id="userDashboardLink">Loading...</div>
+                        </div>
+                        <button class="btn-sm" onclick="copyDashboardLink()">📋 Copy</button>
                     </div>
+                    <p style="font-size:12px;color:var(--text-light);margin-top:6px;">📌 Users can check their link stats and renew from this dashboard</p>
                 </div>
 
                 <!-- Pricing Settings -->
@@ -439,16 +400,13 @@
                         <div>
                             <label style="font-size:12px;color:var(--text-light);">Payment Details</label>
                             <div id="paymentDetailsContainer">
-                                <!-- UPI Input -->
                                 <div class="payment-dynamic show" id="upiField">
                                     <input type="text" id="upiInput" placeholder="UPI ID (e.g., admin@upi)" value="admin@upi">
                                 </div>
-                                <!-- QR Upload -->
                                 <div class="payment-dynamic" id="qrField">
                                     <input type="file" id="qrInput" accept="image/*" onchange="previewQR(event)">
                                     <img id="qrPreview" class="preview-qr" alt="QR Preview">
                                 </div>
-                                <!-- Bank/Other -->
                                 <div class="payment-dynamic" id="textField">
                                     <input type="text" id="textInput" placeholder="Bank Details / Other Info">
                                 </div>
@@ -532,22 +490,29 @@
             arrow.classList.toggle('open');
         }
 
-        // ==================== PARENT LINK ====================
-        async function loadParentLink() {
+        // ==================== USER DASHBOARD LINK ====================
+        async function loadUserDashboardLink() {
             try {
                 const r = await fetch('/api/parent-link');
                 const data = await r.json();
                 const url = window.location.origin + data.url;
-                document.getElementById('parentLinkDisplay').textContent = url;
+                document.getElementById('userDashboardLink').textContent = url;
+                console.log('✅ User Dashboard Link:', url);
             } catch (e) {
-                document.getElementById('parentLinkDisplay').textContent = 'Error loading';
+                console.error('❌ Dashboard link error:', e);
+                document.getElementById('userDashboardLink').textContent = 'Error loading dashboard link';
+                setTimeout(loadUserDashboardLink, 2000);
             }
         }
 
-        function copyParentLink() {
-            const text = document.getElementById('parentLinkDisplay').textContent;
+        function copyDashboardLink() {
+            const text = document.getElementById('userDashboardLink').textContent;
+            if (text === 'Loading...' || text === 'Error loading dashboard link') {
+                showToast('⏳ Please wait for link to load', 'info');
+                return;
+            }
             navigator.clipboard.writeText(text).then(() => {
-                showToast('✅ Parent Link copied!', 'success');
+                showToast('✅ Dashboard link copied!', 'success');
             }).catch(() => {
                 const input = document.createElement('input');
                 input.value = text;
@@ -555,7 +520,7 @@
                 input.select();
                 document.execCommand('copy');
                 document.body.removeChild(input);
-                showToast('✅ Parent Link copied!', 'success');
+                showToast('✅ Dashboard link copied!', 'success');
             });
         }
 
@@ -735,7 +700,7 @@
             }
         }
 
-        // ==================== CHANGE PASSCODE (2 FIELDS) ====================
+        // ==================== CHANGE PASSCODE ====================
         async function changePasscode() {
             const oldPasscode = document.getElementById('oldPasscode').value;
             const newPasscode = document.getElementById('newPasscode').value;
@@ -1191,7 +1156,7 @@
         loadTheme();
         loadBackground();
         loadLinks();
-        loadParentLink();
+        loadUserDashboardLink();
         loadPricingData();
         loadRenewalRequests();
         setInterval(loadLinks, 30000);
