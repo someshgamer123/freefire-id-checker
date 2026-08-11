@@ -136,10 +136,10 @@
         }
 
         .claim-btn {
-            padding: 10px 40px;
+            padding: 14px 60px;
             border: none;
             border-radius: 50px;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 800;
             cursor: pointer;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -149,6 +149,8 @@
             letter-spacing: 1px;
             box-shadow: 0 0 30px rgba(102, 126, 234, 0.25);
             border: 2px solid rgba(255, 255, 255, 0.06);
+            width: 100%;
+            max-width: 400px;
         }
 
         .claim-btn:hover {
@@ -283,7 +285,7 @@
             }
         }
 
-        /* ===== CHAT FADE OUT (UPER JATE JATE) ===== */
+        /* ===== CHAT FADE OUT AT BLUE LINE (UPER JATE JATE) ===== */
         .chat-message.fade-out {
             opacity: 0 !important;
             transform: translateY(-20px) scale(0.9) !important;
@@ -414,8 +416,8 @@
             .video-container { border-radius: 8px; }
             .video-container::before { border-radius: 10px; }
             .headline { font-size: 14px; margin: 6px 0 3px; }
-            .claim-btn { padding: 8px 28px; font-size: 14px; }
-            .claim-btn::before { border-radius: 36px; }
+            .claim-btn { padding: 12px 40px; font-size: 16px; max-width: 100%; }
+            .claim-btn::before { border-radius: 40px; }
             .chat-section { border-radius: 8px; margin-top: 2px; }
             .chat-message { padding: 5px 10px; font-size: 11px; gap: 6px; }
             .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
@@ -429,7 +431,7 @@
 
         @media (max-width: 400px) {
             .headline { font-size: 12px; }
-            .claim-btn { padding: 6px 18px; font-size: 12px; }
+            .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
             .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
             .chat-message .avatar { width: 22px; height: 22px; font-size: 9px; }
             .chat-message .username { font-size: 9px; min-width: 35px; }
@@ -771,7 +773,7 @@
                     msg.style.opacity = '0.8';
                     msg.style.transform = 'translateY(0) scale(0.98)';
                 }
-                // Old messages (uper wale) - Fade out
+                // Old messages (uper wale) - Fade out at blue line
                 else {
                     msg.classList.add('fade-out');
                 }
@@ -890,7 +892,7 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
         console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
-        console.log('💬 Chat: Fade in from bottom, fade out at top');
+        console.log('💬 Chat: Fade in from bottom, fade out at blue line');
         console.log('⚡ Reactions: Smooth flying with no lag');
     </script>
 </body>
