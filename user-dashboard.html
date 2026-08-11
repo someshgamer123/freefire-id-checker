@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="referrer" content="no-referrer">
     <meta name="google" content="notranslate">
-    
-    <!-- ===== META TAGS TO AVOID DANGEROUS SITE WARNING ===== -->
     <meta name="description" content="Check your link stats, expiry & renew">
     <meta name="theme-color" content="#667eea">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval'; style-src * 'self' 'unsafe-inline';">
@@ -76,6 +74,13 @@
             transition: 0.3s;
         }
         .input-group .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
+        
+        .input-hint {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+        .input-hint span { color: #667eea; }
         
         .stats-grid {
             display: grid;
@@ -175,6 +180,7 @@
             50% { opacity: 1; transform: scale(1.04); }
         }
         
+        /* ===== UPI APPS ===== */
         .upi-apps {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -363,11 +369,11 @@
         }
         .renewal-status.show { display: block; }
         .renewal-status .pending { color: #f6ad55; }
-        .renewal-status .approved { color: #48bb78; }
         .renewal-status .paid { color: #4299e1; }
+        .renewal-status .approved { color: #48bb78; }
         .renewal-status .rejected { color: #fc8181; }
+        .renewal-status .status-time { font-size: 11px; color: #666; margin-top: 4px; }
         
-        /* Trust Badge */
         .trust-badge {
             display: flex;
             justify-content: center;
@@ -416,11 +422,11 @@
         <div class="card">
             <h3>📌 Check Your Link</h3>
             <div class="input-group">
-                <input type="text" id="linkInput" placeholder="Paste your link ID or URL here...">
+                <input type="text" id="linkInput" placeholder="Paste your link here...">
                 <button class="btn" onclick="checkLink()">🔍 Check</button>
             </div>
-            <div style="margin-top:8px;font-size:12px;color:#666;">
-                💡 Paste your link ID: <span style="color:#667eea;" id="sampleId">link_xxxxxxxxxx</span>
+            <div class="input-hint">
+                💡 Paste your link: <span id="sampleId">link_xxxxxxxxxx</span>
             </div>
         </div>
         
@@ -464,10 +470,12 @@
             <div class="renewal-status" id="renewalStatus">
                 <strong>Renewal Status:</strong><br>
                 <span id="renewalStatusText" class="pending">Pending approval</span>
+                <div class="status-time" id="renewalStatusTime"></div>
             </div>
         </div>
     </div>
     
+    <!-- ===== RENEWAL MODAL ===== -->
     <div class="modal-overlay" id="renewalModal">
         <div class="modal-content">
             <button class="close" onclick="closeRenewalModal()">✕</button>
@@ -504,6 +512,7 @@
             <div class="payment-detail" id="paymentDetail" style="display:none;">
                 <div class="value" id="upiDisplay">UPI ID: admin@upi</div>
                 <div style="font-size:13px;color:#888;margin-top:4px;" id="amountDisplay">Amount: ₹0</div>
+                <div style="font-size:12px;color:#888;margin-top:4px;" id="planDisplay">Plan: -</div>
             </div>
             
             <button class="btn-pay" id="payBtn" onclick="confirmPayment()" disabled>
@@ -513,13 +522,15 @@
         </div>
     </div>
     
+    <!-- ===== SUCCESS OVERLAY ===== -->
     <div class="success-overlay" id="successOverlay">
         <div class="success-content">
             <span class="icon">🎉</span>
-            <h2>Renewal Successful!</h2>
-            <p>Your link has been extended</p>
+            <h2>Renewal Request Sent!</h2>
+            <p>Your payment request has been sent to admin</p>
             <div class="renewed-days" id="renewedDays">+30 Days</div>
             <p style="color:#888;font-size:14px;" id="renewedLinkName">Link: Your Link</p>
+            <p style="color:#f6ad55;font-size:13px;margin-top:8px;">⏳ Status: Pending Admin Approval</p>
             <button class="btn-close-success" onclick="closeSuccess()">✅ Done</button>
         </div>
     </div>
@@ -531,6 +542,7 @@
         let currentPricing = {};
         let currentLinkData = null;
         let pollInterval = null;
+        let currentRequestId = null;
         
         const planNames = {
             '3days': '3 Days', '7days': '7 Days', '15days': '15 Days',
@@ -538,18 +550,12 @@
             '6months': '6 Months', '12months': '12 Months'
         };
         
-        // ===== Extract Link ID from URL =====
+        // ===== Extract Link ID =====
         function extractLinkId(input) {
             if (!input) return null;
-            
-            // Direct link ID
             if (input.startsWith('link_')) return input;
-            
-            // URL with link parameter
             const match = input.match(/[?&]link=([^&]+)/);
             if (match) return match[1];
-            
-            // URL with /v/ pattern
             if (input.includes('/v/')) {
                 const parts = input.split('/v/');
                 if (parts.length > 1) {
@@ -557,8 +563,6 @@
                     if (idPart && idPart.startsWith('link_')) return idPart;
                 }
             }
-            
-            // URL with /user-dashboard/
             if (input.includes('/user-dashboard/')) {
                 const parts = input.split('/user-dashboard/');
                 if (parts.length > 1) {
@@ -566,7 +570,6 @@
                     if (idPart && idPart.startsWith('link_')) return idPart;
                 }
             }
-            
             return null;
         }
         
@@ -574,21 +577,20 @@
         async function checkLink() {
             const input = document.getElementById('linkInput').value.trim();
             if (!input) {
-                alert('Please enter a link or link ID');
+                alert('Please enter a link');
                 return;
             }
             
             let linkId = extractLinkId(input);
-            
             if (!linkId || !linkId.startsWith('link_')) {
-                alert('Please enter a valid link ID (e.g., link_xxxxxxxxxx)');
+                alert('Please enter a valid link ID');
                 return;
             }
             
             currentLinkId = linkId;
             await loadStats(linkId);
             await loadPricing(linkId);
-            await checkRenewalStatus();
+            await checkRenewalStatus(linkId);
         }
         
         // ===== Load Stats =====
@@ -675,9 +677,11 @@
                             document.querySelectorAll('.plan-btn').forEach(b => b.classList.remove('active'));
                             this.classList.add('active');
                             selectedPlan = plan;
+                            const priceVal = currentPricing[plan] || 0;
                             document.getElementById('paymentDetail').style.display = 'block';
                             document.getElementById('upiDisplay').textContent = `UPI: admin@upi`;
-                            document.getElementById('amountDisplay').textContent = `Amount: ₹${price} (${planNames[plan]})`;
+                            document.getElementById('amountDisplay').textContent = `Amount: ₹${priceVal}`;
+                            document.getElementById('planDisplay').textContent = `Plan: ${planNames[plan]}`;
                             if (selectedApp) document.getElementById('payBtn').disabled = false;
                         };
                         plansContainer.appendChild(btn);
@@ -724,6 +728,7 @@
             payBtn.disabled = true;
             
             try {
+                // First, create renewal request
                 const r = await fetch('/api/renewal/request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -732,20 +737,79 @@
                 const data = await r.json();
                 
                 if (data.success) {
-                    closeRenewalModal();
-                    const days = data.days || 30;
-                    document.getElementById('renewedDays').textContent = `+${days} Days`;
-                    document.getElementById('renewedLinkName').textContent = `Link: ${currentLinkData?.name || 'Your Link'}`;
-                    document.getElementById('successOverlay').classList.add('show');
+                    currentRequestId = data.requestId;
                     
-                    document.getElementById('renewalStatus').classList.add('show');
-                    document.getElementById('renewalStatusText').textContent = `✅ Renewal approved! Link extended by ${days} days.`;
-                    document.getElementById('renewalStatusText').className = 'approved';
+                    // Open UPI app with admin UPI ID and amount
+                    const upiId = data.upiId || 'admin@upi';
+                    const amount = data.amount || 0;
+                    const upiUrl = `upi://pay?pa=${upiId}&am=${amount}&cu=INR&tn=Renewal%20for%20link%20${currentLinkId}`;
                     
-                    await loadStats(currentLinkId);
-                    if (pollInterval) clearInterval(pollInterval);
+                    // Try to open UPI app
+                    const appUrls = {
+                        'phonepe': `phonepe://pay?pa=${upiId}&am=${amount}&cu=INR`,
+                        'gpay': `gpay://upi/pay?pa=${upiId}&am=${amount}&cu=INR`,
+                        'paytm': `paytm://upi/pay?pa=${upiId}&am=${amount}&cu=INR`
+                    };
+                    
+                    const appUrl = appUrls[selectedApp] || upiUrl;
+                    
+                    // Open UPI app
+                    const opened = window.open(appUrl, '_blank');
+                    
+                    if (!opened) {
+                        // Fallback: copy UPI ID
+                        alert(`Please send ₹${amount} to UPI ID: ${upiId}\nAfter payment, click OK to confirm.`);
+                    }
+                    
+                    // Confirm payment after user returns
+                    setTimeout(async () => {
+                        try {
+                            const confirmRes = await fetch('/api/renewal/confirm-payment/' + currentRequestId, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ transactionId: 'TXN_' + Date.now() })
+                            });
+                            const confirmData = await confirmRes.json();
+                            
+                            if (confirmData.success) {
+                                closeRenewalModal();
+                                document.getElementById('renewedDays').textContent = `+${data.days} Days`;
+                                document.getElementById('renewedLinkName').textContent = `Link: ${currentLinkData?.name || 'Your Link'}`;
+                                document.getElementById('successOverlay').classList.add('show');
+                                
+                                // Update renewal status
+                                document.getElementById('renewalStatus').classList.add('show');
+                                document.getElementById('renewalStatusText').textContent = '⏳ Payment sent! Waiting for admin approval.';
+                                document.getElementById('renewalStatusText').className = 'paid';
+                                document.getElementById('renewalStatusTime').textContent = `Requested on: ${new Date().toLocaleString()}`;
+                                
+                                // Start polling for status
+                                if (pollInterval) clearInterval(pollInterval);
+                                pollInterval = setInterval(() => checkRenewalStatus(currentLinkId), 5000);
+                                
+                                await loadStats(currentLinkId);
+                            }
+                        } catch (e) {
+                            console.error('Payment confirmation error:', e);
+                        }
+                    }, 5000);
+                    
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    if (data.existingRequest) {
+                        alert('You already have a pending renewal request. Please wait for admin approval.');
+                        // Show existing status
+                        const req = data.existingRequest;
+                        document.getElementById('renewalStatus').classList.add('show');
+                        document.getElementById('renewalStatusText').textContent = 
+                            req.status === 'pending' ? '⏳ Payment pending. Please wait for admin approval.' :
+                            req.status === 'paid' ? '⏳ Payment confirmed! Waiting for admin approval.' :
+                            req.status === 'approved' ? '✅ Renewal approved!' :
+                            req.status === 'rejected' ? '❌ Renewal rejected. Please contact admin.' : 'Unknown status';
+                        document.getElementById('renewalStatusText').className = req.status;
+                        document.getElementById('renewalStatusTime').textContent = `Requested on: ${new Date(req.createdAt).toLocaleString()}`;
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
                 }
             } catch (e) {
                 console.error('Renewal error:', e);
@@ -755,35 +819,45 @@
             payBtn.disabled = false;
         }
         
-        function closeSuccess() { document.getElementById('successOverlay').classList.remove('show'); }
+        function closeSuccess() { 
+            document.getElementById('successOverlay').classList.remove('show');
+            // Refresh stats
+            if (currentLinkId) loadStats(currentLinkId);
+        }
         
         // ===== Check Renewal Status =====
-        async function checkRenewalStatus() {
-            if (!currentLinkId) return;
+        async function checkRenewalStatus(linkId) {
+            if (!linkId) linkId = currentLinkId;
+            if (!linkId) return;
             try {
-                const r = await fetch('/api/renewal/requests');
+                const r = await fetch('/api/renewal/status/' + linkId);
                 const data = await r.json();
-                const latest = data.filter(req => req.linkId === currentLinkId)
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-                    
-                if (latest) {
+                
+                if (data.hasRequest && data.request) {
+                    const req = data.request;
                     const statusContainer = document.getElementById('renewalStatus');
                     statusContainer.classList.add('show');
                     const statusEl = document.getElementById('renewalStatusText');
-                    if (latest.status === 'approved') {
-                        statusEl.textContent = `✅ Renewal approved! Link extended by ${latest.days} days.`;
+                    const timeEl = document.getElementById('renewalStatusTime');
+                    
+                    if (req.status === 'approved') {
+                        statusEl.textContent = `✅ Renewal approved! Link extended by ${req.days} days.`;
                         statusEl.className = 'approved';
+                        timeEl.textContent = `Approved on: ${new Date(req.approvedAt).toLocaleString()}`;
                         if (pollInterval) clearInterval(pollInterval);
-                        await loadStats(currentLinkId);
-                    } else if (latest.status === 'paid') {
+                        await loadStats(linkId);
+                    } else if (req.status === 'paid') {
                         statusEl.textContent = '⏳ Payment confirmed! Waiting for admin approval...';
                         statusEl.className = 'paid';
-                    } else if (latest.status === 'pending') {
+                        timeEl.textContent = `Paid on: ${new Date(req.paidAt).toLocaleString()}`;
+                    } else if (req.status === 'pending') {
                         statusEl.textContent = '⏳ Payment request sent. Waiting for admin approval...';
                         statusEl.className = 'pending';
-                    } else if (latest.status === 'rejected') {
+                        timeEl.textContent = `Requested on: ${new Date(req.createdAt).toLocaleString()}`;
+                    } else if (req.status === 'rejected') {
                         statusEl.textContent = '❌ Renewal rejected. Please contact admin.';
                         statusEl.className = 'rejected';
+                        timeEl.textContent = `Rejected on: ${new Date(req.approvedAt).toLocaleString()}`;
                         if (pollInterval) clearInterval(pollInterval);
                     }
                 }
@@ -852,7 +926,7 @@
         autoDetectLink();
         
         console.log('📊 User Dashboard Ready');
-        console.log('💡 Paste your link ID to check stats');
+        console.log('💡 Paste your link to check stats');
     </script>
 </body>
 </html>

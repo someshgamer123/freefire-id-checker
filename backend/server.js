@@ -572,9 +572,9 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
     });
 });
 
-// ==================== RENEWAL ROUTES ====================
+// ==================== RENEWAL ROUTES (WITH PAYMENT) ====================
 
-// ===== REQUEST RENEWAL =====
+// ===== REQUEST RENEWAL WITH UPI =====
 app.post('/api/renewal/request', (req, res) => {
     const { linkId, plan } = req.body;
     const db = readDB();
@@ -605,17 +605,14 @@ app.post('/api/renewal/request', (req, res) => {
         return res.status(400).json({ error: 'Price not set for this plan' });
     }
     
+    // Check existing pending request
     const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
     if (existing) {
-        return res.status(400).json({ error: 'You already have a pending renewal request' });
+        return res.status(400).json({ 
+            error: 'You already have a pending renewal request',
+            existingRequest: existing
+        });
     }
-    
-    // Auto-approve for demo
-    const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-    const newExpiry = new Date(currentExpiry);
-    newExpiry.setDate(newExpiry.getDate() + days);
-    link.expiryDate = newExpiry.toISOString();
-    link.status = 'active';
     
     const renewalRequest = {
         id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
@@ -624,24 +621,55 @@ app.post('/api/renewal/request', (req, res) => {
         plan: plan,
         days: days,
         amount: amount,
-        status: 'approved',
+        status: 'pending', // pending → paid → approved/rejected
         createdAt: new Date().toISOString(),
-        paidAt: new Date().toISOString(),
-        approvedAt: new Date().toISOString()
+        paidAt: null,
+        approvedAt: null,
+        upiId: db.paymentSettings?.details?.upiId || 'admin@upi',
+        paymentMethod: db.paymentSettings?.method || 'UPI'
     };
     
     if (!db.renewalRequests) db.renewalRequests = [];
     db.renewalRequests.push(renewalRequest);
     writeDB(db);
     
+    // Return UPI details for payment
     res.json({
         success: true,
         requestId: renewalRequest.id,
         amount: amount,
         plan: plan,
         days: days,
-        paymentMethod: db.paymentSettings?.method || 'UPI',
-        paymentDetails: db.paymentSettings?.details || {}
+        upiId: renewalRequest.upiId,
+        paymentMethod: renewalRequest.paymentMethod,
+        message: 'Payment request created. Please complete payment using UPI.'
+    });
+});
+
+// ===== CONFIRM PAYMENT (User marks as paid) =====
+app.post('/api/renewal/confirm-payment/:requestId', (req, res) => {
+    const { requestId } = req.params;
+    const { transactionId } = req.body;
+    const db = readDB();
+    
+    const request = db.renewalRequests?.find(r => r.id === requestId);
+    if (!request) {
+        return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    if (request.status !== 'pending') {
+        return res.status(400).json({ error: 'Request already processed' });
+    }
+    
+    request.status = 'paid';
+    request.paidAt = new Date().toISOString();
+    request.transactionId = transactionId || 'TXN_' + Date.now();
+    writeDB(db);
+    
+    res.json({ 
+        success: true, 
+        message: 'Payment confirmed! Waiting for admin approval.',
+        requestId: request.id
     });
 });
 
@@ -651,6 +679,21 @@ app.get('/api/renewal/requests', authMiddleware, (req, res) => {
     res.json(db.renewalRequests || []);
 });
 
+// ===== GET RENEWAL STATUS (USER) =====
+app.get('/api/renewal/status/:linkId', (req, res) => {
+    const { linkId } = req.params;
+    const db = readDB();
+    
+    const requests = db.renewalRequests?.filter(r => r.linkId === linkId) || [];
+    const latest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    
+    res.json({
+        hasRequest: !!latest,
+        request: latest || null,
+        status: latest?.status || 'none'
+    });
+});
+
 // ===== MARK AS PAID (ADMIN) =====
 app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
     const { requestId } = req.params;
@@ -658,6 +701,9 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
     const request = db.renewalRequests?.find(r => r.id === requestId);
     if (!request) {
         return res.status(404).json({ error: 'Request not found' });
+    }
+    if (request.status === 'approved' || request.status === 'rejected') {
+        return res.status(400).json({ error: 'Request already processed' });
     }
     request.status = 'paid';
     request.paidAt = new Date().toISOString();
@@ -677,6 +723,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
         return res.status(400).json({ error: 'Payment not confirmed yet' });
     }
     
+    // Extend link expiry
     const link = db.links.find(l => l.id === request.linkId);
     if (link) {
         const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
@@ -689,7 +736,8 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
     request.status = 'approved';
     request.approvedAt = new Date().toISOString();
     writeDB(db);
-    res.json({ success: true, message: 'Renewal approved!' });
+    
+    res.json({ success: true, message: 'Renewal approved! Link extended.' });
 });
 
 // ===== REJECT RENEWAL (ADMIN) =====
@@ -746,7 +794,6 @@ app.get('/v/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
 });
 
-// ===== USER DASHBOARD ROUTES (FIXED) =====
 app.get('/user-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
 });
