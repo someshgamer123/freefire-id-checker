@@ -8,51 +8,23 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body {
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background: #0a0a1a;
-            position: relative;
-            overflow: hidden;
+            display: flex; justify-content: center; align-items: center; padding: 20px;
+            background: #0a0a1a; position: relative; overflow: hidden;
         }
         .bg-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
         }
         .bg-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: blur(8px) brightness(0.4);
-            transform: scale(1.1);
+            width: 100%; height: 100%; object-fit: cover; filter: blur(8px) brightness(0.4); transform: scale(1.1);
         }
         .bg-container .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
         }
         .container {
-            position: relative;
-            z-index: 1;
-            background: rgba(255,255,255,0.06);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 40px 35px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-            max-width: 420px;
-            width: 100%;
-            text-align: center;
+            position: relative; z-index: 1;
+            background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 40px 35px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6); max-width: 420px; width: 100%; text-align: center;
             animation: fadeInUp 0.8s ease;
         }
         @keyframes fadeInUp {
@@ -65,84 +37,42 @@
         .container .sub-title { color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 300; margin-bottom: 25px; }
         .uid-input-wrapper { position: relative; margin-bottom: 15px; }
         .uid-input-wrapper input {
-            width: 100%;
-            padding: 16px 20px;
-            padding-right: 50px;
-            border: 2px solid rgba(255,255,255,0.15);
-            border-radius: 16px;
-            font-size: 18px;
-            font-weight: 500;
-            text-align: center;
-            letter-spacing: 3px;
-            background: rgba(255,255,255,0.07);
-            color: #fff;
-            transition: all 0.3s ease;
-            outline: none;
+            width: 100%; padding: 16px 20px; padding-right: 50px;
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; font-size: 18px; font-weight: 500;
+            text-align: center; letter-spacing: 3px; background: rgba(255,255,255,0.07); color: #fff;
+            transition: all 0.3s ease; outline: none;
         }
         .uid-input-wrapper input::placeholder { color: rgba(255,255,255,0.35); letter-spacing: 1px; font-weight: 300; }
         .uid-input-wrapper input:focus { border-color: rgba(102,126,234,0.6); box-shadow: 0 0 30px rgba(102,126,234,0.15); background: rgba(255,255,255,0.1); }
         .uid-input-wrapper .clear-btn {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.4);
-            font-size: 20px;
-            cursor: pointer;
-            display: none;
-            transition: 0.3s;
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; display: none; transition: 0.3s;
         }
         .uid-input-wrapper .clear-btn.show { display: block; }
         .uid-input-wrapper .clear-btn:hover { color: #fff; }
         .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            border: none;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; padding: 16px;
+            border-radius: 16px; font-size: 18px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px;
+            transition: all 0.3s ease; letter-spacing: 0.5px; position: relative; overflow: hidden;
         }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(102,126,234,0.4); }
         .btn:active { transform: scale(0.97); }
         .btn .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            transform: scale(0);
-            animation: rippleAnim 0.6s linear;
-            pointer-events: none;
+            position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0);
+            animation: rippleAnim 0.6s linear; pointer-events: none;
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
         .loading-container { display: none; margin: 30px 0 20px; padding: 20px; }
         .loading-container.show { display: block; animation: fadeIn 0.4s ease; }
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto;
+            width: 60px; height: 60px; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #667eea;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-container p { color: rgba(255,255,255,0.7); margin-top: 15px; font-size: 14px; font-weight: 300; }
         .success-popup {
-            display: none;
-            margin: 20px 0;
-            padding: 25px;
-            background: rgba(72,187,120,0.15);
-            border: 1px solid rgba(72,187,120,0.3);
-            border-radius: 20px;
+            display: none; margin: 20px 0; padding: 25px;
+            background: rgba(72,187,120,0.15); border: 1px solid rgba(72,187,120,0.3); border-radius: 20px;
             animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         .success-popup.show { display: block; }
@@ -153,18 +83,8 @@
         .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.5s ease; }
         .buttons-container.show { display: flex; flex-direction: column; }
         .action-btn {
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            color: #fff;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
+            padding: 16px; border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer;
+            transition: all 0.3s ease; width: 100%; color: #fff; letter-spacing: 0.5px; position: relative; overflow: hidden;
         }
         .action-btn:active { transform: scale(0.97); }
         .action-btn.btn-1 { background: linear-gradient(135deg, #48bb78, #38a169); }

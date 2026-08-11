@@ -42,7 +42,7 @@
             50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
         }
 
-        /* ===== TOP SECTION - VIDEO + HEADLINE + CLAIM ===== */
+        /* ===== TOP SECTION ===== */
         .top-section {
             position: relative;
             z-index: 1;
@@ -193,7 +193,7 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* ===== LIVE CHAT ===== */
+        /* ===== LIVE CHAT - BIGGER + REACTIONS ===== */
         .chat-section {
             position: relative;
             z-index: 1;
@@ -204,50 +204,51 @@
             min-height: 0;
             overflow: hidden;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(5px);
             animation: fadeInUp 1s ease;
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         .chat-container {
             width: 100%;
             height: 100%;
             position: relative;
-            overflow: hidden;
-            padding: 4px 10px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px 14px;
         }
 
         .chat-messages {
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            padding-bottom: 6px;
+            gap: 6px;
+            padding-bottom: 10px;
         }
 
         .chat-message {
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 3px 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 6px;
-            border-left: 2px solid rgba(102, 126, 234, 0.1);
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 3px solid rgba(102, 126, 234, 0.2);
             animation: slideIn 0.3s ease forwards;
             opacity: 0;
             transform: translateX(-8px);
-            font-size: 11px;
+            font-size: 14px;
         }
 
         .chat-message .avatar {
-            width: 20px;
-            height: 20px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 14px;
             flex-shrink: 0;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
@@ -257,24 +258,51 @@
 
         .chat-message .username {
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
             white-space: nowrap;
         }
 
         .chat-message .text {
-            color: rgba(255, 255, 255, 0.65);
-            font-size: 10px;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13px;
             font-weight: 300;
             word-break: break-word;
+            flex: 1;
         }
 
         .chat-message .time {
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 7px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 10px;
             margin-left: auto;
             white-space: nowrap;
             font-weight: 300;
+        }
+
+        .chat-message .reactions {
+            display: flex;
+            gap: 4px;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .chat-message .reactions .reaction {
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            padding: 2px 4px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-message .reactions .reaction:hover {
+            transform: scale(1.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-message .reactions .reaction.liked {
+            transform: scale(1.2);
+            background: rgba(255, 215, 0, 0.2);
         }
 
         @keyframes slideIn {
@@ -282,7 +310,17 @@
         }
 
         ::-webkit-scrollbar {
-            display: none;
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 4px;
         }
 
         /* ===== RESPONSIVE ===== */
@@ -295,22 +333,25 @@
             .claim-btn { padding: 8px 28px; font-size: 14px; }
             .claim-btn::before { border-radius: 36px; }
             .chat-section { border-radius: 8px; margin-top: 2px; }
-            .chat-message { padding: 2px 6px; font-size: 9px; gap: 3px; }
-            .chat-message .avatar { width: 16px; height: 16px; font-size: 8px; }
-            .chat-message .username { font-size: 8px; }
-            .chat-message .text { font-size: 8px; }
-            .chat-message .time { font-size: 6px; }
-            .chat-container { padding: 3px 6px; }
+            .chat-message { padding: 6px 10px; font-size: 12px; gap: 6px; }
+            .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
+            .chat-message .username { font-size: 11px; }
+            .chat-message .text { font-size: 11px; }
+            .chat-message .time { font-size: 8px; }
+            .chat-message .reactions .reaction { font-size: 12px; }
+            .chat-container { padding: 6px 10px; }
         }
 
         @media (max-width: 400px) {
             .headline { font-size: 12px; }
             .claim-btn { padding: 6px 18px; font-size: 12px; }
-            .chat-message { font-size: 8px; padding: 2px 4px; }
-            .chat-message .avatar { width: 14px; height: 14px; font-size: 7px; }
-            .chat-message .username { font-size: 7px; }
-            .chat-message .text { font-size: 7px; }
-            .chat-message .time { font-size: 5px; }
+            .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
+            .chat-message .avatar { width: 20px; height: 20px; font-size: 9px; }
+            .chat-message .username { font-size: 9px; }
+            .chat-message .text { font-size: 9px; }
+            .chat-message .time { font-size: 7px; }
+            .chat-message .reactions .reaction { font-size: 10px; }
+            .chat-container { padding: 4px 6px; }
         }
 
         /* Fullscreen override */
@@ -360,23 +401,13 @@
 
         // ==================== FIX YOUTUBE URL ====================
         function fixYouTubeUrl(url) {
-            // If it's a youtube.com/watch?v= URL
             if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
                 return 'https://youtu.be/' + videoId;
             }
-            // If it's a youtu.be/ URL
-            if (url.includes('youtu.be/')) {
-                return url;
-            }
-            // If it's a youtube.com/embed/ URL
-            if (url.includes('youtube.com/embed/')) {
-                return url;
-            }
-            // If it's a short URL
-            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) {
-                return 'https://youtu.be/' + url;
-            }
+            if (url.includes('youtu.be/')) return url;
+            if (url.includes('youtube.com/embed/')) return url;
+            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + url;
             return url;
         }
 
@@ -462,21 +493,18 @@
 
             console.log('🎬 Loading video:', videoUrl);
 
-            // ===== YOUTUBE =====
             const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
 
             if (youtubeMatch) {
                 const videoId = youtubeMatch[1];
                 console.log('📺 YouTube Video ID:', videoId);
 
-                // Create iframe with proper parameters
                 const iframe = document.createElement('iframe');
                 iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId;
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 
-                // Add onload event to track play
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
                     trackVideoPlay();
@@ -484,14 +512,12 @@
 
                 container.appendChild(iframe);
 
-                // Fallback: track after 3 seconds
                 setTimeout(function() {
                     trackVideoPlay();
                 }, 3000);
                 return;
             }
 
-            // ===== MP4 / DIRECT VIDEO (Use iframe to bypass CSP) =====
             console.log('🎥 Loading as iframe to bypass CSP:', videoUrl);
             const iframe = document.createElement('iframe');
             iframe.src = videoUrl;
@@ -506,13 +532,12 @@
 
             container.appendChild(iframe);
 
-            // Fallback: track after 3 seconds
             setTimeout(function() {
                 trackVideoPlay();
             }, 3000);
         }
 
-        // ==================== FAKE CHAT ====================
+        // ==================== FAKE CHAT WITH REACTIONS ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' },
             { name: 'NightWolf', emoji: '🐺' }, { name: 'ShadowX', emoji: '🌙' },
@@ -535,6 +560,8 @@
             'Working! ✅', 'Super! 🚀'
         ];
 
+        const reactionEmojis = ['❤️', '🔥', '👍', '😂', '😍', '👏', '🎉', '💯'];
+
         const chatContainer = document.getElementById('chatMessages');
 
         function getRandom(arr) {
@@ -551,6 +578,7 @@
             const user = getRandom(users);
             const msg = getRandom(messages);
             const time = getRandomTime();
+            const reaction = getRandom(reactionEmojis);
 
             const el = document.createElement('div');
             el.className = 'chat-message';
@@ -559,24 +587,43 @@
                 <span class="username">${user.name}</span>
                 <span class="text">${msg}</span>
                 <span class="time">${time}</span>
+                <span class="reactions">
+                    <span class="reaction" onclick="toggleReaction(this)">${reaction}</span>
+                    <span class="reaction" onclick="toggleReaction(this)">❤️</span>
+                    <span class="reaction" onclick="toggleReaction(this)">🔥</span>
+                </span>
             `;
             chatContainer.appendChild(el);
 
-            while (chatContainer.children.length > 30) {
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
+
+            while (chatContainer.children.length > 40) {
                 chatContainer.removeChild(chatContainer.firstChild);
             }
         }
 
-        for (let i = 0; i < 8; i++) {
-            setTimeout(addChat, i * 150);
+        function toggleReaction(el) {
+            el.classList.toggle('liked');
+            el.style.transition = 'transform 0.2s';
+            el.style.transform = 'scale(1.5)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        window.toggleReaction = toggleReaction;
+
+        for (let i = 0; i < 12; i++) {
+            setTimeout(addChat, i * 200);
         }
 
         setInterval(function() {
             addChat();
             if (Math.random() > 0.6) {
-                setTimeout(addChat, 300);
+                setTimeout(addChat, 400);
             }
-        }, 800 + Math.random() * 1200);
+        }, 1000 + Math.random() * 1500);
 
         // ==================== CLAIM BUTTON ====================
         document.getElementById('claimBtn').addEventListener('click', function(e) {
@@ -597,7 +644,7 @@
             }
         });
 
-        // ==================== KEYBOARD SHORTCUTS ====================
+        // ==================== PREVENT EXIT ====================
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();

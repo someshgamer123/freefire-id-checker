@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 // ==================== TRUST PROXY ====================
 app.set('trust proxy', 1);
 
-// ==================== SECURITY HEADERS (UPDATED CSP) ====================
+// ==================== SECURITY HEADERS ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -102,6 +102,11 @@ function readDB() {
     initDB();
     try {
         const data = fs.readFileSync(DB_FILE, 'utf8');
+        if (!data || data.trim() === '') {
+            console.warn('⚠️ Empty database, reinitializing...');
+            initDB();
+            return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+        }
         return JSON.parse(data);
     } catch (e) {
         console.error('❌ Database read error:', e);
@@ -112,6 +117,7 @@ function readDB() {
 function writeDB(data) {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+        console.log('✅ Database saved successfully');
     } catch (e) {
         console.error('❌ Database write error:', e);
     }

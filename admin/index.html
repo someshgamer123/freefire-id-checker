@@ -332,11 +332,8 @@
         async function checkAuth() {
             try {
                 const response = await fetch('/api/links', {
-                    headers: {
-                        'X-CSRF-Token': csrfToken
-                    }
+                    headers: { 'X-CSRF-Token': csrfToken }
                 });
-                
                 if (response.status === 401 || response.status === 403) {
                     console.error('❌ Auth failed:', response.status);
                     localStorage.removeItem('csrfToken');
@@ -352,9 +349,7 @@
         }
 
         // ==================== PERIODIC SESSION CHECK ====================
-        setInterval(() => {
-            checkAuth();
-        }, 5 * 60 * 1000);
+        setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
 
         // ==================== PWA INSTALL ====================
         let deferredPrompt;
@@ -648,23 +643,19 @@
                     `;
                     return;
                 }
-                
                 const links = await r.json();
                 const c = document.getElementById('linksList');
                 c.innerHTML = '';
-                
                 const active = links.filter(l => l.status === 'active').length;
                 const expired = links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled').length;
                 document.getElementById('totalLinks').textContent = links.length;
                 document.getElementById('activeLinks').textContent = active;
                 document.getElementById('totalVisits').textContent = links.reduce((s, l) => s + (l.visits || 0), 0);
                 document.getElementById('expiredLinks').textContent = expired;
-                
                 if (links.length === 0) {
                     c.innerHTML = `<div class="empty-state"><span class="icon">📭</span>No links yet</div>`;
                     return;
                 }
-                
                 links.forEach((link, index) => {
                     const sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
                     const isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();

@@ -18,15 +18,6 @@
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
         .login-box {
             background: white;
             padding: 40px;
@@ -41,96 +32,49 @@
         .login-box h2 { color: #333; margin-bottom: 6px; font-size: 24px; font-weight: 700; }
         .login-box .sub-title { color: #666; margin-bottom: 25px; font-size: 14px; }
         .login-box .passcode-inputs {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin: 15px 0;
+            display: flex; gap: 10px; justify-content: center; margin: 15px 0;
         }
         .login-box .passcode-inputs input {
-            width: 50px;
-            height: 60px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: 700;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            transition: 0.3s;
-            background: #f8f9fa;
-            color: #333;
-            caret-color: #667eea;
+            width: 50px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
+            border: 2px solid #ddd; border-radius: 12px; transition: 0.3s;
+            background: #f8f9fa; color: #333; caret-color: #667eea;
         }
         .login-box .passcode-inputs input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+            border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
             background: white;
         }
         .login-box .passcode-inputs input.filled {
-            border-color: #667eea;
-            background: rgba(102,126,234,0.05);
+            border-color: #667eea; background: rgba(102,126,234,0.05);
         }
         .login-box .passcode-inputs input.error {
-            border-color: #fc8181;
-            background: rgba(252,129,129,0.05);
+            border-color: #fc8181; background: rgba(252,129,129,0.05);
             animation: shake 0.5s ease;
         }
         .login-box .btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            margin-top: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: 600;
+            width: 100%; padding: 15px; font-size: 18px; margin-top: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none;
+            border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: 600;
         }
-        .login-box .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
-        }
+        .login-box .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
         .login-box .btn:active { transform: scale(0.97); }
-        .login-box .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .error {
-            color: #fc8181;
-            margin: 10px 0;
-            font-weight: 600;
-            min-height: 24px;
-            font-size: 14px;
-        }
+        .login-box .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .error { color: #fc8181; margin: 10px 0; font-weight: 600; min-height: 24px; font-size: 14px; }
         .error:empty { display: none; }
         .passcode-hint {
-            color: #999;
-            font-size: 13px;
-            margin: 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            color: #999; font-size: 13px; margin: 8px 0; display: flex;
+            align-items: center; justify-content: center; gap: 6px;
         }
         .passcode-hint .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ddd;
-            transition: 0.3s;
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            background: #ddd; transition: 0.3s;
         }
         .passcode-hint .dot.filled { background: #667eea; }
-        .passcode-hint .dot.active {
-            background: #667eea;
-            animation: pulse 1s infinite;
-        }
+        .passcode-hint .dot.active { background: #667eea; animation: pulse 1s infinite; }
         .footer-text { color: #aaa; font-size: 12px; margin-top: 20px; }
         .footer-text a { color: #667eea; text-decoration: none; }
         .footer-text a:hover { text-decoration: underline; }
-
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
         @media (max-width: 480px) {
             .login-box { padding: 30px 20px; }
             .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
@@ -147,7 +91,6 @@
         <div class="logo">🔐</div>
         <h2>Admin Login</h2>
         <p class="sub-title">Enter your 6-digit passcode</p>
-        
         <div class="passcode-inputs" id="passcodeContainer">
             <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric">
             <input type="password" id="pin2" maxlength="1" inputmode="numeric">
@@ -156,7 +99,6 @@
             <input type="password" id="pin5" maxlength="1" inputmode="numeric">
             <input type="password" id="pin6" maxlength="1" inputmode="numeric">
         </div>
-        
         <div class="passcode-hint" id="passcodeHint">
             <span class="dot" id="dot1"></span>
             <span class="dot" id="dot2"></span>
@@ -165,23 +107,17 @@
             <span class="dot" id="dot5"></span>
             <span class="dot" id="dot6"></span>
         </div>
-        
         <button onclick="login()" class="btn" id="loginBtn">🔑 Login</button>
         <div id="error" class="error"></div>
-        <div class="footer-text">
-            🔒 Secure | <a href="#" onclick="clearAll()">Clear</a>
-        </div>
+        <div class="footer-text">🔒 Secure | <a href="#" onclick="clearAll()">Clear</a></div>
     </div>
-    
     <script>
         const inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
         const dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
         const errorEl = document.getElementById('error');
         const loginBtn = document.getElementById('loginBtn');
 
-        window.addEventListener('load', () => {
-            document.getElementById('pin1').focus();
-        });
+        window.addEventListener('load', () => { document.getElementById('pin1').focus(); });
 
         inputs.forEach((id, index) => {
             const input = document.getElementById(id);
@@ -302,7 +238,6 @@
             setTimeout(() => { clearAll(); }, 800);
         }
 
-        // ==================== MAIN LOGIN ====================
         async function login() {
             const passcode = getPasscode();
             errorEl.textContent = '';
@@ -339,26 +274,15 @@
             }
         }
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-                clearAll();
-                e.preventDefault();
-            }
-            if (e.ctrlKey && e.key === 'Enter') {
-                login();
-                e.preventDefault();
-            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') { clearAll(); e.preventDefault(); }
+            if (e.ctrlKey && e.key === 'Enter') { login(); e.preventDefault(); }
         });
 
-        // Auto-detect complete passcode
         document.addEventListener('input', function() {
             let allFilled = true;
             for (let i = 0; i < 6; i++) {
-                if (document.getElementById(inputs[i]).value === '') {
-                    allFilled = false;
-                    break;
-                }
+                if (document.getElementById(inputs[i]).value === '') { allFilled = false; break; }
             }
             if (allFilled) {
                 clearTimeout(window._loginTimeout);
