@@ -283,6 +283,7 @@
             }
         }
 
+        /* ===== FADE OUT AT TOP (BLUE LINE AREA) ===== */
         .chat-message.fade-out {
             opacity: 0 !important;
             transform: translateY(-20px) scale(0.9) !important;
@@ -329,13 +330,15 @@
             font-weight: 300;
         }
 
-        /* ===== REACTIONS - SINGLE EMOJI BUTTON ===== */
+        /* ===== REACTIONS - PERMANENT AT RED MARK LOCATION ===== */
         .chat-message .reactions {
             display: flex;
             gap: 3px;
             margin-left: 6px;
             flex-shrink: 0;
             align-items: center;
+            position: relative;
+            z-index: 5;
         }
 
         .chat-message .reactions .reaction-btn {
@@ -348,6 +351,8 @@
             border: none;
             color: #fff;
             line-height: 1;
+            position: relative;
+            z-index: 6;
         }
 
         .chat-message .reactions .reaction-btn:hover {
@@ -355,7 +360,7 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        /* ===== EMOJI PICKER BUTTON ===== */
+        /* ===== EMOJI PICKER BUTTON - PERMANENT AT RED MARK ===== */
         .emoji-picker-btn {
             position: absolute;
             bottom: 8px;
@@ -374,6 +379,9 @@
             justify-content: center;
             color: #fff;
             backdrop-filter: blur(10px);
+            position: sticky;
+            bottom: 8px;
+            margin-top: auto;
         }
 
         .emoji-picker-btn:hover {
@@ -529,7 +537,7 @@
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
-            <!-- EMOJI PICKER BUTTON -->
+            <!-- EMOJI PICKER BUTTON - PERMANENT AT RED MARK (BOTTOM RIGHT) -->
             <div class="emoji-picker-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker()">
                 😊
                 <div class="emoji-list" id="emojiList">
@@ -728,7 +736,7 @@
         });
 
         // ==================== FLYING REACTIONS ====================
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱', '🥳', '🤩', '😍', '😎', '😮'];
+        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
 
         function createFlyingReaction(emoji) {
             const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
@@ -811,11 +819,6 @@
                 <span class="username">${user.name}</span>
                 <span class="text">${msg}</span>
                 <span class="time">${time}</span>
-                <span class="reactions">
-                    <button class="reaction-btn" onclick="triggerReaction('❤️', event)">❤️</button>
-                    <button class="reaction-btn" onclick="triggerReaction('🎉', event)">🎉</button>
-                    <button class="reaction-btn" onclick="triggerReaction('🔥', event)">🔥</button>
-                </span>
             `;
             chatContainer.appendChild(el);
 
@@ -858,10 +861,8 @@
 
         // ===== TRIGGER REACTION =====
         function triggerReaction(emoji, event) {
-            // Close emoji picker
             document.getElementById('emojiList').classList.remove('open');
             
-            // Create flying reaction
             const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
             const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
             const y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
@@ -909,7 +910,7 @@
             }
         }, 1400 + Math.random() * 1000);
 
-        // ==================== CLAIM BUTTON (DIRECT LINK - NO FULLSCREEN) ====================
+        // ==================== CLAIM BUTTON ====================
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -919,7 +920,6 @@
             this.appendChild(ripple);
             setTimeout(function() { ripple.remove(); }, 600);
 
-            // Celebration reactions
             for (let i = 0; i < 10; i++) {
                 setTimeout(function() {
                     createFlyingReaction();
@@ -930,7 +930,6 @@
             console.log('🔓 Unlocked via claim button');
             console.log('🔗 Redirecting to:', claimUrl);
 
-            // Direct redirect - no fullscreen
             if (claimUrl && claimUrl !== '#') {
                 window.location.href = claimUrl;
             } else {
@@ -947,7 +946,7 @@
         }
         keepAwake();
 
-        // ==================== FULLSCREEN (Only on video click, not claim) ====================
+        // ==================== FULLSCREEN ====================
         document.querySelector('.video-container').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -967,9 +966,9 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
         console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
-        console.log('💬 Chat: Fade in from bottom, fade out at blue line');
-        console.log('⚡ Reactions: Single emoji button with 5 emojis');
-        console.log('🔗 Claim: Direct link open - no fullscreen');
+        console.log('💬 Chat: Fade in from bottom, fade out at blue line (top)');
+        console.log('⚡ Reactions: Only emoji picker (❤️🔥🎉 removed)');
+        console.log('📍 Emoji Picker: Permanent at bottom-right (red mark location)');
     </script>
 </body>
 </html>

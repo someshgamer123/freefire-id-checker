@@ -278,7 +278,6 @@
                 try {
                     const r = await fetch(`/api/link/${linkId}`);
                     
-                    // Check if link is suspended/disabled/expired
                     if (r.status === 403) {
                         const error = await r.json();
                         const status = error.status || 'suspended';
@@ -346,8 +345,11 @@
             document.getElementById('errorStatus').className = 'error-status ' + (status || 'disabled');
         }
         
+        // ===== FIXED: Go Back - Direct phone screen back, NOT admin panel =====
         function goBack() {
-            window.location.href = '/';
+            // Use history.back() to go to previous page in browser history
+            // This takes user back to their phone screen or previous app
+            window.history.back();
         }
         
         function checkUID() {
