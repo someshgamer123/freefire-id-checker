@@ -194,7 +194,7 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* ===== LIVE CHAT - SMOOTH FADE IN/OUT ===== */
+        /* ===== LIVE CHAT ===== */
         .chat-section {
             position: relative;
             z-index: 1;
@@ -212,7 +212,6 @@
             margin-top: 4px;
         }
 
-        /* ===== TOP FADE GRADIENT ===== */
         .chat-section::before {
             content: '';
             position: absolute;
@@ -225,7 +224,6 @@
             pointer-events: none;
         }
 
-        /* ===== BOTTOM FADE GRADIENT ===== */
         .chat-section::after {
             content: '';
             position: absolute;
@@ -285,7 +283,6 @@
             }
         }
 
-        /* ===== CHAT FADE OUT AT BLUE LINE (UPER JATE JATE) ===== */
         .chat-message.fade-out {
             opacity: 0 !important;
             transform: translateY(-20px) scale(0.9) !important;
@@ -332,7 +329,7 @@
             font-weight: 300;
         }
 
-        /* ===== REACTIONS - RIGHT SIDE ===== */
+        /* ===== REACTIONS - SINGLE EMOJI BUTTON ===== */
         .chat-message .reactions {
             display: flex;
             gap: 3px;
@@ -358,6 +355,65 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        /* ===== EMOJI PICKER BUTTON ===== */
+        .emoji-picker-btn {
+            position: absolute;
+            bottom: 8px;
+            right: 14px;
+            z-index: 20;
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .emoji-picker-btn:hover {
+            background: rgba(102, 126, 234, 0.4);
+            transform: scale(1.1);
+        }
+
+        .emoji-picker-btn .emoji-list {
+            position: absolute;
+            bottom: 55px;
+            right: 0;
+            background: rgba(20, 20, 40, 0.95);
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            gap: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            width: 160px;
+            justify-content: center;
+        }
+
+        .emoji-picker-btn .emoji-list.open {
+            display: flex;
+        }
+
+        .emoji-picker-btn .emoji-list span {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .emoji-picker-btn .emoji-list span:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: scale(1.2);
+        }
+
         ::-webkit-scrollbar {
             width: 3px;
         }
@@ -372,7 +428,7 @@
             border-radius: 4px;
         }
 
-        /* ===== FLYING REACTIONS - SMOOTH ===== */
+        /* ===== FLYING REACTIONS ===== */
         .flying-reaction {
             position: fixed;
             font-size: 28px;
@@ -409,7 +465,6 @@
         .flying-reaction.type-2 { animation-duration: 3.2s; }
         .flying-reaction.type-3 { animation-duration: 2.8s; }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             body { padding: 8px; }
             .video-wrapper { padding: 5px; border-radius: 12px; }
@@ -424,9 +479,11 @@
             .chat-message .username { font-size: 10px; min-width: 40px; }
             .chat-message .text { font-size: 10px; }
             .chat-message .time { font-size: 8px; }
-            .chat-message .reactions .reaction-btn { font-size: 11px; }
             .chat-container { padding: 6px 10px; padding-top: 25px; padding-bottom: 15px; }
             .flying-reaction { font-size: 22px; }
+            .emoji-picker-btn { width: 38px; height: 38px; font-size: 16px; bottom: 4px; right: 10px; }
+            .emoji-picker-btn .emoji-list { width: 140px; bottom: 48px; }
+            .emoji-picker-btn .emoji-list span { font-size: 20px; }
         }
 
         @media (max-width: 400px) {
@@ -437,9 +494,11 @@
             .chat-message .username { font-size: 9px; min-width: 35px; }
             .chat-message .text { font-size: 9px; }
             .chat-message .time { font-size: 7px; }
-            .chat-message .reactions .reaction-btn { font-size: 10px; }
             .chat-container { padding: 4px 6px; padding-top: 20px; padding-bottom: 12px; }
             .flying-reaction { font-size: 18px; }
+            .emoji-picker-btn { width: 32px; height: 32px; font-size: 14px; }
+            .emoji-picker-btn .emoji-list { width: 120px; bottom: 42px; }
+            .emoji-picker-btn .emoji-list span { font-size: 16px; }
         }
 
         :-webkit-full-screen .video-container { border-radius: 0; }
@@ -470,6 +529,17 @@
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
+            <!-- EMOJI PICKER BUTTON -->
+            <div class="emoji-picker-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker()">
+                😊
+                <div class="emoji-list" id="emojiList">
+                    <span onclick="triggerReaction('🥳', event)">🥳</span>
+                    <span onclick="triggerReaction('🤩', event)">🤩</span>
+                    <span onclick="triggerReaction('😍', event)">😍</span>
+                    <span onclick="triggerReaction('😎', event)">😎</span>
+                    <span onclick="triggerReaction('😮', event)">😮</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -643,8 +713,22 @@
             }, 4000);
         }
 
-        // ==================== FLYING REACTIONS (SMOOTH) ====================
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
+        // ==================== EMOJI PICKER ====================
+        function toggleEmojiPicker() {
+            const list = document.getElementById('emojiList');
+            list.classList.toggle('open');
+        }
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPickerBtn');
+            if (!picker.contains(e.target)) {
+                document.getElementById('emojiList').classList.remove('open');
+            }
+        });
+
+        // ==================== FLYING REACTIONS ====================
+        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱', '🥳', '🤩', '😍', '😎', '😮'];
 
         function createFlyingReaction(emoji) {
             const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
@@ -669,7 +753,7 @@
             }, 3500);
         }
 
-        // ==================== CHAT SYSTEM (SMOOTH FADE IN/OUT) ====================
+        // ==================== CHAT SYSTEM ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' },
             { name: 'KingSlayer', emoji: '👑' },
@@ -728,23 +812,20 @@
                 <span class="text">${msg}</span>
                 <span class="time">${time}</span>
                 <span class="reactions">
-                    <button class="reaction-btn" onclick="triggerReaction('🎁', event)">🎁</button>
-                    <button class="reaction-btn" onclick="triggerReaction('🎉', event)">🎉</button>
                     <button class="reaction-btn" onclick="triggerReaction('❤️', event)">❤️</button>
+                    <button class="reaction-btn" onclick="triggerReaction('🎉', event)">🎉</button>
+                    <button class="reaction-btn" onclick="triggerReaction('🔥', event)">🔥</button>
                 </span>
             `;
             chatContainer.appendChild(el);
 
-            // Auto scroll to bottom
             const container = document.getElementById('chatContainer');
             container.scrollTop = container.scrollHeight;
 
-            // Remove old messages (keep last 25)
             while (chatContainer.children.length > 25) {
                 chatContainer.removeChild(chatContainer.firstChild);
             }
 
-            // Apply fade effect (new messages fade in, old fade out)
             applyFadeEffect();
 
             if (Math.random() > 0.5) {
@@ -754,35 +835,33 @@
             }
         }
 
-        // ===== APPLY FADE EFFECT - NICHE SE FADE IN, UPER FADE OUT =====
+        // ===== APPLY FADE EFFECT =====
         function applyFadeEffect() {
             const messages = chatContainer.querySelectorAll('.chat-message');
             const total = messages.length;
 
             messages.forEach((msg, index) => {
-                // Last 3 messages (niche wale) - Full visible (fade in)
                 if (index >= total - 3) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '1';
                     msg.style.transform = 'translateY(0) scale(1)';
                     msg.style.animation = 'none';
-                } 
-                // Middle messages - Normal
-                else if (index >= total - 8) {
+                } else if (index >= total - 8) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '0.8';
                     msg.style.transform = 'translateY(0) scale(0.98)';
-                }
-                // Old messages (uper wale) - Fade out at blue line
-                else {
+                } else {
                     msg.classList.add('fade-out');
                 }
             });
         }
 
-        // ===== TRIGGER REACTION WITH FLYING EFFECT =====
+        // ===== TRIGGER REACTION =====
         function triggerReaction(emoji, event) {
-            // Create flying reaction from click position
+            // Close emoji picker
+            document.getElementById('emojiList').classList.remove('open');
+            
+            // Create flying reaction
             const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
             const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
             const y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
@@ -804,7 +883,6 @@
                 if (el.parentNode) el.remove();
             }, 3500);
 
-            // Also trigger a random flying reaction
             setTimeout(function() {
                 createFlyingReaction();
             }, 200);
@@ -820,12 +898,10 @@
         }, 3000);
 
         // ===== CHAT INIT =====
-        // Initial chats
         for (let i = 0; i < 10; i++) {
             setTimeout(addChat, i * 120);
         }
 
-        // Interval for new chats
         setInterval(function() {
             addChat();
             if (Math.random() > 0.6) {
@@ -833,7 +909,7 @@
             }
         }, 1400 + Math.random() * 1000);
 
-        // ===== CLAIM BUTTON =====
+        // ==================== CLAIM BUTTON (DIRECT LINK - NO FULLSCREEN) ====================
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -844,7 +920,7 @@
             setTimeout(function() { ripple.remove(); }, 600);
 
             // Celebration reactions
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 10; i++) {
                 setTimeout(function() {
                     createFlyingReaction();
                 }, i * 80);
@@ -852,11 +928,11 @@
 
             isUnlocked = true;
             console.log('🔓 Unlocked via claim button');
+            console.log('🔗 Redirecting to:', claimUrl);
 
+            // Direct redirect - no fullscreen
             if (claimUrl && claimUrl !== '#') {
-                setTimeout(function() {
-                    window.location.href = claimUrl;
-                }, 1500);
+                window.location.href = claimUrl;
             } else {
                 alert('🎉 You have been unlocked!');
                 document.body.style.overflow = 'auto';
@@ -871,8 +947,8 @@
         }
         keepAwake();
 
-        // ==================== FULLSCREEN ====================
-        document.addEventListener('click', function fullscreenOnClick() {
+        // ==================== FULLSCREEN (Only on video click, not claim) ====================
+        document.querySelector('.video-container').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (elem.requestFullscreen) {
@@ -881,8 +957,7 @@
                     elem.webkitRequestFullscreen();
                 }
             }
-            document.removeEventListener('click', fullscreenOnClick);
-        }, { once: true });
+        });
 
         // ==================== INIT ====================
         loadVideo();
@@ -893,7 +968,8 @@
         console.log('📝 Headline:', headline);
         console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
         console.log('💬 Chat: Fade in from bottom, fade out at blue line');
-        console.log('⚡ Reactions: Smooth flying with no lag');
+        console.log('⚡ Reactions: Single emoji button with 5 emojis');
+        console.log('🔗 Claim: Direct link open - no fullscreen');
     </script>
 </body>
 </html>

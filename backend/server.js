@@ -476,7 +476,7 @@ app.delete('/api/links/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ===== GET LINK BY ID (PUBLIC) =====
+// ==================== 🟢 UPDATED GET LINK BY ID (PUBLIC) ====================
 app.get('/api/link/:id', (req, res) => {
     try {
         const { id } = req.params;
@@ -484,13 +484,50 @@ app.get('/api/link/:id', (req, res) => {
 
         const link = db.links.find(l => l.id === id);
         if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
+            return res.status(404).json({ 
+                error: 'not_found',
+                message: 'Link not found' 
+            });
+        }
+
+        // Check if link is suspended, disabled, or expired
+        if (link.status === 'suspended') {
+            return res.status(403).json({ 
+                error: 'suspended',
+                message: 'This link has been suspended by the admin',
+                status: 'suspended'
+            });
+        }
+
+        if (link.status === 'disabled') {
+            return res.status(403).json({ 
+                error: 'disabled',
+                message: 'This link has been permanently disabled',
+                status: 'disabled'
+            });
+        }
+
+        // Check expiry
+        if (link.expiryDate) {
+            const expiryDate = new Date(link.expiryDate);
+            if (new Date() > expiryDate) {
+                return res.status(403).json({ 
+                    error: 'expired',
+                    message: 'This link has expired',
+                    status: 'expired'
+                });
+            }
         }
 
         if (link.status !== 'active') {
-            return res.status(403).json({ error: `Link is ${link.status}` });
+            return res.status(403).json({ 
+                error: 'inactive',
+                message: 'This link is not active',
+                status: 'inactive'
+            });
         }
 
+        // Track visit
         link.visits++;
         const today = new Date().toISOString().split('T')[0];
         if (!link.dailyVisits) link.dailyVisits = {};
@@ -502,12 +539,15 @@ app.get('/api/link/:id', (req, res) => {
             video: link.video,
             claim: link.claim,
             buttonText: link.buttonText,
-            headline: link.headline
+            headline: link.headline,
+            status: link.status
         });
     } catch (error) {
+        console.error('❌ Fetch link error:', error);
         res.status(500).json({ error: 'Failed to fetch link' });
     }
 });
+// ==================== END OF UPDATED ROUTE ====================
 
 // ==================== USER DASHBOARD ROUTES ====================
 

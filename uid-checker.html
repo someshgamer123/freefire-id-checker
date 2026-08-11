@@ -4,15 +4,24 @@
     <title>UID Checker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
+        
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
         body {
             min-height: 100vh;
-            display: flex; justify-content: center; align-items: center; padding: 20px;
-            background: #0a0a1a; position: relative; overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #0a0a1a;
+            position: relative;
+            overflow: hidden;
         }
+        
         .bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
         }
         .bg-container img {
             width: 100%; height: 100%; object-fit: cover; filter: blur(8px) brightness(0.4); transform: scale(1.1);
@@ -20,21 +29,33 @@
         .bg-container .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
         }
+        
         .container {
             position: relative; z-index: 1;
-            background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            padding: 40px 35px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.6); max-width: 420px; width: 100%; text-align: center;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 40px 35px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
             animation: fadeInUp 0.8s ease;
         }
+        
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(40px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        
         .logo { font-size: 50px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        
         .container h2 { color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
         .container .sub-title { color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 300; margin-bottom: 25px; }
+        
         .uid-input-wrapper { position: relative; margin-bottom: 15px; }
         .uid-input-wrapper input {
             width: 100%; padding: 16px 20px; padding-right: 50px;
@@ -50,6 +71,7 @@
         }
         .uid-input-wrapper .clear-btn.show { display: block; }
         .uid-input-wrapper .clear-btn:hover { color: #fff; }
+        
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; padding: 16px;
             border-radius: 16px; font-size: 18px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px;
@@ -62,6 +84,7 @@
             animation: rippleAnim 0.6s linear; pointer-events: none;
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+        
         .loading-container { display: none; margin: 30px 0 20px; padding: 20px; }
         .loading-container.show { display: block; animation: fadeIn 0.4s ease; }
         .spinner {
@@ -70,6 +93,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .loading-container p { color: rgba(255,255,255,0.7); margin-top: 15px; font-size: 14px; font-weight: 300; }
+        
         .success-popup {
             display: none; margin: 20px 0; padding: 25px;
             background: rgba(72,187,120,0.15); border: 1px solid rgba(72,187,120,0.3); border-radius: 20px;
@@ -80,6 +104,7 @@
         .success-popup .icon { font-size: 50px; display: block; margin-bottom: 8px; }
         .success-popup .label { color: #48bb78; font-size: 18px; font-weight: 700; }
         .success-popup .sub-label { color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 300; }
+        
         .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.5s ease; }
         .buttons-container.show { display: flex; flex-direction: column; }
         .action-btn {
@@ -94,6 +119,74 @@
         .action-btn.tap-effect { animation: tapPulse 0.3s ease; }
         @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* ===== ERROR PAGE ===== */
+        .error-page {
+            display: none;
+            padding: 20px 0;
+            animation: fadeInUp 0.6s ease;
+        }
+        .error-page.show { display: block; }
+        .error-page .error-icon {
+            font-size: 70px;
+            display: block;
+            margin-bottom: 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+        .error-page .error-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .error-page .error-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 20px;
+        }
+        .error-page .error-status {
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        .error-page .error-status.suspended {
+            background: rgba(246,173,85,0.2);
+            color: #f6ad55;
+            border: 1px solid rgba(246,173,85,0.2);
+        }
+        .error-page .error-status.disabled {
+            background: rgba(252,129,129,0.2);
+            color: #fc8181;
+            border: 1px solid rgba(252,129,129,0.2);
+        }
+        .error-page .error-status.expired {
+            background: rgba(252,129,129,0.2);
+            color: #fc8181;
+            border: 1px solid rgba(252,129,129,0.2);
+        }
+        .error-page .error-status.not_found {
+            background: rgba(160,174,192,0.2);
+            color: #a0aec0;
+            border: 1px solid rgba(160,174,192,0.2);
+        }
+        .error-page .btn-back {
+            padding: 12px 40px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
+        
         @media (max-width: 480px) {
             .container { padding: 28px 20px; border-radius: 24px; }
             .container h2 { font-size: 19px; }
@@ -102,6 +195,8 @@
             .action-btn { font-size: 15px; padding: 14px; }
             .logo { font-size: 40px; }
             .success-popup .icon { font-size: 40px; }
+            .error-page .error-icon { font-size: 50px; }
+            .error-page .error-title { font-size: 20px; }
         }
     </style>
 </head>
@@ -110,29 +205,48 @@
         <img id="bgImage" src="" alt="background">
         <div class="overlay"></div>
     </div>
+    
     <div class="container">
         <div class="logo">🎮</div>
         <h2>Enter Your UID</h2>
         <p class="sub-title">Enter your Free Fire UID to continue</p>
-        <div class="uid-input-wrapper">
-            <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus>
-            <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
+        
+        <!-- Normal UID Input -->
+        <div id="normalContent">
+            <div class="uid-input-wrapper">
+                <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus>
+                <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
+            </div>
+            <button onclick="checkUID()" class="btn" id="checkBtn">➜ Process</button>
+            
+            <div class="loading-container" id="loadingContainer">
+                <div class="spinner"></div>
+                <p>⏳ Verifying UID...</p>
+            </div>
+            
+            <div class="success-popup" id="successPopup">
+                <span class="icon">✅</span>
+                <div class="label">UID Verified!</div>
+                <div class="sub-label">Redirecting to video page...</div>
+            </div>
+            
+            <div class="buttons-container" id="buttonsContainer">
+                <button class="action-btn btn-1" id="btn1" onclick="handleButtonClick(1)">Watch Video</button>
+                <button class="action-btn btn-2" id="btn2" onclick="handleButtonClick(2)">Get Reward</button>
+            </div>
         </div>
-        <button onclick="checkUID()" class="btn" id="checkBtn">➜ Process</button>
-        <div class="loading-container" id="loadingContainer">
-            <div class="spinner"></div>
-            <p>⏳ Verifying UID...</p>
-        </div>
-        <div class="success-popup" id="successPopup">
-            <span class="icon">✅</span>
-            <div class="label">UID Verified!</div>
-            <div class="sub-label">Redirecting to video page...</div>
-        </div>
-        <div class="buttons-container" id="buttonsContainer">
-            <button class="action-btn btn-1" id="btn1" onclick="handleButtonClick(1)">Watch Video</button>
-            <button class="action-btn btn-2" id="btn2" onclick="handleButtonClick(2)">Get Reward</button>
+        
+        <!-- Error Page -->
+        <div class="error-page" id="errorPage">
+            <span class="error-icon" id="errorIcon">🚫</span>
+            <div class="error-title" id="errorTitle">Link Suspended</div>
+            <div class="error-sub" id="errorSub">This link has been suspended by the admin</div>
+            <div class="error-status" id="errorStatus">SUSPENDED</div>
+            <br>
+            <button class="btn-back" onclick="goBack()">🔙 Go Back</button>
         </div>
     </div>
+    
     <script>
         function playTapSound() {
             try {
@@ -141,6 +255,7 @@
                 audio.play().catch(() => {});
             } catch (e) {}
         }
+        
         async function loadBackground() {
             try {
                 const r = await fetch('/api/settings');
@@ -153,22 +268,88 @@
                 }
             } catch (e) {}
         }
+        
         let linkData = null;
+        let errorStatus = null;
+        
         async function loadLinkData() {
             const linkId = new URLSearchParams(window.location.search).get('link');
             if (linkId) {
                 try {
                     const r = await fetch(`/api/link/${linkId}`);
-                    if (r.status === 403) { alert('❌ ' + (await r.json()).error); window.location.href = '/'; return; }
+                    
+                    // Check if link is suspended/disabled/expired
+                    if (r.status === 403) {
+                        const error = await r.json();
+                        const status = error.status || 'suspended';
+                        showErrorPage(status);
+                        return;
+                    }
+                    
+                    if (r.status === 404) {
+                        showErrorPage('not_found');
+                        return;
+                    }
+                    
+                    if (!r.ok) {
+                        showErrorPage('not_found');
+                        return;
+                    }
+                    
                     const data = await r.json();
                     if (data && data.id) {
                         linkData = data;
                         document.getElementById('btn1').textContent = data.button1 || 'Watch Video';
                         document.getElementById('btn2').textContent = data.button2 || 'Get Reward';
+                        document.getElementById('normalContent').style.display = 'block';
+                        document.getElementById('errorPage').classList.remove('show');
+                    } else {
+                        showErrorPage('not_found');
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.error('Error loading link:', e);
+                    showErrorPage('not_found');
+                }
             }
         }
+        
+        function showErrorPage(status) {
+            document.getElementById('normalContent').style.display = 'none';
+            document.getElementById('errorPage').classList.add('show');
+            
+            const icons = {
+                'suspended': '⛔',
+                'disabled': '🚫',
+                'expired': '⌛',
+                'not_found': '🔍',
+                'inactive': '⚠️'
+            };
+            const titles = {
+                'suspended': 'Link Suspended',
+                'disabled': 'Link Disabled',
+                'expired': 'Link Expired',
+                'not_found': 'Link Not Found',
+                'inactive': 'Link Inactive'
+            };
+            const subs = {
+                'suspended': 'This link has been temporarily suspended by the admin',
+                'disabled': 'This link has been permanently disabled',
+                'expired': 'This link has expired and is no longer active',
+                'not_found': 'The link you are looking for does not exist',
+                'inactive': 'This link is currently inactive'
+            };
+            
+            document.getElementById('errorIcon').textContent = icons[status] || '🚫';
+            document.getElementById('errorTitle').textContent = titles[status] || 'Link Not Available';
+            document.getElementById('errorSub').textContent = subs[status] || 'This link is not available';
+            document.getElementById('errorStatus').textContent = (status || 'UNKNOWN').toUpperCase();
+            document.getElementById('errorStatus').className = 'error-status ' + (status || 'disabled');
+        }
+        
+        function goBack() {
+            window.location.href = '/';
+        }
+        
         function checkUID() {
             const uid = document.getElementById('uidInput').value.trim();
             if (uid.length < 8 || !/^\d+$/.test(uid)) {
@@ -182,6 +363,7 @@
             document.getElementById('loadingContainer').classList.add('show');
             document.getElementById('successPopup').classList.remove('show');
             document.getElementById('buttonsContainer').classList.remove('show');
+            
             const delay = 1000 + Math.random() * 1000;
             setTimeout(() => {
                 document.getElementById('loadingContainer').classList.remove('show');
@@ -189,6 +371,7 @@
                 setTimeout(() => { redirectToVideoPage(); }, 1200);
             }, delay);
         }
+        
         function redirectToVideoPage() {
             let videoUrl, claimUrl, buttonText, headline;
             if (linkData) {
@@ -208,11 +391,13 @@
             localStorage.setItem('headline', headline);
             window.location.href = `/v/${linkData ? linkData.id : 'default'}?video=${encodeURIComponent(videoUrl)}&claim=${encodeURIComponent(claimUrl)}&btn=${encodeURIComponent(buttonText)}&headline=${encodeURIComponent(headline)}`;
         }
+        
         function handleButtonClick(num) {
             playTapSound();
             const btn = document.getElementById('btn' + num);
             btn.classList.add('tap-effect');
             setTimeout(() => btn.classList.remove('tap-effect'), 300);
+            
             let videoUrl, claimUrl, buttonText, headline;
             if (linkData) {
                 videoUrl = num === 1 ? linkData.video : linkData.video2 || linkData.video;
@@ -231,18 +416,21 @@
             localStorage.setItem('headline', headline);
             window.location.href = `/v/${linkData ? linkData.id : 'default'}?video=${encodeURIComponent(videoUrl)}&claim=${encodeURIComponent(claimUrl)}&btn=${encodeURIComponent(buttonText)}&headline=${encodeURIComponent(headline)}`;
         }
+        
         function clearInput() {
             document.getElementById('uidInput').value = '';
             document.getElementById('clearBtn').classList.remove('show');
             document.getElementById('uidInput').focus();
             playTapSound();
         }
+        
         document.getElementById('uidInput').addEventListener('input', function() {
             document.getElementById('clearBtn').classList.toggle('show', this.value.length > 0);
         });
         document.getElementById('uidInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkUID();
         });
+        
         loadBackground();
         loadLinkData();
     </script>
