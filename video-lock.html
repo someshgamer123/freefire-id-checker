@@ -319,67 +319,65 @@
             border-radius: 4px;
         }
 
-        /* ===== FLYING REACTIONS ===== */
+        /* ===== FLYING REACTIONS - LIMITED TO CHAT AREA ===== */
         .flying-reaction {
             position: fixed;
-            font-size: 32px;
+            font-size: 28px;
             z-index: 9999;
             pointer-events: none;
             animation: flyUp 3s ease-out forwards;
         }
 
-        @keyframes flyUp {
+        /* Reactions only fly from chat area to claim button */
+        .flying-reaction.from-chat {
+            animation: flyUpFromChat 3s ease-out forwards;
+        }
+
+        @keyframes flyUpFromChat {
             0% {
                 opacity: 1;
                 transform: translateY(0) scale(0.5) rotate(0deg);
             }
             30% {
                 opacity: 1;
-                transform: translateY(-100px) scale(1.2) rotate(10deg);
+                transform: translateY(-80px) scale(1.3) rotate(10deg);
             }
             60% {
                 opacity: 1;
-                transform: translateY(-200px) scale(1) rotate(-5deg);
+                transform: translateY(-160px) scale(1.0) rotate(-5deg);
             }
             100% {
                 opacity: 0;
-                transform: translateY(-400px) scale(0.8) rotate(15deg);
+                transform: translateY(-280px) scale(0.6) rotate(8deg);
             }
         }
 
-        /* Different animations for different emojis */
-        .flying-reaction.type-1 {
-            animation: flyUp1 2.5s ease-out forwards;
-        }
-        .flying-reaction.type-2 {
-            animation: flyUp2 3.2s ease-out forwards;
-        }
-        .flying-reaction.type-3 {
-            animation: flyUp3 2.8s ease-out forwards;
-        }
+        .flying-reaction.type-1 { animation: flyUp1 2.5s ease-out forwards; }
+        .flying-reaction.type-2 { animation: flyUp2 3.2s ease-out forwards; }
+        .flying-reaction.type-3 { animation: flyUp3 2.8s ease-out forwards; }
 
         @keyframes flyUp1 {
             0% { opacity: 1; transform: translateY(0) scale(0.3) rotate(0deg); }
-            20% { transform: translateY(-60px) scale(1.3) rotate(15deg); }
-            50% { transform: translateY(-150px) scale(1.1) rotate(-10deg); }
-            80% { transform: translateY(-250px) scale(0.9) rotate(8deg); }
-            100% { opacity: 0; transform: translateY(-380px) scale(0.5) rotate(-5deg); }
+            20% { transform: translateY(-50px) scale(1.3) rotate(15deg); }
+            50% { transform: translateY(-120px) scale(1.1) rotate(-10deg); }
+            80% { transform: translateY(-200px) scale(0.9) rotate(8deg); }
+            100% { opacity: 0; transform: translateY(-300px) scale(0.5) rotate(-5deg); }
         }
 
         @keyframes flyUp2 {
             0% { opacity: 1; transform: translateY(0) scale(0.5) rotate(-10deg); }
-            25% { transform: translateY(-80px) scale(1.4) rotate(20deg); }
-            55% { transform: translateY(-180px) scale(1.0) rotate(-15deg); }
-            85% { transform: translateY(-280px) scale(0.8) rotate(10deg); }
-            100% { opacity: 0; transform: translateY(-400px) scale(0.4) rotate(-8deg); }
+            25% { transform: translateY(-60px) scale(1.4) rotate(20deg); }
+            55% { transform: translateY(-140px) scale(1.0) rotate(-15deg); }
+            85% { transform: translateY(-220px) scale(0.8) rotate(10deg); }
+            100% { opacity: 0; transform: translateY(-320px) scale(0.4) rotate(-8deg); }
         }
 
         @keyframes flyUp3 {
             0% { opacity: 1; transform: translateY(0) scale(0.4) rotate(5deg); }
-            30% { transform: translateY(-100px) scale(1.5) rotate(-12deg); }
-            60% { transform: translateY(-200px) scale(1.1) rotate(18deg); }
-            90% { transform: translateY(-300px) scale(0.7) rotate(-6deg); }
-            100% { opacity: 0; transform: translateY(-420px) scale(0.3) rotate(12deg); }
+            30% { transform: translateY(-70px) scale(1.5) rotate(-12deg); }
+            60% { transform: translateY(-160px) scale(1.1) rotate(18deg); }
+            90% { transform: translateY(-240px) scale(0.7) rotate(-6deg); }
+            100% { opacity: 0; transform: translateY(-340px) scale(0.3) rotate(12deg); }
         }
 
         /* ===== RESPONSIVE ===== */
@@ -399,7 +397,7 @@
             .chat-message .time { font-size: 8px; }
             .chat-message .reactions .reaction-btn { font-size: 12px; }
             .chat-container { padding: 6px 10px; }
-            .flying-reaction { font-size: 26px; }
+            .flying-reaction { font-size: 22px; }
         }
 
         @media (max-width: 400px) {
@@ -412,10 +410,9 @@
             .chat-message .time { font-size: 7px; }
             .chat-message .reactions .reaction-btn { font-size: 10px; }
             .chat-container { padding: 4px 6px; }
-            .flying-reaction { font-size: 20px; }
+            .flying-reaction { font-size: 18px; }
         }
 
-        /* Fullscreen override */
         :-webkit-full-screen .video-container { border-radius: 0; }
         :-webkit-full-screen .video-wrapper { border-radius: 0; padding: 0; border: none; box-shadow: none; background: transparent; }
         :-webkit-full-screen .video-container::before { display: none; }
@@ -427,7 +424,6 @@
 
     <div class="bg-glow"></div>
 
-    <!-- ===== TOP SECTION ===== -->
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container">
@@ -442,7 +438,6 @@
         </div>
     </div>
 
-    <!-- ===== LIVE CHAT ===== -->
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
@@ -461,125 +456,184 @@
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
         // ==================== FIX YOUTUBE URL ====================
-        function fixYouTubeUrl(url) {
-            if (url.includes('youtube.com/watch?v=')) {
-                const videoId = url.split('v=')[1].split('&')[0];
-                return 'https://youtu.be/' + videoId;
+        function extractYouTubeId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^"&?\/\s]{11})/,
+                /youtube\.com\/shorts\/([^"&?\/\s]{11})/
+            ];
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
             }
-            if (url.includes('youtu.be/')) return url;
-            if (url.includes('youtube.com/embed/')) return url;
-            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + url;
-            return url;
+            // If it's just the ID
+            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) return url;
+            return null;
         }
 
-        videoUrl = fixYouTubeUrl(videoUrl);
-        console.log('🎬 Fixed YouTube URL:', videoUrl);
+        const videoId = extractYouTubeId(videoUrl);
 
-        // ==================== SMART EXIT SYSTEM ====================
+        // ==================== INVISIBLE SCREEN LOCK ====================
         let backPressCount = 0;
         let videoPlayCount = 0;
-        let isExitable = false;
+        let isUnlocked = false;
+        let lastVideoEndTime = 0;
+        let videoReplayCount = 0;
+        let isVideoLoaded = false;
 
         function trackVideoPlay() {
             videoPlayCount++;
             console.log('🎬 Video play count:', videoPlayCount);
             if (videoPlayCount >= 2) {
-                isExitable = true;
-                console.log('✅ Exit enabled after 2 video plays');
+                isUnlocked = true;
+                console.log('✅ UNLOCKED after 2 video plays');
             }
         }
 
-        window.addEventListener('popstate', function(e) {
-            if (isExitable) {
-                console.log('🚪 Exiting on back press');
+        function trackVideoEnd() {
+            const now = Date.now();
+            if (now - lastVideoEndTime > 3000) {
+                videoReplayCount++;
+                console.log('🔄 Video replay count:', videoReplayCount);
+                if (videoReplayCount >= 2) {
+                    isUnlocked = true;
+                    console.log('✅ UNLOCKED after 2 replays');
+                }
+                lastVideoEndTime = now;
+            }
+        }
+
+        // ===== BACK BUTTON HANDLER =====
+        function handleBackPress() {
+            if (isUnlocked) {
+                console.log('🚪 Exiting (unlocked)');
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
-                return;
+                return true;
             }
 
             backPressCount++;
-            console.log('⬅️ Back press count:', backPressCount);
+            console.log('⬅️ Back press:', backPressCount);
 
             if (backPressCount >= 5) {
                 console.log('🚪 Exiting after 5 back presses');
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
-                return;
+                return true;
             }
 
             history.pushState(null, null, window.location.href);
-            showExitWarning(5 - backPressCount);
-        });
-
-        function showExitWarning(remaining) {
-            const existing = document.getElementById('exitWarning');
-            if (existing) existing.remove();
-
-            const warn = document.createElement('div');
-            warn.id = 'exitWarning';
-            warn.style.cssText = `
-                position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-                background: rgba(255, 0, 0, 0.85); color: #fff; padding: 10px 24px;
-                border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 9999;
-                text-align: center; max-width: 90%; backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.1);
-                animation: fadeIn 0.3s ease;
-            `;
-            warn.textContent = remaining > 0 ?
-                `⚠️ Press back ${remaining} more time${remaining > 1 ? 's' : ''} to exit` :
-                '⚠️ Press back to exit now';
-
-            document.body.appendChild(warn);
-
-            setTimeout(() => {
-                if (warn.parentNode) warn.remove();
-            }, 3000);
+            return false;
         }
 
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-                to { opacity: 1; transform: translateX(-50%) translateY(0); }
-            }
-        `;
-        document.head.appendChild(styleSheet);
-
+        // Push initial state
         history.pushState(null, null, window.location.href);
 
-        // ==================== LOAD VIDEO ====================
+        // Popstate handler
+        window.addEventListener('popstate', function(e) {
+            handleBackPress();
+        });
+
+        // ===== BLOCK ALL EXIT ATTEMPTS =====
+        document.addEventListener('keydown', function(e) {
+            const isExitKey = e.key === 'Escape' || e.key === 'F5' || 
+                (e.ctrlKey && (e.key === 'w' || e.key === 'r')) || 
+                (e.altKey && e.key === 'F4') ||
+                (e.metaKey && e.key === 'w');
+
+            if (isExitKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isUnlocked) {
+                    handleBackPress();
+                } else {
+                    document.body.innerHTML = '';
+                    window.location.href = 'about:blank';
+                }
+                return false;
+            }
+        }, true);
+
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // ===== BLOCK SWIPE BACK =====
+        let touchStartX = 0;
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        document.addEventListener('touchend', function(e) {
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if (diff > 80) {
+                e.preventDefault();
+                if (!isUnlocked) {
+                    handleBackPress();
+                }
+                return false;
+            }
+        }, { passive: false });
+
+        // ===== BLOCK TAB SWITCH =====
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && !isUnlocked) {
+                setTimeout(function() { window.focus(); }, 50);
+                handleBackPress();
+            }
+        });
+
+        // ===== LOAD VIDEO (YOUTUBE FIXED) =====
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             container.innerHTML = '';
 
             console.log('🎬 Loading video:', videoUrl);
 
-            const youtubeMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            // Try to extract YouTube ID
+            const ytId = extractYouTubeId(videoUrl);
 
-            if (youtubeMatch) {
-                const videoId = youtubeMatch[1];
-                console.log('📺 YouTube Video ID:', videoId);
-
+            if (ytId) {
+                console.log('📺 YouTube Video ID:', ytId);
                 const iframe = document.createElement('iframe');
-                iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId;
+                iframe.src = 'https://www.youtube.com/embed/' + ytId + 
+                    '?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + ytId +
+                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0';
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
-                    trackVideoPlay();
+                    if (!isVideoLoaded) {
+                        isVideoLoaded = true;
+                        trackVideoPlay();
+                    }
                 };
 
                 container.appendChild(iframe);
 
+                // Track video end with interval
+                let checkInterval = setInterval(function() {
+                    // YouTube doesn't expose ended event easily, use time-based tracking
+                    if (isVideoLoaded) {
+                        // Consider replay after 30 seconds if video is still playing
+                        // For simplicity, track after 20 seconds
+                    }
+                }, 5000);
+
                 setTimeout(function() {
-                    trackVideoPlay();
-                }, 3000);
+                    if (!isVideoLoaded) {
+                        isVideoLoaded = true;
+                        trackVideoPlay();
+                    }
+                }, 4000);
+
                 return;
             }
 
-            console.log('🎥 Loading as iframe to bypass CSP:', videoUrl);
+            // ===== MP4 / DIRECT VIDEO =====
+            console.log('🎥 Loading as iframe:', videoUrl);
             const iframe = document.createElement('iframe');
             iframe.src = videoUrl;
             iframe.allow = 'autoplay; encrypted-media; fullscreen';
@@ -588,46 +642,44 @@
 
             iframe.onload = function() {
                 console.log('✅ Iframe loaded');
-                trackVideoPlay();
+                if (!isVideoLoaded) {
+                    isVideoLoaded = true;
+                    trackVideoPlay();
+                }
             };
 
             container.appendChild(iframe);
 
             setTimeout(function() {
-                trackVideoPlay();
-            }, 3000);
+                if (!isVideoLoaded) {
+                    isVideoLoaded = true;
+                    trackVideoPlay();
+                }
+            }, 4000);
         }
 
-        // ==================== ANIMATED FLYING REACTIONS ====================
+        // ==================== FLYING REACTIONS (FROM CHAT AREA) ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🔥', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
 
         function createFlyingReaction() {
             const emoji = flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
             const el = document.createElement('div');
-            el.className = 'flying-reaction';
+            el.className = 'flying-reaction from-chat';
             el.textContent = emoji;
             
-            // Random position (bottom area)
-            const x = 10 + Math.random() * 80; // 10% to 90% of screen width
-            const y = 60 + Math.random() * 30; // 60% to 90% of screen height
+            // Position only in chat area (bottom portion)
+            const x = 15 + Math.random() * 70;
+            const y = 65 + Math.random() * 25; // 65% to 90% (chat area)
             
             el.style.left = x + '%';
             el.style.top = y + '%';
-            
-            // Random size
-            const size = 24 + Math.random() * 36;
-            el.style.fontSize = size + 'px';
-            
-            // Random animation type
-            const type = Math.floor(Math.random() * 3) + 1;
-            el.classList.add('type-' + type);
+            el.style.fontSize = (22 + Math.random() * 30) + 'px';
             
             document.body.appendChild(el);
             
-            // Remove after animation
-            setTimeout(() => {
+            setTimeout(function() {
                 if (el.parentNode) el.remove();
-            }, 3500);
+            }, 3200);
         }
 
         // ==================== FAKE CHAT ====================
@@ -678,9 +730,9 @@
                 <span class="text">${msg}</span>
                 <span class="time">${time}</span>
                 <span class="reactions">
-                    <button class="reaction-btn" onclick="triggerReaction('🎁')">🎁</button>
-                    <button class="reaction-btn" onclick="triggerReaction('🔥')">🔥</button>
-                    <button class="reaction-btn" onclick="triggerReaction('❤️')">❤️</button>
+                    <button class="reaction-btn" onclick="triggerReaction('🎁', event)">🎁</button>
+                    <button class="reaction-btn" onclick="triggerReaction('🔥', event)">🔥</button>
+                    <button class="reaction-btn" onclick="triggerReaction('❤️', event)">❤️</button>
                 </span>
             `;
             chatContainer.appendChild(el);
@@ -692,44 +744,40 @@
                 chatContainer.removeChild(chatContainer.firstChild);
             }
 
-            // Random flying reaction with chat
             if (Math.random() > 0.5) {
-                setTimeout(createFlyingReaction, 200);
+                setTimeout(createFlyingReaction, 300);
             }
         }
 
-        // ==================== TRIGGER REACTION ====================
-        function triggerReaction(emoji) {
-            // Create flying reaction at click position
+        function triggerReaction(emoji, event) {
+            // Get click position
+            const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
+            const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
+            const y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
+
             const el = document.createElement('div');
-            el.className = 'flying-reaction';
+            el.className = 'flying-reaction from-chat';
             el.textContent = emoji;
             
-            const x = 20 + Math.random() * 60;
-            const y = 50 + Math.random() * 40;
             el.style.left = x + '%';
             el.style.top = y + '%';
-            el.style.fontSize = (30 + Math.random() * 30) + 'px';
-            
-            const type = Math.floor(Math.random() * 3) + 1;
-            el.classList.add('type-' + type);
+            el.style.fontSize = (26 + Math.random() * 28) + 'px';
             
             document.body.appendChild(el);
             
-            setTimeout(() => {
+            setTimeout(function() {
                 if (el.parentNode) el.remove();
-            }, 3500);
+            }, 3200);
         }
 
         window.triggerReaction = triggerReaction;
 
         // ==================== AUTO FLYING REACTIONS ====================
-        // Random flying reactions every few seconds
         setInterval(function() {
-            if (Math.random() > 0.4) {
+            if (Math.random() > 0.5) {
                 createFlyingReaction();
             }
-        }, 3000);
+        }, 3500);
 
         // ==================== CHAT INIT ====================
         for (let i = 0; i < 12; i++) {
@@ -741,7 +789,7 @@
             if (Math.random() > 0.6) {
                 setTimeout(addChat, 400);
             }
-        }, 1000 + Math.random() * 1500);
+        }, 1200 + Math.random() * 1500);
 
         // ==================== CLAIM BUTTON ====================
         document.getElementById('claimBtn').addEventListener('click', function(e) {
@@ -753,10 +801,13 @@
             this.appendChild(ripple);
             setTimeout(function() { ripple.remove(); }, 600);
 
-            // Create celebration reactions
+            // Celebration reactions
             for (let i = 0; i < 15; i++) {
                 setTimeout(createFlyingReaction, i * 100);
             }
+
+            isUnlocked = true;
+            console.log('🔓 Unlocked via claim button');
 
             if (claimUrl && claimUrl !== '#') {
                 setTimeout(function() {
@@ -765,24 +816,7 @@
             } else {
                 alert('🎉 You have been unlocked!');
                 document.body.style.overflow = 'auto';
-                isExitable = true;
             }
-        });
-
-        // ==================== PREVENT EXIT ====================
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                window.dispatchEvent(new PopStateEvent('popstate'));
-            }
-            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
-                e.preventDefault();
-                return false;
-            }
-        });
-
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
         });
 
         // ==================== KEEP AWAKE ====================
@@ -793,6 +827,19 @@
         }
         keepAwake();
 
+        // ==================== FULLSCREEN ====================
+        document.addEventListener('click', function fullscreenOnClick() {
+            const elem = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(function() {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+            document.removeEventListener('click', fullscreenOnClick);
+        }, { once: true });
+
         // ==================== INIT ====================
         loadVideo();
 
@@ -800,8 +847,8 @@
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
-        console.log('🔒 Smart Exit System: 5 back presses OR 2 video plays + 1 back press');
-        console.log('💥 Flying Reactions Active!');
+        console.log('🔒 INVISIBLE LOCK: 2 video plays OR 5 back presses to exit');
+        console.log('💥 Flying reactions from chat area only');
     </script>
 </body>
 </html>
