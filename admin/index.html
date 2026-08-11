@@ -142,14 +142,144 @@
         .bg-upload-area .bg-status.success { color: var(--success); }
         .bg-upload-area .bg-status.error { color: var(--danger); }
 
-        .passcode-input-group { display: flex; gap: 8px; justify-content: center; margin: 10px 0; }
-        .passcode-input-group input { width: 45px; height: 50px; text-align: center; font-size: 20px;
-            font-weight: 700; border: 2px solid var(--border); border-radius: 10px;
-            background: var(--bg); color: var(--text); transition: 0.3s; }
-        .passcode-input-group input:focus { border-color: var(--primary); outline: none;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.2); }
-        body.dark .passcode-input-group input { background: #0f3460; color: white; border-color: #1a1a4e; }
-        .passcode-hint { color: var(--text-light); font-size: 12px; margin: 5px 0; }
+        /* ===== PASSCODE INPUT - 2 FIELDS ===== */
+        .passcode-2 {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .passcode-2 input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            background: var(--bg);
+            color: var(--text);
+            min-width: 150px;
+        }
+        .passcode-2 input:focus { border-color: var(--primary); outline: none; }
+
+        /* ===== RENEWAL MANAGEMENT COLLAPSIBLE ===== */
+        .collapse-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .collapse-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
+        .collapse-btn .arrow { transition: 0.3s; }
+        .collapse-btn .arrow.open { transform: rotate(180deg); }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, padding 0.3s ease;
+            padding: 0 4px;
+        }
+        .collapse-content.open {
+            max-height: 2000px;
+            padding: 16px 4px 4px 4px;
+        }
+
+        /* ===== PAYMENT SETTINGS DYNAMIC ===== */
+        .payment-dynamic {
+            margin-top: 8px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            display: none;
+        }
+        .payment-dynamic.show { display: block; }
+        .payment-dynamic input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        .payment-dynamic input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        .payment-dynamic .preview-qr {
+            max-width: 150px;
+            margin-top: 8px;
+            border-radius: 8px;
+            display: none;
+        }
+        .payment-dynamic .preview-qr.show { display: block; }
+
+        /* ===== RENEWAL ITEMS ===== */
+        .renewal-item { background: var(--bg); padding: 14px 18px; margin: 10px 0; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid var(--primary); }
+        .renewal-item .info { flex: 1; min-width: 150px; }
+        .renewal-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); }
+        .renewal-item .info .details { font-size: 12px; color: var(--text-light); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .renewal-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .renewal-status-badge { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .renewal-status-badge.pending { background: #feebc8; color: #9c4221; }
+        .renewal-status-badge.paid { background: #bee3f8; color: #2b6cb0; }
+        .renewal-status-badge.approved { background: #c6f6d5; color: #22543d; }
+        .renewal-status-badge.rejected { background: #fed7d7; color: #9b2c2c; }
+        body.dark .renewal-status-badge.pending { background: #3a2a1a; color: #f6ad55; }
+        body.dark .renewal-status-badge.paid { background: #1a2a3a; color: #63b3ed; }
+        body.dark .renewal-status-badge.approved { background: #1a3a2a; color: #68d391; }
+        body.dark .renewal-status-badge.rejected { background: #3a1a1a; color: #fc8181; }
+
+        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .pricing-grid .pricing-item { display: flex; align-items: center; gap: 10px; }
+        .pricing-grid .pricing-item label { font-size: 13px; color: var(--text-light); min-width: 70px; }
+        .pricing-grid .pricing-item input { width: 100%; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
+        @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+        .parent-link-box {
+            background: var(--bg);
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .parent-link-box .link {
+            color: var(--primary);
+            word-break: break-all;
+            font-size: 14px;
+        }
+        .parent-link-box .btn-sm {
+            padding: 6px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .parent-link-box .btn-sm:hover { background: var(--secondary); }
 
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 16px 20px; }
@@ -159,18 +289,23 @@
             .link-item .actions { justify-content: flex-start; }
             body { padding: 12px; }
             .card { padding: 18px 16px; }
-            .passcode-input-group input { width: 38px; height: 44px; font-size: 16px; }
+            .passcode-2 { flex-direction: column; }
+            .passcode-2 input { width: 100%; }
+            .renewal-item { flex-direction: column; align-items: stretch; }
+            .renewal-item .actions { justify-content: flex-start; }
+            .parent-link-box { flex-direction: column; align-items: stretch; text-align: center; }
         }
         @media (max-width: 480px) {
             .stats { grid-template-columns: 1fr; }
             .stat-card .number { font-size: 26px; }
             .toast { left: 20px; right: 20px; bottom: 20px; }
-            .passcode-input-group input { width: 32px; height: 38px; font-size: 14px; }
+            .pricing-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <!-- ===== HEADER ===== -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
@@ -183,6 +318,7 @@
             </div>
         </header>
 
+        <!-- ===== STATS ===== -->
         <div class="stats">
             <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total</div></div>
             <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
@@ -190,6 +326,7 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
+        <!-- ===== CREATE LINK ===== -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -234,6 +371,7 @@
             </div>
         </div>
 
+        <!-- ===== BACKGROUND UPLOAD ===== -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
@@ -248,39 +386,97 @@
             </div>
         </div>
 
+        <!-- ===== ALL LINKS ===== -->
         <div class="card">
             <h3>📋 All Links</h3>
             <div id="linksList"></div>
         </div>
 
+        <!-- ===== RENEWAL MANAGEMENT (COLLAPSIBLE) ===== -->
         <div class="card">
-            <h3>🔐 Admin Settings</h3>
-            <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">Change your 6-digit passcode</p>
-            <div class="grid-2">
-                <div>
-                    <label style="font-size:13px;font-weight:600;color:var(--text-light);">Current Passcode</label>
-                    <div class="passcode-input-group" id="oldPasscodeGroup">
-                        <input type="password" id="old1" maxlength="1">
-                        <input type="password" id="old2" maxlength="1">
-                        <input type="password" id="old3" maxlength="1">
-                        <input type="password" id="old4" maxlength="1">
-                        <input type="password" id="old5" maxlength="1">
-                        <input type="password" id="old6" maxlength="1">
+            <button class="collapse-btn" onclick="toggleRenewal()">
+                <span>🔄 Renewal Management</span>
+                <span class="arrow" id="renewalArrow">▼</span>
+            </button>
+            <div class="collapse-content" id="renewalContent">
+                <!-- Parent Link -->
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">🔗 Parent Link</h4>
+                    <div class="parent-link-box">
+                        <span class="link" id="parentLinkDisplay">Loading...</span>
+                        <button class="btn-sm" onclick="copyParentLink()">📋 Copy</button>
                     </div>
                 </div>
-                <div>
-                    <label style="font-size:13px;font-weight:600;color:var(--text-light);">New Passcode</label>
-                    <div class="passcode-input-group" id="newPasscodeGroup">
-                        <input type="password" id="new1" maxlength="1">
-                        <input type="password" id="new2" maxlength="1">
-                        <input type="password" id="new3" maxlength="1">
-                        <input type="password" id="new4" maxlength="1">
-                        <input type="password" id="new5" maxlength="1">
-                        <input type="password" id="new6" maxlength="1">
+
+                <!-- Pricing Settings -->
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💰 Pricing Plans</h4>
+                    <div class="pricing-grid">
+                        <div class="pricing-item"><label>3 Days</label><input type="number" id="price_3days" placeholder="Price" value="50" min="0"></div>
+                        <div class="pricing-item"><label>7 Days</label><input type="number" id="price_7days" placeholder="Price" value="100" min="0"></div>
+                        <div class="pricing-item"><label>15 Days</label><input type="number" id="price_15days" placeholder="Price" value="200" min="0"></div>
+                        <div class="pricing-item"><label>1 Month</label><input type="number" id="price_1month" placeholder="Price" value="500" min="0"></div>
+                        <div class="pricing-item"><label>3 Months</label><input type="number" id="price_3months" placeholder="Price" value="1200" min="0"></div>
+                        <div class="pricing-item"><label>6 Months</label><input type="number" id="price_6months" placeholder="Price" value="2000" min="0"></div>
+                        <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" placeholder="Price" value="3500" min="0"></div>
+                    </div>
+                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Pricing</button>
+                </div>
+
+                <!-- Payment Settings -->
+                <div style="margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💳 Payment Settings</h4>
+                    <div class="grid-2">
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Payment Method</label>
+                            <select id="paymentMethod" onchange="togglePaymentFields()" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-size:14px;">
+                                <option value="UPI">UPI</option>
+                                <option value="QR">QR Code</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Payment Details</label>
+                            <div id="paymentDetailsContainer">
+                                <!-- UPI Input -->
+                                <div class="payment-dynamic show" id="upiField">
+                                    <input type="text" id="upiInput" placeholder="UPI ID (e.g., admin@upi)" value="admin@upi">
+                                </div>
+                                <!-- QR Upload -->
+                                <div class="payment-dynamic" id="qrField">
+                                    <input type="file" id="qrInput" accept="image/*" onchange="previewQR(event)">
+                                    <img id="qrPreview" class="preview-qr" alt="QR Preview">
+                                </div>
+                                <!-- Bank/Other -->
+                                <div class="payment-dynamic" id="textField">
+                                    <input type="text" id="textInput" placeholder="Bank Details / Other Info">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Payment Settings</button>
+                </div>
+
+                <!-- Renewal Requests -->
+                <div style="padding-top:16px;border-top:1px solid var(--border);">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📋 Renewal Requests</h4>
+                    <div id="renewalRequestsList">
+                        <div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>
                     </div>
                 </div>
             </div>
-            <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:8px;">Change Passcode</button>
+        </div>
+
+        <!-- ===== ADMIN SETTINGS (2 FIELDS) ===== -->
+        <div class="card">
+            <h3>🔐 Admin Settings</h3>
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:12px;">Change your 6-digit passcode</p>
+            <div class="passcode-2">
+                <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6">
+                <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6">
+            </div>
+            <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:10px;">Change Passcode</button>
             <div id="passcodeStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
         </div>
     </div>
@@ -288,13 +484,10 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==================== CSRF TOKEN LOAD ====================
+        // ==================== CSRF TOKEN ====================
         let csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
-        console.log('🔑 CSRF Token:', csrfToken ? '✅ Present' : '❌ Missing');
-
         if (!csrfToken) {
-            console.warn('⚠️ CSRF Token missing, redirecting to login...');
             window.location.href = 'login.html';
         }
 
@@ -309,68 +502,16 @@
                         'X-CSRF-Token': csrfToken
                     }
                 });
-
                 if (response.status === 401 || response.status === 403) {
-                    console.error('❌ Auth error:', response.status);
                     showToast('❌ Session expired. Please login again.', 'error');
                     localStorage.removeItem('csrfToken');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 1500);
+                    setTimeout(() => { window.location.href = 'login.html'; }, 1500);
                     return null;
                 }
-
                 return response;
             } catch (e) {
-                console.error('❌ Fetch error:', e);
                 showToast('❌ Network error', 'error');
                 return null;
-            }
-        }
-
-        // ==================== CHECK AUTH ====================
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/links', {
-                    headers: { 'X-CSRF-Token': csrfToken }
-                });
-                if (response.status === 401 || response.status === 403) {
-                    console.error('❌ Auth failed:', response.status);
-                    localStorage.removeItem('csrfToken');
-                    window.location.href = 'login.html';
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                console.error('❌ Auth check error:', e);
-                window.location.href = 'login.html';
-                return false;
-            }
-        }
-
-        // ==================== PERIODIC SESSION CHECK ====================
-        setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
-
-        // ==================== PWA INSTALL ====================
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBtn').classList.add('show');
-        });
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((result) => {
-                    if (result.outcome === 'accepted') {
-                        showToast('✅ App installed successfully!', 'success');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installBtn').classList.remove('show');
-                });
-            } else {
-                showToast('📲 Use Chrome browser to install', 'info');
             }
         }
 
@@ -381,6 +522,70 @@
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
             t._timeout = setTimeout(() => t.className = 'toast', 4000);
+        }
+
+        // ==================== RENEWAL COLLAPSE ====================
+        function toggleRenewal() {
+            const content = document.getElementById('renewalContent');
+            const arrow = document.getElementById('renewalArrow');
+            content.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+
+        // ==================== PARENT LINK ====================
+        async function loadParentLink() {
+            try {
+                const r = await fetch('/api/parent-link');
+                const data = await r.json();
+                const url = window.location.origin + data.url;
+                document.getElementById('parentLinkDisplay').textContent = url;
+            } catch (e) {
+                document.getElementById('parentLinkDisplay').textContent = 'Error loading';
+            }
+        }
+
+        function copyParentLink() {
+            const text = document.getElementById('parentLinkDisplay').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✅ Parent Link copied!', 'success');
+            }).catch(() => {
+                const input = document.createElement('input');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('✅ Parent Link copied!', 'success');
+            });
+        }
+
+        // ==================== PAYMENT FIELDS TOGGLE ====================
+        function togglePaymentFields() {
+            const method = document.getElementById('paymentMethod').value;
+            document.getElementById('upiField').classList.remove('show');
+            document.getElementById('qrField').classList.remove('show');
+            document.getElementById('textField').classList.remove('show');
+
+            if (method === 'UPI') {
+                document.getElementById('upiField').classList.add('show');
+            } else if (method === 'QR') {
+                document.getElementById('qrField').classList.add('show');
+            } else {
+                document.getElementById('textField').classList.add('show');
+            }
+        }
+
+        function previewQR(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('qrPreview');
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         // ==================== SCHEDULE ====================
@@ -530,64 +735,24 @@
             }
         }
 
-        // ==================== PASSCODE FUNCTIONS ====================
-        function getPasscodeFromInputs(prefix) {
-            let code = '';
-            for (let i = 1; i <= 6; i++) {
-                const val = document.getElementById(prefix + i).value;
-                if (val === '') return null;
-                code += val;
-            }
-            return code;
-        }
-
-        function setupPasscodeInputs(prefix) {
-            const inputs = [];
-            for (let i = 1; i <= 6; i++) {
-                inputs.push(document.getElementById(prefix + i));
-            }
-            inputs.forEach((input, index) => {
-                input.addEventListener('input', function() {
-                    this.value = this.value.replace(/\D/g, '');
-                    if (this.value.length === 1 && index < 5) {
-                        inputs[index + 1].focus();
-                    }
-                });
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Backspace' && this.value === '' && index > 0) {
-                        inputs[index - 1].focus();
-                    }
-                    if (e.key === 'Enter') {
-                        changePasscode();
-                    }
-                });
-                input.addEventListener('focus', function() {
-                    this.select();
-                });
-            });
-        }
-
-        setupPasscodeInputs('old');
-        setupPasscodeInputs('new');
-
-        // ==================== CHANGE PASSCODE ====================
+        // ==================== CHANGE PASSCODE (2 FIELDS) ====================
         async function changePasscode() {
-            const oldPasscode = getPasscodeFromInputs('old');
-            const newPasscode = getPasscodeFromInputs('new');
+            const oldPasscode = document.getElementById('oldPasscode').value;
+            const newPasscode = document.getElementById('newPasscode').value;
             const statusEl = document.getElementById('passcodeStatus');
 
-            if (!oldPasscode || oldPasscode.length !== 6) {
-                statusEl.textContent = '❌ Please enter complete current passcode';
+            if (!oldPasscode || !newPasscode) {
+                statusEl.textContent = '❌ Please fill both fields';
                 statusEl.style.color = '#fc8181';
                 return;
             }
-            if (!newPasscode || newPasscode.length !== 6) {
-                statusEl.textContent = '❌ Please enter complete new passcode';
+            if (oldPasscode.length !== 6 || newPasscode.length !== 6) {
+                statusEl.textContent = '❌ Passcode must be 6 digits';
                 statusEl.style.color = '#fc8181';
                 return;
             }
             if (oldPasscode === newPasscode) {
-                statusEl.textContent = '❌ New passcode must be different from current';
+                statusEl.textContent = '❌ New passcode must be different';
                 statusEl.style.color = '#fc8181';
                 return;
             }
@@ -603,10 +768,8 @@
                     statusEl.textContent = '✅ Passcode changed! Please login again.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Passcode changed! Please login again.', 'success');
-                    for (let i = 1; i <= 6; i++) {
-                        document.getElementById('old' + i).value = '';
-                        document.getElementById('new' + i).value = '';
-                    }
+                    document.getElementById('oldPasscode').value = '';
+                    document.getElementById('newPasscode').value = '';
                     setTimeout(() => { window.location.href = 'login.html'; }, 2000);
                 } else {
                     statusEl.textContent = '❌ ' + (data.error || 'Failed to change passcode');
@@ -633,12 +796,8 @@
                 if (!r) {
                     document.getElementById('linksList').innerHTML = `
                         <div class="empty-state" style="color:var(--danger);">
-                            <span class="icon">⚠️</span>
-                            Error loading links. Please refresh.
-                            <br>
-                            <button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">
-                                🔄 Retry
-                            </button>
+                            <span class="icon">⚠️</span> Error loading links. 
+                            <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button>
                         </div>
                     `;
                     return;
@@ -711,15 +870,10 @@
                     c.appendChild(d);
                 });
             } catch (e) {
-                console.error('❌ Load links error:', e);
                 document.getElementById('linksList').innerHTML = `
                     <div class="empty-state" style="color:var(--danger);">
-                        <span class="icon">⚠️</span>
-                        Error loading links.
-                        <br>
-                        <button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">
-                            🔄 Retry
-                        </button>
+                        <span class="icon">⚠️</span> Error loading links.
+                        <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button>
                     </div>
                 `;
             }
@@ -891,12 +1045,158 @@
             }
         }
 
+        // ==================== RENEWAL MANAGEMENT ====================
+        async function loadPricingData() {
+            try {
+                const r = await fetch('/api/pricing');
+                const data = await r.json();
+                const pricing = data.pricing || {};
+                const paymentSettings = data.paymentSettings || {};
+                document.getElementById('price_3days').value = pricing['3days'] || 50;
+                document.getElementById('price_7days').value = pricing['7days'] || 100;
+                document.getElementById('price_15days').value = pricing['15days'] || 200;
+                document.getElementById('price_1month').value = pricing['1month'] || 500;
+                document.getElementById('price_3months').value = pricing['3months'] || 1200;
+                document.getElementById('price_6months').value = pricing['6months'] || 2000;
+                document.getElementById('price_12months').value = pricing['12months'] || 3500;
+                document.getElementById('paymentMethod').value = paymentSettings.method || 'UPI';
+                document.getElementById('upiInput').value = paymentSettings.details?.upiId || 'admin@upi';
+                document.getElementById('textInput').value = paymentSettings.details?.text || '';
+                togglePaymentFields();
+            } catch (e) {}
+        }
+
+        async function savePricing() {
+            const pricing = {
+                '3days': parseInt(document.getElementById('price_3days').value) || 0,
+                '7days': parseInt(document.getElementById('price_7days').value) || 0,
+                '15days': parseInt(document.getElementById('price_15days').value) || 0,
+                '1month': parseInt(document.getElementById('price_1month').value) || 0,
+                '3months': parseInt(document.getElementById('price_3months').value) || 0,
+                '6months': parseInt(document.getElementById('price_6months').value) || 0,
+                '12months': parseInt(document.getElementById('price_12months').value) || 0
+            };
+            
+            const method = document.getElementById('paymentMethod').value;
+            let details = {};
+            if (method === 'UPI') {
+                details = { upiId: document.getElementById('upiInput').value };
+            } else if (method === 'QR') {
+                const file = document.getElementById('qrInput').files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        details = { qrCode: e.target.result };
+                        savePaymentSettings(method, details, pricing);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            } else {
+                details = { text: document.getElementById('textInput').value };
+            }
+            savePaymentSettings(method, details, pricing);
+        }
+
+        async function savePaymentSettings(method, details, pricing) {
+            const paymentSettings = { method, details };
+            try {
+                const r = await secureFetch('/api/admin/pricing', {
+                    method: 'POST',
+                    body: JSON.stringify({ pricing, paymentSettings })
+                });
+                if (r) {
+                    showToast('✅ Saved successfully!', 'success');
+                    loadRenewalRequests();
+                }
+            } catch (e) {
+                showToast('❌ Failed to save', 'error');
+            }
+        }
+
+        async function loadRenewalRequests() {
+            try {
+                const r = await secureFetch('/api/renewal/requests');
+                if (!r) return;
+                const requests = await r.json();
+                const container = document.getElementById('renewalRequestsList');
+                if (!requests || requests.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                requests.forEach(req => {
+                    const div = document.createElement('div');
+                    div.className = 'renewal-item';
+                    div.innerHTML = `
+                        <div class="info">
+                            <div class="name">${escapeHTML(req.linkName || 'Unknown Link')}</div>
+                            <div class="details">
+                                <span>📅 ${new Date(req.createdAt).toLocaleDateString()}</span>
+                                <span>💰 ₹${req.amount}</span>
+                                <span>📆 ${req.days} days</span>
+                                <span class="renewal-status-badge ${req.status}">${req.status.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            ${req.status === 'pending' ? `<button onclick="markPaid('${req.id}')" class="btn btn-success btn-sm">✅ Mark Paid</button>` : ''}
+                            ${req.status === 'paid' ? `<button onclick="approveRenewal('${req.id}')" class="btn btn-primary btn-sm">✅ Approve</button>` : ''}
+                            ${req.status === 'pending' || req.status === 'paid' ? `<button onclick="rejectRenewal('${req.id}')" class="btn btn-danger btn-sm">❌ Reject</button>` : ''}
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {}
+        }
+
+        async function markPaid(requestId) {
+            if (!confirm('Mark this as paid?')) return;
+            try {
+                const r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('✅ Marked as paid!', 'success');
+                    loadRenewalRequests();
+                }
+            } catch (e) { showToast('❌ Failed', 'error'); }
+        }
+
+        async function approveRenewal(requestId) {
+            if (!confirm('Approve this renewal?')) return;
+            try {
+                const r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('✅ Renewal approved!', 'success');
+                    loadRenewalRequests();
+                }
+            } catch (e) { showToast('❌ Failed to approve', 'error'); }
+        }
+
+        async function rejectRenewal(requestId) {
+            if (!confirm('Reject this renewal?')) return;
+            try {
+                const r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('❌ Renewal rejected', 'error');
+                    loadRenewalRequests();
+                }
+            } catch (e) { showToast('❌ Failed to reject', 'error'); }
+        }
+
+        // ==================== PERIODIC CHECKS ====================
+        setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
+        setInterval(loadRenewalRequests, 15000);
+
         // ==================== INIT ====================
         loadTheme();
         loadBackground();
         loadLinks();
+        loadParentLink();
+        loadPricingData();
+        loadRenewalRequests();
         setInterval(loadLinks, 30000);
         checkAuth();
+        togglePaymentFields();
     </script>
 </body>
 </html>
