@@ -126,7 +126,14 @@ function getDefaultDB() {
                 upiId: 'admin@upi'
             }
         },
-        renewalRequests: []
+        renewalRequests: [],
+        // ===== NEW: Global Stats =====
+        stats: {
+            totalVisitors: 0,
+            totalClaims: 0,
+            dailyVisitors: {},
+            dailyClaims: {}
+        }
     };
 }
 
@@ -384,7 +391,9 @@ app.post('/api/links', authMiddleware, (req, res) => {
             expiryDate: expiryDate || null,
             status: 'active',
             visits: 0,
-            dailyVisits: {}
+            dailyVisits: {},
+            claims: 0,
+            dailyClaims: {}
         };
 
         db.links.push(newLink);
@@ -476,7 +485,7 @@ app.delete('/api/links/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ==================== 🟢 UPDATED GET LINK BY ID (PUBLIC) ====================
+// ==================== GET LINK BY ID (PUBLIC) ====================
 app.get('/api/link/:id', (req, res) => {
     try {
         const { id } = req.params;
@@ -527,11 +536,18 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // Track visit
+        // ===== TRACK VISIT =====
         link.visits++;
         const today = new Date().toISOString().split('T')[0];
         if (!link.dailyVisits) link.dailyVisits = {};
         link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
+        
+        // ===== TRACK GLOBAL VISITOR =====
+        if (!db.stats) db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {} };
+        db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
+        if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
+        db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
+        
         writeDB(db);
 
         res.json({
@@ -547,7 +563,88 @@ app.get('/api/link/:id', (req, res) => {
         res.status(500).json({ error: 'Failed to fetch link' });
     }
 });
-// ==================== END OF UPDATED ROUTE ====================
+
+// ==================== TRACK CLAIM ====================
+app.post('/api/track-claim/:linkId', (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const db = readDB();
+
+        const link = db.links.find(l => l.id === linkId);
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        // ===== TRACK CLAIM =====
+        link.claims = (link.claims || 0) + 1;
+        const today = new Date().toISOString().split('T')[0];
+        if (!link.dailyClaims) link.dailyClaims = {};
+        link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
+        
+        // ===== TRACK GLOBAL CLAIM =====
+        if (!db.stats) db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {} };
+        db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
+        if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
+        db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
+        
+        writeDB(db);
+
+        res.json({ success: true, claims: link.claims });
+    } catch (error) {
+        console.error('❌ Track claim error:', error);
+        res.status(500).json({ error: 'Failed to track claim' });
+    }
+});
+
+// ==================== GET STATS ====================
+app.get('/api/stats/:linkId', (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const db = readDB();
+
+        const link = db.links.find(l => l.id === linkId);
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        
+        res.json({
+            linkId: link.id,
+            name: link.name,
+            visits: link.visits || 0,
+            claims: link.claims || 0,
+            dailyVisits: link.dailyVisits || {},
+            dailyClaims: link.dailyClaims || {},
+            todayVisits: link.dailyVisits?.[today] || 0,
+            todayClaims: link.dailyClaims?.[today] || 0,
+            status: link.status
+        });
+    } catch (error) {
+        console.error('❌ Stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// ==================== GET GLOBAL STATS ====================
+app.get('/api/global-stats', authMiddleware, (req, res) => {
+    try {
+        const db = readDB();
+        const today = new Date().toISOString().split('T')[0];
+        
+        res.json({
+            totalVisitors: db.stats?.totalVisitors || 0,
+            totalClaims: db.stats?.totalClaims || 0,
+            todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
+            todayClaims: db.stats?.dailyClaims?.[today] || 0,
+            dailyVisitors: db.stats?.dailyVisitors || {},
+            dailyClaims: db.stats?.dailyClaims || {}
+        });
+    } catch (error) {
+        console.error('❌ Global stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch global stats' });
+    }
+});
 
 // ==================== USER DASHBOARD ROUTES ====================
 
@@ -586,21 +683,35 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
     
     let visits = link.visits || 0;
     let dailyVisits = link.dailyVisits || {};
+    let claims = link.claims || 0;
+    let dailyClaims = link.dailyClaims || {};
     
     if (startDate && endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
-        const filtered = {};
-        let total = 0;
+        const filteredVisits = {};
+        let totalVisits = 0;
         for (const [date, count] of Object.entries(dailyVisits)) {
             const d = new Date(date);
             if (d >= start && d <= end) {
-                filtered[date] = count;
-                total += count;
+                filteredVisits[date] = count;
+                totalVisits += count;
             }
         }
-        visits = total;
-        dailyVisits = filtered;
+        visits = totalVisits;
+        dailyVisits = filteredVisits;
+        
+        const filteredClaims = {};
+        let totalClaims = 0;
+        for (const [date, count] of Object.entries(dailyClaims)) {
+            const d = new Date(date);
+            if (d >= start && d <= end) {
+                filteredClaims[date] = count;
+                totalClaims += count;
+            }
+        }
+        claims = totalClaims;
+        dailyClaims = filteredClaims;
     }
     
     const expiryDate = link.expiryDate ? new Date(link.expiryDate) : null;
@@ -611,6 +722,8 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
         name: link.name,
         totalVisits: visits,
         dailyVisits: dailyVisits,
+        totalClaims: claims,
+        dailyClaims: dailyClaims,
         expiryDate: expiryDate,
         daysLeft: daysLeft,
         status: link.status
@@ -899,5 +1012,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
     console.log('💾 Data: Permanent storage enabled');
+    console.log('📊 Stats: Visitor + Claim tracking enabled');
     console.log('═══════════════════════════════════════════');
 });
