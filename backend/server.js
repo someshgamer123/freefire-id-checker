@@ -127,12 +127,14 @@ function getDefaultDB() {
             }
         },
         renewalRequests: [],
-        // ===== NEW: Global Stats =====
+        // ===== STATS WITH 24HR UNIQUE COUNTER =====
         stats: {
             totalVisitors: 0,
             totalClaims: 0,
             dailyVisitors: {},
-            dailyClaims: {}
+            dailyClaims: {},
+            uniqueVisitors: {},  // Store IP + device ID for 24hr uniqueness
+            uniqueClaims: {}     // Store IP + device ID for 24hr uniqueness
         }
     };
 }
@@ -152,6 +154,38 @@ function verifyPasscode(passcode, hash) {
 
 function generateLinkId() {
     return 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+}
+
+// ==================== GET UNIQUE DEVICE ID ====================
+function getDeviceId(req) {
+    const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    // Create unique device fingerprint
+    const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+    return fingerprint;
+}
+
+// ==================== CHECK 24HR UNIQUENESS ====================
+function isUnique24hr(store, deviceId) {
+    const now = Date.now();
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Clean old entries (older than 24 hours)
+    for (const key in store) {
+        if (store[key] && (now - store[key] > 24 * 60 * 60 * 1000)) {
+            delete store[key];
+        }
+    }
+    
+    // Check if device already recorded today
+    const key = deviceId + '_' + today;
+    if (store[key]) {
+        return false; // Already counted in last 24 hours
+    }
+    
+    // Add new entry
+    store[key] = now;
+    return true;
 }
 
 // ==================== AUTH FUNCTIONS ====================
@@ -389,11 +423,7 @@ app.post('/api/links', authMiddleware, (req, res) => {
             headline: (headline || '').substring(0, 200),
             created: new Date().toISOString(),
             expiryDate: expiryDate || null,
-            status: 'active',
-            visits: 0,
-            dailyVisits: {},
-            claims: 0,
-            dailyClaims: {}
+            status: 'active'
         };
 
         db.links.push(newLink);
@@ -536,17 +566,25 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // ===== TRACK VISIT =====
-        link.visits++;
+        // ===== TRACK VISIT - 24HR UNIQUE =====
+        const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
-        if (!link.dailyVisits) link.dailyVisits = {};
-        link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
         
-        // ===== TRACK GLOBAL VISITOR =====
-        if (!db.stats) db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {} };
-        db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
+        // Initialize stats if not exists
+        if (!db.stats) {
+            db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {}, uniqueVisitors: {}, uniqueClaims: {} };
+        }
+        if (!db.stats.uniqueVisitors) db.stats.uniqueVisitors = {};
         if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
-        db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
+        
+        // Check if unique visitor in last 24 hours
+        if (isUnique24hr(db.stats.uniqueVisitors, deviceId)) {
+            db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
+            db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
+            console.log('👤 New unique visitor counted:', deviceId.substring(0, 10));
+        } else {
+            console.log('♻️ Returning visitor (within 24hrs):', deviceId.substring(0, 10));
+        }
         
         writeDB(db);
 
@@ -564,7 +602,7 @@ app.get('/api/link/:id', (req, res) => {
     }
 });
 
-// ==================== TRACK CLAIM ====================
+// ==================== TRACK CLAIM - 24HR UNIQUE ====================
 app.post('/api/track-claim/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
@@ -575,29 +613,41 @@ app.post('/api/track-claim/:linkId', (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
 
-        // ===== TRACK CLAIM =====
-        link.claims = (link.claims || 0) + 1;
+        // ===== TRACK CLAIM - 24HR UNIQUE =====
+        const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
-        if (!link.dailyClaims) link.dailyClaims = {};
-        link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
         
-        // ===== TRACK GLOBAL CLAIM =====
-        if (!db.stats) db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {} };
-        db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
+        // Initialize stats if not exists
+        if (!db.stats) {
+            db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {}, uniqueVisitors: {}, uniqueClaims: {} };
+        }
+        if (!db.stats.uniqueClaims) db.stats.uniqueClaims = {};
         if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
-        db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
+        
+        // Check if unique claim in last 24 hours
+        if (isUnique24hr(db.stats.uniqueClaims, deviceId)) {
+            db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
+            db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
+            console.log('🎁 New unique claim counted:', deviceId.substring(0, 10));
+        } else {
+            console.log('♻️ Returning claim (within 24hrs):', deviceId.substring(0, 10));
+        }
         
         writeDB(db);
 
-        res.json({ success: true, claims: link.claims });
+        res.json({ 
+            success: true, 
+            claims: db.stats.totalClaims || 0,
+            unique: true
+        });
     } catch (error) {
         console.error('❌ Track claim error:', error);
         res.status(500).json({ error: 'Failed to track claim' });
     }
 });
 
-// ==================== GET STATS ====================
-app.get('/api/stats/:linkId', (req, res) => {
+// ==================== GET LINK STATS (ADMIN ONLY) ====================
+app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
@@ -612,13 +662,16 @@ app.get('/api/stats/:linkId', (req, res) => {
         res.json({
             linkId: link.id,
             name: link.name,
-            visits: link.visits || 0,
-            claims: link.claims || 0,
-            dailyVisits: link.dailyVisits || {},
-            dailyClaims: link.dailyClaims || {},
-            todayVisits: link.dailyVisits?.[today] || 0,
-            todayClaims: link.dailyClaims?.[today] || 0,
-            status: link.status
+            totalVisitors: db.stats?.totalVisitors || 0,
+            totalClaims: db.stats?.totalClaims || 0,
+            todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
+            todayClaims: db.stats?.dailyClaims?.[today] || 0,
+            dailyVisitors: db.stats?.dailyVisitors || {},
+            dailyClaims: db.stats?.dailyClaims || {},
+            uniqueVisitors: Object.keys(db.stats?.uniqueVisitors || {}).length || 0,
+            uniqueClaims: Object.keys(db.stats?.uniqueClaims || {}).length || 0,
+            status: link.status,
+            expiryDate: link.expiryDate || null
         });
     } catch (error) {
         console.error('❌ Stats error:', error);
@@ -626,7 +679,7 @@ app.get('/api/stats/:linkId', (req, res) => {
     }
 });
 
-// ==================== GET GLOBAL STATS ====================
+// ==================== GET GLOBAL STATS (ADMIN ONLY) ====================
 app.get('/api/global-stats', authMiddleware, (req, res) => {
     try {
         const db = readDB();
@@ -638,7 +691,9 @@ app.get('/api/global-stats', authMiddleware, (req, res) => {
             todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
             todayClaims: db.stats?.dailyClaims?.[today] || 0,
             dailyVisitors: db.stats?.dailyVisitors || {},
-            dailyClaims: db.stats?.dailyClaims || {}
+            dailyClaims: db.stats?.dailyClaims || {},
+            uniqueVisitors: Object.keys(db.stats?.uniqueVisitors || {}).length || 0,
+            uniqueClaims: Object.keys(db.stats?.uniqueClaims || {}).length || 0
         });
     } catch (error) {
         console.error('❌ Global stats error:', error);
@@ -681,10 +736,10 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
         return res.status(404).json({ error: 'Link not found' });
     }
     
-    let visits = link.visits || 0;
-    let dailyVisits = link.dailyVisits || {};
-    let claims = link.claims || 0;
-    let dailyClaims = link.dailyClaims || {};
+    let dailyVisits = db.stats?.dailyVisitors || {};
+    let dailyClaims = db.stats?.dailyClaims || {};
+    let visits = db.stats?.totalVisitors || 0;
+    let claims = db.stats?.totalClaims || 0;
     
     if (startDate && endDate) {
         const start = new Date(startDate);
@@ -1012,6 +1067,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
     console.log('💾 Data: Permanent storage enabled');
-    console.log('📊 Stats: Visitor + Claim tracking enabled');
+    console.log('📊 Stats: 24hr Unique Visitor + Claim tracking enabled');
+    console.log('📱 Video: UNMUTED + All devices + All browsers supported');
     console.log('═══════════════════════════════════════════');
 });
