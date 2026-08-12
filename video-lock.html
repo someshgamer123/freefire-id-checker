@@ -739,87 +739,98 @@
             }
         });
 
-        // ==================== LOAD VIDEO - UNMUTED AUTOPLAY ====================
+        // ==================== LOAD VIDEO - UNMUTED + CONTINUOUS ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             container.innerHTML = '';
 
             console.log('🎬 Loading video:', videoUrl);
 
+            // Get YouTube Video ID
             const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
 
             if (ytId) {
                 console.log('📺 YouTube Video ID:', ytId[1]);
                 
-                // ===== UNMUTED AUTOPLAY =====
-                // Remove 'mute=1' - Video will play with sound
+                // ===== UNMUTED + CONTINUOUS PLAY =====
                 const iframe = document.createElement('iframe');
                 iframe.src = 'https://www.youtube.com/embed/' + ytId[1] + 
-                    '?autoplay=1' +                    // Auto play
+                    '?autoplay=1' +                    // Auto play with sound
                     '&controls=1' +                    // Show controls
                     '&modestbranding=1' +              // Minimal YouTube branding
                     '&rel=0' +                         // No related videos
                     '&showinfo=0' +                    // No video info
                     '&fs=1' +                          // Fullscreen allowed
-                    '&loop=1' +                        // Loop video
+                    '&loop=1' +                        // Loop video continuously
                     '&playlist=' + ytId[1] +           // Required for loop
                     '&disablekb=1' +                   // Disable keyboard controls
                     '&iv_load_policy=3' +              // No annotations
                     '&cc_load_policy=0' +              // No captions
-                    '&playsinline=1';                  // Plays inline on mobile
+                    '&playsinline=1' +                 // Plays inline on mobile
+                    '&enablejsapi=1';                  // Enable JS API for control
                 
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 
+                // Store iframe reference
+                window.videoIframe = iframe;
+                
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
-                    trackVideoPlay();
                     
-                    // Try to unmute after load
+                    // Try to play and unmute
                     try {
-                        // Send message to iframe to unmute
+                        // Send play command
+                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        // Send unmute command
                         iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                    } catch(e) {}
+                        console.log('🔊 Sent play + unmute commands');
+                    } catch(e) {
+                        console.log('⚠️ Could not send commands via postMessage');
+                    }
+                    
+                    trackVideoPlay();
                 };
 
                 container.appendChild(iframe);
 
-                // ===== UNMUTE AFTER 1 SECOND =====
+                // ===== FALLBACK: Force reload for autoplay =====
                 setTimeout(() => {
                     try {
-                        // Reload with unmuted parameter
+                        // Reload iframe to ensure autoplay
                         const currentSrc = iframe.src;
-                        // Remove mute=1 if exists, add unmute
-                        let newSrc = currentSrc.replace(/&mute=1/g, '');
-                        if (!newSrc.includes('mute=0')) {
-                            newSrc += '&mute=0';
-                        }
-                        iframe.src = newSrc;
-                        console.log('🔊 Attempted to unmute video');
+                        iframe.src = currentSrc;
+                        console.log('🔄 Reloaded iframe for autoplay');
                     } catch(e) {}
-                }, 1500);
+                }, 1000);
 
-                // Fallback: On any click, try to play with sound
-                const playWithSound = function() {
+                // ===== UNMUTE ON USER INTERACTION =====
+                const unmuteOnInteraction = function() {
                     try {
-                        const currentSrc = iframe.src;
-                        let newSrc = currentSrc.replace(/&mute=1/g, '');
-                        if (!newSrc.includes('mute=0')) {
-                            newSrc += '&mute=0';
-                        }
-                        iframe.src = newSrc;
+                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
                         console.log('🔊 Unmuted on user interaction');
                         trackVideoPlay();
                     } catch(e) {}
-                    document.removeEventListener('click', playWithSound);
-                    document.removeEventListener('touchstart', playWithSound);
+                    document.removeEventListener('click', unmuteOnInteraction);
+                    document.removeEventListener('touchstart', unmuteOnInteraction);
                 };
                 
+                // Add event listeners for user interaction
                 setTimeout(() => {
-                    document.addEventListener('click', playWithSound, { once: true });
-                    document.addEventListener('touchstart', playWithSound, { once: true });
-                }, 1000);
+                    document.addEventListener('click', unmuteOnInteraction, { once: true });
+                    document.addEventListener('touchstart', unmuteOnInteraction, { once: true });
+                }, 500);
+
+                // ===== KEEP VIDEO PLAYING =====
+                // Check every 10 seconds if video is still playing
+                setInterval(() => {
+                    try {
+                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        console.log('🔄 Keep-alive: Sent play command');
+                    } catch(e) {}
+                }, 10000);
 
                 setTimeout(() => {
                     trackVideoPlay();
@@ -828,14 +839,14 @@
                 return;
             }
 
-            // ===== NON-YOUTUBE VIDEO - UNMUTED =====
-            console.log('🎥 Loading as video element (unmuted)');
+            // ===== NON-YOUTUBE VIDEO - UNMUTED + CONTINUOUS =====
+            console.log('🎥 Loading as video element (unmuted + continuous)');
             const video = document.createElement('video');
-            video.muted = false;  // UNMUTED!
+            video.muted = false;
             video.playsInline = true;
             video.webkitPlaysInline = true;
             video.autoplay = true;
-            video.loop = true;
+            video.loop = true;  // Continuous loop
             video.controls = true;
             video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:5;background:#000;';
             
@@ -844,10 +855,17 @@
             source.type = 'video/mp4';
             video.appendChild(source);
             
+            // Fallback for other video formats
+            video.innerHTML = `
+                <source src="${videoUrl}" type="video/mp4">
+                <source src="${videoUrl}" type="video/webm">
+                <source src="${videoUrl}" type="video/ogg">
+            `;
+            
             video.onerror = function() {
                 console.log('⚠️ Video failed, trying iframe fallback');
                 const iframe = document.createElement('iframe');
-                iframe.src = videoUrl + '?autoplay=1&playsinline=1';
+                iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
@@ -860,30 +878,34 @@
             video.onloadedmetadata = function() {
                 console.log('✅ Video loaded');
                 video.play().then(() => {
-                    console.log('▶️ Video playing with sound');
+                    console.log('▶️ Video playing with sound (continuous)');
                     trackVideoPlay();
                 }).catch(e => {
                     console.log('⚠️ Autoplay with sound blocked, waiting for interaction');
-                    // Try to play with sound on interaction
-                    document.addEventListener('click', function playOnClick() {
-                        video.muted = false;
-                        video.play().then(() => {
-                            console.log('▶️ Video playing with sound after click');
-                            trackVideoPlay();
-                        }).catch(() => {});
-                        document.removeEventListener('click', playOnClick);
-                    }, { once: true });
                     
-                    document.addEventListener('touchstart', function playOnTouch() {
+                    // Try to play with sound on interaction
+                    const playOnInteraction = function() {
                         video.muted = false;
                         video.play().then(() => {
-                            console.log('▶️ Video playing with sound after touch');
+                            console.log('▶️ Video playing with sound after interaction');
                             trackVideoPlay();
                         }).catch(() => {});
-                        document.removeEventListener('touchstart', playOnTouch);
-                    }, { once: true });
+                        document.removeEventListener('click', playOnInteraction);
+                        document.removeEventListener('touchstart', playOnInteraction);
+                    };
+                    
+                    document.addEventListener('click', playOnInteraction, { once: true });
+                    document.addEventListener('touchstart', playOnInteraction, { once: true });
                 });
             };
+
+            // Keep video playing if it pauses
+            video.addEventListener('pause', function() {
+                if (!video.ended) {
+                    video.play().catch(() => {});
+                    console.log('🔄 Video resumed after pause');
+                }
+            });
         }
 
         // ==================== EMOJI PICKER ====================
@@ -1120,7 +1142,8 @@
         console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
         console.log('📍 Emoji Picker: Right side, stable');
         console.log('🚫 Reactions: Behind video (z-index: 4)');
-        console.log('🔊 SOUND: UNMUTED - Video plays with audio');
+        console.log('🔊 SOUND: UNMUTED + CONTINUOUS PLAY');
+        console.log('🔄 LOOP: Video will play continuously');
         console.log('📱 All devices + All browsers - UNMUTED autoplay');
     </script>
 </body>
