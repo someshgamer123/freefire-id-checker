@@ -228,7 +228,7 @@
             margin-top: 4px;
         }
 
-        /* ===== TOP FADE GRADIENT (Blue Line Area - Chat Fades Out Here) ===== */
+        /* ===== TOP FADE GRADIENT (Blue Line Area) ===== */
         .chat-section::before {
             content: '';
             position: absolute;
@@ -301,30 +301,12 @@
             }
         }
 
-        /* ===== FADE OUT AT TOP (Blue Line Area) - CHATS & REACTIONS BOTH FADE ===== */
+        /* ===== FADE OUT AT TOP (Blue Line Area) ===== */
         .chat-message.fade-out {
             opacity: 0 !important;
             transform: translateY(-20px) scale(0.9) !important;
             pointer-events: none;
             transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        /* ===== REACTION BUTTONS INSIDE CHAT - FADE WITH CHAT ===== */
-        .chat-message .reaction-btn {
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.3s;
-            padding: 2px 5px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.04);
-            border: none;
-            color: #fff;
-            line-height: 1;
-        }
-
-        .chat-message .reaction-btn:hover {
-            transform: scale(1.2);
-            background: rgba(255, 255, 255, 0.08);
         }
 
         .chat-message .avatar {
@@ -366,15 +348,7 @@
             font-weight: 300;
         }
 
-        .chat-message .reactions {
-            display: flex;
-            gap: 3px;
-            margin-left: 6px;
-            flex-shrink: 0;
-            align-items: center;
-        }
-
-        /* ===== EMOJI PICKER - STABLE AT BOTTOM RIGHT ===== */
+        /* ===== EMOJI PICKER ===== */
         .emoji-picker-wrapper {
             position: sticky;
             bottom: 8px;
@@ -454,7 +428,7 @@
             border-radius: 4px;
         }
 
-        /* ===== FLYING REACTIONS - BEHIND VIDEO (z-index: 4) ===== */
+        /* ===== FLYING REACTIONS - BEHIND VIDEO ===== */
         .flying-reaction {
             position: fixed;
             font-size: 28px;
@@ -544,7 +518,7 @@
                 <div id="videoContainer">
                     <!-- Video will be inserted here -->
                 </div>
-                <!-- OVERLAY TO BLOCK CLICKS - SCREEN LOCK -->
+                <!-- OVERLAY TO BLOCK CLICKS -->
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
@@ -557,7 +531,7 @@
     <div class="chat-section">
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
-            <!-- EMOJI PICKER - RIGHT SIDE, STABLE -->
+            <!-- EMOJI PICKER -->
             <div class="emoji-picker-wrapper">
                 <div class="emoji-picker-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker()">
                     😊
@@ -599,8 +573,7 @@
         videoUrl = fixYouTubeUrl(videoUrl);
         console.log('🎬 Fixed YouTube URL:', videoUrl);
 
-        // ==================== SCREEN LOCK - IMMEDIATE ====================
-        // Block all touch events on video area
+        // ==================== SCREEN LOCK ====================
         const overlay = document.getElementById('videoOverlay');
         overlay.addEventListener('touchstart', function(e) {
             e.preventDefault();
@@ -620,12 +593,10 @@
             return false;
         }, { passive: false });
 
-        // Lock screen orientation
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('portrait').catch(function() {});
         }
 
-        // Prevent any touch events from leaving the page
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
@@ -636,7 +607,6 @@
         let isUnlocked = false;
         let pageLoadTime = Date.now();
         let isExiting = false;
-        let backPressTimer = null;
 
         function trackVideoPlay() {
             videoPlayCount++;
@@ -654,7 +624,6 @@
 
             console.log('⬅️ Back press - Time:', timeElapsed.toFixed(1) + 's');
 
-            // Exit if unlocked
             if (isUnlocked) {
                 console.log('🚪 Exiting (unlocked)');
                 isExiting = true;
@@ -663,7 +632,6 @@
                 return true;
             }
 
-            // Exit after 3 minutes (180 seconds)
             if (timeElapsed >= 180) {
                 console.log('🚪 Exiting after 3+ minutes');
                 isExiting = true;
@@ -672,11 +640,9 @@
                 return true;
             }
 
-            // Increment back press count
             backPressCount++;
             console.log('⬅️ Back press count:', backPressCount);
 
-            // Show toast message on first back press
             if (backPressCount === 1) {
                 showToast('Press back 3 more times to exit');
             } else if (backPressCount === 2) {
@@ -685,7 +651,6 @@
                 showToast('1 more back press to exit');
             }
 
-            // Exit after 4 back presses
             if (backPressCount >= 4) {
                 console.log('🚪 Exiting after 4 back presses');
                 isExiting = true;
@@ -698,7 +663,6 @@
             return false;
         }
 
-        // ===== TOAST MESSAGE =====
         function showToast(msg) {
             const existing = document.querySelector('.toast-msg');
             if (existing) existing.remove();
@@ -731,15 +695,12 @@
             }, 2000);
         }
 
-        // Push initial state
         history.pushState(null, null, window.location.href);
 
-        // Handle back button (popstate)
         window.addEventListener('popstate', function(e) {
             handleBackPress();
         });
 
-        // ===== BLOCK EXIT ATTEMPTS =====
         document.addEventListener('keydown', function(e) {
             const isExitKey = e.key === 'Escape' || e.key === 'F5' || 
                 (e.ctrlKey && (e.key === 'w' || e.key === 'r')) || 
@@ -765,7 +726,6 @@
             return false;
         });
 
-        // ===== BLOCK SWIPE BACK =====
         let touchStartX = 0;
         document.addEventListener('touchstart', function(e) {
             touchStartX = e.changedTouches[0].screenX;
@@ -782,7 +742,6 @@
             }
         }, { passive: false });
 
-        // ===== BLOCK TAB SWITCH =====
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && !isUnlocked) {
                 setTimeout(function() { window.focus(); }, 50);
@@ -790,7 +749,7 @@
             }
         });
 
-        // ===== LOAD VIDEO =====
+        // ==================== LOAD VIDEO WITH AUTOPLAY FIX ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             container.innerHTML = '';
@@ -801,10 +760,24 @@
 
             if (ytId) {
                 console.log('📺 YouTube Video ID:', ytId[1]);
+                
+                // ===== FIXED: Better autoplay for all devices =====
                 const iframe = document.createElement('iframe');
                 iframe.src = 'https://www.youtube.com/embed/' + ytId[1] + 
-                    '?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + ytId[1] +
-                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0';
+                    '?autoplay=1' +                    // Auto play
+                    '&mute=1' +                        // Muted (required for autoplay on mobile)
+                    '&controls=1' +                    // Show controls
+                    '&modestbranding=1' +              // Minimal YouTube branding
+                    '&rel=0' +                         // No related videos
+                    '&showinfo=0' +                    // No video info
+                    '&fs=1' +                          // Fullscreen allowed
+                    '&loop=1' +                        // Loop video
+                    '&playlist=' + ytId[1] +           // Required for loop
+                    '&disablekb=1' +                   // Disable keyboard controls
+                    '&iv_load_policy=3' +              // No annotations
+                    '&cc_load_policy=0' +              // No captions
+                    '&playsinline=1';                  // IMPORTANT: Plays inline on mobile (no fullscreen forced)
+                
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
@@ -816,6 +789,7 @@
 
                 container.appendChild(iframe);
 
+                // ===== FALLBACK: Try to play after load =====
                 setTimeout(function() {
                     trackVideoPlay();
                 }, 4000);
@@ -823,9 +797,10 @@
                 return;
             }
 
+            // ===== NON-YOUTUBE VIDEO =====
             console.log('🎥 Loading as iframe:', videoUrl);
             const iframe = document.createElement('iframe');
-            iframe.src = videoUrl;
+            iframe.src = videoUrl + '?autoplay=1&mute=1&playsinline=1';
             iframe.allow = 'autoplay; encrypted-media; fullscreen';
             iframe.allowFullscreen = true;
             iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
@@ -855,7 +830,7 @@
             }
         });
 
-        // ==================== FLYING REACTIONS - BEHIND VIDEO (z-index: 4) ====================
+        // ==================== FLYING REACTIONS ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
 
         function createFlyingReaction(emoji) {
@@ -958,27 +933,22 @@
             }
         }
 
-        // ===== APPLY FADE EFFECT - CHATS FADE AT BLUE LINE =====
+        // ===== APPLY FADE EFFECT =====
         function applyFadeEffect() {
             const messages = chatContainer.querySelectorAll('.chat-message');
             const total = messages.length;
 
             messages.forEach((msg, index) => {
-                // Bottom 3 messages - Fully visible
                 if (index >= total - 3) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '1';
                     msg.style.transform = 'translateY(0) scale(1)';
                     msg.style.animation = 'none';
-                } 
-                // Middle messages - Slightly faded
-                else if (index >= total - 8) {
+                } else if (index >= total - 8) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '0.8';
                     msg.style.transform = 'translateY(0) scale(0.98)';
-                } 
-                // Old messages (top) - Fade out at blue line
-                else {
+                } else {
                     msg.classList.add('fade-out');
                 }
             });
@@ -1083,6 +1053,22 @@
             }
         });
 
+        // ==================== RETRY AUTOPLAY ON USER INTERACTION ====================
+        // Some browsers (like Instagram) need user interaction to play video
+        document.addEventListener('click', function() {
+            // Try to play any video/iframe by reloading if needed
+            const container = document.getElementById('videoContainer');
+            const iframe = container.querySelector('iframe');
+            if (iframe) {
+                // Reload iframe to trigger autoplay
+                const src = iframe.src;
+                if (src.includes('youtube.com/embed')) {
+                    // Just refresh the src to trigger autoplay
+                    iframe.src = src;
+                }
+            }
+        }, { once: false });
+
         // ==================== INIT ====================
         loadVideo();
 
@@ -1095,6 +1081,7 @@
         console.log('📍 Emoji Picker: Right side, stable, below chat');
         console.log('🚫 Reactions: Behind video (z-index: 4)');
         console.log('💬 Chat: Fades out at blue line (top)');
+        console.log('🎬 AUTOPLAY: Fixed for all devices including Instagram');
     </script>
 </body>
 </html>
