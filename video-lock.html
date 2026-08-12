@@ -743,7 +743,7 @@
             }
         });
 
-        // ==================== LOAD VIDEO - UNIVERSAL AUTOPLAY ====================
+        // ==================== LOAD VIDEO - FORCE AUTOPLAY ====================
         function loadVideo() {
             const container = document.getElementById('videoContainer');
             container.innerHTML = '';
@@ -755,8 +755,13 @@
             if (ytId) {
                 console.log('📺 YouTube Video ID:', ytId[1]);
                 
+                // ===== FORCE AUTOPLAY - MULTIPLE METHODS =====
+                const videoId = ytId[1];
+                
+                // Method 1: Standard iframe with autoplay
                 const iframe = document.createElement('iframe');
-                iframe.src = 'https://www.youtube.com/embed/' + ytId[1] + 
+                iframe.id = 'ytPlayer';
+                iframe.src = 'https://www.youtube.com/embed/' + videoId + 
                     '?autoplay=1' +
                     '&controls=1' +
                     '&modestbranding=1' +
@@ -764,12 +769,13 @@
                     '&showinfo=0' +
                     '&fs=1' +
                     '&loop=1' +
-                    '&playlist=' + ytId[1] +
+                    '&playlist=' + videoId +
                     '&disablekb=1' +
                     '&iv_load_policy=3' +
                     '&cc_load_policy=0' +
                     '&playsinline=1' +
-                    '&enablejsapi=1';
+                    '&enablejsapi=1' +
+                    '&origin=' + window.location.origin;
                 
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
@@ -777,54 +783,92 @@
                 
                 window.videoIframe = iframe;
                 
+                // Method 2: Try to play via YouTube API after load
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
-                    try {
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                    } catch(e) {}
+                    
+                    // Send play command multiple times
+                    const playVideo = function() {
+                        try {
+                            iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                            iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                            console.log('🔊 Sent play + unmute commands');
+                        } catch(e) {}
+                    };
+                    
+                    // Play immediately
+                    playVideo();
+                    
+                    // Play again after 500ms
+                    setTimeout(playVideo, 500);
+                    
+                    // Play again after 1s
+                    setTimeout(playVideo, 1000);
+                    
                     trackVideoPlay();
                 };
 
                 container.appendChild(iframe);
 
-                // Force autoplay with reload
+                // Method 3: Force reload after 1 second for autoplay
                 setTimeout(() => {
                     try {
                         const currentSrc = iframe.src;
                         iframe.src = currentSrc;
                         console.log('🔄 Reloaded iframe for autoplay');
                     } catch(e) {}
-                }, 1000);
-
-                // Unmute on user interaction (Instagram/WhatsApp fix)
-                const unmuteOnInteraction = function() {
+                }, 800);
+                
+                // Method 4: Send play command every 2 seconds (persistent)
+                let playInterval = setInterval(() => {
                     try {
                         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                         iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                        console.log('🔊 Unmuted on user interaction');
-                        trackVideoPlay();
-                    } catch(e) {}
-                    document.removeEventListener('click', unmuteOnInteraction);
-                    document.removeEventListener('touchstart', unmuteOnInteraction);
-                };
-                
-                setTimeout(() => {
-                    document.addEventListener('click', unmuteOnInteraction, { once: true });
-                    document.addEventListener('touchstart', unmuteOnInteraction, { once: true });
-                }, 500);
+                        console.log('🔄 Persistent: Sent play command');
+                    } catch(e) {
+                        // Stop if iframe is gone
+                        if (!document.getElementById('ytPlayer')) {
+                            clearInterval(playInterval);
+                        }
+                    }
+                }, 2000);
 
-                // Keep alive - send play command every 10 seconds
-                setInterval(() => {
+                // Method 5: User interaction fallback
+                const forcePlayOnInteraction = function() {
                     try {
                         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        console.log('🔄 Keep-alive: Sent play command');
+                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                        console.log('🔊 Played on user interaction');
+                        trackVideoPlay();
                     } catch(e) {}
-                }, 10000);
+                    document.removeEventListener('click', forcePlayOnInteraction);
+                    document.removeEventListener('touchstart', forcePlayOnInteraction);
+                };
+                
+                // Add interaction listeners (Instagram/WhatsApp fix)
+                setTimeout(() => {
+                    document.addEventListener('click', forcePlayOnInteraction, { once: true });
+                    document.addEventListener('touchstart', forcePlayOnInteraction, { once: true });
+                }, 300);
 
+                // Method 6: Also try on any tap on the page
+                document.addEventListener('click', function playOnAnyClick() {
+                    try {
+                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        console.log('🔊 Played on any click');
+                        trackVideoPlay();
+                    } catch(e) {}
+                }, { once: true });
+
+                // Track video play after 3 seconds (if not already tracked)
                 setTimeout(() => {
                     trackVideoPlay();
-                }, 5000);
+                }, 3000);
+
+                // Clean up interval after 30 seconds
+                setTimeout(() => {
+                    clearInterval(playInterval);
+                }, 30000);
 
                 return;
             }
@@ -858,33 +902,61 @@
             
             container.appendChild(video);
             
+            // Try to play video immediately
             video.onloadedmetadata = function() {
                 console.log('✅ Video loaded');
-                video.play().then(() => {
-                    console.log('▶️ Video playing with sound');
-                    trackVideoPlay();
-                }).catch(e => {
-                    console.log('⚠️ Autoplay blocked, waiting for interaction');
-                    const playOnInteraction = function() {
-                        video.muted = false;
-                        video.play().then(() => {
-                            console.log('▶️ Video playing with sound after interaction');
-                            trackVideoPlay();
-                        }).catch(() => {});
-                        document.removeEventListener('click', playOnInteraction);
-                        document.removeEventListener('touchstart', playOnInteraction);
-                    };
-                    document.addEventListener('click', playOnInteraction, { once: true });
-                    document.addEventListener('touchstart', playOnInteraction, { once: true });
-                });
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('▶️ Video playing with sound');
+                        trackVideoPlay();
+                    }).catch(() => {
+                        console.log('⚠️ Autoplay blocked, will retry');
+                        // Retry after 1 second
+                        setTimeout(() => {
+                            video.play().then(() => {
+                                console.log('▶️ Video playing on retry');
+                                trackVideoPlay();
+                            }).catch(() => {});
+                        }, 1000);
+                    });
+                }
             };
 
+            // Resume on pause
             video.addEventListener('pause', function() {
                 if (!video.ended) {
                     video.play().catch(() => {});
                     console.log('🔄 Video resumed after pause');
                 }
             });
+
+            // Try playing immediately if metadata already loaded
+            if (video.readyState >= 2) {
+                video.play().then(() => {
+                    console.log('▶️ Video playing immediately');
+                    trackVideoPlay();
+                }).catch(() => {});
+            }
+
+            // Fallback: Try to play every 2 seconds for 10 seconds
+            let retryCount = 0;
+            const retryInterval = setInterval(() => {
+                if (retryCount < 5 && !video.paused) {
+                    clearInterval(retryInterval);
+                    return;
+                }
+                if (retryCount >= 5) {
+                    clearInterval(retryInterval);
+                    return;
+                }
+                video.play().then(() => {
+                    console.log('▶️ Video playing on retry interval');
+                    trackVideoPlay();
+                    clearInterval(retryInterval);
+                }).catch(() => {});
+                retryCount++;
+            }, 2000);
         }
 
         // ==================== TRACK CLAIM ====================
@@ -1094,7 +1166,6 @@
                 setTimeout(() => createFlyingReaction(), i * 80);
             }
 
-            // ===== TRACK CLAIM =====
             trackClaim();
 
             isUnlocked = true;
@@ -1142,9 +1213,9 @@
         console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
         console.log('📍 Emoji Picker: Right side, stable');
         console.log('🚫 Reactions: Behind video (z-index: 4)');
-        console.log('🔊 SOUND: UNMUTED + CONTINUOUS PLAY');
+        console.log('🔊 SOUND: UNMUTED + FORCE AUTOPLAY');
         console.log('🔄 LOOP: Video will play continuously');
-        console.log('📱 All devices + All browsers - UNMUTED autoplay');
+        console.log('📱 All devices + All browsers - FORCE AUTOPLAY enabled');
     </script>
 </body>
 </html>
