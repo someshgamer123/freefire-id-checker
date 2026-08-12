@@ -62,10 +62,93 @@ app.use(express.static('.'));
 
 // ==================== DATABASE (PERMANENT STORAGE) ====================
 const DB_FILE = path.join(__dirname, 'database.json');
+let dbCache = null;
+let dbLastRead = 0;
+
+function readDB() {
+    try {
+        // Check if file exists
+        if (!fs.existsSync(DB_FILE)) {
+            console.log('📁 Creating new database...');
+            const db = getDefaultDB();
+            writeDB(db);
+            return db;
+        }
+        
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        if (!data || data.trim() === '') {
+            console.warn('⚠️ Empty database, reinitializing...');
+            const db = getDefaultDB();
+            writeDB(db);
+            return db;
+        }
+        
+        const parsed = JSON.parse(data);
+        
+        // Ensure all required fields exist
+        if (!parsed.stats) {
+            parsed.stats = getDefaultStats();
+        }
+        if (!parsed.stats.uniqueVisitors) parsed.stats.uniqueVisitors = {};
+        if (!parsed.stats.uniqueClaims) parsed.stats.uniqueClaims = {};
+        if (!parsed.stats.dailyVisitors) parsed.stats.dailyVisitors = {};
+        if (!parsed.stats.dailyClaims) parsed.stats.dailyClaims = {};
+        if (parsed.stats.totalVisitors === undefined) parsed.stats.totalVisitors = 0;
+        if (parsed.stats.totalClaims === undefined) parsed.stats.totalClaims = 0;
+        
+        // Ensure all links have stats fields
+        if (parsed.links) {
+            parsed.links.forEach(link => {
+                if (!link.visits) link.visits = 0;
+                if (!link.dailyVisits) link.dailyVisits = {};
+                if (!link.claims) link.claims = 0;
+                if (!link.dailyClaims) link.dailyClaims = {};
+            });
+        }
+        
+        dbCache = parsed;
+        dbLastRead = Date.now();
+        return parsed;
+    } catch (e) {
+        console.error('❌ Database read error:', e);
+        // Try to recover by reinitializing
+        try {
+            const db = getDefaultDB();
+            writeDB(db);
+            return db;
+        } catch (e2) {
+            console.error('❌ CRITICAL: Cannot recover database:', e2);
+            return getDefaultDB();
+        }
+    }
+}
 
 function writeDB(data) {
     try {
+        // Ensure data is complete before writing
+        if (!data.stats) {
+            data.stats = getDefaultStats();
+        }
+        if (!data.stats.uniqueVisitors) data.stats.uniqueVisitors = {};
+        if (!data.stats.uniqueClaims) data.stats.uniqueClaims = {};
+        if (!data.stats.dailyVisitors) data.stats.dailyVisitors = {};
+        if (!data.stats.dailyClaims) data.stats.dailyClaims = {};
+        if (data.stats.totalVisitors === undefined) data.stats.totalVisitors = 0;
+        if (data.stats.totalClaims === undefined) data.stats.totalClaims = 0;
+        
+        // Ensure all links have stats
+        if (data.links) {
+            data.links.forEach(link => {
+                if (!link.visits) link.visits = 0;
+                if (!link.dailyVisits) link.dailyVisits = {};
+                if (!link.claims) link.claims = 0;
+                if (!link.dailyClaims) link.dailyClaims = {};
+            });
+        }
+        
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+        dbCache = data;
+        dbLastRead = Date.now();
         console.log('✅ Database saved at:', new Date().toISOString());
         return true;
     } catch (e) {
@@ -74,28 +157,15 @@ function writeDB(data) {
     }
 }
 
-function readDB() {
-    try {
-        if (!fs.existsSync(DB_FILE)) {
-            console.log('📁 Creating new database...');
-            const db = getDefaultDB();
-            writeDB(db);
-            return db;
-        }
-        const data = fs.readFileSync(DB_FILE, 'utf8');
-        if (!data || data.trim() === '') {
-            console.warn('⚠️ Empty database, reinitializing...');
-            const db = getDefaultDB();
-            writeDB(db);
-            return db;
-        }
-        return JSON.parse(data);
-    } catch (e) {
-        console.error('❌ Database read error:', e);
-        const db = getDefaultDB();
-        writeDB(db);
-        return db;
-    }
+function getDefaultStats() {
+    return {
+        totalVisitors: 0,
+        totalClaims: 0,
+        dailyVisitors: {},
+        dailyClaims: {},
+        uniqueVisitors: {},
+        uniqueClaims: {}
+    };
 }
 
 function getDefaultDB() {
@@ -127,15 +197,7 @@ function getDefaultDB() {
             }
         },
         renewalRequests: [],
-        // ===== STATS WITH 24HR UNIQUE COUNTER =====
-        stats: {
-            totalVisitors: 0,
-            totalClaims: 0,
-            dailyVisitors: {},
-            dailyClaims: {},
-            uniqueVisitors: {},  // Store IP + device ID for 24hr uniqueness
-            uniqueClaims: {}     // Store IP + device ID for 24hr uniqueness
-        }
+        stats: getDefaultStats()
     };
 }
 
@@ -160,7 +222,6 @@ function generateLinkId() {
 function getDeviceId(req) {
     const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    // Create unique device fingerprint
     const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     return fingerprint;
 }
@@ -177,13 +238,11 @@ function isUnique24hr(store, deviceId) {
         }
     }
     
-    // Check if device already recorded today
     const key = deviceId + '_' + today;
     if (store[key]) {
-        return false; // Already counted in last 24 hours
+        return false;
     }
     
-    // Add new entry
     store[key] = now;
     return true;
 }
@@ -423,7 +482,11 @@ app.post('/api/links', authMiddleware, (req, res) => {
             headline: (headline || '').substring(0, 200),
             created: new Date().toISOString(),
             expiryDate: expiryDate || null,
-            status: 'active'
+            status: 'active',
+            visits: 0,
+            dailyVisits: {},
+            claims: 0,
+            dailyClaims: {}
         };
 
         db.links.push(newLink);
@@ -529,7 +592,7 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // Check if link is suspended, disabled, or expired
+        // Check status
         if (link.status === 'suspended') {
             return res.status(403).json({ 
                 error: 'suspended',
@@ -546,7 +609,6 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // Check expiry
         if (link.expiryDate) {
             const expiryDate = new Date(link.expiryDate);
             if (new Date() > expiryDate) {
@@ -570,20 +632,22 @@ app.get('/api/link/:id', (req, res) => {
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         
-        // Initialize stats if not exists
-        if (!db.stats) {
-            db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {}, uniqueVisitors: {}, uniqueClaims: {} };
-        }
+        // Initialize stats if needed
+        if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueVisitors) db.stats.uniqueVisitors = {};
         if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
         
-        // Check if unique visitor in last 24 hours
+        // Track unique visitor
         if (isUnique24hr(db.stats.uniqueVisitors, deviceId)) {
             db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
             db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
-            console.log('👤 New unique visitor counted:', deviceId.substring(0, 10));
-        } else {
-            console.log('♻️ Returning visitor (within 24hrs):', deviceId.substring(0, 10));
+            
+            // Also track per link
+            link.visits = (link.visits || 0) + 1;
+            if (!link.dailyVisits) link.dailyVisits = {};
+            link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
+            
+            console.log('👤 New unique visitor:', deviceId.substring(0, 10));
         }
         
         writeDB(db);
@@ -613,36 +677,73 @@ app.post('/api/track-claim/:linkId', (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
 
-        // ===== TRACK CLAIM - 24HR UNIQUE =====
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         
-        // Initialize stats if not exists
-        if (!db.stats) {
-            db.stats = { totalVisitors: 0, totalClaims: 0, dailyVisitors: {}, dailyClaims: {}, uniqueVisitors: {}, uniqueClaims: {} };
-        }
+        // Initialize stats if needed
+        if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueClaims) db.stats.uniqueClaims = {};
         if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
         
-        // Check if unique claim in last 24 hours
+        // Track unique claim
         if (isUnique24hr(db.stats.uniqueClaims, deviceId)) {
             db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
             db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
-            console.log('🎁 New unique claim counted:', deviceId.substring(0, 10));
-        } else {
-            console.log('♻️ Returning claim (within 24hrs):', deviceId.substring(0, 10));
+            
+            // Also track per link
+            link.claims = (link.claims || 0) + 1;
+            if (!link.dailyClaims) link.dailyClaims = {};
+            link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
+            
+            console.log('🎁 New unique claim:', deviceId.substring(0, 10));
         }
         
         writeDB(db);
 
         res.json({ 
             success: true, 
-            claims: db.stats.totalClaims || 0,
-            unique: true
+            claims: db.stats.totalClaims || 0
         });
     } catch (error) {
         console.error('❌ Track claim error:', error);
         res.status(500).json({ error: 'Failed to track claim' });
+    }
+});
+
+// ==================== GET ALL STATS (ADMIN ONLY) ====================
+app.get('/api/all-stats', authMiddleware, (req, res) => {
+    try {
+        const db = readDB();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Get per-link stats
+        const linkStats = db.links.map(link => ({
+            id: link.id,
+            name: link.name,
+            visits: link.visits || 0,
+            claims: link.claims || 0,
+            dailyVisits: link.dailyVisits || {},
+            dailyClaims: link.dailyClaims || {},
+            todayVisits: link.dailyVisits?.[today] || 0,
+            todayClaims: link.dailyClaims?.[today] || 0,
+            status: link.status,
+            expiryDate: link.expiryDate || null
+        }));
+        
+        res.json({
+            global: {
+                totalVisitors: db.stats?.totalVisitors || 0,
+                totalClaims: db.stats?.totalClaims || 0,
+                todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
+                todayClaims: db.stats?.dailyClaims?.[today] || 0,
+                dailyVisitors: db.stats?.dailyVisitors || {},
+                dailyClaims: db.stats?.dailyClaims || {}
+            },
+            links: linkStats
+        });
+    } catch (error) {
+        console.error('❌ Stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 
@@ -662,42 +763,18 @@ app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
         res.json({
             linkId: link.id,
             name: link.name,
-            totalVisitors: db.stats?.totalVisitors || 0,
-            totalClaims: db.stats?.totalClaims || 0,
-            todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
-            todayClaims: db.stats?.dailyClaims?.[today] || 0,
-            dailyVisitors: db.stats?.dailyVisitors || {},
-            dailyClaims: db.stats?.dailyClaims || {},
-            uniqueVisitors: Object.keys(db.stats?.uniqueVisitors || {}).length || 0,
-            uniqueClaims: Object.keys(db.stats?.uniqueClaims || {}).length || 0,
+            totalVisitors: link.visits || 0,
+            totalClaims: link.claims || 0,
+            todayVisits: link.dailyVisits?.[today] || 0,
+            todayClaims: link.dailyClaims?.[today] || 0,
+            dailyVisits: link.dailyVisits || {},
+            dailyClaims: link.dailyClaims || {},
             status: link.status,
             expiryDate: link.expiryDate || null
         });
     } catch (error) {
         console.error('❌ Stats error:', error);
         res.status(500).json({ error: 'Failed to fetch stats' });
-    }
-});
-
-// ==================== GET GLOBAL STATS (ADMIN ONLY) ====================
-app.get('/api/global-stats', authMiddleware, (req, res) => {
-    try {
-        const db = readDB();
-        const today = new Date().toISOString().split('T')[0];
-        
-        res.json({
-            totalVisitors: db.stats?.totalVisitors || 0,
-            totalClaims: db.stats?.totalClaims || 0,
-            todayVisitors: db.stats?.dailyVisitors?.[today] || 0,
-            todayClaims: db.stats?.dailyClaims?.[today] || 0,
-            dailyVisitors: db.stats?.dailyVisitors || {},
-            dailyClaims: db.stats?.dailyClaims || {},
-            uniqueVisitors: Object.keys(db.stats?.uniqueVisitors || {}).length || 0,
-            uniqueClaims: Object.keys(db.stats?.uniqueClaims || {}).length || 0
-        });
-    } catch (error) {
-        console.error('❌ Global stats error:', error);
-        res.status(500).json({ error: 'Failed to fetch global stats' });
     }
 });
 
@@ -716,7 +793,6 @@ app.get('/api/parent-link', (req, res) => {
                 createdAt: new Date().toISOString()
             };
             writeDB(db);
-            console.log('✅ User Dashboard Link generated:', db.parentLink.url);
         }
         res.json(db.parentLink);
     } catch (error) {
@@ -727,282 +803,287 @@ app.get('/api/parent-link', (req, res) => {
 
 // ===== GET VISIT STATS =====
 app.get('/api/visit-stats/:linkId', (req, res) => {
-    const { linkId } = req.params;
-    const { startDate, endDate } = req.query;
-    const db = readDB();
-    
-    const link = db.links.find(l => l.id === linkId);
-    if (!link) {
-        return res.status(404).json({ error: 'Link not found' });
-    }
-    
-    let dailyVisits = db.stats?.dailyVisitors || {};
-    let dailyClaims = db.stats?.dailyClaims || {};
-    let visits = db.stats?.totalVisitors || 0;
-    let claims = db.stats?.totalClaims || 0;
-    
-    if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const filteredVisits = {};
-        let totalVisits = 0;
-        for (const [date, count] of Object.entries(dailyVisits)) {
-            const d = new Date(date);
-            if (d >= start && d <= end) {
-                filteredVisits[date] = count;
-                totalVisits += count;
-            }
+    try {
+        const { linkId } = req.params;
+        const { startDate, endDate } = req.query;
+        const db = readDB();
+
+        const link = db.links.find(l => l.id === linkId);
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
         }
-        visits = totalVisits;
-        dailyVisits = filteredVisits;
-        
-        const filteredClaims = {};
-        let totalClaims = 0;
-        for (const [date, count] of Object.entries(dailyClaims)) {
-            const d = new Date(date);
-            if (d >= start && d <= end) {
-                filteredClaims[date] = count;
-                totalClaims += count;
-            }
-        }
-        claims = totalClaims;
-        dailyClaims = filteredClaims;
+
+        res.json({
+            linkId: link.id,
+            name: link.name,
+            totalVisits: link.visits || 0,
+            totalClaims: link.claims || 0,
+            dailyVisits: link.dailyVisits || {},
+            dailyClaims: link.dailyClaims || {},
+            status: link.status,
+            expiryDate: link.expiryDate || null
+        });
+    } catch (error) {
+        console.error('❌ Visit stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
-    
-    const expiryDate = link.expiryDate ? new Date(link.expiryDate) : null;
-    const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
-    
-    res.json({
-        linkId: link.id,
-        name: link.name,
-        totalVisits: visits,
-        dailyVisits: dailyVisits,
-        totalClaims: claims,
-        dailyClaims: dailyClaims,
-        expiryDate: expiryDate,
-        daysLeft: daysLeft,
-        status: link.status
-    });
 });
 
 // ==================== RENEWAL ROUTES ====================
 
 // ===== REQUEST RENEWAL =====
 app.post('/api/renewal/request', (req, res) => {
-    const { linkId, plan } = req.body;
-    const db = readDB();
-    
-    const link = db.links.find(l => l.id === linkId);
-    if (!link) {
-        return res.status(404).json({ error: 'Link not found' });
-    }
-    
-    const pricing = db.pricing || {};
-    const planDays = {
-        '3days': 3,
-        '7days': 7,
-        '15days': 15,
-        '1month': 30,
-        '3months': 90,
-        '6months': 180,
-        '12months': 365
-    };
-    
-    const days = planDays[plan];
-    if (!days) {
-        return res.status(400).json({ error: 'Invalid plan' });
-    }
-    
-    const amount = pricing[plan] || 0;
-    if (amount === 0) {
-        return res.status(400).json({ error: 'Price not set for this plan' });
-    }
-    
-    const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
-    if (existing) {
-        return res.status(400).json({ 
-            error: 'You already have a pending renewal request',
-            existingRequest: existing
+    try {
+        const { linkId, plan } = req.body;
+        const db = readDB();
+
+        const link = db.links.find(l => l.id === linkId);
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        const pricing = db.pricing || {};
+        const planDays = {
+            '3days': 3,
+            '7days': 7,
+            '15days': 15,
+            '1month': 30,
+            '3months': 90,
+            '6months': 180,
+            '12months': 365
+        };
+
+        const days = planDays[plan];
+        if (!days) {
+            return res.status(400).json({ error: 'Invalid plan' });
+        }
+
+        const amount = pricing[plan] || 0;
+        if (amount === 0) {
+            return res.status(400).json({ error: 'Price not set for this plan' });
+        }
+
+        const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
+        if (existing) {
+            return res.status(400).json({
+                error: 'You already have a pending renewal request',
+                existingRequest: existing
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Please complete payment to submit renewal request',
+            amount: amount,
+            plan: plan,
+            days: days,
+            requiresPayment: true
         });
+    } catch (error) {
+        console.error('❌ Renewal request error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
     }
-    
-    res.json({
-        success: true,
-        message: 'Please complete payment to submit renewal request',
-        amount: amount,
-        plan: plan,
-        days: days,
-        requiresPayment: true
-    });
 });
 
 // ===== CONFIRM PAYMENT =====
 app.post('/api/renewal/confirm-payment', (req, res) => {
-    const { linkId, plan, transactionId } = req.body;
-    const db = readDB();
-    
-    const link = db.links.find(l => l.id === linkId);
-    if (!link) {
-        return res.status(404).json({ error: 'Link not found' });
+    try {
+        const { linkId, plan, transactionId } = req.body;
+        const db = readDB();
+
+        const link = db.links.find(l => l.id === linkId);
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        const pricing = db.pricing || {};
+        const planDays = {
+            '3days': 3,
+            '7days': 7,
+            '15days': 15,
+            '1month': 30,
+            '3months': 90,
+            '6months': 180,
+            '12months': 365
+        };
+
+        const days = planDays[plan];
+        const amount = pricing[plan] || 0;
+
+        const renewalRequest = {
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId: linkId,
+            linkName: link.name,
+            plan: plan,
+            days: days,
+            amount: amount,
+            status: 'paid',
+            createdAt: new Date().toISOString(),
+            paidAt: new Date().toISOString(),
+            approvedAt: null,
+            transactionId: transactionId || 'TXN_' + Date.now(),
+            upiId: db.paymentSettings?.details?.upiId || 'admin@upi'
+        };
+
+        if (!db.renewalRequests) db.renewalRequests = [];
+        db.renewalRequests.push(renewalRequest);
+        writeDB(db);
+
+        res.json({
+            success: true,
+            requestId: renewalRequest.id,
+            message: 'Payment confirmed! Waiting for admin approval.'
+        });
+    } catch (error) {
+        console.error('❌ Confirm payment error:', error);
+        res.status(500).json({ error: 'Failed to confirm payment' });
     }
-    
-    const pricing = db.pricing || {};
-    const planDays = {
-        '3days': 3,
-        '7days': 7,
-        '15days': 15,
-        '1month': 30,
-        '3months': 90,
-        '6months': 180,
-        '12months': 365
-    };
-    
-    const days = planDays[plan];
-    const amount = pricing[plan] || 0;
-    
-    const existing = db.renewalRequests?.find(r => r.linkId === linkId && r.status === 'pending');
-    if (existing) {
-        return res.status(400).json({ error: 'You already have a pending renewal request' });
-    }
-    
-    const renewalRequest = {
-        id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-        linkId: linkId,
-        linkName: link.name,
-        plan: plan,
-        days: days,
-        amount: amount,
-        status: 'paid',
-        createdAt: new Date().toISOString(),
-        paidAt: new Date().toISOString(),
-        approvedAt: null,
-        transactionId: transactionId || 'TXN_' + Date.now(),
-        upiId: db.paymentSettings?.details?.upiId || 'admin@upi'
-    };
-    
-    if (!db.renewalRequests) db.renewalRequests = [];
-    db.renewalRequests.push(renewalRequest);
-    writeDB(db);
-    
-    res.json({
-        success: true,
-        requestId: renewalRequest.id,
-        message: 'Payment confirmed! Waiting for admin approval.'
-    });
 });
 
 // ===== GET RENEWAL REQUESTS (ADMIN) =====
 app.get('/api/renewal/requests', authMiddleware, (req, res) => {
-    const db = readDB();
-    const activeRequests = db.renewalRequests?.filter(r => r.status === 'pending' || r.status === 'paid') || [];
-    res.json(activeRequests);
+    try {
+        const db = readDB();
+        const activeRequests = db.renewalRequests?.filter(r => r.status === 'pending' || r.status === 'paid') || [];
+        res.json(activeRequests);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch requests' });
+    }
 });
 
 // ===== GET RENEWAL STATUS (USER) =====
 app.get('/api/renewal/status/:linkId', (req, res) => {
-    const { linkId } = req.params;
-    const db = readDB();
-    
-    const requests = db.renewalRequests?.filter(r => r.linkId === linkId) || [];
-    const latest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    
-    res.json({
-        hasRequest: !!latest,
-        request: latest || null,
-        status: latest?.status || 'none'
-    });
+    try {
+        const { linkId } = req.params;
+        const db = readDB();
+
+        const requests = db.renewalRequests?.filter(r => r.linkId === linkId) || [];
+        const latest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+        res.json({
+            hasRequest: !!latest,
+            request: latest || null,
+            status: latest?.status || 'none'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch status' });
+    }
 });
 
 // ===== MARK AS PAID (ADMIN) =====
 app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
-    const { requestId } = req.params;
-    const db = readDB();
-    const request = db.renewalRequests?.find(r => r.id === requestId);
-    if (!request) {
-        return res.status(404).json({ error: 'Request not found' });
+    try {
+        const { requestId } = req.params;
+        const db = readDB();
+        const request = db.renewalRequests?.find(r => r.id === requestId);
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status === 'approved' || request.status === 'rejected') {
+            return res.status(400).json({ error: 'Request already processed' });
+        }
+        request.status = 'paid';
+        request.paidAt = new Date().toISOString();
+        writeDB(db);
+        res.json({ success: true, message: 'Payment marked as paid' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark payment' });
     }
-    if (request.status === 'approved' || request.status === 'rejected') {
-        return res.status(400).json({ error: 'Request already processed' });
-    }
-    request.status = 'paid';
-    request.paidAt = new Date().toISOString();
-    writeDB(db);
-    res.json({ success: true, message: 'Payment marked as paid' });
 });
 
 // ===== APPROVE RENEWAL =====
 app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
-    const { requestId } = req.params;
-    const db = readDB();
-    const request = db.renewalRequests?.find(r => r.id === requestId);
-    if (!request) {
-        return res.status(404).json({ error: 'Request not found' });
+    try {
+        const { requestId } = req.params;
+        const db = readDB();
+        const request = db.renewalRequests?.find(r => r.id === requestId);
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status !== 'paid') {
+            return res.status(400).json({ error: 'Payment not confirmed yet' });
+        }
+
+        const link = db.links.find(l => l.id === request.linkId);
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry.toISOString();
+            link.status = 'active';
+        }
+
+        request.status = 'approved';
+        request.approvedAt = new Date().toISOString();
+        writeDB(db);
+
+        res.json({ success: true, message: 'Renewal approved! Link extended.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to approve renewal' });
     }
-    if (request.status !== 'paid') {
-        return res.status(400).json({ error: 'Payment not confirmed yet' });
-    }
-    
-    const link = db.links.find(l => l.id === request.linkId);
-    if (link) {
-        const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-        const newExpiry = new Date(currentExpiry);
-        newExpiry.setDate(newExpiry.getDate() + request.days);
-        link.expiryDate = newExpiry.toISOString();
-        link.status = 'active';
-    }
-    
-    request.status = 'approved';
-    request.approvedAt = new Date().toISOString();
-    writeDB(db);
-    
-    res.json({ success: true, message: 'Renewal approved! Link extended.' });
 });
 
 // ===== REJECT RENEWAL =====
 app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
-    const { requestId } = req.params;
-    const db = readDB();
-    const request = db.renewalRequests?.find(r => r.id === requestId);
-    if (!request) {
-        return res.status(404).json({ error: 'Request not found' });
+    try {
+        const { requestId } = req.params;
+        const db = readDB();
+        const request = db.renewalRequests?.find(r => r.id === requestId);
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        request.status = 'rejected';
+        writeDB(db);
+        res.json({ success: true, message: 'Renewal rejected' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject renewal' });
     }
-    request.status = 'rejected';
-    writeDB(db);
-    res.json({ success: true, message: 'Renewal rejected' });
 });
 
 // ===== DELETE PROCESSED REQUEST =====
 app.delete('/api/renewal/request/:requestId', authMiddleware, (req, res) => {
-    const { requestId } = req.params;
-    const db = readDB();
-    
-    const index = db.renewalRequests?.findIndex(r => r.id === requestId);
-    if (index === -1 || index === undefined) {
-        return res.status(404).json({ error: 'Request not found' });
+    try {
+        const { requestId } = req.params;
+        const db = readDB();
+
+        const index = db.renewalRequests?.findIndex(r => r.id === requestId);
+        if (index === -1 || index === undefined) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+
+        db.renewalRequests.splice(index, 1);
+        writeDB(db);
+        res.json({ success: true, message: 'Request removed' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove request' });
     }
-    
-    db.renewalRequests.splice(index, 1);
-    writeDB(db);
-    res.json({ success: true, message: 'Request removed' });
 });
 
 // ===== UPDATE PRICING =====
 app.post('/api/admin/pricing', authMiddleware, (req, res) => {
-    const { pricing, paymentSettings } = req.body;
-    const db = readDB();
-    if (pricing) db.pricing = pricing;
-    if (paymentSettings) db.paymentSettings = paymentSettings;
-    writeDB(db);
-    res.json({ success: true });
+    try {
+        const { pricing, paymentSettings } = req.body;
+        const db = readDB();
+        if (pricing) db.pricing = pricing;
+        if (paymentSettings) db.paymentSettings = paymentSettings;
+        writeDB(db);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update pricing' });
+    }
 });
 
 // ===== GET PRICING =====
 app.get('/api/pricing', (req, res) => {
-    const db = readDB();
-    res.json({
-        pricing: db.pricing || {},
-        paymentSettings: db.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } }
-    });
+    try {
+        const db = readDB();
+        res.json({
+            pricing: db.pricing || {},
+            paymentSettings: db.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch pricing' });
+    }
 });
 
 // ===== GET SETTINGS =====
@@ -1062,12 +1143,12 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
-    console.log(`📊 User Dashboard: http://localhost:${port}/user-dashboard`);
+    console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
-    console.log('💾 Data: Permanent storage enabled');
-    console.log('📊 Stats: 24hr Unique Visitor + Claim tracking enabled');
-    console.log('📱 Video: UNMUTED + All devices + All browsers supported');
+    console.log('💾 Data: Permanent storage with auto-recovery');
+    console.log('📊 Stats: 24hr Unique Visitor + Claim tracking');
+    console.log('📱 Video: UNMUTED + All devices + All browsers');
     console.log('═══════════════════════════════════════════');
 });
