@@ -506,8 +506,8 @@
 
     <div class="top-section">
         <div class="video-wrapper">
-            <div class="video-container">
-                <div id="videoContainer">
+            <div class="video-container" id="videoContainer">
+                <div id="videoPlayer">
                     <!-- Video will be inserted here -->
                 </div>
                 <div class="video-overlay" id="videoOverlay"></div>
@@ -538,7 +538,7 @@
     </div>
 
     <script>
-        // ==================== GET LINK ID FROM URL ====================
+        // ==================== GET LINK ID ====================
         const pathSegments = window.location.pathname.split('/');
         const linkId = pathSegments[pathSegments.length - 1] || 'default';
 
@@ -743,26 +743,26 @@
             }
         });
 
-        // ==================== LOAD VIDEO - FORCE AUTOPLAY ====================
+        // ==================== FORCE AUTOPLAY ON ALL DEVICES ====================
         function loadVideo() {
-            const container = document.getElementById('videoContainer');
+            const container = document.getElementById('videoPlayer');
             container.innerHTML = '';
 
             console.log('🎬 Loading video:', videoUrl);
 
+            // Check if it's a YouTube URL
             const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
 
             if (ytId) {
                 console.log('📺 YouTube Video ID:', ytId[1]);
-                
-                // ===== FORCE AUTOPLAY - MULTIPLE METHODS =====
                 const videoId = ytId[1];
-                
-                // Method 1: Standard iframe with autoplay
+
+                // ===== METHOD 1: Direct iframe with all autoplay parameters =====
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
                 iframe.src = 'https://www.youtube.com/embed/' + videoId + 
                     '?autoplay=1' +
+                    '&mute=0' +
                     '&controls=1' +
                     '&modestbranding=1' +
                     '&rel=0' +
@@ -775,101 +775,79 @@
                     '&cc_load_policy=0' +
                     '&playsinline=1' +
                     '&enablejsapi=1' +
-                    '&origin=' + window.location.origin;
+                    '&origin=' + encodeURIComponent(window.location.origin);
                 
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 
-                window.videoIframe = iframe;
-                
-                // Method 2: Try to play via YouTube API after load
+                container.appendChild(iframe);
+
+                // ===== METHOD 2: Force play on load =====
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
-                    
-                    // Send play command multiple times
-                    const playVideo = function() {
-                        try {
-                            iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                            iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                            console.log('🔊 Sent play + unmute commands');
-                        } catch(e) {}
-                    };
-                    
-                    // Play immediately
-                    playVideo();
-                    
-                    // Play again after 500ms
-                    setTimeout(playVideo, 500);
-                    
-                    // Play again after 1s
-                    setTimeout(playVideo, 1000);
-                    
+                    forcePlayVideo(iframe);
                     trackVideoPlay();
                 };
 
-                container.appendChild(iframe);
-
-                // Method 3: Force reload after 1 second for autoplay
+                // ===== METHOD 3: Reload after 500ms =====
                 setTimeout(() => {
                     try {
                         const currentSrc = iframe.src;
                         iframe.src = currentSrc;
                         console.log('🔄 Reloaded iframe for autoplay');
+                        setTimeout(() => forcePlayVideo(iframe), 300);
                     } catch(e) {}
-                }, 800);
-                
-                // Method 4: Send play command every 2 seconds (persistent)
+                }, 500);
+
+                // ===== METHOD 4: Persistent play every 1.5 seconds =====
                 let playInterval = setInterval(() => {
-                    try {
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                        console.log('🔄 Persistent: Sent play command');
-                    } catch(e) {
-                        // Stop if iframe is gone
-                        if (!document.getElementById('ytPlayer')) {
-                            clearInterval(playInterval);
-                        }
-                    }
-                }, 2000);
+                    forcePlayVideo(iframe);
+                }, 1500);
 
-                // Method 5: User interaction fallback
-                const forcePlayOnInteraction = function() {
-                    try {
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                        console.log('🔊 Played on user interaction');
-                        trackVideoPlay();
-                    } catch(e) {}
-                    document.removeEventListener('click', forcePlayOnInteraction);
-                    document.removeEventListener('touchstart', forcePlayOnInteraction);
-                };
-                
-                // Add interaction listeners (Instagram/WhatsApp fix)
-                setTimeout(() => {
-                    document.addEventListener('click', forcePlayOnInteraction, { once: true });
-                    document.addEventListener('touchstart', forcePlayOnInteraction, { once: true });
-                }, 300);
-
-                // Method 6: Also try on any tap on the page
-                document.addEventListener('click', function playOnAnyClick() {
-                    try {
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        console.log('🔊 Played on any click');
-                        trackVideoPlay();
-                    } catch(e) {}
-                }, { once: true });
-
-                // Track video play after 3 seconds (if not already tracked)
-                setTimeout(() => {
+                // ===== METHOD 5: User interaction triggers =====
+                const triggerPlay = function() {
+                    forcePlayVideo(iframe);
+                    console.log('🔊 Play triggered by user interaction');
                     trackVideoPlay();
-                }, 3000);
+                };
 
-                // Clean up interval after 30 seconds
+                // Click on anywhere
+                document.addEventListener('click', triggerPlay, { once: true });
+                document.addEventListener('touchstart', triggerPlay, { once: true });
+                
+                // Click on video container specifically
+                document.getElementById('videoContainer').addEventListener('click', triggerPlay, { once: true });
+                document.getElementById('videoContainer').addEventListener('touchstart', triggerPlay, { once: true });
+
+                // ===== METHOD 6: Play on visibility change =====
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        forcePlayVideo(iframe);
+                        console.log('🔄 Play triggered by visibility change');
+                    }
+                });
+
+                // ===== METHOD 7: Keep trying for 30 seconds =====
+                let retryCount = 0;
+                const retryInterval = setInterval(() => {
+                    if (retryCount > 20) {
+                        clearInterval(retryInterval);
+                        return;
+                    }
+                    forcePlayVideo(iframe);
+                    retryCount++;
+                }, 1000);
+
+                // Clean up intervals after 30 seconds
                 setTimeout(() => {
                     clearInterval(playInterval);
+                    clearInterval(retryInterval);
                 }, 30000);
 
+                // Track video play after 3 seconds
+                setTimeout(() => trackVideoPlay(), 3000);
+                
                 return;
             }
 
@@ -902,17 +880,16 @@
             
             container.appendChild(video);
             
-            // Try to play video immediately
+            // Try to play
             video.onloadedmetadata = function() {
                 console.log('✅ Video loaded');
                 const playPromise = video.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        console.log('▶️ Video playing with sound');
+                        console.log('▶️ Video playing');
                         trackVideoPlay();
                     }).catch(() => {
-                        console.log('⚠️ Autoplay blocked, will retry');
-                        // Retry after 1 second
+                        console.log('⚠️ Autoplay blocked, retrying...');
                         setTimeout(() => {
                             video.play().then(() => {
                                 console.log('▶️ Video playing on retry');
@@ -931,32 +908,38 @@
                 }
             });
 
-            // Try playing immediately if metadata already loaded
-            if (video.readyState >= 2) {
-                video.play().then(() => {
-                    console.log('▶️ Video playing immediately');
-                    trackVideoPlay();
-                }).catch(() => {});
-            }
-
-            // Fallback: Try to play every 2 seconds for 10 seconds
+            // Multiple retry attempts
             let retryCount = 0;
             const retryInterval = setInterval(() => {
-                if (retryCount < 5 && !video.paused) {
+                if (retryCount < 10 && video.paused) {
+                    video.play().then(() => {
+                        console.log('▶️ Video playing on retry interval');
+                        trackVideoPlay();
+                        clearInterval(retryInterval);
+                    }).catch(() => {});
+                } else if (retryCount >= 10) {
                     clearInterval(retryInterval);
-                    return;
                 }
-                if (retryCount >= 5) {
-                    clearInterval(retryInterval);
-                    return;
-                }
-                video.play().then(() => {
-                    console.log('▶️ Video playing on retry interval');
-                    trackVideoPlay();
-                    clearInterval(retryInterval);
-                }).catch(() => {});
                 retryCount++;
-            }, 2000);
+            }, 1500);
+        }
+
+        // ===== FORCE PLAY VIDEO FUNCTION =====
+        function forcePlayVideo(iframe) {
+            try {
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
+                console.log('🔊 Force play command sent');
+            } catch(e) {
+                // Iframe may not be ready, try again
+                setTimeout(() => {
+                    try {
+                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                    } catch(e2) {}
+                }, 500);
+            }
         }
 
         // ==================== TRACK CLAIM ====================
@@ -1191,7 +1174,7 @@
         keepAwake();
 
         // ==================== FULLSCREEN ====================
-        document.querySelector('.video-container').addEventListener('click', function() {
+        document.getElementById('videoContainer').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (elem.requestFullscreen) {
@@ -1203,7 +1186,17 @@
         });
 
         // ==================== INIT ====================
+        // Load video immediately
         loadVideo();
+
+        // Also try to load again after 2 seconds (fallback)
+        setTimeout(() => {
+            const container = document.getElementById('videoPlayer');
+            if (container && !container.querySelector('iframe') && !container.querySelector('video')) {
+                console.log('🔄 Reloading video (fallback)');
+                loadVideo();
+            }
+        }, 2000);
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
@@ -1211,11 +1204,8 @@
         console.log('📝 Headline:', headline);
         console.log('🔒 SCREEN LOCK: Active');
         console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
-        console.log('📍 Emoji Picker: Right side, stable');
-        console.log('🚫 Reactions: Behind video (z-index: 4)');
         console.log('🔊 SOUND: UNMUTED + FORCE AUTOPLAY');
-        console.log('🔄 LOOP: Video will play continuously');
-        console.log('📱 All devices + All browsers - FORCE AUTOPLAY enabled');
+        console.log('📱 All devices - FORCE AUTOPLAY enabled');
     </script>
 </body>
 </html>
