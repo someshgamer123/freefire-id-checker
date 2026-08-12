@@ -49,6 +49,57 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-card .label { color: var(--text-light); font-size: 13px; margin-top: 4px; }
 
+        /* ===== STATS DASHBOARD - NEW ===== */
+        .stats-dashboard {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            transition: 0.3s;
+        }
+        .stats-dashboard:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .stats-dashboard h3 {
+            color: var(--text);
+            font-size: 18px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(102,126,234,0.15);
+        }
+        .stats-dashboard .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+        }
+        .stats-dashboard .stat-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 18px 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: 0.3s;
+            box-shadow: none;
+        }
+        .stats-dashboard .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+        .stats-dashboard .stat-number {
+            font-size: 30px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stats-dashboard .stat-label {
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
         .card { background: var(--card-bg); padding: 24px 28px; border-radius: var(--radius);
             box-shadow: var(--shadow); margin-bottom: 22px; transition: 0.3s; }
         .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
@@ -127,7 +178,7 @@
             background: rgba(102,126,234,0.12); color: var(--primary); }
         .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
-        /* ===== BACKGROUND UPLOAD - FIXED 9:16 ===== */
+        /* ===== BACKGROUND UPLOAD ===== */
         .bg-upload-area {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -137,7 +188,6 @@
             margin-top: 10px;
         }
         .bg-upload-area:hover { border-color: var(--primary); }
-        
         .bg-upload-area .preview-container {
             position: relative;
             max-width: 200px;
@@ -148,16 +198,13 @@
             background: #000;
             display: none;
         }
-        .bg-upload-area .preview-container.show {
-            display: block;
-        }
+        .bg-upload-area .preview-container.show { display: block; }
         .bg-upload-area .preview-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
-        
         .bg-upload-area input[type="file"] { display: none; }
         .bg-upload-area .upload-label {
             display: inline-block;
@@ -274,6 +321,7 @@
             .header { flex-direction: column; text-align: center; padding: 16px 20px; }
             .header-actions { justify-content: center; }
             .stats { grid-template-columns: repeat(2, 1fr); }
+            .stats-dashboard .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .link-item { flex-direction: column; align-items: stretch; }
             .link-item .actions { justify-content: flex-start; }
             body { padding: 12px; }
@@ -287,7 +335,9 @@
         }
         @media (max-width: 480px) {
             .stats { grid-template-columns: 1fr; }
+            .stats-dashboard .stats-grid { grid-template-columns: 1fr; }
             .stat-card .number { font-size: 26px; }
+            .stats-dashboard .stat-number { font-size: 24px; }
             .toast { left: 20px; right: 20px; bottom: 20px; }
             .pricing-grid { grid-template-columns: 1fr; }
             .user-dashboard-box { padding: 12px; }
@@ -316,6 +366,29 @@
             <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
             <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+        </div>
+
+        <!-- ===== STATS DASHBOARD - NEW ===== -->
+        <div class="stats-dashboard">
+            <h3>📊 Visitor & Claim Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalVisitors">0</div>
+                    <div class="stat-label">Total Visitors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalClaims">0</div>
+                    <div class="stat-label">Total Claims</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayVisitors">0</div>
+                    <div class="stat-label">Today's Visitors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayClaims">0</div>
+                    <div class="stat-label">Today's Claims</div>
+                </div>
+            </div>
         </div>
 
         <!-- CREATE LINK -->
@@ -363,7 +436,7 @@
             </div>
         </div>
 
-        <!-- BACKGROUND UPLOAD - FIXED -->
+        <!-- BACKGROUND UPLOAD -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <div class="bg-upload-area">
@@ -641,7 +714,7 @@
             }
         }
 
-        // ===== BACKGROUND UPLOAD - FIXED 9:16 =====
+        // ===== BACKGROUND UPLOAD =====
         async function loadBackground() {
             try {
                 const r = await fetch('/api/settings');
@@ -663,17 +736,12 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    
-                    // Target 9:16 ratio
                     const targetRatio = 9 / 16;
                     let width = img.width;
                     let height = img.height;
-                    
-                    // Calculate crop to fit 9:16 perfectly
                     const currentRatio = width / height;
                     
                     if (currentRatio > targetRatio) {
-                        // Image is wider - crop sides
                         const newWidth = height * targetRatio;
                         const offsetX = (width - newWidth) / 2;
                         canvas.width = 400;
@@ -683,7 +751,6 @@
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, offsetX, 0, newWidth, height, 0, 0, canvas.width, canvas.height);
                     } else {
-                        // Image is taller - crop top/bottom
                         const newHeight = width / targetRatio;
                         const offsetY = (height - newHeight) / 2;
                         canvas.width = 400;
@@ -693,7 +760,6 @@
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, offsetY, width, newHeight, 0, 0, canvas.width, canvas.height);
                     }
-                    
                     callback(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.src = e.target.result;
@@ -1240,9 +1306,27 @@
             } catch (e) { showToast('❌ Failed to reject', 'error'); }
         }
 
+        // ==================== STATS DASHBOARD - NEW ====================
+        async function loadStats() {
+            try {
+                const response = await secureFetch('/api/all-stats');
+                if (!response) return;
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('totalVisitors').textContent = data.global?.totalVisitors || 0;
+                    document.getElementById('totalClaims').textContent = data.global?.totalClaims || 0;
+                    document.getElementById('todayVisitors').textContent = data.global?.todayVisitors || 0;
+                    document.getElementById('todayClaims').textContent = data.global?.todayClaims || 0;
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
         // ===== PERIODIC CHECKS =====
         setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
         setInterval(loadRenewalRequests, 15000);
+        setInterval(loadStats, 30000);
 
         // ===== CHECK AUTH =====
         async function checkAuth() {
@@ -1269,6 +1353,7 @@
         loadUserDashboardLink();
         loadPricingData();
         loadRenewalRequests();
+        loadStats();
         setInterval(loadLinks, 30000);
         checkAuth();
         togglePaymentFields();
