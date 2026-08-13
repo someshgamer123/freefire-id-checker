@@ -479,7 +479,6 @@
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
-        let redirectDone = false; // NEW: Prevent multiple redirects
 
         if (screen.orientation && screen.orientation.lock) { 
             screen.orientation.lock('portrait').catch(() => {}); 
@@ -700,58 +699,28 @@
             isUnlocked = true;
         }
 
-        // ===== FIXED: Main Claim Button Handler =====
+        // ===== FIXED: Instant Redirect - No Delay, Multiple Clicks Allowed =====
         function handleClaimClick() {
             console.log('🎯 Claim button clicked!');
             console.log('📌 claimUrl value:', claimUrl);
-            console.log('📌 isPopupClaimed:', isPopupClaimed);
-            console.log('📌 redirectDone:', redirectDone);
             
-            // FIX: Allow redirect even if isPopupClaimed is true
-            // Just check if redirect is not already done
-            if (redirectDone) {
-                console.log('⚠️ Redirect already done, ignoring click');
-                return;
+            // Track claim on first click only
+            if (!isPopupClaimed) {
+                isPopupClaimed = true;
+                trackClaim();
+                triggerCelebration();
+                isUnlocked = true;
             }
             
-            // If already claimed, still allow redirect
-            if (isPopupClaimed) {
-                console.log('✅ Already claimed, redirecting to claimUrl');
-                performRedirect();
-                return;
-            }
-            
-            // First time claim
-            isPopupClaimed = true;
-            trackClaim();
-            triggerCelebration();
-            isUnlocked = true;
-            performRedirect();
-        }
-
-        function performRedirect() {
-            if (redirectDone) return;
-            redirectDone = true;
-            
-            console.log('🚀 Performing redirect to:', claimUrl);
-            
+            // INSTANT REDIRECT - No setTimeout delay
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                setTimeout(() => { 
-                    console.log('🔗 Redirecting to:', claimUrl);
-                    window.location.href = claimUrl; 
-                }, 1500);
+                console.log('🔗 INSTANT REDIRECT to:', claimUrl);
+                // Use window.location.replace for instant redirect (no history)
+                window.location.replace(claimUrl);
             } else {
-                console.log('⚠️ No valid claim URL, showing alert');
-                setTimeout(() => { 
-                    alert('🎉 You have been unlocked!'); 
-                    document.body.style.overflow = 'auto'; 
-                }, 1000);
+                console.log('⚠️ No valid claim URL');
+                alert('🎉 You have been unlocked!');
             }
-        }
-
-        // ===== Legacy function for compatibility =====
-        function unlockFromMainButton() {
-            handleClaimClick();
         }
 
         // ==================== RIPPLE EFFECT ====================
@@ -800,15 +769,15 @@
             }, 2000);
         });
 
-        // ===== MAIN CLAIM BUTTON - FIXED =====
+        // ===== MAIN CLAIM BUTTON - INSTANT REDIRECT =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             addRipple(e, this);
-            handleClaimClick(); // Use the fixed handler
+            handleClaimClick(); // Instant redirect - no delay
         });
         document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
             addRipple(e, this);
-            handleClaimClick(); // Use the fixed handler
+            handleClaimClick(); // Instant redirect - no delay
         }, { passive: true });
 
         // ==================== VIDEO FUNCTIONS ====================
@@ -1050,7 +1019,7 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ CLAIM BUTTON: FINAL FIXED - Redirect will work even after claim');
+        console.log('✅ INSTANT REDIRECT: Click = Instant redirect, no delay, multiple clicks allowed');
     </script>
 </body>
 </html>
