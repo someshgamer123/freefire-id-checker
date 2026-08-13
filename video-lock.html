@@ -111,6 +111,7 @@
             border: 2px solid rgba(255, 255, 255, 0.06);
             width: 100%; max-width: 400px;
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            z-index: 5;
         }
         .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
         .claim-btn:active { transform: scale(0.97); }
@@ -477,6 +478,7 @@
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
+        let isMainClaimProcessed = false;
 
         // ==================== SCREEN LOCK ====================
         const overlay = document.getElementById('videoOverlay');
@@ -747,47 +749,81 @@
             isUnlocked = true;
         }
 
-        function unlockFromMainButton() {
+        // ==================== MAIN CLAIM BUTTON - FIXED ====================
+        function handleMainClaim(e) {
+            // Prevent multiple clicks
+            if (isMainClaimProcessed) return;
             if (isPopupClaimed) return;
+            
+            isMainClaimProcessed = true;
             isPopupClaimed = true;
-            trackClaim();
-            triggerCelebration();
-            isUnlocked = true;
-            if (claimUrl && claimUrl !== '#') {
-                setTimeout(() => { window.location.href = claimUrl; }, 2500);
-            } else {
-                setTimeout(() => { alert('🎉 You have been unlocked!'); document.body.style.overflow = 'auto'; }, 1500);
-            }
-        }
-
-        // ==================== BUTTON EVENTS (SENSITIVE) ====================
-        function addRipple(e, btn) {
+            
+            // Ripple effect
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
-            const rect = btn.getBoundingClientRect();
+            const rect = document.getElementById('claimBtn').getBoundingClientRect();
             const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
             const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
             ripple.style.left = x + 'px';
             ripple.style.top = y + 'px';
-            btn.appendChild(ripple);
+            document.getElementById('claimBtn').appendChild(ripple);
             setTimeout(() => ripple.remove(), 600);
+            
+            // Track claim
+            trackClaim();
+            
+            // Trigger celebration
+            triggerCelebration();
+            
+            isUnlocked = true;
+            console.log('🔓 Unlocked via main claim button');
+            
+            // Redirect after celebration
+            if (claimUrl && claimUrl !== '#') {
+                setTimeout(() => {
+                    window.location.href = claimUrl;
+                }, 2500);
+            } else {
+                setTimeout(() => {
+                    alert('🎉 You have been unlocked!');
+                    document.body.style.overflow = 'auto';
+                }, 1500);
+            }
         }
 
-        document.getElementById('popupClaimBtn').addEventListener('click', function(e) { addRipple(e, this); unlockAndPlay(); });
-        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) { if (!isPopupClaimed) { addRipple(e, this); unlockAndPlay(); } }, { passive: true });
-
-        // ===== MAIN CLAIM BUTTON =====
-        document.getElementById('claimBtn').addEventListener('click', function(e) {
-            if (!isPopupClaimed) {
-                addRipple(e, this);
-                unlockFromMainButton();
-            }
+        // ==================== BUTTON EVENTS ====================
+        // Popup Claim Button
+        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            unlockAndPlay();
         });
-        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+        
+        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
             if (!isPopupClaimed) {
-                addRipple(e, this);
-                unlockFromMainButton();
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                const rect = this.getBoundingClientRect();
+                ripple.style.left = (e.touches[0].clientX - rect.left) + 'px';
+                ripple.style.top = (e.touches[0].clientY - rect.top) + 'px';
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+                unlockAndPlay();
             }
+        }, { passive: true });
+
+        // ===== MAIN CLAIM BUTTON - FIXED WITH BOTH EVENTS =====
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            handleMainClaim(e);
+        });
+        
+        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+            handleMainClaim(e);
         }, { passive: true });
 
         // ==================== VIDEO FUNCTIONS ====================
@@ -1032,6 +1068,7 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('🔒 SCREEN LOCK: Active');
         console.log('🎯 POPUP CLAIM → CONFETTI → VIDEO PLAY');
+        console.log('✅ MAIN CLAIM BUTTON: FIXED AND WORKING');
     </script>
 </body>
 </html>
