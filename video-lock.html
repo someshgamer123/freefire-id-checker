@@ -158,6 +158,7 @@
             box-shadow: 0 0 80px rgba(102, 126, 234, 0.2), inset 0 0 80px rgba(102, 126, 234, 0.05);
             animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative; overflow: hidden;
+            cursor: pointer;
         }
         .popup-card::before {
             content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
@@ -187,22 +188,16 @@
             text-align: center; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            pointer-events: none;
         }
         .popup-card .popup-sub {
             text-align: center; font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 16px;
+            pointer-events: none;
         }
 
+        /* ===== POPUP CLAIM BUTTON - REMOVED ===== */
         .popup-card .popup-claim-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700;
-            cursor: pointer; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
-            transition: all 0.3s ease; position: relative; box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
-            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-        }
-        .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(102, 126, 234, 0.4); }
-        .popup-card .popup-claim-btn:active { transform: scale(0.97); }
-        .popup-card .popup-claim-btn .ripple {
-            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3);
-            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
+            display: none;
         }
 
         /* ===== SMOOTH CONFETTI ===== */
@@ -350,7 +345,6 @@
             .claim-btn::before { border-radius: 40px; }
             .popup-card { padding: 18px 16px 22px; max-width: 340px; }
             .popup-card .popup-title { font-size: 17px; }
-            .popup-card .popup-claim-btn { font-size: 16px; padding: 12px; }
             .chat-section { border-radius: 8px; margin-top: 2px; }
             .chat-message { padding: 5px 10px; font-size: 11px; gap: 6px; }
             .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
@@ -371,7 +365,6 @@
             .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
             .popup-card { padding: 14px 12px 18px; max-width: 300px; }
             .popup-card .popup-title { font-size: 15px; }
-            .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
             .popup-card .popup-sub { font-size: 11px; }
             .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
             .chat-message .avatar { width: 22px; height: 22px; font-size: 9px; }
@@ -429,16 +422,15 @@
         </div>
     </div>
 
-    <!-- ===== POPUP OVERLAY ===== -->
+    <!-- ===== POPUP OVERLAY - WHOLE CARD IS CLICKABLE ===== -->
     <div class="popup-overlay" id="popupOverlay">
-        <div class="popup-card">
+        <div class="popup-card" id="popupCard">
             <div class="popup-image" id="popupImage">
                 <div class="placeholder" id="popupPlaceholder">🎬</div>
                 <img id="popupImg" style="display:none;" alt="Popup Image">
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap below to unlock your reward</div>
-            <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
+            <div class="popup-sub" id="popupSub">Tap anywhere to unlock your reward</div>
         </div>
     </div>
 
@@ -479,6 +471,7 @@
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
         let isMainClaimProcessed = false;
+        let celebrationTimeout = null;
 
         // ==================== SCREEN LOCK ====================
         const overlay = document.getElementById('videoOverlay');
@@ -597,7 +590,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI CELEBRATION ====================
+        // ==================== CONFETTI CELEBRATION - FAST (1-2 seconds) ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -607,8 +600,8 @@
 
             const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
 
-            // Burst 1
-            for (let i = 0; i < 80; i++) {
+            // Burst 1 - Faster
+            for (let i = 0; i < 60; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-burst-piece';
                 const color = colors[Math.floor(Math.random() * colors.length)];
@@ -617,7 +610,7 @@
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 const angle = Math.random() * 2 * Math.PI;
-                const dist = 150 + Math.random() * 400;
+                const dist = 150 + Math.random() * 350;
                 const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
                 const tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
                 const tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
@@ -626,14 +619,14 @@
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                 el.style.left = (50 + Math.random() * 6 - 3) + '%';
                 el.style.top = (45 + Math.random() * 10 - 5) + '%';
-                el.style.animationDelay = (Math.random() * 0.2) + 's';
+                el.style.animationDelay = (Math.random() * 0.15) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
                 if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
                 container.appendChild(el);
             }
 
-            // Falling confetti
-            for (let i = 0; i < 120; i++) {
+            // Falling confetti - Less
+            for (let i = 0; i < 80; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-piece';
                 const color = colors[Math.floor(Math.random() * colors.length)];
@@ -643,16 +636,16 @@
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
-                el.style.animationDuration = (2.5 + Math.random() * 3.5) + 's';
-                el.style.animationDelay = (Math.random() * 2.5) + 's';
+                el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+                el.style.animationDelay = (Math.random() * 1.5) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
                 if (Math.random() > 0.8) el.style.boxShadow = `0 0 10px ${color}`;
                 container.appendChild(el);
             }
 
-            // Burst 2 (after delay)
+            // Burst 2 - Faster
             setTimeout(() => {
-                for (let i = 0; i < 50; i++) {
+                for (let i = 0; i < 35; i++) {
                     const el = document.createElement('div');
                     el.className = 'confetti-burst-piece';
                     const color = colors[Math.floor(Math.random() * colors.length)];
@@ -661,7 +654,7 @@
                     el.style.background = color;
                     el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                     const angle = Math.random() * 2 * Math.PI;
-                    const dist = 120 + Math.random() * 320;
+                    const dist = 120 + Math.random() * 300;
                     const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 80;
                     const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - 40;
                     const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - 15;
@@ -670,84 +663,69 @@
                     el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                     el.style.left = (20 + Math.random() * 60) + '%';
                     el.style.top = (20 + Math.random() * 60) + '%';
-                    el.style.animationDelay = (Math.random() * 0.2) + 's';
+                    el.style.animationDelay = (Math.random() * 0.15) + 's';
                     el.style.transform = `rotate(${Math.random() * 360}deg)`;
                     if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
                     container.appendChild(el);
                 }
-            }, 500);
+            }, 350);
 
-            setTimeout(() => { container.innerHTML = ''; container.classList.remove('active'); isCelebrationActive = false; }, 6500);
+            // Clear after 1.5 seconds (fast)
+            celebrationTimeout = setTimeout(() => {
+                container.innerHTML = '';
+                container.classList.remove('active');
+                isCelebrationActive = false;
+            }, 1800);
         }
 
-        // ==================== POPUP SYSTEM ====================
-        async function loadPopupData() {
-            try {
-                const response = await fetch(`/api/link/${linkId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const popup = data.popupSettings || {};
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
-                    }
-                    return;
-                }
-                const settingsRes = await fetch('/api/settings');
-                if (settingsRes.ok) {
-                    const settings = await settingsRes.json();
-                    const popup = settings.popupSettings || {};
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
-                    }
-                }
-            } catch (e) { console.log('⚠️ Could not load popup data, using defaults'); }
-        }
-
-        function showPopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hidePopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('show');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        // ==================== UNLOCK FUNCTIONS ====================
+        // ==================== UNLOCK FUNCTION ====================
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
+            
+            // Track claim
             trackClaim();
+            
+            // Hide popup
             hidePopup();
+            
+            // Trigger celebration
             triggerCelebration();
+            
+            // Show video elements after celebration starts
             setTimeout(() => {
                 document.getElementById('headline').classList.add('show');
                 document.getElementById('claimBtnWrapper').classList.add('show');
                 document.getElementById('chatSection').classList.add('show');
+                
+                // Load and play video
                 loadVideo();
+                
                 setTimeout(() => {
                     const iframe = document.getElementById('ytPlayer');
                     if (iframe) forcePlayVideo(iframe);
                     const video = document.querySelector('#videoPlayer video');
                     if (video) video.play().catch(() => {});
                 }, 500);
-            }, 300);
+            }, 200);
+
             isUnlocked = true;
+            console.log('🔓 Unlocked via popup click');
         }
+
+        // ==================== POPUP CARD CLICK - WHOLE CARD ====================
+        document.getElementById('popupCard').addEventListener('click', function(e) {
+            // Prevent if clicking on image or text (they bubble up)
+            if (!isPopupClaimed) {
+                unlockAndPlay();
+            }
+        });
+        
+        document.getElementById('popupCard').addEventListener('touchstart', function(e) {
+            if (!isPopupClaimed) {
+                unlockAndPlay();
+            }
+        }, { passive: true });
 
         // ==================== MAIN CLAIM BUTTON - FIXED ====================
         function handleMainClaim(e) {
@@ -775,49 +753,31 @@
             // Trigger celebration
             triggerCelebration();
             
+            // Hide popup if visible
+            hidePopup();
+            
+            // Show video elements
+            setTimeout(() => {
+                document.getElementById('headline').classList.add('show');
+                document.getElementById('claimBtnWrapper').classList.add('show');
+                document.getElementById('chatSection').classList.add('show');
+                
+                // Load video
+                loadVideo();
+                
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) forcePlayVideo(iframe);
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(() => {});
+                }, 500);
+            }, 200);
+            
             isUnlocked = true;
             console.log('🔓 Unlocked via main claim button');
-            
-            // Redirect after celebration
-            if (claimUrl && claimUrl !== '#') {
-                setTimeout(() => {
-                    window.location.href = claimUrl;
-                }, 2500);
-            } else {
-                setTimeout(() => {
-                    alert('🎉 You have been unlocked!');
-                    document.body.style.overflow = 'auto';
-                }, 1500);
-            }
         }
 
-        // ==================== BUTTON EVENTS ====================
-        // Popup Claim Button
-        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple';
-            const rect = this.getBoundingClientRect();
-            ripple.style.left = (e.clientX - rect.left) + 'px';
-            ripple.style.top = (e.clientY - rect.top) + 'px';
-            this.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-            unlockAndPlay();
-        });
-        
-        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
-            if (!isPopupClaimed) {
-                const ripple = document.createElement('span');
-                ripple.className = 'ripple';
-                const rect = this.getBoundingClientRect();
-                ripple.style.left = (e.touches[0].clientX - rect.left) + 'px';
-                ripple.style.top = (e.touches[0].clientY - rect.top) + 'px';
-                this.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 600);
-                unlockAndPlay();
-            }
-        }, { passive: true });
-
-        // ===== MAIN CLAIM BUTTON - FIXED WITH BOTH EVENTS =====
+        // ===== MAIN CLAIM BUTTON EVENTS =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             handleMainClaim(e);
         });
@@ -825,6 +785,51 @@
         document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
             handleMainClaim(e);
         }, { passive: true });
+
+        // ==================== POPUP SYSTEM ====================
+        async function loadPopupData() {
+            try {
+                const response = await fetch(`/api/link/${linkId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const popup = data.popupSettings || {};
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
+                    }
+                    return;
+                }
+                const settingsRes = await fetch('/api/settings');
+                if (settingsRes.ok) {
+                    const settings = await settingsRes.json();
+                    const popup = settings.popupSettings || {};
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
+                    }
+                }
+            } catch (e) { console.log('⚠️ Could not load popup data, using defaults'); }
+        }
+
+        function showPopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hidePopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('show');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
 
         // ==================== VIDEO FUNCTIONS ====================
         function forcePlayVideo(iframe) {
@@ -1067,8 +1072,9 @@
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
         console.log('🔒 SCREEN LOCK: Active');
-        console.log('🎯 POPUP CLAIM → CONFETTI → VIDEO PLAY');
-        console.log('✅ MAIN CLAIM BUTTON: FIXED AND WORKING');
+        console.log('🎯 POPUP → Click anywhere → CONFETTI → VIDEO PLAY');
+        console.log('✅ MAIN CLAIM BUTTON: WORKING');
+        console.log('⚡ CONFETTI: Fast (1.5 seconds)');
     </script>
 </body>
 </html>
