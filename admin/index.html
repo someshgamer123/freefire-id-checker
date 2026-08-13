@@ -49,7 +49,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-card .label { color: var(--text-light); font-size: 13px; margin-top: 4px; }
 
-        /* ===== STATS DASHBOARD - NEW ===== */
         .stats-dashboard {
             background: var(--card-bg);
             border-radius: var(--radius);
@@ -178,55 +177,83 @@
             background: rgba(102,126,234,0.12); color: var(--primary); }
         .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
-        /* ===== BACKGROUND UPLOAD ===== */
-        .bg-upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-        .bg-upload-area:hover { border-color: var(--primary); }
-        .bg-upload-area .preview-container {
-            position: relative;
-            max-width: 200px;
-            margin: 10px auto;
+        /* ===== IMAGE PREVIEW ===== */
+        .image-preview {
+            max-width: 100%;
             border-radius: 10px;
+            margin-top: 8px;
+            border: 2px solid var(--border);
             overflow: hidden;
-            aspect-ratio: 9 / 16;
-            background: #000;
             display: none;
         }
-        .bg-upload-area .preview-container.show { display: block; }
-        .bg-upload-area .preview-container img {
+        .image-preview.show { display: block; }
+        .image-preview img {
             width: 100%;
-            height: 100%;
+            max-height: 200px;
             object-fit: cover;
             display: block;
         }
-        .bg-upload-area input[type="file"] { display: none; }
-        .bg-upload-area .upload-label {
-            display: inline-block;
-            padding: 10px 24px;
-            background: var(--primary);
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .bg-upload-area .upload-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(102,126,234,0.3);
-        }
-        .bg-upload-area .bg-status {
-            margin-top: 8px;
-            font-size: 13px;
+        .image-preview .preview-label {
+            padding: 6px 12px;
+            font-size: 11px;
             color: var(--text-light);
+            background: var(--bg);
+            border-top: 1px solid var(--border);
         }
-        .bg-upload-area .bg-status.success { color: var(--success); }
-        .bg-upload-area .bg-status.error { color: var(--danger); }
+
+        /* ===== POPUP PREVIEW ===== */
+        .popup-preview {
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 12px;
+            text-align: center;
+            border: 2px solid rgba(102,126,234,0.2);
+        }
+        .popup-preview .preview-image {
+            max-width: 100%;
+            border-radius: 8px;
+            aspect-ratio: 16/9;
+            background: #1a1a3a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.3);
+            font-size: 14px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .popup-preview .preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .popup-preview .preview-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .popup-preview .preview-sub {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .popup-preview .preview-btn {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: default;
+        }
+        .popup-preview .preview-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 8px;
+        }
 
         .passcode-2 {
             display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
@@ -341,7 +368,7 @@
             .toast { left: 20px; right: 20px; bottom: 20px; }
             .pricing-grid { grid-template-columns: 1fr; }
             .user-dashboard-box { padding: 12px; }
-            .bg-upload-area .preview-container { max-width: 150px; }
+            .popup-preview .preview-title { font-size: 14px; }
         }
     </style>
 </head>
@@ -368,7 +395,7 @@
             <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
         </div>
 
-        <!-- ===== STATS DASHBOARD - NEW ===== -->
+        <!-- STATS DASHBOARD -->
         <div class="stats-dashboard">
             <h3>📊 Visitor & Claim Statistics</h3>
             <div class="stats-grid">
@@ -391,7 +418,7 @@
             </div>
         </div>
 
-        <!-- CREATE LINK -->
+        <!-- ===== CREATE LINK (WITH POPUP SETTINGS INSIDE) ===== -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -408,6 +435,44 @@
             </div>
             <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
             <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
+
+            <!-- ===== POPUP SETTINGS INSIDE CREATE LINK ===== -->
+            <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
+                <label style="font-weight:600;color:#667eea;font-size:14px;">🖼️ Popup Settings (Instagram Fix)</label>
+                <p style="color:var(--text-light);font-size:12px;margin:4px 0 10px;">Customize popup image & text (appears before video plays)</p>
+                
+                <div class="grid-2">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Popup Title</label>
+                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Popup Button Text</label>
+                        <input type="text" id="popupButtonText" placeholder="Button Text" value="Claim Now">
+                    </div>
+                </div>
+                <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                
+                <div style="margin-top:10px;">
+                    <label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9)</label>
+                    <input type="text" id="popupImageUrl" placeholder="Enter image URL (16:9 ratio recommended)">
+                    <div class="image-preview" id="popupImagePreview">
+                        <img id="popupPreviewImg" alt="Popup Image Preview">
+                        <div class="preview-label">🖼️ Popup Image Preview</div>
+                    </div>
+                </div>
+
+                <!-- Popup Live Preview -->
+                <div class="popup-preview" id="popupPreviewSection">
+                    <div class="preview-image" id="popupPreviewImage">
+                        <span>🎬 16:9 Image Preview</span>
+                    </div>
+                    <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
+                    <div class="preview-sub" id="popupPreviewSub">Tap below to unlock your reward</div>
+                    <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
+                    <div class="preview-label">⬆️ Live Preview</div>
+                </div>
+            </div>
 
             <div style="margin-top:12px;">
                 <label style="font-weight:600;color:#f6ad55;font-size:13px;">📅 Schedule Expiry</label>
@@ -436,19 +501,18 @@
             </div>
         </div>
 
-        <!-- BACKGROUND UPLOAD -->
+        <!-- ===== UID PAGE BACKGROUND (Image URL System) ===== -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
-            <div class="bg-upload-area">
-                <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">Upload any image - auto fit to 9:16</p>
-                <input type="file" id="bgFileInput" accept="image/*" onchange="uploadBackground(event)">
-                <label for="bgFileInput" class="upload-label">📤 Choose Image</label>
-                <div class="preview-container" id="bgPreviewContainer">
-                    <img id="bgPreview" alt="Background Preview">
-                </div>
-                <div id="bgStatus" class="bg-status">No background set</div>
-                <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:10px;">🗑️ Remove Background</button>
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Enter image URL for UID page background</p>
+            <input type="text" id="bgImageUrl" placeholder="Enter background image URL (9:16 ratio)">
+            <div class="image-preview" id="bgImagePreview">
+                <img id="bgPreviewImg" alt="Background Preview">
+                <div class="preview-label">🖼️ Background Preview</div>
             </div>
+            <button onclick="saveBackground()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:10px 24px;">💾 Save Background</button>
+            <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:10px;padding:10px 24px;">🗑️ Remove Background</button>
+            <div id="bgStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
         </div>
 
         <!-- ALL LINKS -->
@@ -714,104 +778,66 @@
             }
         }
 
-        // ===== BACKGROUND UPLOAD =====
-        async function loadBackground() {
+        // ===== POPUP PREVIEW LIVE UPDATE =====
+        document.getElementById('popupTitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
+        });
+        document.getElementById('popupSubtitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
+        });
+        document.getElementById('popupButtonText').addEventListener('input', function() {
+            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
+        });
+        document.getElementById('popupImageUrl').addEventListener('input', function() {
+            const url = this.value.trim();
+            const preview = document.getElementById('popupImagePreview');
+            const img = document.getElementById('popupPreviewImg');
+            const previewImage = document.getElementById('popupPreviewImage');
+            if (url) {
+                img.src = url;
+                preview.classList.add('show');
+                previewImage.innerHTML = `<img src="${url}" alt="Popup Preview">`;
+            } else {
+                preview.classList.remove('show');
+                previewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
+            }
+        });
+
+        // ===== BACKGROUND IMAGE URL PREVIEW =====
+        document.getElementById('bgImageUrl').addEventListener('input', function() {
+            const url = this.value.trim();
+            const preview = document.getElementById('bgImagePreview');
+            const img = document.getElementById('bgPreviewImg');
+            if (url) {
+                img.src = url;
+                preview.classList.add('show');
+            } else {
+                preview.classList.remove('show');
+            }
+        });
+
+        // ===== SAVE BACKGROUND =====
+        async function saveBackground() {
+            const url = document.getElementById('bgImageUrl').value.trim();
+            if (!url) {
+                showToast('❌ Please enter an image URL', 'error');
+                return;
+            }
             try {
-                const r = await fetch('/api/settings');
+                const r = await secureFetch('/api/admin/background', {
+                    method: 'POST',
+                    body: JSON.stringify({ background: url })
+                });
+                if (!r) return;
                 const data = await r.json();
-                if (data && data.background) {
-                    const preview = document.getElementById('bgPreview');
-                    const container = document.getElementById('bgPreviewContainer');
-                    preview.src = data.background;
-                    container.classList.add('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background set';
-                    document.getElementById('bgStatus').className = 'bg-status success';
+                if (data.success) {
+                    document.getElementById('bgStatus').textContent = '✅ Background saved successfully!';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    showToast('✅ Background saved!', 'success');
                 }
-            } catch (e) {}
-        }
-
-        function resizeImage(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const targetRatio = 9 / 16;
-                    let width = img.width;
-                    let height = img.height;
-                    const currentRatio = width / height;
-                    
-                    if (currentRatio > targetRatio) {
-                        const newWidth = height * targetRatio;
-                        const offsetX = (width - newWidth) / 2;
-                        canvas.width = 400;
-                        canvas.height = 400 * (16 / 9);
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#0a0a1a';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, offsetX, 0, newWidth, height, 0, 0, canvas.width, canvas.height);
-                    } else {
-                        const newHeight = width / targetRatio;
-                        const offsetY = (height - newHeight) / 2;
-                        canvas.width = 400;
-                        canvas.height = 400 * (16 / 9);
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#0a0a1a';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, offsetY, width, newHeight, 0, 0, canvas.width, canvas.height);
-                    }
-                    callback(canvas.toDataURL('image/jpeg', 0.85));
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function uploadBackground(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                showToast('❌ Please upload an image file', 'error');
-                return;
+            } catch (e) {
+                showToast('❌ Failed to save background', 'error');
             }
-            
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('❌ Image too large (max 2MB)', 'error');
-                return;
-            }
-            
-            const statusEl = document.getElementById('bgStatus');
-            statusEl.textContent = '⏳ Processing image...';
-            statusEl.className = 'bg-status';
-            
-            resizeImage(file, async function(base64) {
-                try {
-                    const r = await secureFetch('/api/admin/background', {
-                        method: 'POST',
-                        body: JSON.stringify({ background: base64 })
-                    });
-                    if (!r) return;
-                    const data = await r.json();
-                    if (data.success) {
-                        const preview = document.getElementById('bgPreview');
-                        const container = document.getElementById('bgPreviewContainer');
-                        preview.src = base64;
-                        container.classList.add('show');
-                        statusEl.textContent = '✅ Background uploaded successfully! (9:16)';
-                        statusEl.className = 'bg-status success';
-                        showToast('✅ Background uploaded!', 'success');
-                    } else {
-                        statusEl.textContent = '❌ Failed to upload';
-                        statusEl.className = 'bg-status error';
-                        showToast('❌ Failed to upload', 'error');
-                    }
-                } catch (err) {
-                    statusEl.textContent = '❌ Server error';
-                    statusEl.className = 'bg-status error';
-                    showToast('❌ Server error', 'error');
-                }
-            });
         }
 
         async function removeBackground() {
@@ -823,14 +849,31 @@
                 if (!r) return;
                 const data = await r.json();
                 if (data.success) {
-                    document.getElementById('bgPreviewContainer').classList.remove('show');
-                    document.getElementById('bgStatus').textContent = 'Background removed';
-                    document.getElementById('bgStatus').className = 'bg-status';
+                    document.getElementById('bgImageUrl').value = '';
+                    document.getElementById('bgImagePreview').classList.remove('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background removed';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
                     showToast('✅ Background removed', 'success');
                 }
-            } catch (err) {
+            } catch (e) {
                 showToast('❌ Failed to remove background', 'error');
             }
+        }
+
+        async function loadBackground() {
+            try {
+                const r = await fetch('/api/settings');
+                const data = await r.json();
+                if (data && data.background) {
+                    document.getElementById('bgImageUrl').value = data.background;
+                    const preview = document.getElementById('bgImagePreview');
+                    const img = document.getElementById('bgPreviewImg');
+                    img.src = data.background;
+                    preview.classList.add('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
+                }
+            } catch (e) {}
         }
 
         // ===== CHANGE PASSCODE =====
@@ -977,11 +1020,19 @@
             }
         }
 
-        // ===== CREATE LINK =====
+        // ===== CREATE LINK (WITH POPUP SETTINGS) =====
         async function createLink() {
             const name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
             if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
+            
+            const popupSettings = {
+                image: document.getElementById('popupImageUrl').value.trim() || null,
+                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
+                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
+                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
+            };
+
             try {
                 const r = await secureFetch('/api/links', {
                     method: 'POST',
@@ -991,7 +1042,8 @@
                         claim: document.getElementById('claim').value.trim(),
                         buttonText: document.getElementById('buttonText').value.trim(),
                         headline: document.getElementById('headline').value.trim(),
-                        expiryDate: selectedExpiry
+                        expiryDate: selectedExpiry,
+                        popupSettings: popupSettings
                     })
                 });
                 if (!r) return;
@@ -1003,6 +1055,12 @@
                 document.getElementById('claim').value = '#';
                 document.getElementById('buttonText').value = 'Claim Now';
                 document.getElementById('headline').value = '🎬 Watch Video';
+                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
+                document.getElementById('popupButtonText').value = 'Claim Now';
+                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
+                document.getElementById('popupImageUrl').value = '';
+                document.getElementById('popupImagePreview').classList.remove('show');
+                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Image Preview</span>';
                 document.getElementById('schedulePreset').value = '';
                 document.getElementById('customExpiry').style.display = 'none';
                 document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
@@ -1306,7 +1364,7 @@
             } catch (e) { showToast('❌ Failed to reject', 'error'); }
         }
 
-        // ==================== STATS DASHBOARD - NEW ====================
+        // ==================== STATS DASHBOARD ====================
         async function loadStats() {
             try {
                 const response = await secureFetch('/api/all-stats');
