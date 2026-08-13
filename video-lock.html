@@ -90,15 +90,25 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             animation: fadeIn 1s ease; letter-spacing: 0.5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
+        .headline.show { opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ===== CLAIM BUTTON - SIMPLE & ALWAYS VISIBLE ===== */
+        /* ===== CLAIM BUTTON - SIMPLE ===== */
         .claim-btn-wrapper {
             display: flex;
             justify-content: center;
             margin-top: 10px;
             position: relative;
-            z-index: 999999;
+            z-index: 999999 !important;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: auto !important;
+        }
+        .claim-btn-wrapper.show {
+            opacity: 1;
         }
 
         .claim-btn {
@@ -107,7 +117,7 @@
             border-radius: 50px;
             font-size: 20px;
             font-weight: 800;
-            cursor: pointer;
+            cursor: pointer !important;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
             transition: all 0.3s ease;
@@ -118,8 +128,8 @@
             width: 100%;
             max-width: 400px;
             -webkit-tap-highlight-color: transparent;
-            z-index: 999999;
-            pointer-events: auto;
+            z-index: 999999 !important;
+            pointer-events: auto !important;
             opacity: 1 !important;
             visibility: visible !important;
             display: block !important;
@@ -143,16 +153,30 @@
 
         /* ===== POPUP ===== */
         .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
         }
-        .popup-overlay.show { opacity: 1; visibility: visible; }
-        .popup-overlay.hidden { opacity: 0; visibility: hidden; }
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .popup-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
 
         .popup-card {
             background: rgba(20, 20, 50, 0.95);
@@ -165,7 +189,8 @@
             border: 2px solid rgba(102, 126, 234, 0.4);
             box-shadow: 0 0 80px rgba(102, 126, 234, 0.2), inset 0 0 80px rgba(102, 126, 234, 0.05);
             animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative; overflow: hidden;
+            position: relative;
+            overflow: hidden;
             cursor: pointer;
         }
         .popup-card::before {
@@ -207,8 +232,8 @@
             width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700;
             background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
             position: relative; box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
-            cursor: default !important;
-            pointer-events: none !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
             opacity: 1;
             text-align: center;
             display: block;
@@ -230,7 +255,7 @@
         .confetti-piece {
             position: absolute; width: 10px; height: 14px;
             animation: confettiFall linear forwards; pointer-events: none; opacity: 1;
-            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            will-change: transform, opacity; backface-visibility: hidden;
         }
         @keyframes confettiFall {
             0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
@@ -244,7 +269,7 @@
             position: absolute; width: 8px; height: 12px;
             animation: confettiBurst 1.5s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
             pointer-events: none; opacity: 0;
-            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            will-change: transform, opacity; backface-visibility: hidden;
         }
         @keyframes confettiBurst {
             0% { opacity: 1; transform: translate(0, 0) scale(0.3) rotate(0deg); }
@@ -293,7 +318,6 @@
             font-size: 13px; opacity: 0; transform: translateY(15px) scale(0.95);
             animation: fadeInUpChat 0.4s ease forwards;
             transition: opacity 0.6s ease, transform 0.6s ease;
-            will-change: transform, opacity;
         }
         @keyframes fadeInUpChat {
             from { opacity: 0; transform: translateY(15px) scale(0.95); }
@@ -418,8 +442,8 @@
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
-            <!-- ===== CLAIM BUTTON - ALWAYS VISIBLE ===== -->
-            <div class="claim-btn-wrapper">
+            <!-- ===== CLAIM BUTTON ===== -->
+            <div class="claim-btn-wrapper" id="claimBtnWrapper">
                 <button class="claim-btn" id="mainClaimBtn">🎁 Claim Now</button>
             </div>
         </div>
@@ -451,8 +475,8 @@
                 <img id="popupImg" style="display:none;" alt="Popup Image">
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap anywhere to unlock your reward</div>
-            <div class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</div>
+            <div class="popup-sub" id="popupSub">Tap below to unlock your reward</div>
+            <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
         </div>
     </div>
 
@@ -489,11 +513,11 @@
         videoUrl = fixYouTubeUrl(videoUrl);
 
         // ==================== STATE ====================
-        var isUnlocked = false;
         var isPopupClaimed = false;
         var isCelebrationActive = false;
         var isVideoPlaying = false;
         var videoPlayCount = 0;
+        var isUnlocked = false;
         var backPressCount = 0;
         var isExiting = false;
         var pageLoadTime = Date.now();
@@ -538,514 +562,4 @@
         window.addEventListener('popstate', function() { handleBackPress(); });
 
         document.addEventListener('keydown', function(e) {
-            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
-                e.preventDefault(); e.stopPropagation();
-                if (!isUnlocked) handleBackPress();
-                else { isExiting = true; document.body.innerHTML = ''; window.location.href = 'about:blank'; }
-                return false;
-            }
-        }, true);
-
-        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
-
-        var touchStartX = 0;
-        document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-        document.addEventListener('touchend', function(e) {
-            var diff = touchStartX - e.changedTouches[0].screenX;
-            if (diff > 80) { e.preventDefault(); if (!isUnlocked) handleBackPress(); return false; }
-        }, { passive: false });
-
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden && !isUnlocked) { setTimeout(function() { window.focus(); }, 50); handleBackPress(); }
-        });
-
-        // ==================== SOUND ====================
-        function toggleSound() {
-            isSoundEnabled = !isSoundEnabled;
-            document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
-        }
-
-        function playCelebrationSound() {
-            if (!isSoundEnabled) return;
-            try {
-                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                var notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
-                notes.forEach(function(freq, index) {
-                    setTimeout(function() {
-                        var osc = audioCtx.createOscillator();
-                        var gain = audioCtx.createGain();
-                        osc.connect(gain); gain.connect(audioCtx.destination);
-                        osc.frequency.value = freq; osc.type = 'sine';
-                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.35);
-                    }, index * 120);
-                });
-                setTimeout(function() {
-                    var freqs = [523.25, 659.25, 783.99, 1046.50];
-                    freqs.forEach(function(freq, i) {
-                        setTimeout(function() {
-                            var osc = audioCtx.createOscillator();
-                            var gain = audioCtx.createGain();
-                            osc.connect(gain); gain.connect(audioCtx.destination);
-                            osc.frequency.value = freq; osc.type = 'sine';
-                            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.6);
-                        }, i * 80);
-                    });
-                }, 550);
-            } catch(e) {}
-        }
-
-        // ==================== CONFETTI ====================
-        function triggerCelebration() {
-            if (isCelebrationActive) return;
-            isCelebrationActive = true;
-            var container = document.getElementById('confettiContainer');
-            container.innerHTML = ''; container.classList.add('active');
-            playCelebrationSound();
-
-            var colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
-
-            for (var i = 0; i < 60; i++) {
-                var el = document.createElement('div');
-                el.className = 'confetti-burst-piece';
-                var color = colors[Math.floor(Math.random() * colors.length)];
-                var w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
-                el.style.width = w + 'px'; el.style.height = h + 'px';
-                el.style.background = color;
-                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                var angle = Math.random() * 2 * Math.PI;
-                var dist = 150 + Math.random() * 350;
-                var tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
-                var tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
-                var tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
-                el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
-                el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
-                el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
-                el.style.left = (50 + Math.random() * 6 - 3) + '%';
-                el.style.top = (45 + Math.random() * 10 - 5) + '%';
-                el.style.animationDelay = (Math.random() * 0.15) + 's';
-                el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-                if (Math.random() > 0.7) el.style.boxShadow = '0 0 8px ' + color;
-                container.appendChild(el);
-            }
-
-            for (var j = 0; j < 80; j++) {
-                var el2 = document.createElement('div');
-                el2.className = 'confetti-piece';
-                var color2 = colors[Math.floor(Math.random() * colors.length)];
-                var w2 = 6 + Math.random() * 12, h2 = 8 + Math.random() * 14;
-                el2.style.width = w2 + 'px'; el2.style.height = h2 + 'px';
-                el2.style.background = color2;
-                el2.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                el2.style.left = Math.random() * 100 + '%';
-                el2.style.top = '-10%';
-                el2.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-                el2.style.animationDelay = (Math.random() * 1.5) + 's';
-                el2.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-                if (Math.random() > 0.8) el2.style.boxShadow = '0 0 10px ' + color2;
-                container.appendChild(el2);
-            }
-
-            setTimeout(function() {
-                for (var k = 0; k < 35; k++) {
-                    var el3 = document.createElement('div');
-                    el3.className = 'confetti-burst-piece';
-                    var color3 = colors[Math.floor(Math.random() * colors.length)];
-                    var w3 = 5 + Math.random() * 10, h3 = 7 + Math.random() * 12;
-                    el3.style.width = w3 + 'px'; el3.style.height = h3 + 'px';
-                    el3.style.background = color3;
-                    el3.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                    var angle3 = Math.random() * 2 * Math.PI;
-                    var dist3 = 120 + Math.random() * 300;
-                    var tx3 = Math.cos(angle3) * dist3, ty3 = Math.sin(angle3) * dist3 - 80;
-                    var tx4 = Math.cos(angle3 + 0.5) * (dist3 * 0.6), ty4 = Math.sin(angle3 + 0.5) * (dist3 * 0.6) - 40;
-                    var tx5 = Math.cos(angle3 + 0.8) * (dist3 * 0.25), ty5 = Math.sin(angle3 + 0.8) * (dist3 * 0.25) - 15;
-                    el3.style.setProperty('--tx', tx3 + 'px'); el3.style.setProperty('--ty', ty3 + 'px');
-                    el3.style.setProperty('--tx2', tx4 + 'px'); el3.style.setProperty('--ty2', ty4 + 'px');
-                    el3.style.setProperty('--tx3', tx5 + 'px'); el3.style.setProperty('--ty3', ty5 + 'px');
-                    el3.style.left = (20 + Math.random() * 60) + '%';
-                    el3.style.top = (20 + Math.random() * 60) + '%';
-                    el3.style.animationDelay = (Math.random() * 0.15) + 's';
-                    el3.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-                    if (Math.random() > 0.7) el3.style.boxShadow = '0 0 8px ' + color3;
-                    container.appendChild(el3);
-                }
-            }, 350);
-
-            setTimeout(function() {
-                container.innerHTML = '';
-                container.classList.remove('active');
-                isCelebrationActive = false;
-            }, 1800);
-        }
-
-        // ==================== UNLOCK ====================
-        function unlockAndPlay() {
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-            trackClaim();
-            hidePopup();
-            triggerCelebration();
-            setTimeout(function() {
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(function() {
-                    var iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    var video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(function() {});
-                }, 500);
-            }, 200);
-            isUnlocked = true;
-        }
-
-        // ==================== POPUP ====================
-        document.getElementById('popupCard').addEventListener('click', function(e) {
-            if (!isPopupClaimed) { unlockAndPlay(); }
-        });
-        document.getElementById('popupCard').addEventListener('touchstart', function(e) {
-            if (!isPopupClaimed) { unlockAndPlay(); }
-        }, { passive: true });
-
-        async function loadPopupData() {
-            try {
-                var response = await fetch('/api/link/' + linkId);
-                if (response.ok) {
-                    var data = await response.json();
-                    var popup = data.popupSettings || {};
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    if (popup.image) {
-                        var img = document.getElementById('popupImg');
-                        var placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
-                    }
-                    return;
-                }
-                var settingsRes = await fetch('/api/settings');
-                if (settingsRes.ok) {
-                    var settings = await settingsRes.json();
-                    var popup = settings.popupSettings || {};
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    if (popup.image) {
-                        var img = document.getElementById('popupImg');
-                        var placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
-                    }
-                }
-            } catch (e) { console.log('⚠️ Could not load popup data, using defaults'); }
-        }
-
-        function showPopup() {
-            var overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hidePopup() {
-            var overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('show');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        // ============================================================
-        // ===== MAIN CLAIM BUTTON - SIMPLE & ALWAYS WORKING =====
-        // ============================================================
-        function mainClaimHandler(e) {
-            console.log('✅ MAIN CLAIM BUTTON CLICKED!');
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-
-            // Ripple effect
-            var btn = document.getElementById('mainClaimBtn');
-            var rect = btn.getBoundingClientRect();
-            var ripple = document.createElement('span');
-            ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.4);width:60px;height:60px;transform:scale(0);animation:rippleAnim 0.6s linear;pointer-events:none;';
-            var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            var y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ripple.style.left = (x - 30) + 'px';
-            ripple.style.top = (y - 30) + 'px';
-            btn.appendChild(ripple);
-            setTimeout(function() { ripple.remove(); }, 600);
-
-            // Add ripple keyframes if not exists
-            if (!document.getElementById('rippleStyle')) {
-                var style = document.createElement('style');
-                style.id = 'rippleStyle';
-                style.textContent = '@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }';
-                document.head.appendChild(style);
-            }
-
-            trackClaim();
-            triggerCelebration();
-            hidePopup();
-
-            setTimeout(function() {
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(function() {
-                    var iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    var video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(function() {});
-                }, 500);
-            }, 200);
-
-            isUnlocked = true;
-            console.log('🔓 Unlocked via main claim button');
-        }
-
-        // ===== DIRECT BUTTON BINDING =====
-        var mainBtn = document.getElementById('mainClaimBtn');
-        mainBtn.addEventListener('click', mainClaimHandler);
-        mainBtn.addEventListener('touchstart', function(e) {
-            mainClaimHandler(e);
-        }, { passive: false });
-
-        // ============================================================
-
-        // ==================== VIDEO ====================
-        function forcePlayVideo(iframe) {
-            try {
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
-            } catch(e) {
-                setTimeout(function() {
-                    try {
-                        iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                    } catch(e2) {}
-                }, 300);
-            }
-        }
-
-        function loadVideo() {
-            var container = document.getElementById('videoPlayer');
-            container.innerHTML = '';
-            var ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-            if (ytId) {
-                var videoId = ytId[1];
-                var iframe = document.createElement('iframe');
-                iframe.id = 'ytPlayer';
-                iframe.src = 'https://www.youtube.com/embed/' + videoId +
-                    '?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId +
-                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                container.appendChild(iframe);
-                iframe.onload = function() {
-                    forcePlayVideo(iframe);
-                    setTimeout(function() { forcePlayVideo(iframe); }, 300);
-                    setTimeout(function() { forcePlayVideo(iframe); }, 600);
-                    trackVideoPlay();
-                };
-                var attempts = 0;
-                var interval = setInterval(function() {
-                    if (attempts > 15) { clearInterval(interval); return; }
-                    forcePlayVideo(iframe);
-                    attempts++;
-                }, 1500);
-                document.addEventListener('visibilitychange', function() {
-                    if (!document.hidden && !isVideoPlaying) forcePlayVideo(iframe);
-                });
-                setTimeout(function() { trackVideoPlay(); }, 3000);
-                return;
-            }
-
-            var video = document.createElement('video');
-            video.muted = false;
-            video.playsInline = true;
-            video.webkitPlaysInline = true;
-            video.autoplay = true;
-            video.loop = true;
-            video.controls = true;
-            video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
-            var source = document.createElement('source');
-            source.src = videoUrl;
-            source.type = videoUrl.match(/\.mp4/i) ? 'video/mp4' : videoUrl.match(/\.webm/i) ? 'video/webm' : videoUrl.match(/\.ogg/i) ? 'video/ogg' : 'video/mp4';
-            video.appendChild(source);
-            video.onerror = function() {
-                var iframe = document.createElement('iframe');
-                iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                container.innerHTML = '';
-                container.appendChild(iframe);
-            };
-            container.appendChild(video);
-            video.onloadedmetadata = function() {
-                video.play().then(function() { trackVideoPlay(); }).catch(function() {
-                    var playOnInteraction = function() {
-                        video.play().then(function() { trackVideoPlay(); }).catch(function() {});
-                        document.removeEventListener('click', playOnInteraction);
-                        document.removeEventListener('touchstart', playOnInteraction);
-                    };
-                    document.addEventListener('click', playOnInteraction, { once: true });
-                    document.addEventListener('touchstart', playOnInteraction, { once: true });
-                });
-            };
-            video.addEventListener('pause', function() { if (!video.ended) video.play().catch(function() {}); });
-            if (video.readyState >= 2) { video.play().then(function() { trackVideoPlay(); }).catch(function() {}); }
-            var retryCount = 0;
-            var retryInterval = setInterval(function() {
-                if (retryCount < 10 && video.paused) {
-                    video.play().then(function() { trackVideoPlay(); clearInterval(retryInterval); }).catch(function() {});
-                } else if (retryCount >= 10) { clearInterval(retryInterval); }
-                retryCount++;
-            }, 1500);
-        }
-
-        // ==================== TRACK CLAIM ====================
-        async function trackClaim() {
-            try {
-                var response = await fetch('/api/track-claim/' + linkId, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                if (response.ok) console.log('✅ Claim tracked successfully');
-            } catch (e) {}
-        }
-
-        // ==================== EMOJI PICKER ====================
-        function toggleEmojiPicker() {
-            document.getElementById('emojiList').classList.toggle('open');
-        }
-        document.addEventListener('click', function(e) {
-            var picker = document.getElementById('emojiPickerBtn');
-            if (!picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
-        });
-
-        // ==================== FLYING REACTIONS ====================
-        var flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
-        function createFlyingReaction(emoji) {
-            var emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
-            var el = document.createElement('div');
-            el.className = 'flying-reaction';
-            el.textContent = emojiToUse;
-            el.style.left = (10 + Math.random() * 80) + '%';
-            el.style.top = (55 + Math.random() * 35) + '%';
-            el.style.fontSize = (24 + Math.random() * 32) + 'px';
-            var type = Math.floor(Math.random() * 3) + 1;
-            el.classList.add('type-' + type);
-            document.body.appendChild(el);
-            setTimeout(function() { if (el.parentNode) el.remove(); }, 3500);
-        }
-
-        // ==================== CHAT SYSTEM ====================
-        var users = [
-            { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
-            { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
-            { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' }, { name: 'DarkKnight', emoji: '🦇' },
-            { name: 'StarGamer', emoji: '⭐' }, { name: 'ThunderX', emoji: '⚡' }, { name: 'IceQueen', emoji: '❄️' },
-            { name: 'FireLord', emoji: '🔥' }, { name: 'CryptoKing', emoji: '💰' }, { name: 'GhostRider', emoji: '👻' },
-            { name: 'Venom', emoji: '🕷️' }, { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
-            { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
-        ];
-        var messages = [
-            'Thanks bhai!', 'Redeem code mil gaya!', '1000₹ ka redeem code!',
-            'Best website ever!', 'Bro thanks a lot!', 'Redeem code working!',
-            'Amazing!', 'Got 500₹!', 'Love this!', 'Best app!',
-            'Thank you!', 'Working perfectly!', 'Awesome!', 'Great!',
-            'Superb!', 'Thanks team!', 'Nice!', 'Love it!', 'Working!', 'Super!'
-        ];
-        var chatContainer = document.getElementById('chatMessages');
-        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-        function getRandomTime() {
-            var m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
-            var s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
-            return m + ':' + s;
-        }
-
-        function addChat() {
-            var user = getRandom(users), msg = getRandom(messages), time = getRandomTime();
-            var el = document.createElement('div');
-            el.className = 'chat-message';
-            el.innerHTML = '<span class="avatar">' + user.emoji + '</span><span class="username">' + user.name + '</span><span class="text">' + msg + '</span><span class="time">' + time + '</span>';
-            chatContainer.appendChild(el);
-            var container = document.getElementById('chatContainer');
-            container.scrollTop = container.scrollHeight;
-            while (chatContainer.children.length > 25) chatContainer.removeChild(chatContainer.firstChild);
-            applyFadeEffect();
-            if (Math.random() > 0.5) setTimeout(function() { createFlyingReaction(); }, 300);
-        }
-
-        function applyFadeEffect() {
-            var messages = chatContainer.querySelectorAll('.chat-message');
-            var total = messages.length;
-            messages.forEach(function(msg, index) {
-                if (index >= total - 3) {
-                    msg.classList.remove('fade-out');
-                    msg.style.opacity = '1';
-                    msg.style.transform = 'translateY(0) scale(1)';
-                    msg.style.animation = 'none';
-                } else if (index >= total - 8) {
-                    msg.classList.remove('fade-out');
-                    msg.style.opacity = '0.8';
-                    msg.style.transform = 'translateY(0) scale(0.98)';
-                } else {
-                    msg.classList.add('fade-out');
-                }
-            });
-        }
-
-        function triggerReaction(emoji, event) {
-            document.getElementById('emojiList').classList.remove('open');
-            var rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
-            var x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
-            var y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
-            var el = document.createElement('div');
-            el.className = 'flying-reaction';
-            el.textContent = emoji;
-            el.style.left = x + '%';
-            el.style.top = y + '%';
-            el.style.fontSize = (26 + Math.random() * 28) + 'px';
-            var type = Math.floor(Math.random() * 3) + 1;
-            el.classList.add('type-' + type);
-            document.body.appendChild(el);
-            setTimeout(function() { if (el.parentNode) el.remove(); }, 3500);
-            setTimeout(function() { createFlyingReaction(); }, 200);
-        }
-        window.triggerReaction = triggerReaction;
-
-        setInterval(function() { if (Math.random() > 0.6) createFlyingReaction(); }, 3000);
-        for (var i = 0; i < 10; i++) setTimeout(addChat, i * 120);
-        setInterval(function() { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
-
-        // ==================== KEEP AWAKE ====================
-        async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
-        keepAwake();
-
-        // ==================== FULLSCREEN ====================
-        document.getElementById('videoContainer').addEventListener('click', function() {
-            var elem = document.documentElement;
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (elem.requestFullscreen) elem.requestFullscreen().catch(function() {});
-                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-            }
-        });
-
-        // ==================== INIT ====================
-        async function init() {
-            await loadPopupData();
-            setTimeout(function() { showPopup(); }, 500);
-        }
-        init();
-
-        console.log('🎬 Video URL:', videoUrl);
-        console.log('🎁 Claim URL:', claimUrl);
-        console.log('🔘 Button Text:', buttonText);
-        console.log('✅ MAIN CLAIM BUTTON: SIMPLE & ALWAYS VISIBLE');
-    </script>
-</body>
-</html>
+            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey &&
