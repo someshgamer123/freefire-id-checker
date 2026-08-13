@@ -20,6 +20,7 @@
             padding: 12px;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: none;
         }
 
         .bg-glow {
@@ -82,10 +83,29 @@
         }
         @keyframes borderGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
+        /* ===== VIDEO OVERLAY - LOCK SYSTEM ===== */
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             background: transparent;
             pointer-events: none !important;
+        }
+
+        /* ===== SCREEN LOCK OVERLAY ===== */
+        .screen-lock {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+            background: transparent;
+            display: none;
+            pointer-events: none;
+        }
+        .screen-lock.active {
+            display: block;
+            pointer-events: all;
+            cursor: default;
         }
 
         .headline {
@@ -187,9 +207,11 @@
             text-align: center; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
         .popup-card .popup-sub {
             text-align: center; font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
 
         .popup-card .popup-claim-btn {
@@ -198,6 +220,7 @@
             transition: all 0.3s ease; position: relative; box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             z-index: 10;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
         .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(102, 126, 234, 0.4); }
         .popup-card .popup-claim-btn:active { transform: scale(0.97); }
@@ -293,6 +316,7 @@
             width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 13px; flex-shrink: 0; background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff; font-weight: 700; text-transform: uppercase;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
         }
         .chat-message .username { font-weight: 600; color: rgba(255, 255, 255, 0.9); font-size: 12px; white-space: nowrap; min-width: 50px; }
         .chat-message .text { color: rgba(255, 255, 255, 0.75); font-size: 12px; font-weight: 300; word-break: break-word; flex: 1; }
@@ -307,6 +331,7 @@
             border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
             transition: 0.3s; display: flex; align-items: center; justify-content: center;
             color: #fff; backdrop-filter: blur(10px); position: relative;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
         }
         .emoji-picker-btn:hover { background: rgba(102, 126, 234, 0.4); transform: scale(1.1); }
         .emoji-picker-btn .emoji-list {
@@ -318,6 +343,7 @@
         .emoji-picker-btn .emoji-list.open { display: flex; }
         .emoji-picker-btn .emoji-list span {
             font-size: 24px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: 0.3s;
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
         }
         .emoji-picker-btn .emoji-list span:hover { background: rgba(102, 126, 234, 0.3); transform: scale(1.2); }
 
@@ -340,34 +366,6 @@
         .flying-reaction.type-1 { animation-duration: 2.5s; }
         .flying-reaction.type-2 { animation-duration: 3.2s; }
         .flying-reaction.type-3 { animation-duration: 2.8s; }
-
-        /* ===== EMOJI FIX - Better emoji rendering ===== */
-        .emoji-text {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
-        }
-
-        /* Chat message emoji fix */
-        .chat-message .avatar {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
-        }
-        .chat-message .username {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        }
-
-        /* Emoji picker fix */
-        .emoji-picker-btn .emoji-list span {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
-        }
-
-        /* Popup emoji fix */
-        .popup-title, .popup-sub, .popup-claim-btn {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
-        }
-
-        /* Headline emoji fix */
-        .headline {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
-        }
 
         @media (max-width: 600px) {
             body { padding: 8px; }
@@ -424,6 +422,9 @@
     </style>
 </head>
 <body>
+
+    <!-- ===== SCREEN LOCK OVERLAY ===== -->
+    <div class="screen-lock" id="screenLock"></div>
 
     <div class="bg-glow"></div>
 
@@ -484,9 +485,6 @@
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
 
-        console.log('🔗 Claim URL from params:', claimUrl);
-        console.log('🔗 Claim URL from localStorage:', localStorage.getItem('claimUrl'));
-
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
@@ -507,11 +505,39 @@
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
-        let isPopupClickProcessed = false; // FIX: Prevent double confetti on popup click
+        let isPopupClickProcessed = false;
+        let isRedirecting = false;
 
-        if (screen.orientation && screen.orientation.lock) { 
-            screen.orientation.lock('portrait').catch(() => {}); 
+        // ==================== SCREEN LOCK ====================
+        function activateScreenLock() {
+            const lock = document.getElementById('screenLock');
+            lock.classList.add('active');
+            // Block all touch/click events on the page except video area
+            document.body.style.touchAction = 'none';
         }
+
+        function deactivateScreenLock() {
+            const lock = document.getElementById('screenLock');
+            lock.classList.remove('active');
+            document.body.style.touchAction = 'auto';
+        }
+
+        // Block all interactions when screen is locked
+        document.addEventListener('touchstart', function(e) {
+            const lock = document.getElementById('screenLock');
+            if (lock.classList.contains('active')) {
+                e.preventDefault();
+                return false;
+            }
+        }, { passive: false });
+
+        document.addEventListener('click', function(e) {
+            const lock = document.getElementById('screenLock');
+            if (lock.classList.contains('active')) {
+                e.preventDefault();
+                return false;
+            }
+        });
 
         // ==================== OVERLAY ====================
         // No JS events on overlay - only CSS pointer-events: none
@@ -697,6 +723,8 @@
             overlay.classList.remove('hidden');
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
+            // Activate screen lock when popup shows
+            activateScreenLock();
         }
 
         function hidePopup() {
@@ -704,6 +732,8 @@
             overlay.classList.remove('show');
             overlay.classList.add('hidden');
             document.body.style.overflow = '';
+            // Deactivate screen lock when popup hides
+            deactivateScreenLock();
         }
 
         // ==================== UNLOCK FUNCTIONS ====================
@@ -712,7 +742,12 @@
             isPopupClaimed = true;
             trackClaim();
             hidePopup();
-            triggerCelebration();
+            
+            // Show confetti only once (on any click)
+            if (!isCelebrationActive) {
+                triggerCelebration();
+            }
+            
             setTimeout(() => {
                 document.getElementById('headline').classList.add('show');
                 document.getElementById('claimBtnWrapper').classList.add('show');
@@ -728,24 +763,28 @@
             isUnlocked = true;
         }
 
-        // ===== FIXED: Instant Redirect - No Delay, Multiple Clicks Allowed =====
         function handleClaimClick() {
-            console.log('🎯 Claim button clicked!');
-            console.log('📌 claimUrl value:', claimUrl);
+            if (isRedirecting) return;
+            isRedirecting = true;
             
             if (!isPopupClaimed) {
                 isPopupClaimed = true;
                 trackClaim();
-                triggerCelebration();
+                // Show confetti only once
+                if (!isCelebrationActive) {
+                    triggerCelebration();
+                }
                 isUnlocked = true;
             }
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                console.log('🔗 INSTANT REDIRECT to:', claimUrl);
-                window.location.replace(claimUrl);
+                setTimeout(() => {
+                    window.location.replace(claimUrl);
+                }, 500);
             } else {
-                console.log('⚠️ No valid claim URL');
-                alert('🎉 You have been unlocked!');
+                setTimeout(() => {
+                    alert('🎉 You have been unlocked!');
+                }, 500);
             }
         }
 
@@ -766,44 +805,41 @@
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             if (isPopupClaimed) return;
-            isPopupClickProcessed = true; // FIX: Prevent double confetti
+            if (isPopupClickProcessed) return;
+            isPopupClickProcessed = true;
             addRipple(e, this);
-            triggerCelebration();
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 200);
+            unlockAndPlay();
         });
         document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
             if (isPopupClaimed) return;
+            if (isPopupClickProcessed) return;
             e.stopPropagation();
-            isPopupClickProcessed = true; // FIX: Prevent double confetti
+            isPopupClickProcessed = true;
             addRipple(e, this);
-            triggerCelebration();
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 200);
+            unlockAndPlay();
         }, { passive: true });
 
         // ===== POPUP CARD CLICK - FIXED: Only one confetti =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) return;
             if (isPopupClaimed) return;
-            
-            // FIX: Check if already processed (prevent double confetti)
             if (isPopupClickProcessed) return;
             isPopupClickProcessed = true;
             
-            triggerCelebration();
+            // Show confetti only once
+            if (!isCelebrationActive) {
+                triggerCelebration();
+            }
+            
             const sub = document.getElementById('popupSub');
             sub.textContent = '🎉 Loading...';
             sub.style.color = '#667eea';
             
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 2000);
+            // Unlock immediately with confetti
+            unlockAndPlay();
         });
 
-        // ===== MAIN CLAIM BUTTON - INSTANT REDIRECT =====
+        // ===== MAIN CLAIM BUTTON =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             addRipple(e, this);
@@ -1046,17 +1082,17 @@
 
         async function init() {
             await loadPopupData();
-            // FIX: Popup now shows after 2.5 seconds (was 500ms)
-            setTimeout(() => showPopup(), 2500);
+            // FIX: Popup shows INSTANTLY (0ms delay) after UID verified
+            showPopup();
         }
         init();
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ INSTANT REDIRECT: Click = Instant redirect, no delay');
-        console.log('✅ POPUP DELAY: 2.5 seconds (was 0.5s)');
-        console.log('✅ DOUBLE CONFETTI FIXED: Only one confetti on popup click');
+        console.log('✅ INSTANT POPUP: Shows immediately after UID verified');
+        console.log('✅ SINGLE CONFETTI: Only one confetti effect on any click');
+        console.log('✅ SCREEN LOCK: Active when popup shows, deactivated after unlock');
         console.log('✅ EMOJI FIXED: Proper emoji rendering with font-family');
     </script>
 </body>
