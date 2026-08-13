@@ -67,7 +67,6 @@ let dbLastRead = 0;
 
 function readDB() {
     try {
-        // Check if file exists
         if (!fs.existsSync(DB_FILE)) {
             console.log('📁 Creating new database...');
             const db = getDefaultDB();
@@ -96,6 +95,16 @@ function readDB() {
         if (parsed.stats.totalVisitors === undefined) parsed.stats.totalVisitors = 0;
         if (parsed.stats.totalClaims === undefined) parsed.stats.totalClaims = 0;
         
+        // Ensure popup settings
+        if (!parsed.popupSettings) {
+            parsed.popupSettings = {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            };
+        }
+        
         // Ensure all links have stats fields
         if (parsed.links) {
             parsed.links.forEach(link => {
@@ -103,6 +112,14 @@ function readDB() {
                 if (!link.dailyVisits) link.dailyVisits = {};
                 if (!link.claims) link.claims = 0;
                 if (!link.dailyClaims) link.dailyClaims = {};
+                if (!link.popupSettings) {
+                    link.popupSettings = {
+                        image: null,
+                        title: '🎁 Claim Your Reward',
+                        buttonText: 'Claim Now',
+                        subtitle: 'Tap below to unlock your reward'
+                    };
+                }
             });
         }
         
@@ -111,7 +128,6 @@ function readDB() {
         return parsed;
     } catch (e) {
         console.error('❌ Database read error:', e);
-        // Try to recover by reinitializing
         try {
             const db = getDefaultDB();
             writeDB(db);
@@ -125,7 +141,6 @@ function readDB() {
 
 function writeDB(data) {
     try {
-        // Ensure data is complete before writing
         if (!data.stats) {
             data.stats = getDefaultStats();
         }
@@ -136,13 +151,20 @@ function writeDB(data) {
         if (data.stats.totalVisitors === undefined) data.stats.totalVisitors = 0;
         if (data.stats.totalClaims === undefined) data.stats.totalClaims = 0;
         
-        // Ensure all links have stats
         if (data.links) {
             data.links.forEach(link => {
                 if (!link.visits) link.visits = 0;
                 if (!link.dailyVisits) link.dailyVisits = {};
                 if (!link.claims) link.claims = 0;
                 if (!link.dailyClaims) link.dailyClaims = {};
+                if (!link.popupSettings) {
+                    link.popupSettings = {
+                        image: null,
+                        title: '🎁 Claim Your Reward',
+                        buttonText: 'Claim Now',
+                        subtitle: 'Tap below to unlock your reward'
+                    };
+                }
             });
         }
         
@@ -178,6 +200,12 @@ function getDefaultDB() {
         links: [],
         settings: {
             background: null
+        },
+        popupSettings: {
+            image: null,
+            title: '🎁 Claim Your Reward',
+            buttonText: 'Claim Now',
+            subtitle: 'Tap below to unlock your reward'
         },
         sessions: [],
         parentLink: null,
@@ -231,7 +259,6 @@ function isUnique24hr(store, deviceId) {
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
     
-    // Clean old entries (older than 24 hours)
     for (const key in store) {
         if (store[key] && (now - store[key] > 24 * 60 * 60 * 1000)) {
             delete store[key];
@@ -443,6 +470,72 @@ app.post('/api/admin/background', authMiddleware, (req, res) => {
     }
 });
 
+// ===== UPDATE POPUP SETTINGS (ADMIN) =====
+app.post('/api/admin/popup', authMiddleware, (req, res) => {
+    try {
+        const { image, title, buttonText, subtitle, linkId } = req.body;
+        const db = readDB();
+
+        if (linkId) {
+            // Update specific link popup
+            const link = db.links.find(l => l.id === linkId);
+            if (!link) {
+                return res.status(404).json({ error: 'Link not found' });
+            }
+            if (!link.popupSettings) link.popupSettings = {};
+            if (image !== undefined) link.popupSettings.image = image;
+            if (title !== undefined) link.popupSettings.title = title;
+            if (buttonText !== undefined) link.popupSettings.buttonText = buttonText;
+            if (subtitle !== undefined) link.popupSettings.subtitle = subtitle;
+        } else {
+            // Update global popup settings
+            if (!db.popupSettings) db.popupSettings = {};
+            if (image !== undefined) db.popupSettings.image = image;
+            if (title !== undefined) db.popupSettings.title = title;
+            if (buttonText !== undefined) db.popupSettings.buttonText = buttonText;
+            if (subtitle !== undefined) db.popupSettings.subtitle = subtitle;
+        }
+
+        writeDB(db);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Popup update error:', error);
+        res.status(500).json({ error: 'Failed to update popup settings' });
+    }
+});
+
+// ===== GET POPUP SETTINGS =====
+app.get('/api/popup-settings/:linkId?', (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const db = readDB();
+
+        if (linkId) {
+            const link = db.links.find(l => l.id === linkId);
+            if (!link) {
+                return res.status(404).json({ error: 'Link not found' });
+            }
+            const settings = link.popupSettings || db.popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            };
+            return res.json(settings);
+        }
+
+        res.json(db.popupSettings || {
+            image: null,
+            title: '🎁 Claim Your Reward',
+            buttonText: 'Claim Now',
+            subtitle: 'Tap below to unlock your reward'
+        });
+    } catch (error) {
+        console.error('❌ Popup settings error:', error);
+        res.status(500).json({ error: 'Failed to fetch popup settings' });
+    }
+});
+
 // ==================== LINK ROUTES ====================
 
 // ===== GET ALL LINKS =====
@@ -486,7 +579,13 @@ app.post('/api/links', authMiddleware, (req, res) => {
             visits: 0,
             dailyVisits: {},
             claims: 0,
-            dailyClaims: {}
+            dailyClaims: {},
+            popupSettings: {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
         };
 
         db.links.push(newLink);
@@ -502,7 +601,7 @@ app.post('/api/links', authMiddleware, (req, res) => {
 app.put('/api/links/:id', authMiddleware, (req, res) => {
     try {
         const { id } = req.params;
-        const { name, video, claim, buttonText, headline, status, expiryDate } = req.body;
+        const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
         const db = readDB();
 
         const link = db.links.find(l => l.id === id);
@@ -531,6 +630,12 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
             link.status = status;
         }
         if (expiryDate !== undefined) link.expiryDate = expiryDate;
+        if (popupSettings !== undefined) {
+            link.popupSettings = {
+                ...link.popupSettings,
+                ...popupSettings
+            };
+        }
 
         writeDB(db);
         res.json(link);
@@ -592,7 +697,6 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // Check status
         if (link.status === 'suspended') {
             return res.status(403).json({ 
                 error: 'suspended',
@@ -632,23 +736,28 @@ app.get('/api/link/:id', (req, res) => {
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         
-        // Initialize stats if needed
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueVisitors) db.stats.uniqueVisitors = {};
         if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
         
-        // Track unique visitor
         if (isUnique24hr(db.stats.uniqueVisitors, deviceId)) {
             db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
             db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
             
-            // Also track per link
             link.visits = (link.visits || 0) + 1;
             if (!link.dailyVisits) link.dailyVisits = {};
             link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
             
             console.log('👤 New unique visitor:', deviceId.substring(0, 10));
         }
+        
+        // Get popup settings for this link
+        const popupSettings = link.popupSettings || db.popupSettings || {
+            image: null,
+            title: '🎁 Claim Your Reward',
+            buttonText: 'Claim Now',
+            subtitle: 'Tap below to unlock your reward'
+        };
         
         writeDB(db);
 
@@ -658,7 +767,8 @@ app.get('/api/link/:id', (req, res) => {
             claim: link.claim,
             buttonText: link.buttonText,
             headline: link.headline,
-            status: link.status
+            status: link.status,
+            popupSettings: popupSettings
         });
     } catch (error) {
         console.error('❌ Fetch link error:', error);
@@ -680,17 +790,14 @@ app.post('/api/track-claim/:linkId', (req, res) => {
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         
-        // Initialize stats if needed
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueClaims) db.stats.uniqueClaims = {};
         if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
         
-        // Track unique claim
         if (isUnique24hr(db.stats.uniqueClaims, deviceId)) {
             db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
             db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
             
-            // Also track per link
             link.claims = (link.claims || 0) + 1;
             if (!link.dailyClaims) link.dailyClaims = {};
             link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
@@ -716,7 +823,6 @@ app.get('/api/all-stats', authMiddleware, (req, res) => {
         const db = readDB();
         const today = new Date().toISOString().split('T')[0];
         
-        // Get per-link stats
         const linkStats = db.links.map(link => ({
             id: link.id,
             name: link.name,
@@ -1092,7 +1198,13 @@ app.get('/api/settings', (req, res) => {
         const db = readDB();
         res.json({
             theme: db.admin?.theme || 'light',
-            background: db.settings?.background || null
+            background: db.settings?.background || null,
+            popupSettings: db.popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch settings' });
@@ -1149,6 +1261,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('⏰ Session: 7 DAYS');
     console.log('💾 Data: Permanent storage with auto-recovery');
     console.log('📊 Stats: 24hr Unique Visitor + Claim tracking');
-    console.log('📱 Video: UNMUTED + All devices + All browsers');
+    console.log('📱 Popup: Per-link customizable');
     console.log('═══════════════════════════════════════════');
 });

@@ -227,9 +227,9 @@
             width: 100%;
             height: 100%;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -249,14 +249,14 @@
 
         .popup-card {
             background: rgba(20, 20, 50, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-radius: 28px;
             padding: 24px 20px 28px;
             max-width: 380px;
             width: 92%;
             border: 2px solid rgba(102, 126, 234, 0.4);
-            box-shadow: 0 0 60px rgba(102, 126, 234, 0.15), inset 0 0 60px rgba(102, 126, 234, 0.05);
+            box-shadow: 0 0 80px rgba(102, 126, 234, 0.2), inset 0 0 80px rgba(102, 126, 234, 0.05);
             animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative;
             overflow: hidden;
@@ -269,7 +269,7 @@
             right: -2px;
             bottom: -2px;
             border-radius: 30px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3), rgba(102, 126, 234, 0.3));
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
             z-index: -1;
             animation: borderPulse 3s ease-in-out infinite;
         }
@@ -277,16 +277,9 @@
             0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
         }
-
         @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.85) translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.85) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .popup-card .popup-image {
@@ -297,6 +290,7 @@
             background: #1a1a3a;
             border: 2px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 16px;
+            position: relative;
         }
         .popup-card .popup-image img {
             width: 100%;
@@ -311,14 +305,14 @@
             align-items: center;
             justify-content: center;
             font-size: 48px;
-            color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.15);
             background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
         }
 
         .popup-card .popup-title {
             text-align: center;
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 800;
             color: #fff;
             margin-bottom: 4px;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -345,11 +339,11 @@
             color: #fff;
             transition: all 0.3s ease;
             position: relative;
-            box-shadow: 0 0 30px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
         }
         .popup-card .popup-claim-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 0 60px rgba(102, 126, 234, 0.4);
         }
         .popup-card .popup-claim-btn:active {
             transform: scale(0.97);
@@ -692,7 +686,7 @@
             .claim-btn { padding: 12px 40px; font-size: 16px; max-width: 100%; }
             .claim-btn::before { border-radius: 40px; }
             .popup-card { padding: 18px 16px 22px; max-width: 340px; }
-            .popup-card .popup-title { font-size: 16px; }
+            .popup-card .popup-title { font-size: 17px; }
             .popup-card .popup-claim-btn { font-size: 16px; padding: 12px; }
             .chat-section { border-radius: 8px; margin-top: 2px; }
             .chat-message { padding: 5px 10px; font-size: 11px; gap: 6px; }
@@ -713,7 +707,7 @@
             .headline { font-size: 12px; }
             .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
             .popup-card { padding: 14px 12px 18px; max-width: 300px; }
-            .popup-card .popup-title { font-size: 14px; }
+            .popup-card .popup-title { font-size: 15px; }
             .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
             .popup-card .popup-sub { font-size: 11px; }
             .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
@@ -726,8 +720,8 @@
             .emoji-picker-btn { width: 32px; height: 32px; font-size: 14px; }
             .emoji-picker-btn .emoji-list { width: 120px; bottom: 42px; }
             .emoji-picker-btn .emoji-list span { font-size: 16px; }
-            .snow-particle { font-size: 20px; }
-            .celebration-particle { font-size: 26px; }
+            .snow-particle { font-size: 18px; }
+            .celebration-particle { font-size: 24px; }
         }
 
         :-webkit-full-screen .video-container { border-radius: 0; }
@@ -804,9 +798,6 @@
 
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
-        document.getElementById('popupTitle').textContent = '🎁 ' + (buttonText || 'Claim Your Reward');
-        document.getElementById('popupSub').textContent = 'Tap below to unlock your reward';
-        document.getElementById('popupClaimBtn').textContent = buttonText || '🎁 Claim Now';
 
         // ==================== FIX YOUTUBE URL ====================
         function fixYouTubeUrl(url) {
@@ -1014,7 +1005,6 @@
             const emojis = celebrationEmojis;
             const numParticles = 60;
 
-            // Random burst particles
             for (let i = 0; i < numParticles; i++) {
                 const el = document.createElement('div');
                 el.className = 'celebration-particle';
@@ -1039,7 +1029,6 @@
                 container.appendChild(el);
             }
 
-            // Snow falling after burst
             setTimeout(() => {
                 for (let i = 0; i < 40; i++) {
                     const snow = document.createElement('div');
@@ -1054,7 +1043,6 @@
                 }
             }, 400);
 
-            // Clear celebration after 5 seconds
             setTimeout(() => {
                 container.innerHTML = '';
                 container.classList.remove('active');
@@ -1062,22 +1050,27 @@
         }
 
         // ==================== POPUP SYSTEM ====================
-        let popupImageData = null;
-
-        async function loadPopupImage() {
+        async function loadPopupData() {
             try {
-                const response = await fetch('/api/settings');
-                const data = await response.json();
-                if (data && data.popupImage) {
-                    popupImageData = data.popupImage;
-                    const img = document.getElementById('popupImg');
-                    const placeholder = document.getElementById('popupPlaceholder');
-                    img.src = data.popupImage;
-                    img.style.display = 'block';
-                    placeholder.style.display = 'none';
+                const response = await fetch(`/api/link/${linkId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const popup = data.popupSettings || {};
+                    
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to unlock your reward';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image;
+                        img.style.display = 'block';
+                        placeholder.style.display = 'none';
+                    }
                 }
             } catch (e) {
-                console.log('⚠️ No popup image found');
+                console.log('⚠️ Could not load popup data');
             }
         }
 
@@ -1097,7 +1090,6 @@
 
         // ==================== POPUP CLAIM BUTTON ====================
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            // Ripple effect
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
             var rect = this.getBoundingClientRect();
@@ -1109,25 +1101,19 @@
             if (isPopupClaimed) return;
             isPopupClaimed = true;
 
-            // Track claim
             trackClaim();
 
-            // Hide popup
             hidePopup();
 
-            // Trigger celebration
             triggerCelebration();
 
-            // Show video elements after celebration
             setTimeout(() => {
                 document.getElementById('headline').classList.add('show');
                 document.getElementById('claimBtnWrapper').classList.add('show');
                 document.getElementById('chatSection').classList.add('show');
                 
-                // Load and play video
                 loadVideo();
                 
-                // Force play after loading
                 setTimeout(() => {
                     const iframe = document.getElementById('ytPlayer');
                     if (iframe) {
@@ -1203,7 +1189,6 @@
                     trackVideoPlay();
                 };
 
-                // Persistent play attempts
                 let attempts = 0;
                 const interval = setInterval(() => {
                     if (attempts > 15) {
@@ -1214,7 +1199,6 @@
                     attempts++;
                 }, 1500);
 
-                // Video play on visibility change
                 document.addEventListener('visibilitychange', function() {
                     if (!document.hidden && !isVideoPlaying) {
                         forcePlayVideo(iframe);
@@ -1225,7 +1209,6 @@
                 return;
             }
 
-            // Non-YouTube video
             console.log('🎥 Loading as video element');
             const video = document.createElement('video');
             video.muted = false;
@@ -1459,7 +1442,7 @@
             if (Math.random() > 0.6) setTimeout(addChat, 300);
         }, 1400 + Math.random() * 1000);
 
-        // ==================== MAIN CLAIM BUTTON (Hidden initially) ====================
+        // ==================== MAIN CLAIM BUTTON ====================
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -1474,7 +1457,6 @@
 
             trackClaim();
 
-            // Trigger celebration
             triggerCelebration();
 
             isUnlocked = true;
@@ -1511,15 +1493,12 @@
         });
 
         // ==================== INIT ====================
-        // Hide video elements initially
         document.getElementById('headline').classList.remove('show');
         document.getElementById('claimBtnWrapper').classList.remove('show');
         document.getElementById('chatSection').classList.remove('show');
 
-        // Load popup image
-        loadPopupImage();
+        await loadPopupData();
 
-        // Show popup after 500ms
         setTimeout(() => {
             showPopup();
         }, 500);
