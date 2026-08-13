@@ -785,9 +785,10 @@
     <div class="celebration-container" id="celebrationContainer"></div>
 
     <script>
-        // ==================== GET LINK ID ====================
+        // ==================== GET LINK ID FROM URL ====================
         const pathSegments = window.location.pathname.split('/');
         const linkId = pathSegments[pathSegments.length - 1] || 'default';
+        console.log('🔗 Link ID:', linkId);
 
         // ==================== PARAMS ====================
         const urlParams = new URLSearchParams(window.location.search);
@@ -799,8 +800,13 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
 
+        console.log('🎬 Video URL:', videoUrl);
+        console.log('🎁 Claim URL:', claimUrl);
+        console.log('🔘 Button Text:', buttonText);
+
         // ==================== FIX YOUTUBE URL ====================
         function fixYouTubeUrl(url) {
+            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
             if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
                 return 'https://youtu.be/' + videoId;
@@ -1052,10 +1058,32 @@
         // ==================== POPUP SYSTEM ====================
         async function loadPopupData() {
             try {
+                // First try to get from link API
                 const response = await fetch(`/api/link/${linkId}`);
                 if (response.ok) {
                     const data = await response.json();
                     const popup = data.popupSettings || {};
+                    
+                    // Update popup with data from server
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to unlock your reward';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image;
+                        img.style.display = 'block';
+                        placeholder.style.display = 'none';
+                    }
+                    return;
+                }
+                
+                // Fallback: Try global popup settings
+                const settingsRes = await fetch('/api/settings');
+                if (settingsRes.ok) {
+                    const settings = await settingsRes.json();
+                    const popup = settings.popupSettings || {};
                     
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
                     document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to unlock your reward';
@@ -1070,7 +1098,7 @@
                     }
                 }
             } catch (e) {
-                console.log('⚠️ Could not load popup data');
+                console.log('⚠️ Could not load popup data, using defaults');
             }
         }
 
@@ -1150,6 +1178,8 @@
 
             console.log('🎬 Loading video:', videoUrl);
 
+            // Check if it's a direct MP4 URL or YouTube
+            const isDirectVideo = videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)(\?.*)?$/i);
             const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
 
             if (ytId) {
@@ -1209,7 +1239,10 @@
                 return;
             }
 
-            console.log('🎥 Loading as video element');
+            // ===== DIRECT VIDEO FILE (MP4, etc) =====
+            console.log('🎥 Loading direct video file');
+            
+            // Create video element for direct video files
             const video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
@@ -1217,12 +1250,26 @@
             video.autoplay = true;
             video.loop = true;
             video.controls = true;
-            video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:5;background:#000;';
+            video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
             
             const source = document.createElement('source');
             source.src = videoUrl;
-            source.type = 'video/mp4';
+            source.type = videoUrl.match(/\.mp4/i) ? 'video/mp4' : 
+                          videoUrl.match(/\.webm/i) ? 'video/webm' : 
+                          videoUrl.match(/\.ogg/i) ? 'video/ogg' : 'video/mp4';
             video.appendChild(source);
+            
+            // Fallback if video fails
+            video.onerror = function() {
+                console.log('⚠️ Video failed, trying iframe fallback');
+                const iframe = document.createElement('iframe');
+                iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+                container.innerHTML = '';
+                container.appendChild(iframe);
+            };
             
             container.appendChild(video);
             
@@ -1231,22 +1278,51 @@
                 video.play().then(() => {
                     console.log('▶️ Video playing');
                     trackVideoPlay();
-                }).catch(() => {
-                    console.log('⚠️ Autoplay blocked');
-                    setTimeout(() => {
+                }).catch((err) => {
+                    console.log('⚠️ Autoplay blocked:', err);
+                    // Try again after user interaction
+                    const playOnInteraction = function() {
                         video.play().then(() => {
-                            console.log('▶️ Video playing on retry');
+                            console.log('▶️ Video playing after interaction');
                             trackVideoPlay();
                         }).catch(() => {});
-                    }, 500);
+                        document.removeEventListener('click', playOnInteraction);
+                        document.removeEventListener('touchstart', playOnInteraction);
+                    };
+                    document.addEventListener('click', playOnInteraction, { once: true });
+                    document.addEventListener('touchstart', playOnInteraction, { once: true });
                 });
             };
 
+            // Resume on pause
             video.addEventListener('pause', function() {
                 if (!video.ended) {
                     video.play().catch(() => {});
                 }
             });
+
+            // Try to play if already loaded
+            if (video.readyState >= 2) {
+                video.play().then(() => {
+                    console.log('▶️ Video playing immediately');
+                    trackVideoPlay();
+                }).catch(() => {});
+            }
+
+            // Multiple retry attempts
+            let retryCount = 0;
+            const retryInterval = setInterval(() => {
+                if (retryCount < 10 && video.paused) {
+                    video.play().then(() => {
+                        console.log('▶️ Video playing on retry interval');
+                        trackVideoPlay();
+                        clearInterval(retryInterval);
+                    }).catch(() => {});
+                } else if (retryCount >= 10) {
+                    clearInterval(retryInterval);
+                }
+                retryCount++;
+            }, 1500);
         }
 
         // ==================== TRACK CLAIM ====================
@@ -1493,15 +1569,22 @@
         });
 
         // ==================== INIT ====================
+        // Hide video elements initially
         document.getElementById('headline').classList.remove('show');
         document.getElementById('claimBtnWrapper').classList.remove('show');
         document.getElementById('chatSection').classList.remove('show');
 
-        await loadPopupData();
+        async function init() {
+            // Load popup data
+            await loadPopupData();
+            
+            // Show popup after 500ms
+            setTimeout(() => {
+                showPopup();
+            }, 500);
+        }
 
-        setTimeout(() => {
-            showPopup();
-        }, 500);
+        init();
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
