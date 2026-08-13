@@ -4,12 +4,7 @@
     <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
 
         body {
             background: #0a0a1a;
@@ -46,13 +41,7 @@
         }
 
         .top-section {
-            position: relative;
-            z-index: 1;
-            flex: 0 0 auto;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 0 6px 0;
+            position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 800px; margin: 0 auto; padding: 0 0 6px 0;
         }
 
         .video-wrapper {
@@ -80,174 +69,80 @@
             border: 2px solid rgba(102, 126, 234, 0.1);
         }
 
-        .video-container iframe,
-        .video-container video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
+        .video-container iframe, .video-container video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;
         }
-
-        .video-container iframe {
-            z-index: 5;
-        }
-
+        .video-container iframe { z-index: 5; }
         .video-container::before {
             content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
+            position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px;
             border-radius: 14px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25), rgba(102, 126, 234, 0.25));
             z-index: -1;
             animation: borderGlow 3s ease-in-out infinite;
         }
-
-        @keyframes borderGlow {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
-        }
+        @keyframes borderGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
         .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            background: transparent;
-            cursor: default;
-            touch-action: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            background: transparent; cursor: default; touch-action: none;
         }
 
         .headline {
-            text-align: center;
-            margin: 10px 0 4px;
-            font-size: 17px;
-            font-weight: 700;
+            text-align: center; margin: 10px 0 4px; font-size: 17px; font-weight: 700;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeIn 1s ease;
-            letter-spacing: 0.5px;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: fadeIn 1s ease; letter-spacing: 0.5px; opacity: 0; transition: opacity 0.5s ease;
         }
         .headline.show { opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ===== CLAIM BUTTON - ALWAYS VISIBLE ===== */
         .claim-btn-wrapper {
-            display: flex;
-            justify-content: center;
-            margin-top: 4px;
-            animation: fadeIn 1.2s ease;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            z-index: 999999;
-            position: relative;
+            display: flex; justify-content: center; margin-top: 4px; animation: fadeIn 1.2s ease;
+            opacity: 0; transition: opacity 0.5s ease;
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
         .claim-btn {
-            padding: 14px 60px;
-            border: none;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 800;
-            cursor: pointer !important;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            transition: all 0.3s ease;
-            position: relative;
-            letter-spacing: 1px;
+            padding: 14px 60px; border: none; border-radius: 50px; font-size: 18px; font-weight: 800;
+            cursor: pointer; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+            transition: all 0.3s ease; position: relative; letter-spacing: 1px;
             box-shadow: 0 0 30px rgba(102, 126, 234, 0.25);
             border: 2px solid rgba(255, 255, 255, 0.06);
-            width: 100%;
-            max-width: 400px;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            z-index: 999999 !important;
-            pointer-events: auto !important;
+            width: 100%; max-width: 400px;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-
-        .claim-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.4);
-        }
-
-        .claim-btn:active {
-            transform: scale(0.97);
-        }
-
+        .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
+        .claim-btn:active { transform: scale(0.97); }
         .claim-btn::before {
-            content: '';
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
+            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
             border-radius: 54px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
-            z-index: -1;
-            animation: btnGlow 2s ease-in-out infinite;
-            filter: blur(10px);
+            z-index: -1; animation: btnGlow 2s ease-in-out infinite; filter: blur(10px);
         }
-
-        @keyframes btnGlow {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.04); }
-        }
-
+        @keyframes btnGlow { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         .claim-btn .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0);
-            animation: rippleAnim 0.6s linear;
-            pointer-events: none;
+            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3);
+            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
         }
+        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        @keyframes rippleAnim {
-            to { transform: scale(4); opacity: 0; }
-        }
-
-        /* ===== POPUP OVERLAY ===== */
+        /* ===== ANIMATED POPUP OVERLAY ===== */
         .popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden;
             transition: opacity 0.6s ease, visibility 0.6s ease;
-            cursor: pointer;
         }
         .popup-overlay.show {
-            opacity: 1;
-            visibility: visible;
+            opacity: 1; visibility: visible;
         }
         .popup-overlay.hidden {
-            opacity: 0;
-            visibility: hidden;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
         .popup-card {
@@ -261,21 +156,14 @@
             border: 2px solid rgba(102, 126, 234, 0.4);
             box-shadow: 0 0 80px rgba(102, 126, 234, 0.2), inset 0 0 80px rgba(102, 126, 234, 0.05);
             animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
             cursor: pointer;
         }
         .popup-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
             border-radius: 30px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
-            z-index: -1;
-            animation: borderPulse 3s ease-in-out infinite;
+            z-index: -1; animation: borderPulse 3s ease-in-out infinite;
         }
         @keyframes borderPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         @keyframes popIn {
@@ -285,396 +173,170 @@
         }
 
         .popup-card .popup-image {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #1a1a3a;
-            border: 2px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 16px;
+            width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden;
+            background: #1a1a3a; border: 2px solid rgba(255, 255, 255, 0.08); margin-bottom: 16px; position: relative;
         }
         .popup-card .popup-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .popup-card .popup-image .placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: rgba(255, 255, 255, 0.15);
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 48px; color: rgba(255, 255, 255, 0.15);
             background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
         }
 
         .popup-card .popup-title {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 800;
-            color: #fff;
-            margin-bottom: 4px;
+            text-align: center; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            pointer-events: none;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
         .popup-card .popup-sub {
-            text-align: center;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-bottom: 16px;
-            pointer-events: none;
+            text-align: center; font-size: 13px; color: rgba(255, 255, 255, 0.4); margin-bottom: 16px;
         }
 
         .popup-card .popup-claim-btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 14px;
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            position: relative;
-            box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            opacity: 1;
-            text-align: center;
-            display: block;
-            margin-top: 4px;
+            width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700;
+            cursor: pointer; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+            transition: all 0.3s ease; position: relative; box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-        .popup-card .popup-claim-btn::before {
-            content: '';
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
-            z-index: -1; animation: btnGlow 2s ease-in-out infinite; filter: blur(10px);
-        }
-        .popup-card .popup-claim-btn:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
+        .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(102, 126, 234, 0.4); }
         .popup-card .popup-claim-btn:active { transform: scale(0.97); }
+        .popup-card .popup-claim-btn .ripple {
+            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3);
+            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
+        }
 
-        /* ===== CONFETTI CELEBRATION ===== */
+        /* ===== CONFETTI - 2 SECOND VERSION ===== */
         .confetti-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 999;
-            pointer-events: none;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
+            pointer-events: none; overflow: hidden;
         }
         .confetti-container.active { pointer-events: none; }
 
         .confetti-piece {
-            position: absolute;
-            width: 10px;
-            height: 14px;
-            animation: confettiFall linear forwards;
-            pointer-events: none;
-            opacity: 1;
-            will-change: transform, opacity;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+            position: absolute; width: 10px; height: 14px;
+            animation: confettiFall 2s linear forwards;
+            pointer-events: none; opacity: 0;
+            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
         }
         @keyframes confettiFall {
             0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
-            20% { opacity: 1; transform: translateY(20vh) rotate(72deg) scale(1.1); }
-            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.3); }
-            80% { opacity: 0.9; transform: translateY(80vh) rotate(288deg) scale(1.1); }
-            100% { opacity: 0; transform: translateY(110vh) rotate(360deg) scale(0.6); }
+            25% { opacity: 1; transform: translateY(25vh) rotate(90deg) scale(1.2); }
+            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.4); }
+            75% { opacity: 0.9; transform: translateY(75vh) rotate(270deg) scale(1.1); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(360deg) scale(0.5); }
         }
 
         .confetti-burst-piece {
-            position: absolute;
-            width: 8px;
-            height: 12px;
-            animation: confettiBurst 1.5s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
-            pointer-events: none;
-            opacity: 0;
-            will-change: transform, opacity;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+            position: absolute; width: 8px; height: 12px;
+            animation: confettiBurst 1.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+            pointer-events: none; opacity: 0;
+            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
         }
         @keyframes confettiBurst {
             0% { opacity: 1; transform: translate(0, 0) scale(0.3) rotate(0deg); }
-            35% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.3) rotate(180deg); }
-            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.9) rotate(300deg); }
-            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.4) rotate(400deg); }
+            40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.3) rotate(200deg); }
+            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.9) rotate(320deg); }
+            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.3) rotate(400deg); }
         }
 
         .sound-toggle {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            z-index: 1001;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: 0.3s;
-            color: #fff;
+            position: fixed; bottom: 80px; right: 20px; z-index: 1001;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+            cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; color: #fff;
         }
         .sound-toggle:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
 
         .chat-section {
-            position: relative;
-            z-index: 1;
-            flex: 1;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            min-height: 0;
-            overflow: hidden;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(5px);
-            animation: fadeInUp 1s ease;
-            margin-top: 4px;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            position: relative; z-index: 1; flex: 1; width: 100%; max-width: 800px; margin: 0 auto;
+            min-height: 0; overflow: hidden; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(5px); animation: fadeInUp 1s ease; margin-top: 4px;
+            opacity: 0; transition: opacity 0.5s ease;
         }
         .chat-section.show { opacity: 1; }
 
         .chat-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: linear-gradient(to bottom, #0a0a1a, transparent);
-            z-index: 10;
-            pointer-events: none;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40px;
+            background: linear-gradient(to bottom, #0a0a1a, transparent); z-index: 10; pointer-events: none;
         }
-
         .chat-section::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 30px;
-            background: linear-gradient(to top, #0a0a1a, transparent);
-            z-index: 10;
-            pointer-events: none;
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            background: linear-gradient(to top, #0a0a1a, transparent); z-index: 10; pointer-events: none;
         }
 
         .chat-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 8px 14px;
-            padding-top: 30px;
-            padding-bottom: 20px;
-            scroll-behavior: smooth;
+            width: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden;
+            padding: 8px 14px; padding-top: 30px; padding-bottom: 20px; scroll-behavior: smooth;
         }
-
-        .chat-messages {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            padding-bottom: 8px;
-        }
+        .chat-messages { display: flex; flex-direction: column; gap: 5px; padding-bottom: 8px; }
 
         .chat-message {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 10px;
+            display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+            background: rgba(255, 255, 255, 0.04); border-radius: 10px;
             border-left: 3px solid rgba(102, 126, 234, 0.15);
-            font-size: 13px;
-            opacity: 0;
-            transform: translateY(15px) scale(0.95);
+            font-size: 13px; opacity: 0; transform: translateY(15px) scale(0.95);
             animation: fadeInUpChat 0.4s ease forwards;
             transition: opacity 0.6s ease, transform 0.6s ease;
             will-change: transform, opacity;
         }
-
         @keyframes fadeInUpChat {
-            from {
-                opacity: 0;
-                transform: translateY(15px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
         .chat-message.fade-out {
-            opacity: 0 !important;
-            transform: translateY(-20px) scale(0.9) !important;
-            pointer-events: none;
-            transition: opacity 0.8s ease, transform 0.8s ease;
+            opacity: 0 !important; transform: translateY(-20px) scale(0.9) !important;
+            pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;
         }
-
         .chat-message .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            font-weight: 700;
-            text-transform: uppercase;
+            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0; background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; font-weight: 700; text-transform: uppercase;
         }
-
-        .chat-message .username {
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 12px;
-            white-space: nowrap;
-            min-width: 50px;
-        }
-
-        .chat-message .text {
-            color: rgba(255, 255, 255, 0.75);
-            font-size: 12px;
-            font-weight: 300;
-            word-break: break-word;
-            flex: 1;
-        }
-
-        .chat-message .time {
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 9px;
-            margin-left: 4px;
-            white-space: nowrap;
-            font-weight: 300;
-        }
+        .chat-message .username { font-weight: 600; color: rgba(255, 255, 255, 0.9); font-size: 12px; white-space: nowrap; min-width: 50px; }
+        .chat-message .text { color: rgba(255, 255, 255, 0.75); font-size: 12px; font-weight: 300; word-break: break-word; flex: 1; }
+        .chat-message .time { color: rgba(255, 255, 255, 0.2); font-size: 9px; margin-left: 4px; white-space: nowrap; font-weight: 300; }
 
         .emoji-picker-wrapper {
-            position: sticky;
-            bottom: 8px;
-            z-index: 20;
-            display: flex;
-            justify-content: flex-end;
-            padding-right: 6px;
-            margin-top: auto;
+            position: sticky; bottom: 8px; z-index: 20; display: flex; justify-content: flex-end;
+            padding-right: 6px; margin-top: auto;
         }
-
         .emoji-picker-btn {
-            background: rgba(102, 126, 234, 0.2);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            font-size: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            backdrop-filter: blur(10px);
-            position: relative;
+            background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
+            transition: 0.3s; display: flex; align-items: center; justify-content: center;
+            color: #fff; backdrop-filter: blur(10px); position: relative;
         }
-
-        .emoji-picker-btn:hover {
-            background: rgba(102, 126, 234, 0.4);
-            transform: scale(1.1);
-        }
-
+        .emoji-picker-btn:hover { background: rgba(102, 126, 234, 0.4); transform: scale(1.1); }
         .emoji-picker-btn .emoji-list {
-            position: absolute;
-            bottom: 55px;
-            right: 0;
-            background: rgba(20, 20, 40, 0.95);
-            border-radius: 12px;
-            padding: 8px;
-            display: none;
-            gap: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            flex-wrap: wrap;
-            width: 160px;
-            justify-content: center;
+            position: absolute; bottom: 55px; right: 0;
+            background: rgba(20, 20, 40, 0.95); border-radius: 12px; padding: 8px;
+            display: none; gap: 4px; border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); flex-wrap: wrap; width: 160px; justify-content: center;
         }
-
-        .emoji-picker-btn .emoji-list.open {
-            display: flex;
-        }
-
+        .emoji-picker-btn .emoji-list.open { display: flex; }
         .emoji-picker-btn .emoji-list span {
-            font-size: 24px;
-            cursor: pointer;
-            padding: 4px 6px;
-            border-radius: 6px;
-            transition: 0.3s;
+            font-size: 24px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: 0.3s;
         }
+        .emoji-picker-btn .emoji-list span:hover { background: rgba(102, 126, 234, 0.3); transform: scale(1.2); }
 
-        .emoji-picker-btn .emoji-list span:hover {
-            background: rgba(102, 126, 234, 0.3);
-            transform: scale(1.2);
-        }
-
-        ::-webkit-scrollbar {
-            width: 3px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(102, 126, 234, 0.2); border-radius: 4px; }
 
         .flying-reaction {
-            position: fixed;
-            font-size: 28px;
-            z-index: 4;
-            pointer-events: none;
+            position: fixed; font-size: 28px; z-index: 4; pointer-events: none;
             animation: flyUpSmooth 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
             will-change: transform, opacity;
         }
-
         @keyframes flyUpSmooth {
-            0% {
-                opacity: 0;
-                transform: translateY(0) scale(0.3) rotate(0deg);
-            }
-            15% {
-                opacity: 1;
-                transform: translateY(-30px) scale(1.2) rotate(8deg);
-            }
-            40% {
-                opacity: 1;
-                transform: translateY(-100px) scale(1.0) rotate(-5deg);
-            }
-            70% {
-                opacity: 0.8;
-                transform: translateY(-200px) scale(0.8) rotate(10deg);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-320px) scale(0.4) rotate(-8deg);
-            }
+            0% { opacity: 0; transform: translateY(0) scale(0.3) rotate(0deg); }
+            15% { opacity: 1; transform: translateY(-30px) scale(1.2) rotate(8deg); }
+            40% { opacity: 1; transform: translateY(-100px) scale(1.0) rotate(-5deg); }
+            70% { opacity: 0.8; transform: translateY(-200px) scale(0.8) rotate(10deg); }
+            100% { opacity: 0; transform: translateY(-320px) scale(0.4) rotate(-8deg); }
         }
-
         .flying-reaction.type-1 { animation-duration: 2.5s; }
         .flying-reaction.type-2 { animation-duration: 3.2s; }
         .flying-reaction.type-3 { animation-duration: 2.8s; }
@@ -705,13 +367,13 @@
             .confetti-burst-piece { width: 6px; height: 9px; }
             .sound-toggle { width: 34px; height: 34px; font-size: 15px; bottom: 70px; right: 14px; }
         }
-
         @media (max-width: 400px) {
             .headline { font-size: 12px; }
             .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
             .popup-card { padding: 14px 12px 18px; max-width: 300px; }
             .popup-card .popup-title { font-size: 15px; }
             .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
+            .popup-card .popup-sub { font-size: 11px; }
             .chat-message { padding: 4px 8px; font-size: 10px; gap: 4px; }
             .chat-message .avatar { width: 22px; height: 22px; font-size: 9px; }
             .chat-message .username { font-size: 9px; min-width: 35px; }
@@ -726,7 +388,6 @@
             .confetti-burst-piece { width: 5px; height: 7px; }
             .sound-toggle { width: 30px; height: 30px; font-size: 13px; bottom: 60px; right: 10px; }
         }
-
         :-webkit-full-screen .video-container { border-radius: 0; }
         :-webkit-full-screen .video-wrapper { border-radius: 0; padding: 0; border: none; box-shadow: none; background: transparent; }
         :-webkit-full-screen .video-container::before { display: none; }
@@ -741,9 +402,7 @@
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container" id="videoContainer">
-                <div id="videoPlayer">
-                    <!-- Video will be inserted here -->
-                </div>
+                <div id="videoPlayer"></div>
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
@@ -779,7 +438,7 @@
                 <img id="popupImg" style="display:none;" alt="Popup Image">
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap anywhere to unlock your reward</div>
+            <div class="popup-sub" id="popupSub">Tap anywhere to claim your reward</div>
             <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
         </div>
     </div>
@@ -791,23 +450,20 @@
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
-        // ==================== GET LINK ID ====================
+        // ==================== CONFIG ====================
         const pathSegments = window.location.pathname.split('/');
         const linkId = pathSegments[pathSegments.length - 1] || 'default';
-
-        // ==================== PARAMS ====================
         const urlParams = new URLSearchParams(window.location.search);
         let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
-        const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
+        let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
 
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
-        document.getElementById('popupClaimBtn').textContent = buttonText || '🎁 Claim Now';
 
-        // ==================== FIX YOUTUBE URL ====================
         function fixYouTubeUrl(url) {
+            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
             if (url.includes('youtube.com/watch?v=')) {
                 const videoId = url.split('v=')[1].split('&')[0];
                 return 'https://youtu.be/' + videoId;
@@ -817,101 +473,46 @@
             if (url.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + url;
             return url;
         }
-
         videoUrl = fixYouTubeUrl(videoUrl);
-        console.log('🎬 Fixed YouTube URL:', videoUrl);
+
+        // ==================== STATE ====================
+        let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
+        let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
+        let pageLoadTime = Date.now();
+        let popupClicked = false;
 
         // ==================== SCREEN LOCK ====================
         const overlay = document.getElementById('videoOverlay');
-        overlay.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }, { passive: false });
+        overlay.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
+        overlay.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); return false; });
+        overlay.addEventListener('touchmove', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
+        if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait').catch(() => {}); }
+        document.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
 
-        overlay.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        });
-
-        overlay.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }, { passive: false });
-
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('portrait').catch(function() {});
-        }
-
-        document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        // ==================== SMART EXIT SYSTEM ====================
-        let backPressCount = 0;
-        let videoPlayCount = 0;
-        let isUnlocked = false;
-        let pageLoadTime = Date.now();
-        let isExiting = false;
-        let isVideoPlaying = false;
-        let isPopupClaimed = false;
-        let isSoundEnabled = true;
-
+        // ==================== EXIT SYSTEM ====================
         function trackVideoPlay() {
             if (isVideoPlaying) return;
             videoPlayCount++;
             isVideoPlaying = true;
-            console.log('🎬 Video play count:', videoPlayCount);
-            if (videoPlayCount >= 2) {
-                isUnlocked = true;
-                console.log('✅ UNLOCKED after 2 video plays');
-            }
+            if (videoPlayCount >= 2) { isUnlocked = true; }
         }
 
         function handleBackPress() {
             if (isExiting) return true;
-
             const timeElapsed = (Date.now() - pageLoadTime) / 1000;
-
-            console.log('⬅️ Back press - Time:', timeElapsed.toFixed(1) + 's');
-
-            if (isUnlocked) {
-                console.log('🚪 Exiting (unlocked)');
+            if (isUnlocked || timeElapsed >= 180) {
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
-
-            if (timeElapsed >= 180) {
-                console.log('🚪 Exiting after 3+ minutes');
-                isExiting = true;
-                document.body.innerHTML = '';
-                window.location.href = 'about:blank';
-                return true;
-            }
-
             backPressCount++;
-            console.log('⬅️ Back press count:', backPressCount);
-
-            if (backPressCount === 1) {
-                showToast('Press back 3 more times to exit');
-            } else if (backPressCount === 2) {
-                showToast('2 more back presses to exit');
-            } else if (backPressCount === 3) {
-                showToast('1 more back press to exit');
-            }
-
             if (backPressCount >= 4) {
-                console.log('🚪 Exiting after 4 back presses');
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
-
             history.pushState(null, null, window.location.href);
             return false;
         }
@@ -919,87 +520,43 @@
         function showToast(msg) {
             const existing = document.querySelector('.toast-msg');
             if (existing) existing.remove();
-
             const toast = document.createElement('div');
             toast.className = 'toast-msg';
             toast.textContent = msg;
             toast.style.cssText = `
-                position: fixed;
-                bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0,0,0,0.8);
-                color: #fff;
-                padding: 12px 24px;
-                border-radius: 12px;
-                font-size: 14px;
-                z-index: 9999;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.1);
-                animation: fadeIn 0.3s ease;
-                max-width: 90%;
-                text-align: center;
-                font-weight: 500;
+                position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+                background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 12px;
+                font-size: 14px; z-index: 9999; backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1); animation: fadeIn 0.3s ease;
+                max-width: 90%; text-align: center; font-weight: 500;
             `;
             document.body.appendChild(toast);
-
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 2000);
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
         }
 
         history.pushState(null, null, window.location.href);
-
-        window.addEventListener('popstate', function(e) {
-            handleBackPress();
-        });
+        window.addEventListener('popstate', () => handleBackPress());
 
         document.addEventListener('keydown', function(e) {
-            const isExitKey = e.key === 'Escape' || e.key === 'F5' || 
-                (e.ctrlKey && (e.key === 'w' || e.key === 'r')) || 
-                (e.altKey && e.key === 'F4') ||
-                (e.metaKey && e.key === 'w');
-
-            if (isExitKey) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isUnlocked) {
-                    handleBackPress();
-                } else {
-                    isExiting = true;
-                    document.body.innerHTML = '';
-                    window.location.href = 'about:blank';
-                }
+            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
+                e.preventDefault(); e.stopPropagation();
+                if (!isUnlocked) handleBackPress();
+                else { isExiting = true; document.body.innerHTML = ''; window.location.href = 'about:blank'; }
                 return false;
             }
         }, true);
 
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        });
+        document.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
 
         let touchStartX = 0;
-        document.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
-
-        document.addEventListener('touchend', function(e) {
+        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        document.addEventListener('touchend', e => {
             const diff = touchStartX - e.changedTouches[0].screenX;
-            if (diff > 80) {
-                e.preventDefault();
-                if (!isUnlocked) {
-                    handleBackPress();
-                }
-                return false;
-            }
+            if (diff > 80) { e.preventDefault(); if (!isUnlocked) handleBackPress(); return false; }
         }, { passive: false });
 
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden && !isUnlocked) {
-                setTimeout(function() { window.focus(); }, 50);
-                handleBackPress();
-            }
+            if (document.hidden && !isUnlocked) { setTimeout(() => window.focus(), 50); handleBackPress(); }
         });
 
         // ==================== SOUND TOGGLE ====================
@@ -1017,14 +574,11 @@
                     setTimeout(() => {
                         const osc = audioCtx.createOscillator();
                         const gain = audioCtx.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.frequency.value = freq;
-                        osc.type = 'sine';
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.frequency.value = freq; osc.type = 'sine';
                         gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
                         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-                        osc.start(audioCtx.currentTime);
-                        osc.stop(audioCtx.currentTime + 0.35);
+                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.35);
                     }, index * 120);
                 });
                 setTimeout(() => {
@@ -1033,21 +587,18 @@
                         setTimeout(() => {
                             const osc = audioCtx.createOscillator();
                             const gain = audioCtx.createGain();
-                            osc.connect(gain);
-                            gain.connect(audioCtx.destination);
-                            osc.frequency.value = freq;
-                            osc.type = 'sine';
+                            osc.connect(gain); gain.connect(audioCtx.destination);
+                            osc.frequency.value = freq; osc.type = 'sine';
                             gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
                             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                            osc.start(audioCtx.currentTime);
-                            osc.stop(audioCtx.currentTime + 0.6);
+                            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.6);
                         }, i * 80);
                     });
                 }, 550);
             } catch(e) {}
         }
 
-        // ==================== CONFETTI CELEBRATION ====================
+        // ==================== CONFETTI CELEBRATION (2 SECOND VERSION) ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -1067,7 +618,7 @@
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 const angle = Math.random() * 2 * Math.PI;
-                const dist = 150 + Math.random() * 350;
+                const dist = 150 + Math.random() * 400;
                 const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
                 const tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
                 const tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
@@ -1076,7 +627,7 @@
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                 el.style.left = (50 + Math.random() * 6 - 3) + '%';
                 el.style.top = (45 + Math.random() * 10 - 5) + '%';
-                el.style.animationDelay = (Math.random() * 0.15) + 's';
+                el.style.animationDelay = (Math.random() * 0.2) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
                 if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
                 container.appendChild(el);
@@ -1094,214 +645,177 @@
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
                 el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-                el.style.animationDelay = (Math.random() * 1.5) + 's';
+                el.style.animationDelay = (Math.random() * 0.5) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
                 if (Math.random() > 0.8) el.style.boxShadow = `0 0 10px ${color}`;
                 container.appendChild(el);
             }
 
-            // Burst 2
-            setTimeout(() => {
-                for (let i = 0; i < 35; i++) {
-                    const el = document.createElement('div');
-                    el.className = 'confetti-burst-piece';
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    const w = 5 + Math.random() * 10, h = 7 + Math.random() * 12;
-                    el.style.width = w + 'px'; el.style.height = h + 'px';
-                    el.style.background = color;
-                    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                    const angle = Math.random() * 2 * Math.PI;
-                    const dist = 120 + Math.random() * 300;
-                    const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 80;
-                    const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - 40;
-                    const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - 15;
-                    el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
-                    el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
-                    el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
-                    el.style.left = (20 + Math.random() * 60) + '%';
-                    el.style.top = (20 + Math.random() * 60) + '%';
-                    el.style.animationDelay = (Math.random() * 0.15) + 's';
-                    el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                    if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
-                    container.appendChild(el);
-                }
-            }, 350);
-
-            setTimeout(() => {
-                container.innerHTML = '';
-                container.classList.remove('active');
-                isCelebrationActive = false;
-            }, 1800);
+            // Clear after 2 seconds
+            setTimeout(() => { 
+                container.innerHTML = ''; 
+                container.classList.remove('active'); 
+                isCelebrationActive = false; 
+            }, 2000);
         }
 
-        // ==================== LOAD VIDEO ====================
-        function loadVideo() {
-            const container = document.getElementById('videoPlayer');
-            container.innerHTML = '';
-
-            console.log('🎬 Loading video:', videoUrl);
-
-            const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-
-            if (ytId) {
-                console.log('📺 YouTube Video ID:', ytId[1]);
-                const videoId = ytId[1];
-
-                const iframe = document.createElement('iframe');
-                iframe.id = 'ytPlayer';
-                iframe.src = 'https://www.youtube.com/embed/' + videoId + 
-                    '?autoplay=1' +
-                    '&mute=0' +
-                    '&controls=1' +
-                    '&modestbranding=1' +
-                    '&rel=0' +
-                    '&showinfo=0' +
-                    '&fs=1' +
-                    '&loop=1' +
-                    '&playlist=' + videoId +
-                    '&disablekb=1' +
-                    '&iv_load_policy=3' +
-                    '&cc_load_policy=0' +
-                    '&playsinline=1' +
-                    '&enablejsapi=1' +
-                    '&origin=' + encodeURIComponent(window.location.origin);
-                
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                
-                container.appendChild(iframe);
-
-                iframe.onload = function() {
-                    console.log('✅ YouTube iframe loaded');
-                    forcePlayVideo(iframe);
-                    setTimeout(() => forcePlayVideo(iframe), 300);
-                    setTimeout(() => forcePlayVideo(iframe), 600);
-                    setTimeout(() => forcePlayVideo(iframe), 1000);
-                    trackVideoPlay();
-                };
-
-                let playAttempts = 0;
-                const playInterval = setInterval(() => {
-                    if (playAttempts > 15) {
-                        clearInterval(playInterval);
-                        return;
+        // ==================== POPUP SYSTEM ====================
+        async function loadPopupData() {
+            try {
+                const response = await fetch(`/api/link/${linkId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const popup = data.popupSettings || {};
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to claim your reward';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
                     }
-                    forcePlayVideo(iframe);
-                    playAttempts++;
-                }, 1000);
-
-                const triggerPlay = function() {
-                    forcePlayVideo(iframe);
-                    trackVideoPlay();
-                    console.log('🔊 Play triggered by interaction');
-                };
-
-                document.addEventListener('click', triggerPlay, { once: true });
-                document.addEventListener('touchstart', triggerPlay, { once: true });
-                document.addEventListener('touchend', triggerPlay, { once: true });
-                
-                document.getElementById('videoContainer').addEventListener('click', triggerPlay, { once: true });
-                document.getElementById('videoContainer').addEventListener('touchstart', triggerPlay, { once: true });
-
-                document.addEventListener('visibilitychange', function() {
-                    if (!document.hidden && !isVideoPlaying) {
-                        forcePlayVideo(iframe);
-                        console.log('🔄 Play triggered by visibility change');
+                    return;
+                }
+                const settingsRes = await fetch('/api/settings');
+                if (settingsRes.ok) {
+                    const settings = await settingsRes.json();
+                    const popup = settings.popupSettings || {};
+                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to claim your reward';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
                     }
-                });
+                }
+            } catch (e) { console.log('⚠️ Could not load popup data, using defaults'); }
+        }
 
-                setTimeout(() => trackVideoPlay(), 3000);
-                setTimeout(() => trackVideoPlay(), 5000);
-                
-                return;
+        function showPopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            popupClicked = false;
+        }
+
+        function hidePopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('show');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // ==================== UNLOCK FUNCTIONS ====================
+        function unlockAndPlay() {
+            if (isPopupClaimed) return;
+            isPopupClaimed = true;
+            trackClaim();
+            hidePopup();
+            triggerCelebration();
+            setTimeout(() => {
+                document.getElementById('headline').classList.add('show');
+                document.getElementById('claimBtnWrapper').classList.add('show');
+                document.getElementById('chatSection').classList.add('show');
+                loadVideo();
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) forcePlayVideo(iframe);
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(() => {});
+                }, 500);
+            }, 300);
+            isUnlocked = true;
+        }
+
+        function unlockFromMainButton() {
+            if (isPopupClaimed) return;
+            isPopupClaimed = true;
+            trackClaim();
+            triggerCelebration();
+            isUnlocked = true;
+            if (claimUrl && claimUrl !== '#') {
+                setTimeout(() => { window.location.href = claimUrl; }, 2500);
+            } else {
+                setTimeout(() => { alert('🎉 You have been unlocked!'); document.body.style.overflow = 'auto'; }, 1500);
             }
-
-            // ===== NON-YOUTUBE VIDEO =====
-            console.log('🎥 Loading as video element');
-            const video = document.createElement('video');
-            video.id = 'videoPlayerElement';
-            video.muted = false;
-            video.playsInline = true;
-            video.webkitPlaysInline = true;
-            video.autoplay = true;
-            video.loop = true;
-            video.controls = true;
-            video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:5;background:#000;';
-            
-            const source = document.createElement('source');
-            source.src = videoUrl;
-            source.type = 'video/mp4';
-            video.appendChild(source);
-            
-            video.onerror = function() {
-                console.log('⚠️ Video failed, trying iframe fallback');
-                const iframe = document.createElement('iframe');
-                iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                container.innerHTML = '';
-                container.appendChild(iframe);
-            };
-            
-            container.appendChild(video);
-            
-            video.onloadedmetadata = function() {
-                console.log('✅ Video loaded');
-                const playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('▶️ Video playing');
-                        trackVideoPlay();
-                    }).catch(() => {
-                        console.log('⚠️ Autoplay blocked, retrying...');
-                        setTimeout(() => {
-                            video.play().then(() => {
-                                console.log('▶️ Video playing on retry');
-                                trackVideoPlay();
-                            }).catch(() => {});
-                        }, 500);
-                        setTimeout(() => {
-                            video.play().then(() => {
-                                console.log('▶️ Video playing on retry 2');
-                                trackVideoPlay();
-                            }).catch(() => {});
-                        }, 1000);
-                    });
-                }
-            };
-
-            video.addEventListener('pause', function() {
-                if (!video.ended && !video.paused) {
-                    video.play().catch(() => {});
-                    console.log('🔄 Video resumed after pause');
-                }
-            });
-
-            let retryCount = 0;
-            const retryInterval = setInterval(() => {
-                if (retryCount < 10 && video.paused) {
-                    video.play().then(() => {
-                        console.log('▶️ Video playing on retry interval');
-                        trackVideoPlay();
-                        clearInterval(retryInterval);
-                    }).catch(() => {});
-                } else if (retryCount >= 10) {
-                    clearInterval(retryInterval);
-                }
-                retryCount++;
-            }, 1500);
         }
 
-        // ===== FORCE PLAY VIDEO FUNCTION =====
+        // ==================== BUTTON EVENTS (SENSITIVE) ====================
+        function addRipple(e, btn) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = btn.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // ===== POPUP CLICK HANDLER (anywhere on popup card) =====
+        document.getElementById('popupCard').addEventListener('click', function(e) {
+            // Don't trigger if clicking the claim button specifically (it has its own handler)
+            if (e.target.closest('.popup-claim-btn')) return;
+            if (isPopupClaimed) return;
+            
+            // Trigger celebration effect for 2 seconds
+            triggerCelebration();
+            
+            // Show a visual feedback that something happened
+            const sub = document.getElementById('popupSub');
+            sub.textContent = '🎉 Loading...';
+            sub.style.color = '#667eea';
+            
+            // After 2 seconds, proceed with unlock
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 2000);
+        });
+
+        // ===== POPUP CLAIM BUTTON =====
+        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent card click from firing
+            if (isPopupClaimed) return;
+            addRipple(e, this);
+            // Trigger celebration and unlock immediately
+            triggerCelebration();
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 200);
+        });
+        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
+            if (isPopupClaimed) return;
+            e.stopPropagation();
+            addRipple(e, this);
+            triggerCelebration();
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 200);
+        }, { passive: true });
+
+        // ===== MAIN CLAIM BUTTON =====
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            if (!isPopupClaimed) {
+                addRipple(e, this);
+                unlockFromMainButton();
+            }
+        });
+        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+            if (!isPopupClaimed) {
+                addRipple(e, this);
+                unlockFromMainButton();
+            }
+        }, { passive: true });
+
+        // ==================== VIDEO FUNCTIONS ====================
         function forcePlayVideo(iframe) {
             try {
                 iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                 iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
                 iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                console.log('🔊 Force play command sent');
             } catch(e) {
                 setTimeout(() => {
                     try {
@@ -1312,298 +826,137 @@
             }
         }
 
-        // ==================== POPUP SYSTEM ====================
-        async function loadPopupData() {
-            try {
-                const response = await fetch(`/api/link/${linkId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const popup = data.popupSettings || {};
-                    
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    
-                    if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image;
-                        img.style.display = 'block';
-                        placeholder.style.display = 'none';
-                    }
-                    return;
-                }
-                
-                const settingsRes = await fetch('/api/settings');
-                if (settingsRes.ok) {
-                    const settings = await settingsRes.json();
-                    const popup = settings.popupSettings || {};
-                    
-                    document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
-                    
-                    if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
-                        img.src = popup.image;
-                        img.style.display = 'block';
-                        placeholder.style.display = 'none';
-                    }
-                }
-            } catch (e) {
-                console.log('⚠️ Could not load popup data, using defaults');
-            }
-        }
-
-        function showPopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hidePopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('show');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        // ==================== POPUP CLAIM BUTTON ====================
-        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-            
-            trackClaim();
-            hidePopup();
-            triggerCelebration();
-            
-            setTimeout(() => {
-                document.getElementById('headline').classList.add('show');
-                document.getElementById('claimBtnWrapper').classList.add('show');
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
-                }, 500);
-            }, 300);
-            
-            isUnlocked = true;
-            console.log('🔓 Unlocked via popup claim');
-        });
-
-        // ==================== POPUP CARD CLICK ====================
-        document.getElementById('popupCard').addEventListener('click', function(e) {
-            if (e.target && e.target.id === 'popupClaimBtn') { return; }
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-            
-            trackClaim();
-            hidePopup();
-            triggerCelebration();
-            
-            setTimeout(() => {
-                document.getElementById('headline').classList.add('show');
-                document.getElementById('claimBtnWrapper').classList.add('show');
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
-                }, 500);
-            }, 300);
-            
-            isUnlocked = true;
-            console.log('🔓 Unlocked via popup card click');
-        });
-
-        // ============================================================
-        // ===== MAIN CLAIM BUTTON - 100% WORKING =====
-        // ============================================================
-        function handleMainClaim(e) {
-            console.log('✅ MAIN CLAIM BUTTON CLICKED!');
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-
-            // Ripple effect
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple';
-            const btn = document.getElementById('claimBtn');
-            const rect = btn.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            btn.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-
-            // Track claim
-            trackClaim();
-
-            // Hide popup
-            hidePopup();
-
-            // Celebration
-            triggerCelebration();
-
-            // Show video
-            setTimeout(() => {
-                document.getElementById('headline').classList.add('show');
-                document.getElementById('claimBtnWrapper').classList.add('show');
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
-                }, 500);
-            }, 300);
-
-            isUnlocked = true;
-
-            // ===== REDIRECT TO CLAIM URL =====
-            if (claimUrl && claimUrl !== '#') {
-                setTimeout(() => {
-                    window.location.href = claimUrl;
-                }, 3000);
+        function loadVideo() {
+            const container = document.getElementById('videoPlayer');
+            container.innerHTML = '';
+            const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (ytId) {
+                const videoId = ytId[1];
+                const iframe = document.createElement('iframe');
+                iframe.id = 'ytPlayer';
+                iframe.src = 'https://www.youtube.com/embed/' + videoId +
+                    '?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId +
+                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+                container.appendChild(iframe);
+                iframe.onload = function() {
+                    forcePlayVideo(iframe);
+                    setTimeout(() => forcePlayVideo(iframe), 300);
+                    setTimeout(() => forcePlayVideo(iframe), 600);
+                    trackVideoPlay();
+                };
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    if (attempts > 15) { clearInterval(interval); return; }
+                    forcePlayVideo(iframe);
+                    attempts++;
+                }, 1500);
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden && !isVideoPlaying) forcePlayVideo(iframe);
+                });
+                setTimeout(() => trackVideoPlay(), 3000);
+                return;
             }
 
-            console.log('🔓 Unlocked via main claim button');
-            console.log('🔗 Redirecting to:', claimUrl);
+            // Direct video
+            const video = document.createElement('video');
+            video.muted = false;
+            video.playsInline = true;
+            video.webkitPlaysInline = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.controls = true;
+            video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
+            const source = document.createElement('source');
+            source.src = videoUrl;
+            source.type = videoUrl.match(/\.mp4/i) ? 'video/mp4' : videoUrl.match(/\.webm/i) ? 'video/webm' : videoUrl.match(/\.ogg/i) ? 'video/ogg' : 'video/mp4';
+            video.appendChild(source);
+            video.onerror = function() {
+                const iframe = document.createElement('iframe');
+                iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+                container.innerHTML = '';
+                container.appendChild(iframe);
+            };
+            container.appendChild(video);
+            video.onloadedmetadata = function() {
+                video.play().then(() => { trackVideoPlay(); }).catch(() => {
+                    const playOnInteraction = function() {
+                        video.play().then(() => { trackVideoPlay(); }).catch(() => {});
+                        document.removeEventListener('click', playOnInteraction);
+                        document.removeEventListener('touchstart', playOnInteraction);
+                    };
+                    document.addEventListener('click', playOnInteraction, { once: true });
+                    document.addEventListener('touchstart', playOnInteraction, { once: true });
+                });
+            };
+            video.addEventListener('pause', function() { if (!video.ended) video.play().catch(() => {}); });
+            if (video.readyState >= 2) { video.play().then(() => { trackVideoPlay(); }).catch(() => {}); }
+            let retryCount = 0;
+            const retryInterval = setInterval(() => {
+                if (retryCount < 10 && video.paused) {
+                    video.play().then(() => { trackVideoPlay(); clearInterval(retryInterval); }).catch(() => {});
+                } else if (retryCount >= 10) { clearInterval(retryInterval); }
+                retryCount++;
+            }, 1500);
         }
-
-        // ===== MAIN CLAIM BUTTON - MULTIPLE EVENT BINDINGS =====
-        const claimBtn = document.getElementById('claimBtn');
-        claimBtn.addEventListener('click', handleMainClaim);
-        claimBtn.addEventListener('touchstart', function(e) {
-            handleMainClaim(e);
-        }, { passive: false });
-        claimBtn.addEventListener('mousedown', function(e) {
-            handleMainClaim(e);
-        });
-
-        // ===== GLOBAL FALLBACK =====
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.id === 'claimBtn') {
-                console.log('🔥 GLOBAL click triggered claim button!');
-                handleMainClaim(e);
-            }
-        });
-
-        document.addEventListener('touchstart', function(e) {
-            if (e.target && e.target.id === 'claimBtn') {
-                console.log('🔥 GLOBAL touch triggered claim button!');
-                handleMainClaim(e);
-            }
-        }, { passive: false });
-
-        // ============================================================
 
         // ==================== TRACK CLAIM ====================
         async function trackClaim() {
             try {
-                const response = await fetch(`/api/track-claim/${linkId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Claim tracked successfully');
-                }
-            } catch (e) {
-                console.log('⚠️ Could not track claim');
-            }
+                const response = await fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                if (response.ok) console.log('✅ Claim tracked successfully');
+            } catch (e) {}
         }
 
         // ==================== EMOJI PICKER ====================
         function toggleEmojiPicker() {
-            const list = document.getElementById('emojiList');
-            list.classList.toggle('open');
+            document.getElementById('emojiList').classList.toggle('open');
         }
-
         document.addEventListener('click', function(e) {
             const picker = document.getElementById('emojiPickerBtn');
-            if (!picker.contains(e.target)) {
-                document.getElementById('emojiList').classList.remove('open');
-            }
+            if (!picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
         });
 
         // ==================== FLYING REACTIONS ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
-
         function createFlyingReaction(emoji) {
             const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
             const el = document.createElement('div');
             el.className = 'flying-reaction';
             el.textContent = emojiToUse;
-            
-            const x = 10 + Math.random() * 80;
-            const y = 55 + Math.random() * 35;
-            
-            el.style.left = x + '%';
-            el.style.top = y + '%';
+            el.style.left = (10 + Math.random() * 80) + '%';
+            el.style.top = (55 + Math.random() * 35) + '%';
             el.style.fontSize = (24 + Math.random() * 32) + 'px';
-            
             const type = Math.floor(Math.random() * 3) + 1;
             el.classList.add('type-' + type);
-            
             document.body.appendChild(el);
-            
-            setTimeout(() => {
-                if (el.parentNode) el.remove();
-            }, 3500);
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
         }
 
         // ==================== CHAT SYSTEM ====================
         const users = [
-            { name: 'GamerPro', emoji: '🎮' },
-            { name: 'KingSlayer', emoji: '👑' },
-            { name: 'NightWolf', emoji: '🐺' },
-            { name: 'ShadowX', emoji: '🌙' },
-            { name: 'BlazeIt', emoji: '🔥' },
-            { name: 'SniperPro', emoji: '🎯' },
-            { name: 'DemonKing', emoji: '😈' },
-            { name: 'Phoenix', emoji: '🐦' },
-            { name: 'DarkKnight', emoji: '🦇' },
-            { name: 'StarGamer', emoji: '⭐' },
-            { name: 'ThunderX', emoji: '⚡' },
-            { name: 'IceQueen', emoji: '❄️' },
-            { name: 'FireLord', emoji: '🔥' },
-            { name: 'CryptoKing', emoji: '💰' },
-            { name: 'GhostRider', emoji: '👻' },
-            { name: 'Venom', emoji: '🕷️' },
-            { name: 'WizardX', emoji: '🧙' },
-            { name: 'NinjaPro', emoji: '🥷' },
-            { name: 'DragonSlayer', emoji: '🐉' },
-            { name: 'MysticMoon', emoji: '🌙' }
+            { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
+            { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
+            { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' }, { name: 'DarkKnight', emoji: '🦇' },
+            { name: 'StarGamer', emoji: '⭐' }, { name: 'ThunderX', emoji: '⚡' }, { name: 'IceQueen', emoji: '❄️' },
+            { name: 'FireLord', emoji: '🔥' }, { name: 'CryptoKing', emoji: '💰' }, { name: 'GhostRider', emoji: '👻' },
+            { name: 'Venom', emoji: '🕷️' }, { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
+            { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
         ];
-
         const messages = [
             'Thanks bhai!', 'Redeem code mil gaya!', '1000₹ ka redeem code!',
             'Best website ever!', 'Bro thanks a lot!', 'Redeem code working!',
             'Amazing!', 'Got 500₹!', 'Love this!', 'Best app!',
             'Thank you!', 'Working perfectly!', 'Awesome!', 'Great!',
-            'Superb!', 'Thanks team!', 'Nice!', 'Love it!',
-            'Working!', 'Super!'
+            'Superb!', 'Thanks team!', 'Nice!', 'Love it!', 'Working!', 'Super!'
         ];
-
         const chatContainer = document.getElementById('chatMessages');
-
-        function getRandom(arr) {
-            return arr[Math.floor(Math.random() * arr.length)];
-        }
-
+        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function getRandomTime() {
             const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
             const s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
@@ -1611,10 +964,7 @@
         }
 
         function addChat() {
-            const user = getRandom(users);
-            const msg = getRandom(messages);
-            const time = getRandomTime();
-
+            const user = getRandom(users), msg = getRandom(messages), time = getRandomTime();
             const el = document.createElement('div');
             el.className = 'chat-message';
             el.innerHTML = `
@@ -1624,25 +974,16 @@
                 <span class="time">${time}</span>
             `;
             chatContainer.appendChild(el);
-
             const container = document.getElementById('chatContainer');
             container.scrollTop = container.scrollHeight;
-
-            while (chatContainer.children.length > 25) {
-                chatContainer.removeChild(chatContainer.firstChild);
-            }
-
+            while (chatContainer.children.length > 25) chatContainer.removeChild(chatContainer.firstChild);
             applyFadeEffect();
-
-            if (Math.random() > 0.5) {
-                setTimeout(() => createFlyingReaction(), 300);
-            }
+            if (Math.random() > 0.5) setTimeout(() => createFlyingReaction(), 300);
         }
 
         function applyFadeEffect() {
             const messages = chatContainer.querySelectorAll('.chat-message');
             const total = messages.length;
-
             messages.forEach((msg, index) => {
                 if (index >= total - 3) {
                     msg.classList.remove('fade-out');
@@ -1661,65 +1002,37 @@
 
         function triggerReaction(emoji, event) {
             document.getElementById('emojiList').classList.remove('open');
-            
             const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
             const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
             const y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
-
             const el = document.createElement('div');
             el.className = 'flying-reaction';
             el.textContent = emoji;
-            
             el.style.left = x + '%';
             el.style.top = y + '%';
             el.style.fontSize = (26 + Math.random() * 28) + 'px';
-            
             const type = Math.floor(Math.random() * 3) + 1;
             el.classList.add('type-' + type);
-            
             document.body.appendChild(el);
-            
-            setTimeout(() => {
-                if (el.parentNode) el.remove();
-            }, 3500);
-
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
             setTimeout(() => createFlyingReaction(), 200);
         }
-
         window.triggerReaction = triggerReaction;
 
-        // ===== AUTO FLYING REACTIONS =====
-        setInterval(() => {
-            if (Math.random() > 0.6) createFlyingReaction();
-        }, 3000);
-
-        // ===== CHAT INIT =====
-        for (let i = 0; i < 10; i++) {
-            setTimeout(addChat, i * 120);
-        }
-
-        setInterval(() => {
-            addChat();
-            if (Math.random() > 0.6) setTimeout(addChat, 300);
-        }, 1400 + Math.random() * 1000);
+        setInterval(() => { if (Math.random() > 0.6) createFlyingReaction(); }, 3000);
+        for (let i = 0; i < 10; i++) setTimeout(addChat, i * 120);
+        setInterval(() => { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
 
         // ==================== KEEP AWAKE ====================
-        async function keepAwake() {
-            try {
-                await navigator.wakeLock.request('screen');
-            } catch (e) {}
-        }
+        async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
         keepAwake();
 
         // ==================== FULLSCREEN ====================
         document.getElementById('videoContainer').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen().catch(() => {});
-                } else if (elem.webkitRequestFullscreen) {
-                    elem.webkitRequestFullscreen();
-                }
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
             }
         });
 
@@ -1730,24 +1043,15 @@
 
         async function init() {
             await loadPopupData();
-            setTimeout(() => {
-                showPopup();
-            }, 500);
+            setTimeout(() => showPopup(), 500);
         }
-
-        // Load video in background
-        loadVideo();
-
         init();
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('📝 Headline:', headline);
         console.log('🔒 SCREEN LOCK: Active');
-        console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
-        console.log('✅ MAIN CLAIM BUTTON: 100% WORKING');
-        console.log('🔗 Redirects to claim URL after celebration');
+        console.log('🎯 POPUP: Click anywhere on popup for confetti → video unlock');
     </script>
 </body>
 </html>
