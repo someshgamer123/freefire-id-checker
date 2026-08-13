@@ -429,7 +429,7 @@
             }
         }
 
-        /* ===== CONFETTI SOUND BUTTON ===== */
+        /* ===== SOUND TOGGLE ===== */
         .sound-toggle {
             position: fixed;
             bottom: 80px;
@@ -892,6 +892,7 @@
         let isVideoPlaying = false;
         let isPopupClaimed = false;
         let isSoundEnabled = true;
+        let isCelebrationActive = false;
 
         function trackVideoPlay() {
             if (isVideoPlaying) return;
@@ -1042,30 +1043,89 @@
             document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
         }
 
-        // ==================== CONFETTI CELEBRATION SYSTEM ====================
+        // ==================== CELEBRATION SOUND ====================
+        function playCelebrationSound() {
+            if (!isSoundEnabled) return;
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Ascending melody
+                const notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    setTimeout(() => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                        osc.start(audioCtx.currentTime);
+                        osc.stop(audioCtx.currentTime + 0.3);
+                    }, index * 100);
+                });
+                
+                // Final chord
+                setTimeout(() => {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((freq) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.value = freq;
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                        osc.start(audioCtx.currentTime);
+                        osc.stop(audioCtx.currentTime + 0.5);
+                    });
+                }, 500);
+                
+                // Add drum effect
+                setTimeout(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = 150;
+                    osc.type = 'sawtooth';
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.15);
+                }, 300);
+                
+            } catch(e) {
+                console.log('🔇 Sound not available');
+            }
+        }
+
+        // ==================== CONFETTI CELEBRATION ====================
         function triggerCelebration() {
+            if (isCelebrationActive) return;
+            isCelebrationActive = true;
+
             const container = document.getElementById('confettiContainer');
             container.innerHTML = '';
             container.classList.add('active');
 
-            // Play celebration sound
-            if (isSoundEnabled) {
-                playCelebrationSound();
-            }
+            // Play sound
+            playCelebrationSound();
 
             const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573'];
-            
-            // ===== CONFETTI BURST (Center) =====
             const emojis = ['🎉', '🎊', '✨', '🌟', '💫', '🎈', '🎇', '🎆', '🥳', '🎁', '💎', '⭐', '🌈', '🔥', '❤️'];
-            const numBurst = 40;
             
+            // ===== CONFETTI BURST 1 =====
+            const numBurst = 50;
             for (let i = 0; i < numBurst; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-burst';
                 el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
                 
                 const angle = Math.random() * 2 * Math.PI;
-                const distance = 150 + Math.random() * 350;
+                const distance = 150 + Math.random() * 400;
                 const tx = Math.cos(angle) * distance;
                 const ty = Math.sin(angle) * distance - 100;
                 const tx2 = Math.cos(angle + 0.5) * (distance * 0.6);
@@ -1084,33 +1144,23 @@
             }
 
             // ===== CONFETTI FALLING =====
-            const numConfetti = 80;
+            const numConfetti = 100;
             for (let i = 0; i < numConfetti; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-piece';
                 const color = colors[Math.floor(Math.random() * colors.length)];
-                const width = 6 + Math.random() * 10;
-                const height = 6 + Math.random() * 10;
-                const rotation = Math.random() * 360;
-                
-                // Random shapes - square, rectangle, circle
-                if (Math.random() > 0.7) {
-                    el.style.borderRadius = '50%';
-                } else if (Math.random() > 0.5) {
-                    el.style.borderRadius = '2px';
-                    el.style.transform = `rotate(${rotation}deg)`;
-                }
+                const width = 6 + Math.random() * 12;
+                const height = 6 + Math.random() * 12;
                 
                 el.style.width = width + 'px';
                 el.style.height = height + 'px';
                 el.style.background = color;
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
-                el.style.animationDuration = (2 + Math.random() * 3) + 's';
-                el.style.animationDelay = (Math.random() * 2) + 's';
+                el.style.animationDuration = (2 + Math.random() * 4) + 's';
+                el.style.animationDelay = (Math.random() * 2.5) + 's';
                 el.style.borderRadius = Math.random() > 0.6 ? '50%' : '2px';
                 
-                // Add some sparkle
                 if (Math.random() > 0.8) {
                     el.style.boxShadow = `0 0 10px ${color}`;
                 }
@@ -1118,15 +1168,15 @@
                 container.appendChild(el);
             }
 
-            // ===== SECONDARY BURST after 0.5s =====
+            // ===== CONFETTI BURST 2 (Side) =====
             setTimeout(() => {
-                for (let i = 0; i < 25; i++) {
+                for (let i = 0; i < 30; i++) {
                     const el = document.createElement('div');
                     el.className = 'confetti-burst';
                     el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
                     
                     const angle = Math.random() * 2 * Math.PI;
-                    const distance = 100 + Math.random() * 250;
+                    const distance = 100 + Math.random() * 300;
                     const tx = Math.cos(angle) * distance;
                     const ty = Math.sin(angle) * distance - 80;
                     const tx2 = Math.cos(angle + 0.5) * (distance * 0.5);
@@ -1136,8 +1186,8 @@
                     el.style.setProperty('--ty', ty + 'px');
                     el.style.setProperty('--tx2', tx2 + 'px');
                     el.style.setProperty('--ty2', ty2 + 'px');
-                    el.style.left = (30 + Math.random() * 40) + '%';
-                    el.style.top = (30 + Math.random() * 40) + '%';
+                    el.style.left = (20 + Math.random() * 60) + '%';
+                    el.style.top = (20 + Math.random() * 60) + '%';
                     el.style.fontSize = (24 + Math.random() * 30) + 'px';
                     el.style.animationDelay = (Math.random() * 0.2) + 's';
                     
@@ -1149,53 +1199,8 @@
             setTimeout(() => {
                 container.innerHTML = '';
                 container.classList.remove('active');
+                isCelebrationActive = false;
             }, 6000);
-        }
-
-        // ===== PLAY CELEBRATION SOUND =====
-        function playCelebrationSound() {
-            try {
-                // Create a celebration sound using Web Audio API
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Play ascending notes for celebration
-                const notes = [523.25, 587.33, 659.25, 783.99, 1046.50]; // C5, D5, E5, G5, C6
-                
-                notes.forEach((freq, index) => {
-                    setTimeout(() => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.frequency.value = freq;
-                        osc.type = 'sine';
-                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                        osc.start(audioCtx.currentTime);
-                        osc.stop(audioCtx.currentTime + 0.3);
-                    }, index * 100);
-                });
-                
-                // Add a final chord
-                setTimeout(() => {
-                    const freqs = [523.25, 659.25, 783.99, 1046.50];
-                    freqs.forEach((freq) => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.frequency.value = freq;
-                        osc.type = 'sine';
-                        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                        osc.start(audioCtx.currentTime);
-                        osc.stop(audioCtx.currentTime + 0.5);
-                    });
-                }, 500);
-                
-            } catch(e) {
-                console.log('🔇 Sound not available');
-            }
         }
 
         // ==================== POPUP SYSTEM ====================
@@ -1256,17 +1261,49 @@
             document.body.style.overflow = '';
         }
 
-        // ==================== SENSITIVE CLAIM HANDLER ====================
-        function handleClaim(e) {
-            // Ripple effect
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple';
-            var rect = this.getBoundingClientRect();
-            ripple.style.left = (e.clientX - rect.left) + 'px';
-            ripple.style.top = (e.clientY - rect.top) + 'px';
-            this.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
+        // ==================== UNLOCK FUNCTION - POPUP CLAIM ====================
+        function unlockAndPlay() {
+            if (isPopupClaimed) return;
+            isPopupClaimed = true;
 
+            // Track claim
+            trackClaim();
+
+            // Hide popup
+            hidePopup();
+
+            // Trigger confetti celebration
+            triggerCelebration();
+
+            // Show video elements after celebration starts
+            setTimeout(() => {
+                document.getElementById('headline').classList.add('show');
+                document.getElementById('claimBtnWrapper').classList.add('show');
+                document.getElementById('chatSection').classList.add('show');
+                
+                // Load and play video
+                loadVideo();
+                
+                // Force play after loading
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) {
+                        forcePlayVideo(iframe);
+                    }
+                    // For video element
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) {
+                        video.play().catch(() => {});
+                    }
+                }, 500);
+            }, 300);
+
+            isUnlocked = true;
+            console.log('🔓 Unlocked via popup claim');
+        }
+
+        // ==================== UNLOCK FUNCTION - MAIN CLAIM BUTTON ====================
+        function unlockFromMainButton() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
 
@@ -1277,9 +1314,8 @@
             triggerCelebration();
 
             isUnlocked = true;
-            console.log('🔓 Unlocked via claim');
+            console.log('🔓 Unlocked via main claim button');
 
-            // Redirect after celebration
             if (claimUrl && claimUrl !== '#') {
                 setTimeout(() => {
                     window.location.href = claimUrl;
@@ -1293,20 +1329,42 @@
         }
 
         // ==================== POPUP CLAIM BUTTON - SENSITIVE ====================
-        document.getElementById('popupClaimBtn').addEventListener('click', handleClaim);
+        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
+            // Ripple effect
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            var rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            
+            unlockAndPlay();
+        });
+        
         document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
-            // Trigger on touch for mobile sensitivity
             if (!isPopupClaimed) {
-                handleClaim.call(this, e);
+                unlockAndPlay();
             }
         }, { passive: true });
 
         // ==================== MAIN CLAIM BUTTON - SENSITIVE ====================
-        document.getElementById('claimBtn').addEventListener('click', handleClaim);
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            // Ripple effect
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            var rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+            
+            unlockFromMainButton();
+        });
+        
         document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
-            // Trigger on touch for mobile sensitivity
             if (!isPopupClaimed) {
-                handleClaim.call(this, e);
+                unlockFromMainButton();
             }
         }, { passive: true });
 
@@ -1705,7 +1763,7 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('📝 Headline:', headline);
         console.log('🔒 SCREEN LOCK: Active');
-        console.log('🎯 POPUP + CONFETTI CELEBRATION + AUTOPLAY enabled');
+        console.log('🎯 POPUP CLAIM → CONFETTI → VIDEO PLAY');
         console.log('📱 Sensitive buttons: Click OR Touch works instantly');
     </script>
 </body>
