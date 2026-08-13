@@ -20,7 +20,6 @@
             padding: 12px;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none;
         }
 
         .bg-glow {
@@ -83,29 +82,10 @@
         }
         @keyframes borderGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-        /* ===== VIDEO OVERLAY - LOCK SYSTEM ===== */
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             background: transparent;
             pointer-events: none !important;
-        }
-
-        /* ===== SCREEN LOCK OVERLAY ===== */
-        .screen-lock {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9998;
-            background: transparent;
-            display: none;
-            pointer-events: none;
-        }
-        .screen-lock.active {
-            display: block;
-            pointer-events: all;
-            cursor: default;
         }
 
         .headline {
@@ -113,6 +93,7 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             animation: fadeIn 1s ease; letter-spacing: 0.5px; opacity: 0; transition: opacity 0.5s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
         .headline.show { opacity: 1; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -132,6 +113,7 @@
             width: 100%; max-width: 400px;
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             z-index: 20;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
         .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
         .claim-btn:active { transform: scale(0.97); }
@@ -148,6 +130,7 @@
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
+        /* ===== POPUP OVERLAY - FIXED ===== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
@@ -156,12 +139,15 @@
             display: flex; justify-content: center; align-items: center;
             opacity: 0; visibility: hidden;
             transition: opacity 0.6s ease, visibility 0.6s ease;
+            pointer-events: none !important;
         }
         .popup-overlay.show {
             opacity: 1; visibility: visible;
+            pointer-events: all !important;
         }
         .popup-overlay.hidden {
             opacity: 0; visibility: hidden;
+            pointer-events: none !important;
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
@@ -178,6 +164,7 @@
             animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative; overflow: hidden;
             cursor: pointer;
+            pointer-events: all !important;
         }
         .popup-card::before {
             content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
@@ -221,6 +208,7 @@
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             z-index: 10;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+            pointer-events: all !important;
         }
         .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(102, 126, 234, 0.4); }
         .popup-card .popup-claim-btn:active { transform: scale(0.97); }
@@ -423,9 +411,6 @@
 </head>
 <body>
 
-    <!-- ===== SCREEN LOCK OVERLAY ===== -->
-    <div class="screen-lock" id="screenLock"></div>
-
     <div class="bg-glow"></div>
 
     <div class="top-section">
@@ -459,6 +444,7 @@
         </div>
     </div>
 
+    <!-- ===== POPUP OVERLAY - FIXED ===== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
             <div class="popup-image" id="popupImage">
@@ -471,8 +457,10 @@
         </div>
     </div>
 
+    <!-- ===== CONFETTI ===== -->
     <div class="confetti-container" id="confettiContainer"></div>
 
+    <!-- ===== SOUND TOGGLE ===== -->
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
@@ -507,37 +495,6 @@
         let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
-
-        // ==================== SCREEN LOCK ====================
-        function activateScreenLock() {
-            const lock = document.getElementById('screenLock');
-            lock.classList.add('active');
-            // Block all touch/click events on the page except video area
-            document.body.style.touchAction = 'none';
-        }
-
-        function deactivateScreenLock() {
-            const lock = document.getElementById('screenLock');
-            lock.classList.remove('active');
-            document.body.style.touchAction = 'auto';
-        }
-
-        // Block all interactions when screen is locked
-        document.addEventListener('touchstart', function(e) {
-            const lock = document.getElementById('screenLock');
-            if (lock.classList.contains('active')) {
-                e.preventDefault();
-                return false;
-            }
-        }, { passive: false });
-
-        document.addEventListener('click', function(e) {
-            const lock = document.getElementById('screenLock');
-            if (lock.classList.contains('active')) {
-                e.preventDefault();
-                return false;
-            }
-        });
 
         // ==================== OVERLAY ====================
         // No JS events on overlay - only CSS pointer-events: none
@@ -627,7 +584,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI CELEBRATION ====================
+        // ==================== CONFETTI ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -723,8 +680,6 @@
             overlay.classList.remove('hidden');
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
-            // Activate screen lock when popup shows
-            activateScreenLock();
         }
 
         function hidePopup() {
@@ -732,8 +687,6 @@
             overlay.classList.remove('show');
             overlay.classList.add('hidden');
             document.body.style.overflow = '';
-            // Deactivate screen lock when popup hides
-            deactivateScreenLock();
         }
 
         // ==================== UNLOCK FUNCTIONS ====================
@@ -743,7 +696,6 @@
             trackClaim();
             hidePopup();
             
-            // Show confetti only once (on any click)
             if (!isCelebrationActive) {
                 triggerCelebration();
             }
@@ -770,7 +722,6 @@
             if (!isPopupClaimed) {
                 isPopupClaimed = true;
                 trackClaim();
-                // Show confetti only once
                 if (!isCelebrationActive) {
                     triggerCelebration();
                 }
@@ -801,32 +752,40 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // ===== POPUP CLAIM BUTTON =====
+        // ===== POPUP CLAIM BUTTON - FIXED =====
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
+            e.preventDefault();
             if (isPopupClaimed) return;
             if (isPopupClickProcessed) return;
             isPopupClickProcessed = true;
+            console.log('✅ Popup Claim Button Clicked');
             addRipple(e, this);
             unlockAndPlay();
         });
+
         document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
             if (isPopupClaimed) return;
             if (isPopupClickProcessed) return;
             e.stopPropagation();
             isPopupClickProcessed = true;
+            console.log('✅ Popup Claim Button Touched');
             addRipple(e, this);
             unlockAndPlay();
         }, { passive: true });
 
-        // ===== POPUP CARD CLICK - FIXED: Only one confetti =====
+        // ===== POPUP CARD CLICK - FIXED =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
-            if (e.target.closest('.popup-claim-btn')) return;
+            if (e.target.closest('.popup-claim-btn')) {
+                console.log('⚠️ Button click handled by button handler');
+                return;
+            }
             if (isPopupClaimed) return;
             if (isPopupClickProcessed) return;
             isPopupClickProcessed = true;
             
-            // Show confetti only once
+            console.log('✅ Popup Card Clicked');
+            
             if (!isCelebrationActive) {
                 triggerCelebration();
             }
@@ -835,17 +794,18 @@
             sub.textContent = '🎉 Loading...';
             sub.style.color = '#667eea';
             
-            // Unlock immediately with confetti
             unlockAndPlay();
         });
 
         // ===== MAIN CLAIM BUTTON =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
+            console.log('✅ Main Claim Button Clicked');
             addRipple(e, this);
             handleClaimClick();
         });
         document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+            console.log('✅ Main Claim Button Touched');
             addRipple(e, this);
             handleClaimClick();
         }, { passive: true });
@@ -1082,7 +1042,7 @@
 
         async function init() {
             await loadPopupData();
-            // FIX: Popup shows INSTANTLY (0ms delay) after UID verified
+            // Popup shows instantly
             showPopup();
         }
         init();
@@ -1090,9 +1050,9 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ INSTANT POPUP: Shows immediately after UID verified');
+        console.log('✅ POPUP CLICK FIXED: Both card and button are clickable');
         console.log('✅ SINGLE CONFETTI: Only one confetti effect on any click');
-        console.log('✅ SCREEN LOCK: Active when popup shows, deactivated after unlock');
+        console.log('✅ INSTANT POPUP: Shows immediately after UID verified');
         console.log('✅ EMOJI FIXED: Proper emoji rendering with font-family');
     </script>
 </body>
