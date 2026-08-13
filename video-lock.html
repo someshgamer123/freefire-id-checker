@@ -407,7 +407,7 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
+                <button class="claim-btn" id="claimBtn" onclick="handleClaimClick(event)">🎁 Claim Now</button>
             </div>
         </div>
     </div>
@@ -438,7 +438,7 @@
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
             <div class="popup-sub" id="popupSub">Tap anywhere to claim your reward</div>
-            <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
+            <button class="popup-claim-btn" id="popupClaimBtn" onclick="handlePopupClaim(event)">🎁 Claim Now</button>
         </div>
     </div>
 
@@ -447,6 +447,7 @@
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
+        // ==================== CONFIG ====================
         const pathSegments = window.location.pathname.split('/');
         const linkId = pathSegments[pathSegments.length - 1] || 'default';
         const urlParams = new URLSearchParams(window.location.search);
@@ -454,6 +455,9 @@
         let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
+
+        console.log('🔗 Claim URL from params:', claimUrl);
+        console.log('🔗 Claim URL from localStorage:', localStorage.getItem('claimUrl'));
 
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
@@ -471,6 +475,7 @@
         }
         videoUrl = fixYouTubeUrl(videoUrl);
 
+        // ==================== STATE ====================
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
@@ -479,6 +484,36 @@
             screen.orientation.lock('portrait').catch(() => {}); 
         }
 
+        // ==================== CLAIM BUTTON HANDLER - FIXED ====================
+        function handleClaimClick(event) {
+            event.stopPropagation();
+            console.log('🎯 Claim button clicked!');
+            console.log('📌 claimUrl value:', claimUrl);
+            console.log('📌 isPopupClaimed:', isPopupClaimed);
+            
+            if (!isPopupClaimed) {
+                addRipple(event, document.getElementById('claimBtn'));
+                unlockFromMainButton();
+            } else {
+                console.log('⚠️ Already claimed!');
+            }
+        }
+
+        function handlePopupClaim(event) {
+            event.stopPropagation();
+            console.log('🎯 Popup claim button clicked!');
+            if (isPopupClaimed) return;
+            addRipple(event, document.getElementById('popupClaimBtn'));
+            triggerCelebration();
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 200);
+        }
+
+        // ==================== OVERLAY ====================
+        // No JS events on overlay - only CSS pointer-events: none
+
+        // ==================== EXIT SYSTEM ====================
         function trackVideoPlay() {
             if (isVideoPlaying) return;
             videoPlayCount++;
@@ -524,6 +559,7 @@
             if (document.hidden && !isUnlocked) { setTimeout(() => window.focus(), 50); handleBackPress(); }
         });
 
+        // ==================== SOUND TOGGLE ====================
         function toggleSound() {
             isSoundEnabled = !isSoundEnabled;
             document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
@@ -562,6 +598,7 @@
             } catch(e) {}
         }
 
+        // ==================== CONFETTI CELEBRATION ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -619,6 +656,7 @@
             }, 2000);
         }
 
+        // ==================== POPUP SYSTEM ====================
         async function loadPopupData() {
             try {
                 const response = await fetch(`/api/link/${linkId}`);
@@ -665,6 +703,7 @@
             document.body.style.overflow = '';
         }
 
+        // ==================== UNLOCK FUNCTIONS ====================
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
@@ -693,11 +732,15 @@
             triggerCelebration();
             isUnlocked = true;
             
-            if (claimUrl && claimUrl !== '#') {
+            console.log('🚀 Unlocking with claimUrl:', claimUrl);
+            
+            if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
+                console.log('🔗 Redirecting to:', claimUrl);
                 setTimeout(() => { 
                     window.location.href = claimUrl; 
                 }, 2500);
             } else {
+                console.log('⚠️ No valid claim URL, showing alert');
                 setTimeout(() => { 
                     alert('🎉 You have been unlocked!'); 
                     document.body.style.overflow = 'auto'; 
@@ -705,6 +748,7 @@
             }
         }
 
+        // ==================== RIPPLE EFFECT ====================
         function addRipple(e, btn) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -717,25 +761,7 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (isPopupClaimed) return;
-            addRipple(e, this);
-            triggerCelebration();
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 200);
-        });
-        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
-            if (isPopupClaimed) return;
-            e.stopPropagation();
-            addRipple(e, this);
-            triggerCelebration();
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 200);
-        }, { passive: true });
-
+        // ===== POPUP CARD CLICK =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) return;
             if (isPopupClaimed) return;
@@ -748,20 +774,7 @@
             }, 2000);
         });
 
-        document.getElementById('claimBtn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (!isPopupClaimed) {
-                addRipple(e, this);
-                unlockFromMainButton();
-            }
-        });
-        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
-            if (!isPopupClaimed) {
-                addRipple(e, this);
-                unlockFromMainButton();
-            }
-        }, { passive: true });
-
+        // ==================== VIDEO FUNCTIONS ====================
         function forcePlayVideo(iframe) {
             try {
                 iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
@@ -855,6 +868,7 @@
             }, 1500);
         }
 
+        // ==================== TRACK CLAIM ====================
         async function trackClaim() {
             try {
                 const response = await fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
@@ -862,6 +876,7 @@
             } catch (e) {}
         }
 
+        // ==================== EMOJI PICKER ====================
         function toggleEmojiPicker() {
             document.getElementById('emojiList').classList.toggle('open');
         }
@@ -870,6 +885,7 @@
             if (!picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
         });
 
+        // ==================== FLYING REACTIONS ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
         function createFlyingReaction(emoji) {
             const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
@@ -885,6 +901,7 @@
             setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
         }
 
+        // ==================== CHAT SYSTEM ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
             { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
@@ -969,9 +986,11 @@
         for (let i = 0; i < 10; i++) setTimeout(addChat, i * 120);
         setInterval(() => { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
 
+        // ==================== KEEP AWAKE ====================
         async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
         keepAwake();
 
+        // ==================== FULLSCREEN ====================
         document.getElementById('videoContainer').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -980,6 +999,7 @@
             }
         });
 
+        // ==================== INIT ====================
         document.getElementById('headline').classList.remove('show');
         document.getElementById('claimBtnWrapper').classList.remove('show');
         document.getElementById('chatSection').classList.remove('show');
@@ -993,7 +1013,7 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ CLAIM BUTTON: Fixed - Overlay removed, button clickable');
+        console.log('✅ CLAIM BUTTON: Fixed with direct onclick handler');
     </script>
 </body>
 </html>
