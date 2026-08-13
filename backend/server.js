@@ -84,7 +84,6 @@ function readDB() {
         
         const parsed = JSON.parse(data);
         
-        // Ensure all required fields exist
         if (!parsed.stats) {
             parsed.stats = getDefaultStats();
         }
@@ -95,7 +94,6 @@ function readDB() {
         if (parsed.stats.totalVisitors === undefined) parsed.stats.totalVisitors = 0;
         if (parsed.stats.totalClaims === undefined) parsed.stats.totalClaims = 0;
         
-        // Ensure popup settings
         if (!parsed.popupSettings) {
             parsed.popupSettings = {
                 image: null,
@@ -105,11 +103,9 @@ function readDB() {
             };
         }
         
-        // Ensure settings.background exists
         if (!parsed.settings) parsed.settings = {};
         if (parsed.settings.background === undefined) parsed.settings.background = null;
         
-        // Ensure all links have stats fields
         if (parsed.links) {
             parsed.links.forEach(link => {
                 if (!link.visits) link.visits = 0;
@@ -198,7 +194,7 @@ function getDefaultStats() {
 }
 
 function getDefaultDB() {
-    const hashedPasscode = bcrypt.hashSync('951753', 10);
+    const hashedPasscode = bcrypt.hashSync('923348', 10);
     return {
         admin: {
             passcode: hashedPasscode,
@@ -335,7 +331,6 @@ function authMiddleware(req, res, next) {
 
 // ==================== ADMIN ROUTES ====================
 
-// ===== ADMIN LOGIN =====
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
@@ -388,7 +383,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     }
 });
 
-// ===== ADMIN LOGOUT =====
 app.post('/api/admin/logout', authMiddleware, (req, res) => {
     try {
         const db = readDB();
@@ -404,7 +398,6 @@ app.post('/api/admin/logout', authMiddleware, (req, res) => {
     }
 });
 
-// ===== CHANGE PASSCODE =====
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -437,7 +430,6 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
-// ===== UPDATE THEME =====
 app.post('/api/admin/theme', authMiddleware, (req, res) => {
     try {
         const { theme } = req.body;
@@ -455,13 +447,11 @@ app.post('/api/admin/theme', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE BACKGROUND - FIXED =====
 app.post('/api/admin/background', authMiddleware, (req, res) => {
     try {
         const { background } = req.body;
         const db = readDB();
 
-        // Accept both base64 and URL
         if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
             return res.status(400).json({ error: 'Invalid image format' });
         }
@@ -475,7 +465,6 @@ app.post('/api/admin/background', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE POPUP SETTINGS (ADMIN) =====
 app.post('/api/admin/popup', authMiddleware, (req, res) => {
     try {
         const { image, title, buttonText, subtitle, linkId } = req.body;
@@ -507,7 +496,6 @@ app.post('/api/admin/popup', authMiddleware, (req, res) => {
     }
 });
 
-// ===== GET POPUP SETTINGS =====
 app.get('/api/popup-settings/:linkId?', (req, res) => {
     try {
         const { linkId } = req.params;
@@ -541,7 +529,6 @@ app.get('/api/popup-settings/:linkId?', (req, res) => {
 
 // ==================== LINK ROUTES ====================
 
-// ===== GET ALL LINKS =====
 app.get('/api/links', authMiddleware, (req, res) => {
     try {
         const db = readDB();
@@ -551,7 +538,6 @@ app.get('/api/links', authMiddleware, (req, res) => {
     }
 });
 
-// ===== CREATE LINK =====
 app.post('/api/links', authMiddleware, (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
@@ -600,7 +586,6 @@ app.post('/api/links', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE LINK =====
 app.put('/api/links/:id', authMiddleware, (req, res) => {
     try {
         const { id } = req.params;
@@ -648,7 +633,6 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE LINK STATUS =====
 app.put('/api/links/:id/status', authMiddleware, (req, res) => {
     try {
         const { id } = req.params;
@@ -672,7 +656,6 @@ app.put('/api/links/:id/status', authMiddleware, (req, res) => {
     }
 });
 
-// ===== DELETE LINK =====
 app.delete('/api/links/:id', authMiddleware, (req, res) => {
     try {
         const { id } = req.params;
@@ -735,7 +718,6 @@ app.get('/api/link/:id', (req, res) => {
             });
         }
 
-        // ===== TRACK VISIT - 24HR UNIQUE =====
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         
@@ -754,7 +736,6 @@ app.get('/api/link/:id', (req, res) => {
             console.log('👤 New unique visitor:', deviceId.substring(0, 10));
         }
         
-        // Get popup settings for this link
         const popupSettings = link.popupSettings || db.popupSettings || {
             image: null,
             title: '🎁 Claim Your Reward',
@@ -856,7 +837,6 @@ app.get('/api/all-stats', authMiddleware, (req, res) => {
     }
 });
 
-// ==================== GET LINK STATS (ADMIN ONLY) ====================
 app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
     try {
         const { linkId } = req.params;
@@ -889,7 +869,6 @@ app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
 
 // ==================== USER DASHBOARD ROUTES ====================
 
-// ===== GET USER DASHBOARD LINK =====
 app.get('/api/parent-link', (req, res) => {
     try {
         const db = readDB();
@@ -910,11 +889,9 @@ app.get('/api/parent-link', (req, res) => {
     }
 });
 
-// ===== GET VISIT STATS =====
 app.get('/api/visit-stats/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
-        const { startDate, endDate } = req.query;
         const db = readDB();
 
         const link = db.links.find(l => l.id === linkId);
@@ -940,7 +917,6 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
 
 // ==================== RENEWAL ROUTES ====================
 
-// ===== REQUEST RENEWAL =====
 app.post('/api/renewal/request', (req, res) => {
     try {
         const { linkId, plan } = req.body;
@@ -994,7 +970,6 @@ app.post('/api/renewal/request', (req, res) => {
     }
 });
 
-// ===== CONFIRM PAYMENT =====
 app.post('/api/renewal/confirm-payment', (req, res) => {
     try {
         const { linkId, plan, transactionId } = req.body;
@@ -1049,7 +1024,6 @@ app.post('/api/renewal/confirm-payment', (req, res) => {
     }
 });
 
-// ===== GET RENEWAL REQUESTS (ADMIN) =====
 app.get('/api/renewal/requests', authMiddleware, (req, res) => {
     try {
         const db = readDB();
@@ -1060,7 +1034,6 @@ app.get('/api/renewal/requests', authMiddleware, (req, res) => {
     }
 });
 
-// ===== GET RENEWAL STATUS (USER) =====
 app.get('/api/renewal/status/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
@@ -1079,7 +1052,6 @@ app.get('/api/renewal/status/:linkId', (req, res) => {
     }
 });
 
-// ===== MARK AS PAID (ADMIN) =====
 app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
     try {
         const { requestId } = req.params;
@@ -1100,7 +1072,6 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, (req, res) => {
     }
 });
 
-// ===== APPROVE RENEWAL =====
 app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
     try {
         const { requestId } = req.params;
@@ -1132,7 +1103,6 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
     }
 });
 
-// ===== REJECT RENEWAL =====
 app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
     try {
         const { requestId } = req.params;
@@ -1149,7 +1119,6 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, (req, res) => {
     }
 });
 
-// ===== DELETE PROCESSED REQUEST =====
 app.delete('/api/renewal/request/:requestId', authMiddleware, (req, res) => {
     try {
         const { requestId } = req.params;
@@ -1168,7 +1137,6 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE PRICING =====
 app.post('/api/admin/pricing', authMiddleware, (req, res) => {
     try {
         const { pricing, paymentSettings } = req.body;
@@ -1182,7 +1150,6 @@ app.post('/api/admin/pricing', authMiddleware, (req, res) => {
     }
 });
 
-// ===== GET PRICING =====
 app.get('/api/pricing', (req, res) => {
     try {
         const db = readDB();
@@ -1195,7 +1162,6 @@ app.get('/api/pricing', (req, res) => {
     }
 });
 
-// ===== GET SETTINGS =====
 app.get('/api/settings', (req, res) => {
     try {
         const db = readDB();
@@ -1260,7 +1226,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 ADMIN PASSCODE: 951753');
+    console.log('🔑 ADMIN PASSCODE: 923348');
     console.log('⏰ Session: 7 DAYS');
     console.log('💾 Data: Permanent storage with auto-recovery');
     console.log('📊 Stats: 24hr Unique Visitor + Claim tracking');
