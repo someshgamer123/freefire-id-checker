@@ -18,7 +18,6 @@
             display: flex;
             flex-direction: column;
             padding: 12px;
-            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -85,7 +84,8 @@
 
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: transparent; cursor: default; touch-action: none;
+            background: transparent;
+            pointer-events: none !important;
         }
 
         .headline {
@@ -111,6 +111,7 @@
             border: 2px solid rgba(255, 255, 255, 0.06);
             width: 100%; max-width: 400px;
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            z-index: 20;
         }
         .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
         .claim-btn:active { transform: scale(0.97); }
@@ -127,7 +128,6 @@
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        /* ===== ANIMATED POPUP OVERLAY ===== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
@@ -197,6 +197,7 @@
             cursor: pointer; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
             transition: all 0.3s ease; position: relative; box-shadow: 0 0 40px rgba(102, 126, 234, 0.25);
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            z-index: 10;
         }
         .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(102, 126, 234, 0.4); }
         .popup-card .popup-claim-btn:active { transform: scale(0.97); }
@@ -205,7 +206,6 @@
             transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
         }
 
-        /* ===== CONFETTI - 2 SECOND VERSION ===== */
         .confetti-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
             pointer-events: none; overflow: hidden;
@@ -430,7 +430,6 @@
         </div>
     </div>
 
-    <!-- ===== POPUP OVERLAY ===== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
             <div class="popup-image" id="popupImage">
@@ -443,14 +442,11 @@
         </div>
     </div>
 
-    <!-- ===== CONFETTI CELEBRATION ===== -->
     <div class="confetti-container" id="confettiContainer"></div>
 
-    <!-- ===== SOUND TOGGLE ===== -->
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
-        // ==================== CONFIG ====================
         const pathSegments = window.location.pathname.split('/');
         const linkId = pathSegments[pathSegments.length - 1] || 'default';
         const urlParams = new URLSearchParams(window.location.search);
@@ -475,21 +471,14 @@
         }
         videoUrl = fixYouTubeUrl(videoUrl);
 
-        // ==================== STATE ====================
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
-        let popupClicked = false;
 
-        // ==================== SCREEN LOCK ====================
-        const overlay = document.getElementById('videoOverlay');
-        overlay.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
-        overlay.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); return false; });
-        overlay.addEventListener('touchmove', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
-        if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait').catch(() => {}); }
-        document.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+        if (screen.orientation && screen.orientation.lock) { 
+            screen.orientation.lock('portrait').catch(() => {}); 
+        }
 
-        // ==================== EXIT SYSTEM ====================
         function trackVideoPlay() {
             if (isVideoPlaying) return;
             videoPlayCount++;
@@ -517,23 +506,6 @@
             return false;
         }
 
-        function showToast(msg) {
-            const existing = document.querySelector('.toast-msg');
-            if (existing) existing.remove();
-            const toast = document.createElement('div');
-            toast.className = 'toast-msg';
-            toast.textContent = msg;
-            toast.style.cssText = `
-                position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-                background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 12px;
-                font-size: 14px; z-index: 9999; backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.1); animation: fadeIn 0.3s ease;
-                max-width: 90%; text-align: center; font-weight: 500;
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
-        }
-
         history.pushState(null, null, window.location.href);
         window.addEventListener('popstate', () => handleBackPress());
 
@@ -548,18 +520,10 @@
 
         document.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
 
-        let touchStartX = 0;
-        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-        document.addEventListener('touchend', e => {
-            const diff = touchStartX - e.changedTouches[0].screenX;
-            if (diff > 80) { e.preventDefault(); if (!isUnlocked) handleBackPress(); return false; }
-        }, { passive: false });
-
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && !isUnlocked) { setTimeout(() => window.focus(), 50); handleBackPress(); }
         });
 
-        // ==================== SOUND TOGGLE ====================
         function toggleSound() {
             isSoundEnabled = !isSoundEnabled;
             document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
@@ -598,7 +562,6 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI CELEBRATION (2 SECOND VERSION) ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -608,7 +571,6 @@
 
             const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
 
-            // Burst 1
             for (let i = 0; i < 60; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-burst-piece';
@@ -633,7 +595,6 @@
                 container.appendChild(el);
             }
 
-            // Falling confetti
             for (let i = 0; i < 80; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-piece';
@@ -651,7 +612,6 @@
                 container.appendChild(el);
             }
 
-            // Clear after 2 seconds
             setTimeout(() => { 
                 container.innerHTML = ''; 
                 container.classList.remove('active'); 
@@ -659,7 +619,6 @@
             }, 2000);
         }
 
-        // ==================== POPUP SYSTEM ====================
         async function loadPopupData() {
             try {
                 const response = await fetch(`/api/link/${linkId}`);
@@ -697,7 +656,6 @@
             overlay.classList.remove('hidden');
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
-            popupClicked = false;
         }
 
         function hidePopup() {
@@ -707,7 +665,6 @@
             document.body.style.overflow = '';
         }
 
-        // ==================== UNLOCK FUNCTIONS ====================
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
@@ -735,14 +692,19 @@
             trackClaim();
             triggerCelebration();
             isUnlocked = true;
+            
             if (claimUrl && claimUrl !== '#') {
-                setTimeout(() => { window.location.href = claimUrl; }, 2500);
+                setTimeout(() => { 
+                    window.location.href = claimUrl; 
+                }, 2500);
             } else {
-                setTimeout(() => { alert('🎉 You have been unlocked!'); document.body.style.overflow = 'auto'; }, 1500);
+                setTimeout(() => { 
+                    alert('🎉 You have been unlocked!'); 
+                    document.body.style.overflow = 'auto'; 
+                }, 1500);
             }
         }
 
-        // ==================== BUTTON EVENTS (SENSITIVE) ====================
         function addRipple(e, btn) {
             const ripple = document.createElement('span');
             ripple.className = 'ripple';
@@ -755,32 +717,10 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // ===== POPUP CLICK HANDLER (anywhere on popup card) =====
-        document.getElementById('popupCard').addEventListener('click', function(e) {
-            // Don't trigger if clicking the claim button specifically (it has its own handler)
-            if (e.target.closest('.popup-claim-btn')) return;
-            if (isPopupClaimed) return;
-            
-            // Trigger celebration effect for 2 seconds
-            triggerCelebration();
-            
-            // Show a visual feedback that something happened
-            const sub = document.getElementById('popupSub');
-            sub.textContent = '🎉 Loading...';
-            sub.style.color = '#667eea';
-            
-            // After 2 seconds, proceed with unlock
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 2000);
-        });
-
-        // ===== POPUP CLAIM BUTTON =====
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent card click from firing
+            e.stopPropagation();
             if (isPopupClaimed) return;
             addRipple(e, this);
-            // Trigger celebration and unlock immediately
             triggerCelebration();
             setTimeout(() => {
                 unlockAndPlay();
@@ -796,8 +736,20 @@
             }, 200);
         }, { passive: true });
 
-        // ===== MAIN CLAIM BUTTON =====
+        document.getElementById('popupCard').addEventListener('click', function(e) {
+            if (e.target.closest('.popup-claim-btn')) return;
+            if (isPopupClaimed) return;
+            triggerCelebration();
+            const sub = document.getElementById('popupSub');
+            sub.textContent = '🎉 Loading...';
+            sub.style.color = '#667eea';
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 2000);
+        });
+
         document.getElementById('claimBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
             if (!isPopupClaimed) {
                 addRipple(e, this);
                 unlockFromMainButton();
@@ -810,7 +762,6 @@
             }
         }, { passive: true });
 
-        // ==================== VIDEO FUNCTIONS ====================
         function forcePlayVideo(iframe) {
             try {
                 iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
@@ -860,7 +811,6 @@
                 return;
             }
 
-            // Direct video
             const video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
@@ -905,7 +855,6 @@
             }, 1500);
         }
 
-        // ==================== TRACK CLAIM ====================
         async function trackClaim() {
             try {
                 const response = await fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
@@ -913,7 +862,6 @@
             } catch (e) {}
         }
 
-        // ==================== EMOJI PICKER ====================
         function toggleEmojiPicker() {
             document.getElementById('emojiList').classList.toggle('open');
         }
@@ -922,7 +870,6 @@
             if (!picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
         });
 
-        // ==================== FLYING REACTIONS ====================
         const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
         function createFlyingReaction(emoji) {
             const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
@@ -938,7 +885,6 @@
             setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
         }
 
-        // ==================== CHAT SYSTEM ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
             { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
@@ -1023,11 +969,9 @@
         for (let i = 0; i < 10; i++) setTimeout(addChat, i * 120);
         setInterval(() => { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
 
-        // ==================== KEEP AWAKE ====================
         async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
         keepAwake();
 
-        // ==================== FULLSCREEN ====================
         document.getElementById('videoContainer').addEventListener('click', function() {
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -1036,7 +980,6 @@
             }
         });
 
-        // ==================== INIT ====================
         document.getElementById('headline').classList.remove('show');
         document.getElementById('claimBtnWrapper').classList.remove('show');
         document.getElementById('chatSection').classList.remove('show');
@@ -1050,8 +993,7 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('🔒 SCREEN LOCK: Active');
-        console.log('🎯 POPUP: Click anywhere on popup for confetti → video unlock');
+        console.log('✅ CLAIM BUTTON: Fixed - Overlay removed, button clickable');
     </script>
 </body>
 </html>

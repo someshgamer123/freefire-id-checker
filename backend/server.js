@@ -11,10 +11,8 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// ==================== TRUST PROXY ====================
 app.set('trust proxy', 1);
 
-// ==================== SECURITY HEADERS ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -33,7 +31,6 @@ app.use(helmet({
     }
 }));
 
-// ==================== CORS ====================
 app.use(cors({
     origin: ['http://localhost:3000', 'https://freefire-id-checker.onrender.com', 'https://*.onrender.com'],
     credentials: true,
@@ -41,7 +38,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== RATE LIMITING ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -60,7 +56,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
-// ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 let dbCache = null;
 let dbLastRead = 0;
@@ -256,7 +251,6 @@ function isUnique24hr(store, deviceId) {
     return true;
 }
 
-// ==================== AUTH ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -1101,7 +1095,6 @@ app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
 });
 
-// ==================== START ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
