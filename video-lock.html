@@ -407,7 +407,7 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <button class="claim-btn" id="claimBtn" onclick="handleClaimClick(event)">🎁 Claim Now</button>
+                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
         </div>
     </div>
@@ -438,7 +438,7 @@
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
             <div class="popup-sub" id="popupSub">Tap anywhere to claim your reward</div>
-            <button class="popup-claim-btn" id="popupClaimBtn" onclick="handlePopupClaim(event)">🎁 Claim Now</button>
+            <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
         </div>
     </div>
 
@@ -479,35 +479,10 @@
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
+        let redirectDone = false; // NEW: Prevent multiple redirects
 
         if (screen.orientation && screen.orientation.lock) { 
             screen.orientation.lock('portrait').catch(() => {}); 
-        }
-
-        // ==================== CLAIM BUTTON HANDLER - FIXED ====================
-        function handleClaimClick(event) {
-            event.stopPropagation();
-            console.log('🎯 Claim button clicked!');
-            console.log('📌 claimUrl value:', claimUrl);
-            console.log('📌 isPopupClaimed:', isPopupClaimed);
-            
-            if (!isPopupClaimed) {
-                addRipple(event, document.getElementById('claimBtn'));
-                unlockFromMainButton();
-            } else {
-                console.log('⚠️ Already claimed!');
-            }
-        }
-
-        function handlePopupClaim(event) {
-            event.stopPropagation();
-            console.log('🎯 Popup claim button clicked!');
-            if (isPopupClaimed) return;
-            addRipple(event, document.getElementById('popupClaimBtn'));
-            triggerCelebration();
-            setTimeout(() => {
-                unlockAndPlay();
-            }, 200);
         }
 
         // ==================== OVERLAY ====================
@@ -725,27 +700,58 @@
             isUnlocked = true;
         }
 
-        function unlockFromMainButton() {
-            if (isPopupClaimed) return;
+        // ===== FIXED: Main Claim Button Handler =====
+        function handleClaimClick() {
+            console.log('🎯 Claim button clicked!');
+            console.log('📌 claimUrl value:', claimUrl);
+            console.log('📌 isPopupClaimed:', isPopupClaimed);
+            console.log('📌 redirectDone:', redirectDone);
+            
+            // FIX: Allow redirect even if isPopupClaimed is true
+            // Just check if redirect is not already done
+            if (redirectDone) {
+                console.log('⚠️ Redirect already done, ignoring click');
+                return;
+            }
+            
+            // If already claimed, still allow redirect
+            if (isPopupClaimed) {
+                console.log('✅ Already claimed, redirecting to claimUrl');
+                performRedirect();
+                return;
+            }
+            
+            // First time claim
             isPopupClaimed = true;
             trackClaim();
             triggerCelebration();
             isUnlocked = true;
+            performRedirect();
+        }
+
+        function performRedirect() {
+            if (redirectDone) return;
+            redirectDone = true;
             
-            console.log('🚀 Unlocking with claimUrl:', claimUrl);
+            console.log('🚀 Performing redirect to:', claimUrl);
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                console.log('🔗 Redirecting to:', claimUrl);
                 setTimeout(() => { 
+                    console.log('🔗 Redirecting to:', claimUrl);
                     window.location.href = claimUrl; 
-                }, 2500);
+                }, 1500);
             } else {
                 console.log('⚠️ No valid claim URL, showing alert');
                 setTimeout(() => { 
                     alert('🎉 You have been unlocked!'); 
                     document.body.style.overflow = 'auto'; 
-                }, 1500);
+                }, 1000);
             }
+        }
+
+        // ===== Legacy function for compatibility =====
+        function unlockFromMainButton() {
+            handleClaimClick();
         }
 
         // ==================== RIPPLE EFFECT ====================
@@ -761,6 +767,26 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
+        // ===== POPUP CLAIM BUTTON =====
+        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (isPopupClaimed) return;
+            addRipple(e, this);
+            triggerCelebration();
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 200);
+        });
+        document.getElementById('popupClaimBtn').addEventListener('touchstart', function(e) {
+            if (isPopupClaimed) return;
+            e.stopPropagation();
+            addRipple(e, this);
+            triggerCelebration();
+            setTimeout(() => {
+                unlockAndPlay();
+            }, 200);
+        }, { passive: true });
+
         // ===== POPUP CARD CLICK =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) return;
@@ -773,6 +799,17 @@
                 unlockAndPlay();
             }, 2000);
         });
+
+        // ===== MAIN CLAIM BUTTON - FIXED =====
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            addRipple(e, this);
+            handleClaimClick(); // Use the fixed handler
+        });
+        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+            addRipple(e, this);
+            handleClaimClick(); // Use the fixed handler
+        }, { passive: true });
 
         // ==================== VIDEO FUNCTIONS ====================
         function forcePlayVideo(iframe) {
@@ -1013,7 +1050,7 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ CLAIM BUTTON: Fixed with direct onclick handler');
+        console.log('✅ CLAIM BUTTON: FINAL FIXED - Redirect will work even after claim');
     </script>
 </body>
 </html>
