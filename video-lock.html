@@ -130,7 +130,6 @@
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        /* ===== POPUP OVERLAY - FIXED ===== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
             background: rgba(0, 0, 0, 0.75);
@@ -217,37 +216,73 @@
             transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
         }
 
+        /* ===== CONFETTI - MOBILE OPTIMIZED ===== */
         .confetti-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
             pointer-events: none; overflow: hidden;
         }
         .confetti-container.active { pointer-events: none; }
 
+        /* Mobile-first confetti pieces - smaller size for phones */
         .confetti-piece {
-            position: absolute; width: 10px; height: 14px;
-            animation: confettiFall 2s linear forwards;
-            pointer-events: none; opacity: 0;
-            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            position: absolute;
+            width: 6px;
+            height: 9px;
+            animation: confettiFall 1.8s linear forwards;
+            pointer-events: none;
+            opacity: 0;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
+
+        /* Larger confetti for desktop */
+        @media (min-width: 768px) {
+            .confetti-piece {
+                width: 10px;
+                height: 14px;
+                animation-duration: 2.5s;
+            }
+        }
+
         @keyframes confettiFall {
             0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
-            25% { opacity: 1; transform: translateY(25vh) rotate(90deg) scale(1.2); }
-            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.4); }
-            75% { opacity: 0.9; transform: translateY(75vh) rotate(270deg) scale(1.1); }
-            100% { opacity: 0; transform: translateY(100vh) rotate(360deg) scale(0.5); }
+            25% { opacity: 1; transform: translateY(25vh) rotate(90deg) scale(1.1); }
+            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.2); }
+            75% { opacity: 0.9; transform: translateY(75vh) rotate(270deg) scale(1.0); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(360deg) scale(0.4); }
         }
 
         .confetti-burst-piece {
-            position: absolute; width: 8px; height: 12px;
-            animation: confettiBurst 1.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
-            pointer-events: none; opacity: 0;
-            will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            position: absolute;
+            width: 5px;
+            height: 8px;
+            animation: confettiBurst 1s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+            pointer-events: none;
+            opacity: 0;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
+
+        /* Larger burst confetti for desktop */
+        @media (min-width: 768px) {
+            .confetti-burst-piece {
+                width: 8px;
+                height: 12px;
+                animation-duration: 1.4s;
+            }
+        }
+
         @keyframes confettiBurst {
             0% { opacity: 1; transform: translate(0, 0) scale(0.3) rotate(0deg); }
-            40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.3) rotate(200deg); }
-            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.9) rotate(320deg); }
-            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.3) rotate(400deg); }
+            40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(200deg); }
+            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.8) rotate(320deg); }
+            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.2) rotate(400deg); }
         }
 
         .sound-toggle {
@@ -377,8 +412,6 @@
             .emoji-picker-btn { width: 38px; height: 38px; font-size: 16px; }
             .emoji-picker-btn .emoji-list { width: 140px; bottom: 48px; }
             .emoji-picker-btn .emoji-list span { font-size: 20px; }
-            .confetti-piece { width: 8px; height: 10px; }
-            .confetti-burst-piece { width: 6px; height: 9px; }
             .sound-toggle { width: 34px; height: 34px; font-size: 15px; bottom: 70px; right: 14px; }
         }
         @media (max-width: 400px) {
@@ -398,8 +431,6 @@
             .emoji-picker-btn { width: 32px; height: 32px; font-size: 14px; }
             .emoji-picker-btn .emoji-list { width: 120px; bottom: 42px; }
             .emoji-picker-btn .emoji-list span { font-size: 16px; }
-            .confetti-piece { width: 6px; height: 8px; }
-            .confetti-burst-piece { width: 5px; height: 7px; }
             .sound-toggle { width: 30px; height: 30px; font-size: 13px; bottom: 60px; right: 10px; }
         }
         :-webkit-full-screen .video-container { border-radius: 0; }
@@ -444,7 +475,6 @@
         </div>
     </div>
 
-    <!-- ===== POPUP OVERLAY - FIXED ===== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
             <div class="popup-image" id="popupImage">
@@ -457,10 +487,8 @@
         </div>
     </div>
 
-    <!-- ===== CONFETTI ===== -->
     <div class="confetti-container" id="confettiContainer"></div>
 
-    <!-- ===== SOUND TOGGLE ===== -->
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
@@ -495,6 +523,9 @@
         let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
+
+        // Detect if mobile device
+        const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
         // ==================== OVERLAY ====================
         // No JS events on overlay - only CSS pointer-events: none
@@ -584,7 +615,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI ====================
+        // ==================== CONFETTI - MOBILE OPTIMIZED ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -594,52 +625,66 @@
 
             const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
 
-            for (let i = 0; i < 60; i++) {
+            // Mobile: fewer pieces, smaller size
+            const burstCount = isMobile ? 35 : 60;
+            const fallCount = isMobile ? 50 : 80;
+            const burstSize = isMobile ? '4px' : '8px';
+            const fallSizeW = isMobile ? '4px' : '10px';
+            const fallSizeH = isMobile ? '6px' : '14px';
+
+            // Burst confetti
+            for (let i = 0; i < burstCount; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-burst-piece';
                 const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
+                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
+                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
                 el.style.width = w + 'px'; el.style.height = h + 'px';
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 const angle = Math.random() * 2 * Math.PI;
-                const dist = 150 + Math.random() * 400;
-                const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
-                const tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
-                const tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
+                const dist = isMobile ? 80 + Math.random() * 200 : 150 + Math.random() * 400;
+                const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - (isMobile ? 50 : 100);
+                const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - (isMobile ? 30 : 50);
+                const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - (isMobile ? 15 : 20);
                 el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
                 el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                 el.style.left = (50 + Math.random() * 6 - 3) + '%';
                 el.style.top = (45 + Math.random() * 10 - 5) + '%';
-                el.style.animationDelay = (Math.random() * 0.2) + 's';
+                el.style.animationDelay = (Math.random() * 0.15) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
+                if (Math.random() > 0.8) el.style.boxShadow = `0 0 6px ${color}`;
                 container.appendChild(el);
             }
 
-            for (let i = 0; i < 80; i++) {
+            // Falling confetti
+            for (let i = 0; i < fallCount; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-piece';
                 const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
+                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
+                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
                 el.style.width = w + 'px'; el.style.height = h + 'px';
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
-                el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-                el.style.animationDelay = (Math.random() * 0.5) + 's';
+                const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
+                el.style.animationDuration = duration + 's';
+                el.style.animationDelay = (Math.random() * 0.4) + 's';
                 el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                if (Math.random() > 0.8) el.style.boxShadow = `0 0 10px ${color}`;
+                if (Math.random() > 0.8) el.style.boxShadow = `0 0 6px ${color}`;
                 container.appendChild(el);
             }
 
+            // Clear after animation
+            const clearDelay = isMobile ? 1800 : 2500;
             setTimeout(() => { 
                 container.innerHTML = ''; 
                 container.classList.remove('active'); 
                 isCelebrationActive = false; 
-            }, 2000);
+            }, clearDelay);
         }
 
         // ==================== POPUP SYSTEM ====================
@@ -752,7 +797,7 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // ===== POPUP CLAIM BUTTON - FIXED =====
+        // ===== POPUP CLAIM BUTTON =====
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -774,7 +819,7 @@
             unlockAndPlay();
         }, { passive: true });
 
-        // ===== POPUP CARD CLICK - FIXED =====
+        // ===== POPUP CARD CLICK =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) {
                 console.log('⚠️ Button click handled by button handler');
@@ -1042,18 +1087,17 @@
 
         async function init() {
             await loadPopupData();
-            // Popup shows instantly
             showPopup();
         }
         init();
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
-        console.log('🔘 Button Text:', buttonText);
+        console.log('📱 Device:', isMobile ? 'Mobile' : 'Desktop');
+        console.log('✅ CONFETTI OPTIMIZED: Smaller size for mobile, larger for desktop');
         console.log('✅ POPUP CLICK FIXED: Both card and button are clickable');
         console.log('✅ SINGLE CONFETTI: Only one confetti effect on any click');
         console.log('✅ INSTANT POPUP: Shows immediately after UID verified');
-        console.log('✅ EMOJI FIXED: Proper emoji rendering with font-family');
     </script>
 </body>
 </html>
