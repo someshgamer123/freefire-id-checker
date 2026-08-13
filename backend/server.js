@@ -194,7 +194,7 @@ function getDefaultStats() {
 }
 
 function getDefaultDB() {
-    const hashedPasscode = bcrypt.hashSync('923348', 10);
+    const hashedPasscode = bcrypt.hashSync('951753', 10);
     return {
         admin: {
             passcode: hashedPasscode,
@@ -1226,7 +1226,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 ADMIN PASSCODE: 923348');
+    console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
     console.log('💾 Data: Permanent storage with auto-recovery');
     console.log('📊 Stats: 24hr Unique Visitor + Claim tracking');
