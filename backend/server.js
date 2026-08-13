@@ -105,6 +105,10 @@ function readDB() {
             };
         }
         
+        // Ensure settings.background exists
+        if (!parsed.settings) parsed.settings = {};
+        if (parsed.settings.background === undefined) parsed.settings.background = null;
+        
         // Ensure all links have stats fields
         if (parsed.links) {
             parsed.links.forEach(link => {
@@ -150,6 +154,9 @@ function writeDB(data) {
         if (!data.stats.dailyClaims) data.stats.dailyClaims = {};
         if (data.stats.totalVisitors === undefined) data.stats.totalVisitors = 0;
         if (data.stats.totalClaims === undefined) data.stats.totalClaims = 0;
+        
+        if (!data.settings) data.settings = {};
+        if (data.settings.background === undefined) data.settings.background = null;
         
         if (data.links) {
             data.links.forEach(link => {
@@ -448,24 +455,22 @@ app.post('/api/admin/theme', authMiddleware, (req, res) => {
     }
 });
 
-// ===== UPDATE BACKGROUND =====
+// ===== UPDATE BACKGROUND - FIXED =====
 app.post('/api/admin/background', authMiddleware, (req, res) => {
     try {
         const { background } = req.body;
         const db = readDB();
 
-        if (background && !/^data:image\/(jpeg|png|gif|webp);base64,/.test(background)) {
+        // Accept both base64 and URL
+        if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
             return res.status(400).json({ error: 'Invalid image format' });
         }
 
-        if (background && Buffer.from(background.split(',')[1], 'base64').length > 1024 * 1024) {
-            return res.status(400).json({ error: 'Image too large (max 1MB)' });
-        }
-
-        db.settings.background = background;
+        db.settings.background = background || null;
         writeDB(db);
         res.json({ success: true });
     } catch (error) {
+        console.error('❌ Background update error:', error);
         res.status(500).json({ error: 'Failed to update background' });
     }
 });
@@ -477,7 +482,6 @@ app.post('/api/admin/popup', authMiddleware, (req, res) => {
         const db = readDB();
 
         if (linkId) {
-            // Update specific link popup
             const link = db.links.find(l => l.id === linkId);
             if (!link) {
                 return res.status(404).json({ error: 'Link not found' });
@@ -488,7 +492,6 @@ app.post('/api/admin/popup', authMiddleware, (req, res) => {
             if (buttonText !== undefined) link.popupSettings.buttonText = buttonText;
             if (subtitle !== undefined) link.popupSettings.subtitle = subtitle;
         } else {
-            // Update global popup settings
             if (!db.popupSettings) db.popupSettings = {};
             if (image !== undefined) db.popupSettings.image = image;
             if (title !== undefined) db.popupSettings.title = title;
@@ -551,7 +554,7 @@ app.get('/api/links', authMiddleware, (req, res) => {
 // ===== CREATE LINK =====
 app.post('/api/links', authMiddleware, (req, res) => {
     try {
-        const { name, video, claim, buttonText, headline, expiryDate } = req.body;
+        const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
         const db = readDB();
 
         if (!name || name.length < 1 || name.length > 100) {
@@ -580,7 +583,7 @@ app.post('/api/links', authMiddleware, (req, res) => {
             dailyVisits: {},
             claims: 0,
             dailyClaims: {},
-            popupSettings: {
+            popupSettings: popupSettings || {
                 image: null,
                 title: '🎁 Claim Your Reward',
                 buttonText: 'Claim Now',
