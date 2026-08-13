@@ -457,6 +457,45 @@
         .flying-reaction.type-2 { animation-duration: 3.2s; }
         .flying-reaction.type-3 { animation-duration: 2.8s; }
 
+        /* ===== TAP TO PLAY OVERLAY ===== */
+        .tap-to-play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+            border-radius: 12px;
+        }
+        .tap-to-play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .tap-to-play-overlay .play-icon {
+            font-size: 60px;
+            animation: pulse 2s ease-in-out infinite;
+            text-shadow: 0 0 40px rgba(102,126,234,0.5);
+        }
+        .tap-to-play-overlay .tap-text {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
         @media (max-width: 600px) {
             body { padding: 8px; }
             .video-wrapper { padding: 5px; border-radius: 12px; }
@@ -476,6 +515,8 @@
             .emoji-picker-btn { width: 38px; height: 38px; font-size: 16px; }
             .emoji-picker-btn .emoji-list { width: 140px; bottom: 48px; }
             .emoji-picker-btn .emoji-list span { font-size: 20px; }
+            .tap-to-play-overlay .play-icon { font-size: 45px; }
+            .tap-to-play-overlay .tap-text { font-size: 12px; }
         }
 
         @media (max-width: 400px) {
@@ -491,6 +532,8 @@
             .emoji-picker-btn { width: 32px; height: 32px; font-size: 14px; }
             .emoji-picker-btn .emoji-list { width: 120px; bottom: 42px; }
             .emoji-picker-btn .emoji-list span { font-size: 16px; }
+            .tap-to-play-overlay .play-icon { font-size: 35px; }
+            .tap-to-play-overlay .tap-text { font-size: 10px; }
         }
 
         :-webkit-full-screen .video-container { border-radius: 0; }
@@ -509,6 +552,11 @@
             <div class="video-container" id="videoContainer">
                 <div id="videoPlayer">
                     <!-- Video will be inserted here -->
+                </div>
+                <!-- ===== TAP TO PLAY OVERLAY (Instagram Fix) ===== -->
+                <div class="tap-to-play-overlay" id="tapOverlay" onclick="handleTapToPlay()">
+                    <span class="play-icon">▶️</span>
+                    <span class="tap-text">Tap to Play Video</span>
                 </div>
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
@@ -601,14 +649,19 @@
         let isUnlocked = false;
         let pageLoadTime = Date.now();
         let isExiting = false;
+        let isVideoPlaying = false;
 
         function trackVideoPlay() {
+            if (isVideoPlaying) return;
             videoPlayCount++;
+            isVideoPlaying = true;
             console.log('🎬 Video play count:', videoPlayCount);
             if (videoPlayCount >= 2) {
                 isUnlocked = true;
                 console.log('✅ UNLOCKED after 2 video plays');
             }
+            // Hide tap overlay when video plays
+            document.getElementById('tapOverlay').classList.add('hidden');
         }
 
         function handleBackPress() {
@@ -743,6 +796,36 @@
             }
         });
 
+        // ==================== TAP TO PLAY (Instagram Fix) ====================
+        function handleTapToPlay() {
+            console.log('👆 Tap to play triggered');
+            const overlay = document.getElementById('tapOverlay');
+            
+            // Try to play the video
+            const iframe = document.getElementById('ytPlayer');
+            if (iframe) {
+                forcePlayVideo(iframe);
+                overlay.classList.add('hidden');
+                trackVideoPlay();
+                return;
+            }
+            
+            // Check for video element
+            const video = document.querySelector('#videoPlayer video');
+            if (video) {
+                video.play().then(() => {
+                    console.log('▶️ Video playing after tap');
+                    overlay.classList.add('hidden');
+                    trackVideoPlay();
+                }).catch(() => {});
+                return;
+            }
+            
+            // If nothing works, reload the video
+            loadVideo();
+            overlay.classList.add('hidden');
+        }
+
         // ==================== FORCE AUTOPLAY ON ALL DEVICES ====================
         function loadVideo() {
             const container = document.getElementById('videoPlayer');
@@ -757,7 +840,7 @@
                 console.log('📺 YouTube Video ID:', ytId[1]);
                 const videoId = ytId[1];
 
-                // ===== METHOD 1: Direct iframe with all autoplay parameters =====
+                // ===== Create iframe with autoplay =====
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
                 iframe.src = 'https://www.youtube.com/embed/' + videoId + 
@@ -783,36 +866,47 @@
                 
                 container.appendChild(iframe);
 
-                // ===== METHOD 2: Force play on load =====
+                // ===== On load - try to play =====
                 iframe.onload = function() {
                     console.log('✅ YouTube iframe loaded');
-                    forcePlayVideo(iframe);
+                    // Try to play immediately
+                    setTimeout(() => {
+                        forcePlayVideo(iframe);
+                        // Check if video started playing
+                        setTimeout(() => {
+                            if (!isVideoPlaying) {
+                                // Show tap overlay if video didn't start
+                                document.getElementById('tapOverlay').classList.remove('hidden');
+                            }
+                        }, 3000);
+                    }, 500);
                     trackVideoPlay();
                 };
 
-                // ===== METHOD 3: Reload after 500ms =====
-                setTimeout(() => {
-                    try {
-                        const currentSrc = iframe.src;
-                        iframe.src = currentSrc;
-                        console.log('🔄 Reloaded iframe for autoplay');
-                        setTimeout(() => forcePlayVideo(iframe), 300);
-                    } catch(e) {}
-                }, 500);
-
-                // ===== METHOD 4: Persistent play every 1.5 seconds =====
-                let playInterval = setInterval(() => {
+                // ===== Force play every 2 seconds for 10 seconds =====
+                let playAttempts = 0;
+                const playInterval = setInterval(() => {
+                    if (playAttempts > 5) {
+                        clearInterval(playInterval);
+                        // If still not playing, show tap overlay
+                        if (!isVideoPlaying) {
+                            document.getElementById('tapOverlay').classList.remove('hidden');
+                        }
+                        return;
+                    }
                     forcePlayVideo(iframe);
+                    playAttempts++;
                 }, 1500);
 
-                // ===== METHOD 5: User interaction triggers =====
+                // ===== User interaction triggers =====
                 const triggerPlay = function() {
                     forcePlayVideo(iframe);
-                    console.log('🔊 Play triggered by user interaction');
+                    document.getElementById('tapOverlay').classList.add('hidden');
                     trackVideoPlay();
+                    console.log('🔊 Play triggered by user interaction');
                 };
 
-                // Click on anywhere
+                // Click on anywhere (for Instagram)
                 document.addEventListener('click', triggerPlay, { once: true });
                 document.addEventListener('touchstart', triggerPlay, { once: true });
                 
@@ -820,33 +914,23 @@
                 document.getElementById('videoContainer').addEventListener('click', triggerPlay, { once: true });
                 document.getElementById('videoContainer').addEventListener('touchstart', triggerPlay, { once: true });
 
-                // ===== METHOD 6: Play on visibility change =====
+                // ===== Play on visibility change =====
                 document.addEventListener('visibilitychange', function() {
-                    if (!document.hidden) {
+                    if (!document.hidden && !isVideoPlaying) {
                         forcePlayVideo(iframe);
                         console.log('🔄 Play triggered by visibility change');
                     }
                 });
 
-                // ===== METHOD 7: Keep trying for 30 seconds =====
-                let retryCount = 0;
-                const retryInterval = setInterval(() => {
-                    if (retryCount > 20) {
-                        clearInterval(retryInterval);
-                        return;
-                    }
-                    forcePlayVideo(iframe);
-                    retryCount++;
-                }, 1000);
-
-                // Clean up intervals after 30 seconds
+                // ===== Show tap overlay after 3 seconds if not playing =====
                 setTimeout(() => {
-                    clearInterval(playInterval);
-                    clearInterval(retryInterval);
-                }, 30000);
+                    if (!isVideoPlaying) {
+                        document.getElementById('tapOverlay').classList.remove('hidden');
+                    }
+                }, 4000);
 
-                // Track video play after 3 seconds
-                setTimeout(() => trackVideoPlay(), 3000);
+                // ===== Track after 5 seconds =====
+                setTimeout(() => trackVideoPlay(), 5000);
                 
                 return;
             }
@@ -854,6 +938,7 @@
             // ===== NON-YOUTUBE VIDEO =====
             console.log('🎥 Loading as video element');
             const video = document.createElement('video');
+            video.id = 'videoPlayerElement';
             video.muted = false;
             video.playsInline = true;
             video.webkitPlaysInline = true;
@@ -876,11 +961,16 @@
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 container.innerHTML = '';
                 container.appendChild(iframe);
+                // Show tap overlay for iframe fallback
+                setTimeout(() => {
+                    if (!isVideoPlaying) {
+                        document.getElementById('tapOverlay').classList.remove('hidden');
+                    }
+                }, 3000);
             };
             
             container.appendChild(video);
             
-            // Try to play
             video.onloadedmetadata = function() {
                 console.log('✅ Video loaded');
                 const playPromise = video.play();
@@ -888,40 +978,39 @@
                     playPromise.then(() => {
                         console.log('▶️ Video playing');
                         trackVideoPlay();
+                        document.getElementById('tapOverlay').classList.add('hidden');
                     }).catch(() => {
-                        console.log('⚠️ Autoplay blocked, retrying...');
-                        setTimeout(() => {
+                        console.log('⚠️ Autoplay blocked, showing tap overlay');
+                        document.getElementById('tapOverlay').classList.remove('hidden');
+                        // Retry after user interaction
+                        video.addEventListener('click', function playOnClick() {
                             video.play().then(() => {
-                                console.log('▶️ Video playing on retry');
+                                console.log('▶️ Video playing after click');
                                 trackVideoPlay();
+                                document.getElementById('tapOverlay').classList.add('hidden');
                             }).catch(() => {});
-                        }, 1000);
+                            video.removeEventListener('click', playOnClick);
+                        }, { once: true });
                     });
                 }
             };
 
             // Resume on pause
             video.addEventListener('pause', function() {
-                if (!video.ended) {
+                if (!video.ended && !video.paused) {
                     video.play().catch(() => {});
                     console.log('🔄 Video resumed after pause');
                 }
             });
 
-            // Multiple retry attempts
-            let retryCount = 0;
-            const retryInterval = setInterval(() => {
-                if (retryCount < 10 && video.paused) {
-                    video.play().then(() => {
-                        console.log('▶️ Video playing on retry interval');
-                        trackVideoPlay();
-                        clearInterval(retryInterval);
-                    }).catch(() => {});
-                } else if (retryCount >= 10) {
-                    clearInterval(retryInterval);
-                }
-                retryCount++;
-            }, 1500);
+            // ===== Tap overlay for video =====
+            video.addEventListener('click', function() {
+                video.play().then(() => {
+                    console.log('▶️ Video playing after tap');
+                    trackVideoPlay();
+                    document.getElementById('tapOverlay').classList.add('hidden');
+                }).catch(() => {});
+            });
         }
 
         // ===== FORCE PLAY VIDEO FUNCTION =====
@@ -931,6 +1020,14 @@
                 iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
                 iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
                 console.log('🔊 Force play command sent');
+                // Hide tap overlay if video plays
+                if (!isVideoPlaying) {
+                    setTimeout(() => {
+                        if (!isVideoPlaying) {
+                            document.getElementById('tapOverlay').classList.remove('hidden');
+                        }
+                    }, 2000);
+                }
             } catch(e) {
                 // Iframe may not be ready, try again
                 setTimeout(() => {
@@ -1174,7 +1271,11 @@
         keepAwake();
 
         // ==================== FULLSCREEN ====================
-        document.getElementById('videoContainer').addEventListener('click', function() {
+        document.getElementById('videoContainer').addEventListener('click', function(e) {
+            // Don't trigger fullscreen if tap overlay is visible
+            if (!document.getElementById('tapOverlay').classList.contains('hidden')) {
+                return;
+            }
             const elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (elem.requestFullscreen) {
@@ -1205,7 +1306,7 @@
         console.log('🔒 SCREEN LOCK: Active');
         console.log('⏱️ EXIT RULES: 3 mins OR 4 back presses OR unlocked');
         console.log('🔊 SOUND: UNMUTED + FORCE AUTOPLAY');
-        console.log('📱 All devices - FORCE AUTOPLAY enabled');
+        console.log('📱 Instagram/WhatsApp Fix: Tap to Play overlay');
     </script>
 </body>
 </html>
