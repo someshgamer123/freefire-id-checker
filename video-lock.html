@@ -100,6 +100,9 @@
         .claim-btn-wrapper {
             display: flex; justify-content: center; margin-top: 4px; animation: fadeIn 1.2s ease;
             opacity: 0; transition: opacity 0.5s ease;
+            pointer-events: auto !important;
+            z-index: 15 !important;
+            position: relative;
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
@@ -112,8 +115,9 @@
             border: 2px solid rgba(255, 255, 255, 0.06);
             width: 100%; max-width: 400px;
             touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-            z-index: 5;
+            z-index: 15 !important;
             pointer-events: auto !important;
+            position: relative;
         }
         .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
         .claim-btn:active { transform: scale(0.97); }
@@ -197,7 +201,6 @@
             pointer-events: none;
         }
 
-        /* ===== DUMMY CLAIM BUTTON - VISUAL ONLY ===== */
         .popup-card .popup-claim-btn {
             width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700;
             background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
@@ -490,7 +493,6 @@
         let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
         let pageLoadTime = Date.now();
-        let isMainClaimProcessed = false;
         let celebrationTimeout = null;
 
         // ==================== SCREEN LOCK ====================
@@ -610,7 +612,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI CELEBRATION - FAST ====================
+        // ==================== CONFETTI CELEBRATION ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -733,7 +735,7 @@
             console.log('🔓 Unlocked via popup click');
         }
 
-        // ==================== POPUP CARD CLICK - WHOLE CARD ====================
+        // ==================== POPUP CARD CLICK ====================
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (!isPopupClaimed) {
                 unlockAndPlay();
@@ -748,11 +750,11 @@
 
         // ==================== MAIN CLAIM BUTTON - 100% WORKING ====================
         function handleMainClaim(e) {
+            console.log('🔘 Main claim button clicked!');
+            
             // Prevent multiple clicks
-            if (isMainClaimProcessed) return;
             if (isPopupClaimed) return;
             
-            isMainClaimProcessed = true;
             isPopupClaimed = true;
             
             // Ripple effect
@@ -797,14 +799,28 @@
             console.log('🔓 Unlocked via main claim button');
         }
 
-        // ===== MAIN CLAIM BUTTON EVENTS - MULTIPLE METHODS FOR RELIABILITY =====
-        document.getElementById('claimBtn').addEventListener('click', function(e) {
+        // ===== MAIN CLAIM BUTTON - MULTIPLE EVENT BINDINGS =====
+        const claimBtn = document.getElementById('claimBtn');
+        
+        // Click event
+        claimBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             handleMainClaim(e);
         });
         
-        document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
+        // Touch event
+        claimBtn.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             handleMainClaim(e);
-        }, { passive: true });
+        }, { passive: false });
+        
+        // Mouse down event for extra reliability
+        claimBtn.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            handleMainClaim(e);
+        });
 
         // ==================== POPUP SYSTEM ====================
         async function loadPopupData() {
@@ -1095,7 +1111,7 @@
         console.log('🔘 Button Text:', buttonText);
         console.log('🔒 SCREEN LOCK: Active');
         console.log('🎯 POPUP → Click anywhere → CONFETTI → VIDEO PLAY');
-        console.log('✅ MAIN CLAIM BUTTON: 100% WORKING');
+        console.log('✅ MAIN CLAIM BUTTON: 100% WORKING (Click + Touch + Mousedown)');
         console.log('⚡ CONFETTI: Fast (1.5 seconds)');
     </script>
 </body>
