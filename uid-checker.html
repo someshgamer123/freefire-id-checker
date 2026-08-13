@@ -415,16 +415,16 @@
     <script>
         function playTapSound() {
             try {
-                const audio = new Audio('data:audio/wav;base64,UklGRlAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqNk5mdoqGko6CgmZaPioWDeXJsaGZkZGNkZ2ZqaWxucHFycXBvcG9ubm5ub25ubW1tbG1sbGxra2pqaWloZ2ZmZWVkZGNjYmJhYV9fXg==');
+                var audio = new Audio('data:audio/wav;base64,UklGRlAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqNk5mdoqGko6CgmZaPioWDeXJsaGZkZGNkZ2ZqaWxucHFycXBvcG9ubm5ub25ubW1tbG1sbGxra2pqaWloZ2ZmZWVkZGNjYmJhYV9fXg==');
                 audio.volume = 0.3;
-                audio.play().catch(() => {});
+                audio.play().catch(function() {});
             } catch (e) {}
         }
         
         async function loadBackground() {
             try {
-                const r = await fetch('/api/settings');
-                const data = await r.json();
+                var r = await fetch('/api/settings');
+                var data = await r.json();
                 if (data && data.background) {
                     document.getElementById('bgImage').src = data.background;
                 } else {
@@ -436,60 +436,49 @@
         
         // ===== FANCY ALERT FUNCTIONS =====
         function showCustomAlert() {
-            const overlay = document.getElementById('customAlert');
-            overlay.classList.add('show');
-            
-            // Shake input field
-            const input = document.getElementById('uidInput');
+            document.getElementById('customAlert').classList.add('show');
+            var input = document.getElementById('uidInput');
             input.classList.add('error-input');
-            setTimeout(() => input.classList.remove('error-input'), 600);
-            
-            // Focus on alert button
-            setTimeout(() => {
-                document.getElementById('alertBtn').focus();
-            }, 300);
+            setTimeout(function() { input.classList.remove('error-input'); }, 600);
+            setTimeout(function() { document.getElementById('alertBtn').focus(); }, 300);
         }
         
         function closeAlert() {
             document.getElementById('customAlert').classList.remove('show');
-            const input = document.getElementById('uidInput');
-            input.focus();
-            input.select();
+            document.getElementById('uidInput').focus();
+            document.getElementById('uidInput').select();
         }
         
-        // Close on overlay click
         document.getElementById('customAlert').addEventListener('click', function(e) {
             if (e.target === this) closeAlert();
         });
         
-        // Close on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeAlert();
         });
         
-        // ===== ALERT BUTTON RIPPLE EFFECT =====
         document.getElementById('alertBtn').addEventListener('click', function(e) {
-            const ripple = document.createElement('span');
+            var ripple = document.createElement('span');
             ripple.className = 'ripple';
-            const rect = this.getBoundingClientRect();
+            var rect = this.getBoundingClientRect();
             ripple.style.left = (e.clientX - rect.left) + 'px';
             ripple.style.top = (e.clientY - rect.top) + 'px';
             this.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
+            setTimeout(function() { ripple.remove(); }, 600);
         });
         
-        let linkData = null;
-        let errorStatus = null;
+        var linkData = null;
+        var errorStatus = null;
         
         async function loadLinkData() {
-            const linkId = new URLSearchParams(window.location.search).get('link');
+            var linkId = new URLSearchParams(window.location.search).get('link');
             if (linkId) {
                 try {
-                    const r = await fetch(`/api/link/${linkId}`);
+                    var r = await fetch('/api/link/' + linkId);
                     
                     if (r.status === 403) {
-                        const error = await r.json();
-                        const status = error.status || 'suspended';
+                        var error = await r.json();
+                        var status = error.status || 'suspended';
                         showErrorPage(status);
                         return;
                     }
@@ -504,7 +493,7 @@
                         return;
                     }
                     
-                    const data = await r.json();
+                    var data = await r.json();
                     if (data && data.id) {
                         linkData = data;
                         document.getElementById('btn1').textContent = data.button1 || 'Watch Video';
@@ -525,21 +514,21 @@
             document.getElementById('normalContent').style.display = 'none';
             document.getElementById('errorPage').classList.add('show');
             
-            const icons = {
+            var icons = {
                 'suspended': '⛔',
                 'disabled': '🚫',
                 'expired': '⌛',
                 'not_found': '🔍',
                 'inactive': '⚠️'
             };
-            const titles = {
+            var titles = {
                 'suspended': 'Link Suspended',
                 'disabled': 'Link Disabled',
                 'expired': 'Link Expired',
                 'not_found': 'Link Not Found',
                 'inactive': 'Link Inactive'
             };
-            const subs = {
+            var subs = {
                 'suspended': 'This link has been temporarily suspended by the admin',
                 'disabled': 'This link has been permanently disabled',
                 'expired': 'This link has expired and is no longer active',
@@ -558,17 +547,13 @@
             window.history.back();
         }
         
-        // ===== MAIN UID CHECK FUNCTION =====
         function checkUID() {
-            const uid = document.getElementById('uidInput').value.trim();
-            
-            // Validate UID
+            var uid = document.getElementById('uidInput').value.trim();
             if (uid.length < 8 || uid.length > 12 || !/^\d+$/.test(uid)) {
                 playTapSound();
                 showCustomAlert();
                 return;
             }
-            
             playTapSound();
             localStorage.setItem('playerUID', uid);
             document.getElementById('checkBtn').style.display = 'none';
@@ -576,16 +561,16 @@
             document.getElementById('successPopup').classList.remove('show');
             document.getElementById('buttonsContainer').classList.remove('show');
             
-            const delay = 1000 + Math.random() * 1000;
-            setTimeout(() => {
+            var delay = 1000 + Math.random() * 1000;
+            setTimeout(function() {
                 document.getElementById('loadingContainer').classList.remove('show');
                 document.getElementById('successPopup').classList.add('show');
-                setTimeout(() => { redirectToVideoPage(); }, 1200);
+                setTimeout(function() { redirectToVideoPage(); }, 1200);
             }, delay);
         }
         
         function redirectToVideoPage() {
-            let videoUrl, claimUrl, buttonText, headline;
+            var videoUrl, claimUrl, buttonText, headline;
             if (linkData) {
                 videoUrl = linkData.video || 'https://youtu.be/dQw4w9WgXcQ';
                 claimUrl = linkData.claim || '#';
@@ -601,16 +586,16 @@
             localStorage.setItem('claimUrl', claimUrl);
             localStorage.setItem('buttonText', buttonText);
             localStorage.setItem('headline', headline);
-            window.location.href = `/v/${linkData ? linkData.id : 'default'}?video=${encodeURIComponent(videoUrl)}&claim=${encodeURIComponent(claimUrl)}&btn=${encodeURIComponent(buttonText)}&headline=${encodeURIComponent(headline)}`;
+            window.location.href = '/v/' + (linkData ? linkData.id : 'default') + '?video=' + encodeURIComponent(videoUrl) + '&claim=' + encodeURIComponent(claimUrl) + '&btn=' + encodeURIComponent(buttonText) + '&headline=' + encodeURIComponent(headline);
         }
         
         function handleButtonClick(num) {
             playTapSound();
-            const btn = document.getElementById('btn' + num);
+            var btn = document.getElementById('btn' + num);
             btn.classList.add('tap-effect');
-            setTimeout(() => btn.classList.remove('tap-effect'), 300);
+            setTimeout(function() { btn.classList.remove('tap-effect'); }, 300);
             
-            let videoUrl, claimUrl, buttonText, headline;
+            var videoUrl, claimUrl, buttonText, headline;
             if (linkData) {
                 videoUrl = num === 1 ? linkData.video : linkData.video2 || linkData.video;
                 claimUrl = num === 1 ? linkData.claim : linkData.claim2 || linkData.claim;
@@ -626,7 +611,7 @@
             localStorage.setItem('claimUrl', claimUrl);
             localStorage.setItem('buttonText', buttonText);
             localStorage.setItem('headline', headline);
-            window.location.href = `/v/${linkData ? linkData.id : 'default'}?video=${encodeURIComponent(videoUrl)}&claim=${encodeURIComponent(claimUrl)}&btn=${encodeURIComponent(buttonText)}&headline=${encodeURIComponent(headline)}`;
+            window.location.href = '/v/' + (linkData ? linkData.id : 'default') + '?video=' + encodeURIComponent(videoUrl) + '&claim=' + encodeURIComponent(claimUrl) + '&btn=' + encodeURIComponent(buttonText) + '&headline=' + encodeURIComponent(headline);
         }
         
         function clearInput() {
@@ -636,18 +621,14 @@
             playTapSound();
         }
         
-        // ===== INPUT EVENT LISTENERS =====
         document.getElementById('uidInput').addEventListener('input', function() {
             document.getElementById('clearBtn').classList.toggle('show', this.value.length > 0);
-            // Remove error state on typing
             this.classList.remove('error-input');
         });
-        
         document.getElementById('uidInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkUID();
         });
         
-        // ===== INIT =====
         loadBackground();
         loadLinkData();
     </script>

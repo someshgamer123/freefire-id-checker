@@ -60,7 +60,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
-// ==================== DATABASE (PERMANENT STORAGE) ====================
+// ==================== DATABASE ====================
 const DB_FILE = path.join(__dirname, 'database.json');
 let dbCache = null;
 let dbLastRead = 0;
@@ -73,7 +73,6 @@ function readDB() {
             writeDB(db);
             return db;
         }
-        
         const data = fs.readFileSync(DB_FILE, 'utf8');
         if (!data || data.trim() === '') {
             console.warn('⚠️ Empty database, reinitializing...');
@@ -81,19 +80,14 @@ function readDB() {
             writeDB(db);
             return db;
         }
-        
         const parsed = JSON.parse(data);
-        
-        if (!parsed.stats) {
-            parsed.stats = getDefaultStats();
-        }
+        if (!parsed.stats) { parsed.stats = getDefaultStats(); }
         if (!parsed.stats.uniqueVisitors) parsed.stats.uniqueVisitors = {};
         if (!parsed.stats.uniqueClaims) parsed.stats.uniqueClaims = {};
         if (!parsed.stats.dailyVisitors) parsed.stats.dailyVisitors = {};
         if (!parsed.stats.dailyClaims) parsed.stats.dailyClaims = {};
         if (parsed.stats.totalVisitors === undefined) parsed.stats.totalVisitors = 0;
         if (parsed.stats.totalClaims === undefined) parsed.stats.totalClaims = 0;
-        
         if (!parsed.popupSettings) {
             parsed.popupSettings = {
                 image: null,
@@ -102,10 +96,8 @@ function readDB() {
                 subtitle: 'Tap below to unlock your reward'
             };
         }
-        
         if (!parsed.settings) parsed.settings = {};
         if (parsed.settings.background === undefined) parsed.settings.background = null;
-        
         if (parsed.links) {
             parsed.links.forEach(link => {
                 if (!link.visits) link.visits = 0;
@@ -122,7 +114,6 @@ function readDB() {
                 }
             });
         }
-        
         dbCache = parsed;
         dbLastRead = Date.now();
         return parsed;
@@ -141,19 +132,15 @@ function readDB() {
 
 function writeDB(data) {
     try {
-        if (!data.stats) {
-            data.stats = getDefaultStats();
-        }
+        if (!data.stats) { data.stats = getDefaultStats(); }
         if (!data.stats.uniqueVisitors) data.stats.uniqueVisitors = {};
         if (!data.stats.uniqueClaims) data.stats.uniqueClaims = {};
         if (!data.stats.dailyVisitors) data.stats.dailyVisitors = {};
         if (!data.stats.dailyClaims) data.stats.dailyClaims = {};
         if (data.stats.totalVisitors === undefined) data.stats.totalVisitors = 0;
         if (data.stats.totalClaims === undefined) data.stats.totalClaims = 0;
-        
         if (!data.settings) data.settings = {};
         if (data.settings.background === undefined) data.settings.background = null;
-        
         if (data.links) {
             data.links.forEach(link => {
                 if (!link.visits) link.visits = 0;
@@ -170,7 +157,6 @@ function writeDB(data) {
                 }
             });
         }
-        
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
         dbCache = data;
         dbLastRead = Date.now();
@@ -249,7 +235,6 @@ function generateLinkId() {
     return 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
 }
 
-// ==================== GET UNIQUE DEVICE ID ====================
 function getDeviceId(req) {
     const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -257,27 +242,21 @@ function getDeviceId(req) {
     return fingerprint;
 }
 
-// ==================== CHECK 24HR UNIQUENESS ====================
 function isUnique24hr(store, deviceId) {
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
-    
     for (const key in store) {
         if (store[key] && (now - store[key] > 24 * 60 * 60 * 1000)) {
             delete store[key];
         }
     }
-    
     const key = deviceId + '_' + today;
-    if (store[key]) {
-        return false;
-    }
-    
+    if (store[key]) { return false; }
     store[key] = now;
     return true;
 }
 
-// ==================== AUTH FUNCTIONS ====================
+// ==================== AUTH ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -301,61 +280,48 @@ function generateCSRFToken() {
     return crypto.randomBytes(32).toString('hex');
 }
 
-// ==================== AUTH MIDDLEWARE ====================
 function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
-
     if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
     }
-
     const decoded = verifyToken(token);
     if (!decoded) {
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
-
     const db = readDB();
     if (!db) {
         return res.status(500).json({ error: 'Database error' });
     }
-
     const session = db.sessions?.find(s => s.token === token);
     if (!session || session.csrfToken !== csrfToken) {
         return res.status(403).json({ error: 'Invalid CSRF token' });
     }
-
     req.user = decoded;
     next();
 }
 
 // ==================== ADMIN ROUTES ====================
-
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
-
         if (!passcode) {
             return res.status(400).json({ error: 'Passcode required' });
         }
-
         if (!/^\d+$/.test(passcode) || passcode.length !== 6) {
             return res.status(400).json({ error: 'Invalid passcode format (6 digits required)' });
         }
-
         const db = readDB();
         if (!db) {
             return res.status(500).json({ error: 'Database error' });
         }
-
         const isValid = verifyPasscode(passcode, db.admin.passcode);
         if (!isValid) {
             return res.status(401).json({ error: 'Invalid passcode' });
         }
-
         const token = generateToken('admin');
         const csrfToken = generateCSRFToken();
-
         db.sessions = [];
         db.sessions.push({
             token: token,
@@ -364,7 +330,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
         });
         writeDB(db);
-
         res.cookie('adminToken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production' || true,
@@ -372,7 +337,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
-
         res.json({
             success: true,
             csrfToken: csrfToken
@@ -402,27 +366,21 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
         const db = readDB();
-
         if (!oldPasscode || !newPasscode) {
             return res.status(400).json({ error: 'Both passcodes required' });
         }
-
         if (!/^\d+$/.test(newPasscode) || newPasscode.length !== 6) {
             return res.status(400).json({ error: 'New passcode must be 6 digits' });
         }
-
         const isValid = verifyPasscode(oldPasscode, db.admin.passcode);
         if (!isValid) {
             return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
-
         db.admin.passcode = hashPasscode(newPasscode);
         writeDB(db);
-
         db.sessions = [];
         writeDB(db);
         res.clearCookie('adminToken');
-
         res.json({ success: true, message: 'Passcode changed. Please login again.' });
     } catch (error) {
         console.error('❌ Passcode change error:', error);
@@ -434,11 +392,9 @@ app.post('/api/admin/theme', authMiddleware, (req, res) => {
     try {
         const { theme } = req.body;
         const db = readDB();
-
         if (!['light', 'dark'].includes(theme)) {
             return res.status(400).json({ error: 'Invalid theme' });
         }
-
         db.admin.theme = theme;
         writeDB(db);
         res.json({ success: true });
@@ -451,11 +407,9 @@ app.post('/api/admin/background', authMiddleware, (req, res) => {
     try {
         const { background } = req.body;
         const db = readDB();
-
         if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
             return res.status(400).json({ error: 'Invalid image format' });
         }
-
         db.settings.background = background || null;
         writeDB(db);
         res.json({ success: true });
@@ -469,7 +423,6 @@ app.post('/api/admin/popup', authMiddleware, (req, res) => {
     try {
         const { image, title, buttonText, subtitle, linkId } = req.body;
         const db = readDB();
-
         if (linkId) {
             const link = db.links.find(l => l.id === linkId);
             if (!link) {
@@ -487,7 +440,6 @@ app.post('/api/admin/popup', authMiddleware, (req, res) => {
             if (buttonText !== undefined) db.popupSettings.buttonText = buttonText;
             if (subtitle !== undefined) db.popupSettings.subtitle = subtitle;
         }
-
         writeDB(db);
         res.json({ success: true });
     } catch (error) {
@@ -500,7 +452,6 @@ app.get('/api/popup-settings/:linkId?', (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
-
         if (linkId) {
             const link = db.links.find(l => l.id === linkId);
             if (!link) {
@@ -514,7 +465,6 @@ app.get('/api/popup-settings/:linkId?', (req, res) => {
             };
             return res.json(settings);
         }
-
         res.json(db.popupSettings || {
             image: null,
             title: '🎁 Claim Your Reward',
@@ -528,7 +478,6 @@ app.get('/api/popup-settings/:linkId?', (req, res) => {
 });
 
 // ==================== LINK ROUTES ====================
-
 app.get('/api/links', authMiddleware, (req, res) => {
     try {
         const db = readDB();
@@ -542,11 +491,9 @@ app.post('/api/links', authMiddleware, (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
         const db = readDB();
-
         if (!name || name.length < 1 || name.length > 100) {
             return res.status(400).json({ error: 'Invalid link name (1-100 characters)' });
         }
-
         const urlRegex = /^(https?:\/\/[^\s]+)$/;
         if (video && !urlRegex.test(video)) {
             return res.status(400).json({ error: 'Invalid video URL format' });
@@ -554,7 +501,6 @@ app.post('/api/links', authMiddleware, (req, res) => {
         if (claim && claim !== '#' && !urlRegex.test(claim)) {
             return res.status(400).json({ error: 'Invalid claim URL format' });
         }
-
         const newLink = {
             id: generateLinkId(),
             name: name.substring(0, 100),
@@ -576,7 +522,6 @@ app.post('/api/links', authMiddleware, (req, res) => {
                 subtitle: 'Tap below to unlock your reward'
             }
         };
-
         db.links.push(newLink);
         writeDB(db);
         res.json(newLink);
@@ -591,16 +536,13 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
         const { id } = req.params;
         const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
         const db = readDB();
-
         const link = db.links.find(l => l.id === id);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         if (name && (name.length < 1 || name.length > 100)) {
             return res.status(400).json({ error: 'Invalid link name' });
         }
-
         const urlRegex = /^(https?:\/\/[^\s]+)$/;
         if (video && !urlRegex.test(video)) {
             return res.status(400).json({ error: 'Invalid video URL' });
@@ -608,7 +550,6 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
         if (claim && claim !== '#' && !urlRegex.test(claim)) {
             return res.status(400).json({ error: 'Invalid claim URL' });
         }
-
         if (name !== undefined) link.name = name.substring(0, 100);
         if (video !== undefined) link.video = video;
         if (claim !== undefined) link.claim = claim;
@@ -619,12 +560,8 @@ app.put('/api/links/:id', authMiddleware, (req, res) => {
         }
         if (expiryDate !== undefined) link.expiryDate = expiryDate;
         if (popupSettings !== undefined) {
-            link.popupSettings = {
-                ...link.popupSettings,
-                ...popupSettings
-            };
+            link.popupSettings = { ...link.popupSettings, ...popupSettings };
         }
-
         writeDB(db);
         res.json(link);
     } catch (error) {
@@ -638,16 +575,13 @@ app.put('/api/links/:id/status', authMiddleware, (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
         const db = readDB();
-
         if (!['active', 'suspended', 'disabled'].includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
-
         const link = db.links.find(l => l.id === id);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         link.status = status;
         writeDB(db);
         res.json(link);
@@ -660,7 +594,6 @@ app.delete('/api/links/:id', authMiddleware, (req, res) => {
     try {
         const { id } = req.params;
         const db = readDB();
-
         db.links = db.links.filter(l => l.id !== id);
         writeDB(db);
         res.json({ success: true });
@@ -669,82 +602,69 @@ app.delete('/api/links/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ==================== GET LINK BY ID (PUBLIC) ====================
+// ==================== PUBLIC LINK ====================
 app.get('/api/link/:id', (req, res) => {
     try {
         const { id } = req.params;
         const db = readDB();
-
         const link = db.links.find(l => l.id === id);
         if (!link) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: 'not_found',
-                message: 'Link not found' 
+                message: 'Link not found'
             });
         }
-
         if (link.status === 'suspended') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 error: 'suspended',
                 message: 'This link has been suspended by the admin',
                 status: 'suspended'
             });
         }
-
         if (link.status === 'disabled') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 error: 'disabled',
                 message: 'This link has been permanently disabled',
                 status: 'disabled'
             });
         }
-
         if (link.expiryDate) {
             const expiryDate = new Date(link.expiryDate);
             if (new Date() > expiryDate) {
-                return res.status(403).json({ 
+                return res.status(403).json({
                     error: 'expired',
                     message: 'This link has expired',
                     status: 'expired'
                 });
             }
         }
-
         if (link.status !== 'active') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 error: 'inactive',
                 message: 'This link is not active',
                 status: 'inactive'
             });
         }
-
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
-        
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueVisitors) db.stats.uniqueVisitors = {};
         if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
-        
         if (isUnique24hr(db.stats.uniqueVisitors, deviceId)) {
             db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
             db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
-            
             link.visits = (link.visits || 0) + 1;
             if (!link.dailyVisits) link.dailyVisits = {};
             link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
-            
             console.log('👤 New unique visitor:', deviceId.substring(0, 10));
         }
-        
         const popupSettings = link.popupSettings || db.popupSettings || {
             image: null,
             title: '🎁 Claim Your Reward',
             buttonText: 'Claim Now',
             subtitle: 'Tap below to unlock your reward'
         };
-        
         writeDB(db);
-
         res.json({
             id: link.id,
             video: link.video,
@@ -760,39 +680,31 @@ app.get('/api/link/:id', (req, res) => {
     }
 });
 
-// ==================== TRACK CLAIM - 24HR UNIQUE ====================
+// ==================== TRACK CLAIM ====================
 app.post('/api/track-claim/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
-
         const link = db.links.find(l => l.id === linkId);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
-        
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueClaims) db.stats.uniqueClaims = {};
         if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
-        
         if (isUnique24hr(db.stats.uniqueClaims, deviceId)) {
             db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
             db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
-            
             link.claims = (link.claims || 0) + 1;
             if (!link.dailyClaims) link.dailyClaims = {};
             link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
-            
             console.log('🎁 New unique claim:', deviceId.substring(0, 10));
         }
-        
         writeDB(db);
-
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             claims: db.stats.totalClaims || 0
         });
     } catch (error) {
@@ -801,12 +713,11 @@ app.post('/api/track-claim/:linkId', (req, res) => {
     }
 });
 
-// ==================== GET ALL STATS (ADMIN ONLY) ====================
+// ==================== STATS ====================
 app.get('/api/all-stats', authMiddleware, (req, res) => {
     try {
         const db = readDB();
         const today = new Date().toISOString().split('T')[0];
-        
         const linkStats = db.links.map(link => ({
             id: link.id,
             name: link.name,
@@ -819,7 +730,6 @@ app.get('/api/all-stats', authMiddleware, (req, res) => {
             status: link.status,
             expiryDate: link.expiryDate || null
         }));
-        
         res.json({
             global: {
                 totalVisitors: db.stats?.totalVisitors || 0,
@@ -841,14 +751,11 @@ app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
-
         const link = db.links.find(l => l.id === linkId);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         const today = new Date().toISOString().split('T')[0];
-        
         res.json({
             linkId: link.id,
             name: link.name,
@@ -867,8 +774,7 @@ app.get('/api/stats/:linkId', authMiddleware, (req, res) => {
     }
 });
 
-// ==================== USER DASHBOARD ROUTES ====================
-
+// ==================== USER DASHBOARD ====================
 app.get('/api/parent-link', (req, res) => {
     try {
         const db = readDB();
@@ -893,12 +799,10 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
-
         const link = db.links.find(l => l.id === linkId);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         res.json({
             linkId: link.id,
             name: link.name,
@@ -915,18 +819,15 @@ app.get('/api/visit-stats/:linkId', (req, res) => {
     }
 });
 
-// ==================== RENEWAL ROUTES ====================
-
+// ==================== RENEWAL ====================
 app.post('/api/renewal/request', (req, res) => {
     try {
         const { linkId, plan } = req.body;
         const db = readDB();
-
         const link = db.links.find(l => l.id === linkId);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         const pricing = db.pricing || {};
         const planDays = {
             '3days': 3,
@@ -937,17 +838,14 @@ app.post('/api/renewal/request', (req, res) => {
             '6months': 180,
             '12months': 365
         };
-
         const days = planDays[plan];
         if (!days) {
             return res.status(400).json({ error: 'Invalid plan' });
         }
-
         const amount = pricing[plan] || 0;
         if (amount === 0) {
             return res.status(400).json({ error: 'Price not set for this plan' });
         }
-
         const existing = db.renewalRequests?.find(r => r.linkId === linkId && (r.status === 'pending' || r.status === 'paid'));
         if (existing) {
             return res.status(400).json({
@@ -955,7 +853,6 @@ app.post('/api/renewal/request', (req, res) => {
                 existingRequest: existing
             });
         }
-
         res.json({
             success: true,
             message: 'Please complete payment to submit renewal request',
@@ -974,12 +871,10 @@ app.post('/api/renewal/confirm-payment', (req, res) => {
     try {
         const { linkId, plan, transactionId } = req.body;
         const db = readDB();
-
         const link = db.links.find(l => l.id === linkId);
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
-
         const pricing = db.pricing || {};
         const planDays = {
             '3days': 3,
@@ -990,10 +885,8 @@ app.post('/api/renewal/confirm-payment', (req, res) => {
             '6months': 180,
             '12months': 365
         };
-
         const days = planDays[plan];
         const amount = pricing[plan] || 0;
-
         const renewalRequest = {
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             linkId: linkId,
@@ -1008,11 +901,9 @@ app.post('/api/renewal/confirm-payment', (req, res) => {
             transactionId: transactionId || 'TXN_' + Date.now(),
             upiId: db.paymentSettings?.details?.upiId || 'admin@upi'
         };
-
         if (!db.renewalRequests) db.renewalRequests = [];
         db.renewalRequests.push(renewalRequest);
         writeDB(db);
-
         res.json({
             success: true,
             requestId: renewalRequest.id,
@@ -1038,10 +929,8 @@ app.get('/api/renewal/status/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
         const db = readDB();
-
         const requests = db.renewalRequests?.filter(r => r.linkId === linkId) || [];
         const latest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-
         res.json({
             hasRequest: !!latest,
             request: latest || null,
@@ -1083,7 +972,6 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
         if (request.status !== 'paid') {
             return res.status(400).json({ error: 'Payment not confirmed yet' });
         }
-
         const link = db.links.find(l => l.id === request.linkId);
         if (link) {
             const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
@@ -1092,11 +980,9 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, (req, res) => {
             link.expiryDate = newExpiry.toISOString();
             link.status = 'active';
         }
-
         request.status = 'approved';
         request.approvedAt = new Date().toISOString();
         writeDB(db);
-
         res.json({ success: true, message: 'Renewal approved! Link extended.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to approve renewal' });
@@ -1123,12 +1009,10 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, (req, res) => {
     try {
         const { requestId } = req.params;
         const db = readDB();
-
         const index = db.renewalRequests?.findIndex(r => r.id === requestId);
         if (index === -1 || index === undefined) {
             return res.status(404).json({ error: 'Request not found' });
         }
-
         db.renewalRequests.splice(index, 1);
         writeDB(db);
         res.json({ success: true, message: 'Request removed' });
@@ -1217,7 +1101,7 @@ app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
 });
 
-// ==================== START SERVER ====================
+// ==================== START ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');

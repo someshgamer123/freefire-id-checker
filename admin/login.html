@@ -108,16 +108,16 @@
         <div class="footer-text">🔒 Secure | <a href="#" onclick="clearAll()">Clear</a></div>
     </div>
     <script>
-        const inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
-        const dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
-        const errorEl = document.getElementById('error');
-        const loginBtn = document.getElementById('loginBtn');
+        var inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
+        var dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
+        var errorEl = document.getElementById('error');
+        var loginBtn = document.getElementById('loginBtn');
 
-        window.addEventListener('load', () => { document.getElementById('pin1').focus(); });
+        window.addEventListener('load', function() { document.getElementById('pin1').focus(); });
 
-        inputs.forEach((id, index) => {
-            const input = document.getElementById(id);
-            const dot = document.getElementById(dots[index]);
+        inputs.forEach(function(id, index) {
+            var input = document.getElementById(id);
+            var dot = document.getElementById(dots[index]);
             
             input.addEventListener('input', function() {
                 this.value = this.value.replace(/\D/g, '');
@@ -129,7 +129,7 @@
                     if (index < 5) {
                         document.getElementById(inputs[index + 1]).focus();
                     } else {
-                        setTimeout(() => { login(); }, 300);
+                        setTimeout(function() { login(); }, 300);
                     }
                 } else {
                     this.classList.remove('filled');
@@ -149,8 +149,8 @@
 
             input.addEventListener('focus', function() {
                 this.select();
-                dots.forEach((d, i) => {
-                    const dotEl = document.getElementById(d);
+                dots.forEach(function(d, i) {
+                    var dotEl = document.getElementById(d);
                     if (i === index && !dotEl.classList.contains('filled')) {
                         dotEl.classList.add('active');
                     } else if (!dotEl.classList.contains('filled')) {
@@ -160,8 +160,8 @@
             });
 
             input.addEventListener('blur', function() {
-                dots.forEach((d) => {
-                    const dotEl = document.getElementById(d);
+                dots.forEach(function(d) {
+                    var dotEl = document.getElementById(d);
                     if (!dotEl.classList.contains('filled')) {
                         dotEl.classList.remove('active');
                     }
@@ -170,15 +170,15 @@
 
             input.addEventListener('paste', function(e) {
                 e.preventDefault();
-                const paste = (e.clipboardData || window.clipboardData).getData('text');
-                const digits = paste.replace(/\D/g, '').slice(0, 6);
+                var paste = (e.clipboardData || window.clipboardData).getData('text');
+                var digits = paste.replace(/\D/g, '').slice(0, 6);
                 if (digits) {
-                    for (let i = 0; i < digits.length && i < 6; i++) {
-                        const inp = document.getElementById(inputs[i]);
+                    for (var i = 0; i < digits.length && i < 6; i++) {
+                        var inp = document.getElementById(inputs[i]);
                         inp.value = digits[i];
                         inp.classList.add('filled');
                     }
-                    const nextIndex = Math.min(digits.length, 5);
+                    var nextIndex = Math.min(digits.length, 5);
                     document.getElementById(inputs[nextIndex]).focus();
                     updateDots();
                     if (digits.length === 6) {
@@ -189,9 +189,9 @@
         });
 
         function updateDots() {
-            dots.forEach((id, index) => {
-                const dot = document.getElementById(id);
-                const input = document.getElementById(inputs[index]);
+            dots.forEach(function(id, index) {
+                var dot = document.getElementById(id);
+                var input = document.getElementById(inputs[index]);
                 if (input.value.length === 1) {
                     dot.classList.add('filled');
                     dot.classList.remove('active');
@@ -202,9 +202,9 @@
         }
 
         function getPasscode() {
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                const val = document.getElementById(inputs[i]).value;
+            var code = '';
+            for (var i = 0; i < 6; i++) {
+                var val = document.getElementById(inputs[i]).value;
                 if (val === '') return null;
                 code += val;
             }
@@ -212,11 +212,11 @@
         }
 
         function clearAll() {
-            for (let i = 0; i < 6; i++) {
-                const input = document.getElementById(inputs[i]);
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
                 input.value = '';
                 input.classList.remove('filled', 'error');
-                const dot = document.getElementById(dots[i]);
+                var dot = document.getElementById(dots[i]);
                 dot.classList.remove('filled', 'active');
             }
             errorEl.textContent = '';
@@ -226,16 +226,16 @@
 
         function showError(message) {
             errorEl.textContent = '❌ ' + message;
-            for (let i = 0; i < 6; i++) {
-                const input = document.getElementById(inputs[i]);
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
                 input.classList.add('error');
-                setTimeout(() => { input.classList.remove('error'); }, 600);
+                setTimeout(function() { input.classList.remove('error'); }, 600);
             }
-            setTimeout(() => { clearAll(); }, 800);
+            setTimeout(function() { clearAll(); }, 800);
         }
 
         async function login() {
-            const passcode = getPasscode();
+            var passcode = getPasscode();
             errorEl.textContent = '';
             loginBtn.disabled = true;
 
@@ -246,13 +246,13 @@
             }
 
             try {
-                const response = await fetch('/api/admin/login', {
+                var response = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ passcode: passcode })
                 });
 
-                const data = await response.json();
+                var data = await response.json();
 
                 if (data.success) {
                     window.csrfToken = data.csrfToken;
@@ -276,18 +276,18 @@
         });
 
         document.addEventListener('input', function() {
-            let allFilled = true;
-            for (let i = 0; i < 6; i++) {
+            var allFilled = true;
+            for (var i = 0; i < 6; i++) {
                 if (document.getElementById(inputs[i]).value === '') { allFilled = false; break; }
             }
             if (allFilled) {
                 clearTimeout(window._loginTimeout);
-                window._loginTimeout = setTimeout(() => { login(); }, 400);
+                window._loginTimeout = setTimeout(function() { login(); }, 400);
             }
         });
 
         console.log('🔐 Admin Login Panel');
-        console.log('📌 Passcode: 923348');
+        console.log('📌 Passcode: 951753');
         console.log('⏰ Session: 7 days');
     </script>
 </body>

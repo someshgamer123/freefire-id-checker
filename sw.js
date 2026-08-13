@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ff-admin-v1';
-const urlsToCache = [
+var CACHE_NAME = 'ff-admin-v1';
+var urlsToCache = [
     '/',
     '/admin/login.html',
     '/admin/index.html',
@@ -9,26 +9,26 @@ const urlsToCache = [
     '/manifest.json'
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', function(event) {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
+            .then(function(cache) { return cache.addAll(urlsToCache); })
     );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', function(event) {
     event.respondWith(
         caches.match(event.request)
-            .then(response => response || fetch(event.request))
+            .then(function(response) { return response || fetch(event.request); })
     );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function(event) {
     event.waitUntil(
-        caches.keys().then(cacheNames => {
+        caches.keys().then(function(cacheNames) {
             return Promise.all(
-                cacheNames.filter(name => name !== CACHE_NAME)
-                    .map(name => caches.delete(name))
+                cacheNames.filter(function(name) { return name !== CACHE_NAME; })
+                    .map(function(name) { return caches.delete(name); })
             );
         })
     );

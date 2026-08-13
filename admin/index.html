@@ -177,7 +177,6 @@
             background: rgba(102,126,234,0.12); color: var(--primary); }
         .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
-        /* ===== IMAGE PREVIEW ===== */
         .image-preview {
             max-width: 100%;
             border-radius: 10px;
@@ -201,7 +200,6 @@
             border-top: 1px solid var(--border);
         }
 
-        /* ===== POPUP PREVIEW ===== */
         .popup-preview {
             background: rgba(0,0,0,0.5);
             border-radius: 12px;
@@ -418,7 +416,7 @@
             </div>
         </div>
 
-        <!-- ===== CREATE LINK (WITH POPUP SETTINGS INSIDE) ===== -->
+        <!-- ===== CREATE LINK ===== -->
         <div class="card">
             <h3>🔗 Create Link</h3>
             <input type="text" id="linkName" placeholder="Link Name">
@@ -436,7 +434,7 @@
             <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
             <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
 
-            <!-- ===== POPUP SETTINGS INSIDE CREATE LINK ===== -->
+            <!-- ===== POPUP SETTINGS ===== -->
             <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
                 <label style="font-weight:600;color:#667eea;font-size:14px;">🖼️ Popup Settings (Instagram Fix)</label>
                 <p style="color:var(--text-light);font-size:12px;margin:4px 0 10px;">Customize popup image & text (appears before video plays)</p>
@@ -501,7 +499,7 @@
             </div>
         </div>
 
-        <!-- ===== UID PAGE BACKGROUND (Image URL System) ===== -->
+        <!-- ===== UID PAGE BACKGROUND ===== -->
         <div class="card">
             <h3>🖼️ UID Page Background (9:16)</h3>
             <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Enter image URL for UID page background</p>
@@ -610,15 +608,16 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        let csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
+        var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
         if (!csrfToken) {
             window.location.href = 'login.html';
         }
 
-        async function secureFetch(url, options = {}) {
+        async function secureFetch(url, options) {
+            options = options || {};
             try {
-                const response = await fetch(url, {
+                var response = await fetch(url, {
                     ...options,
                     headers: {
                         ...options.headers,
@@ -629,7 +628,7 @@
                 if (response.status === 401 || response.status === 403) {
                     showToast('❌ Session expired. Please login again.', 'error');
                     localStorage.removeItem('csrfToken');
-                    setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+                    setTimeout(function() { window.location.href = 'login.html'; }, 1500);
                     return null;
                 }
                 return response;
@@ -639,17 +638,18 @@
             }
         }
 
-        function showToast(msg, type = 'info') {
-            const t = document.getElementById('toast');
+        function showToast(msg, type) {
+            type = type || 'info';
+            var t = document.getElementById('toast');
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.className = 'toast', 4000);
+            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
         }
 
         // ===== PWA INSTALL =====
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
+        var deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
             document.getElementById('installBtn').classList.add('show');
@@ -658,7 +658,7 @@
         function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((result) => {
+                deferredPrompt.userChoice.then(function(result) {
                     if (result.outcome === 'accepted') {
                         showToast('✅ App installed successfully!', 'success');
                     }
@@ -672,8 +672,8 @@
 
         // ===== TOGGLE RENEWAL =====
         function toggleRenewal() {
-            const content = document.getElementById('renewalContent');
-            const arrow = document.getElementById('renewalArrow');
+            var content = document.getElementById('renewalContent');
+            var arrow = document.getElementById('renewalArrow');
             content.classList.toggle('open');
             arrow.classList.toggle('open');
         }
@@ -681,9 +681,9 @@
         // ===== USER DASHBOARD LINK =====
         async function loadUserDashboardLink() {
             try {
-                const r = await fetch('/api/parent-link');
-                const data = await r.json();
-                const url = window.location.origin + data.url;
+                var r = await fetch('/api/parent-link');
+                var data = await r.json();
+                var url = window.location.origin + data.url;
                 document.getElementById('userDashboardLink').textContent = url;
             } catch (e) {
                 document.getElementById('userDashboardLink').textContent = 'Error loading';
@@ -692,15 +692,15 @@
         }
 
         function copyDashboardLink() {
-            const text = document.getElementById('userDashboardLink').textContent;
+            var text = document.getElementById('userDashboardLink').textContent;
             if (text === 'Loading...' || text === 'Error loading') {
                 showToast('⏳ Please wait for link to load', 'info');
                 return;
             }
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(text).then(function() {
                 showToast('✅ Dashboard link copied!', 'success');
-            }).catch(() => {
-                const input = document.createElement('input');
+            }).catch(function() {
+                var input = document.createElement('input');
                 input.value = text;
                 document.body.appendChild(input);
                 input.select();
@@ -712,7 +712,7 @@
 
         // ===== PAYMENT FIELDS TOGGLE =====
         function togglePaymentFields() {
-            const method = document.getElementById('paymentMethod').value;
+            var method = document.getElementById('paymentMethod').value;
             document.getElementById('upiField').classList.remove('show');
             document.getElementById('qrField').classList.remove('show');
             document.getElementById('textField').classList.remove('show');
@@ -727,11 +727,11 @@
         }
 
         function previewQR(event) {
-            const file = event.target.files[0];
+            var file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
+                var reader = new FileReader();
                 reader.onload = function(e) {
-                    const preview = document.getElementById('qrPreview');
+                    var preview = document.getElementById('qrPreview');
                     preview.src = e.target.result;
                     preview.classList.add('show');
                 };
@@ -740,12 +740,12 @@
         }
 
         // ===== SCHEDULE =====
-        let selectedExpiry = null;
+        var selectedExpiry = null;
 
         function updateSchedulePreset() {
-            const preset = document.getElementById('schedulePreset').value;
-            const customInput = document.getElementById('customExpiry');
-            const display = document.getElementById('expiryDisplay');
+            var preset = document.getElementById('schedulePreset').value;
+            var customInput = document.getElementById('customExpiry');
+            var display = document.getElementById('expiryDisplay');
             if (preset === 'custom') {
                 customInput.style.display = 'block';
                 customInput.value = '';
@@ -755,8 +755,8 @@
             }
             customInput.style.display = 'none';
             if (preset) {
-                const days = parseInt(preset);
-                const date = new Date();
+                var days = parseInt(preset);
+                var date = new Date();
                 date.setDate(date.getDate() + days);
                 selectedExpiry = date.toISOString();
                 display.textContent = '📅 Expires: ' + date.toLocaleString();
@@ -767,9 +767,9 @@
         }
 
         function updateCustomExpiry() {
-            const val = document.getElementById('customExpiry').value;
+            var val = document.getElementById('customExpiry').value;
             if (val) {
-                const date = new Date(val);
+                var date = new Date(val);
                 selectedExpiry = date.toISOString();
                 document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
             } else {
@@ -789,14 +789,14 @@
             document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
         });
         document.getElementById('popupImageUrl').addEventListener('input', function() {
-            const url = this.value.trim();
-            const preview = document.getElementById('popupImagePreview');
-            const img = document.getElementById('popupPreviewImg');
-            const previewImage = document.getElementById('popupPreviewImage');
+            var url = this.value.trim();
+            var preview = document.getElementById('popupImagePreview');
+            var img = document.getElementById('popupPreviewImg');
+            var previewImage = document.getElementById('popupPreviewImage');
             if (url) {
                 img.src = url;
                 preview.classList.add('show');
-                previewImage.innerHTML = `<img src="${url}" alt="Popup Preview">`;
+                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
             } else {
                 preview.classList.remove('show');
                 previewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
@@ -805,9 +805,9 @@
 
         // ===== BACKGROUND IMAGE URL PREVIEW =====
         document.getElementById('bgImageUrl').addEventListener('input', function() {
-            const url = this.value.trim();
-            const preview = document.getElementById('bgImagePreview');
-            const img = document.getElementById('bgPreviewImg');
+            var url = this.value.trim();
+            var preview = document.getElementById('bgImagePreview');
+            var img = document.getElementById('bgPreviewImg');
             if (url) {
                 img.src = url;
                 preview.classList.add('show');
@@ -818,18 +818,18 @@
 
         // ===== SAVE BACKGROUND =====
         async function saveBackground() {
-            const url = document.getElementById('bgImageUrl').value.trim();
+            var url = document.getElementById('bgImageUrl').value.trim();
             if (!url) {
                 showToast('❌ Please enter an image URL', 'error');
                 return;
             }
             try {
-                const r = await secureFetch('/api/admin/background', {
+                var r = await secureFetch('/api/admin/background', {
                     method: 'POST',
                     body: JSON.stringify({ background: url })
                 });
                 if (!r) return;
-                const data = await r.json();
+                var data = await r.json();
                 if (data.success) {
                     document.getElementById('bgStatus').textContent = '✅ Background saved successfully!';
                     document.getElementById('bgStatus').style.color = '#48bb78';
@@ -842,12 +842,12 @@
 
         async function removeBackground() {
             try {
-                const r = await secureFetch('/api/admin/background', {
+                var r = await secureFetch('/api/admin/background', {
                     method: 'POST',
                     body: JSON.stringify({ background: null })
                 });
                 if (!r) return;
-                const data = await r.json();
+                var data = await r.json();
                 if (data.success) {
                     document.getElementById('bgImageUrl').value = '';
                     document.getElementById('bgImagePreview').classList.remove('show');
@@ -862,12 +862,12 @@
 
         async function loadBackground() {
             try {
-                const r = await fetch('/api/settings');
-                const data = await r.json();
+                var r = await fetch('/api/settings');
+                var data = await r.json();
                 if (data && data.background) {
                     document.getElementById('bgImageUrl').value = data.background;
-                    const preview = document.getElementById('bgImagePreview');
-                    const img = document.getElementById('bgPreviewImg');
+                    var preview = document.getElementById('bgImagePreview');
+                    var img = document.getElementById('bgPreviewImg');
                     img.src = data.background;
                     preview.classList.add('show');
                     document.getElementById('bgStatus').textContent = '✅ Background loaded';
@@ -878,9 +878,9 @@
 
         // ===== CHANGE PASSCODE =====
         async function changePasscode() {
-            const oldPasscode = document.getElementById('oldPasscode').value;
-            const newPasscode = document.getElementById('newPasscode').value;
-            const statusEl = document.getElementById('passcodeStatus');
+            var oldPasscode = document.getElementById('oldPasscode').value;
+            var newPasscode = document.getElementById('newPasscode').value;
+            var statusEl = document.getElementById('passcodeStatus');
 
             if (!oldPasscode || !newPasscode) {
                 statusEl.textContent = '❌ Please fill both fields';
@@ -899,19 +899,19 @@
             }
 
             try {
-                const r = await secureFetch('/api/admin/passcode', {
+                var r = await secureFetch('/api/admin/passcode', {
                     method: 'POST',
-                    body: JSON.stringify({ oldPasscode, newPasscode })
+                    body: JSON.stringify({ oldPasscode: oldPasscode, newPasscode: newPasscode })
                 });
                 if (!r) return;
-                const data = await r.json();
+                var data = await r.json();
                 if (data.success) {
                     statusEl.textContent = '✅ Passcode changed! Please login again.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Passcode changed! Please login again.', 'success');
                     document.getElementById('oldPasscode').value = '';
                     document.getElementById('newPasscode').value = '';
-                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
                 } else {
                     statusEl.textContent = '❌ ' + (data.error || 'Failed to change passcode');
                     statusEl.style.color = '#fc8181';
@@ -926,107 +926,52 @@
         // ===== LOAD LINKS =====
         function escapeHTML(str) {
             if (!str) return '';
-            const div = document.createElement('div');
+            var div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
         }
 
         async function loadLinks() {
             try {
-                const r = await secureFetch('/api/links');
+                var r = await secureFetch('/api/links');
                 if (!r) {
-                    document.getElementById('linksList').innerHTML = `
-                        <div class="empty-state" style="color:var(--danger);">
-                            <span class="icon">⚠️</span> Error loading links. 
-                            <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button>
-                        </div>
-                    `;
+                    document.getElementById('linksList').innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links. <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
                     return;
                 }
-                const links = await r.json();
-                const c = document.getElementById('linksList');
+                var links = await r.json();
+                var c = document.getElementById('linksList');
                 c.innerHTML = '';
-                const active = links.filter(l => l.status === 'active').length;
-                const expired = links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled').length;
+                var active = links.filter(function(l) { return l.status === 'active'; }).length;
+                var expired = links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled'; }).length;
                 document.getElementById('totalLinks').textContent = links.length;
                 document.getElementById('activeLinks').textContent = active;
-                document.getElementById('totalVisits').textContent = links.reduce((s, l) => s + (l.visits || 0), 0);
+                document.getElementById('totalVisits').textContent = links.reduce(function(s, l) { return s + (l.visits || 0); }, 0);
                 document.getElementById('expiredLinks').textContent = expired;
                 if (links.length === 0) {
-                    c.innerHTML = `<div class="empty-state"><span class="icon">📭</span>No links yet</div>`;
+                    c.innerHTML = '<div class="empty-state"><span class="icon">📭</span>No links yet</div>';
                     return;
                 }
-                links.forEach((link, index) => {
-                    const sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
-                    const isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
-                    const expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() : 'No expiry';
-                    const d = document.createElement('div');
+                links.forEach(function(link, index) {
+                    var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
+                    var isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
+                    var expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() : 'No expiry';
+                    var d = document.createElement('div');
                     d.className = 'link-item';
-                    d.innerHTML = `
-                        <div class="info">
-                            <div class="name">${escapeHTML(link.name)}</div>
-                            <div class="details">
-                                <span>📅 ${new Date(link.created).toLocaleDateString()}</span>
-                                <span>👁️ ${link.visits || 0}</span>
-                                <span>🎬 <a href="${escapeHTML(link.video)}" target="_blank">Video</a></span>
-                                <span>🔗 <a href="${escapeHTML(link.claim)}" target="_blank">Claim</a></span>
-                                <span>📝 ${escapeHTML(link.headline || 'No headline')}</span>
-                                <span class="${isExpired ? 'expiry-badge expired' : 'expiry-badge'}">${escapeHTML(expiryDisplay)}</span>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            <span class="status-badge status-${sc}">${link.status}</span>
-                            <select onchange="updateStatus('${link.id}', this.value)" class="schedule-select">
-                                <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
-                                <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspend</option>
-                                <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disable</option>
-                            </select>
-                            <button onclick="toggleEdit('${link.id}')" class="btn btn-warning btn-sm">✏️</button>
-                            <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm">📋</button>
-                            <button onclick="deleteLink('${link.id}')" class="btn btn-danger btn-sm">🗑️</button>
-                        </div>
-                        <div class="edit-form" id="edit-${link.id}">
-                            <div class="edit-grid">
-                                <input type="text" id="edit-name-${link.id}" value="${escapeHTML(link.name)}" placeholder="Name">
-                                <input type="text" id="edit-video-${link.id}" value="${escapeHTML(link.video)}" placeholder="Video">
-                                <input type="text" id="edit-claim-${link.id}" value="${escapeHTML(link.claim)}" placeholder="Claim">
-                                <input type="text" id="edit-btn-${link.id}" value="${escapeHTML(link.buttonText || 'Claim Now')}" placeholder="Button">
-                                <input type="text" id="edit-headline-${link.id}" value="${escapeHTML(link.headline || '')}" placeholder="Headline">
-                            </div>
-                            <div style="margin-top:10px;">
-                                <select id="edit-schedule-${link.id}" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;">
-                                    <option value="">No Expiry</option>
-                                    <option value="3" ${link.expiryDate ? 'selected' : ''}>3 Days</option>
-                                    <option value="7">7 Days</option>
-                                    <option value="15">15 Days</option>
-                                    <option value="30">30 Days</option>
-                                </select>
-                            </div>
-                            <div style="display:flex;gap:10px;margin-top:10px;">
-                                <button onclick="saveEdit('${link.id}')" class="btn btn-success btn-sm">💾 Save</button>
-                                <button onclick="cancelEdit('${link.id}')" class="btn btn-danger btn-sm">Cancel</button>
-                            </div>
-                        </div>
-                    `;
+                    d.innerHTML = '<div class="info"><div class="name">' + escapeHTML(link.name) + '</div><div class="details"><span>📅 ' + new Date(link.created).toLocaleDateString() + '</span><span>👁️ ' + (link.visits || 0) + '</span><span>🎬 <a href="' + escapeHTML(link.video) + '" target="_blank">Video</a></span><span>🔗 <a href="' + escapeHTML(link.claim) + '" target="_blank">Claim</a></span><span>📝 ' + escapeHTML(link.headline || 'No headline') + '</span><span class="' + (isExpired ? 'expiry-badge expired' : 'expiry-badge') + '">' + escapeHTML(expiryDisplay) + '</span></div></div><div class="actions"><span class="status-badge status-' + sc + '">' + link.status + '</span><select onchange="updateStatus(\'' + link.id + '\', this.value)" class="schedule-select"><option value="active" ' + (link.status === 'active' ? 'selected' : '') + '>Active</option><option value="suspended" ' + (link.status === 'suspended' ? 'selected' : '') + '>Suspend</option><option value="disabled" ' + (link.status === 'disabled' ? 'selected' : '') + '>Disable</option></select><button onclick="toggleEdit(\'' + link.id + '\')" class="btn btn-warning btn-sm">✏️</button><button onclick="copyLinkUrl(\'' + link.id + '\')" class="btn btn-success btn-sm">📋</button><button onclick="deleteLink(\'' + link.id + '\')" class="btn btn-danger btn-sm">🗑️</button></div><div class="edit-form" id="edit-' + link.id + '"><div class="edit-grid"><input type="text" id="edit-name-' + link.id + '" value="' + escapeHTML(link.name) + '" placeholder="Name"><input type="text" id="edit-video-' + link.id + '" value="' + escapeHTML(link.video) + '" placeholder="Video"><input type="text" id="edit-claim-' + link.id + '" value="' + escapeHTML(link.claim) + '" placeholder="Claim"><input type="text" id="edit-btn-' + link.id + '" value="' + escapeHTML(link.buttonText || 'Claim Now') + '" placeholder="Button"><input type="text" id="edit-headline-' + link.id + '" value="' + escapeHTML(link.headline || '') + '" placeholder="Headline"></div><div style="margin-top:10px;"><select id="edit-schedule-' + link.id + '" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;"><option value="">No Expiry</option><option value="3" ' + (link.expiryDate ? 'selected' : '') + '>3 Days</option><option value="7">7 Days</option><option value="15">15 Days</option><option value="30">30 Days</option></select></div><div style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveEdit(\'' + link.id + '\')" class="btn btn-success btn-sm">💾 Save</button><button onclick="cancelEdit(\'' + link.id + '\')" class="btn btn-danger btn-sm">Cancel</button></div></div>';
                     c.appendChild(d);
                 });
             } catch (e) {
-                document.getElementById('linksList').innerHTML = `
-                    <div class="empty-state" style="color:var(--danger);">
-                        <span class="icon">⚠️</span> Error loading links.
-                        <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button>
-                    </div>
-                `;
+                document.getElementById('linksList').innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links.<br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
             }
         }
 
-        // ===== CREATE LINK (WITH POPUP SETTINGS) =====
+        // ===== CREATE LINK =====
         async function createLink() {
-            const name = document.getElementById('linkName').value.trim();
+            var name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
             if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
             
-            const popupSettings = {
+            var popupSettings = {
                 image: document.getElementById('popupImageUrl').value.trim() || null,
                 title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
                 buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
@@ -1034,7 +979,7 @@
             };
 
             try {
-                const r = await secureFetch('/api/links', {
+                var r = await secureFetch('/api/links', {
                     method: 'POST',
                     body: JSON.stringify({
                         name: name,
@@ -1047,7 +992,7 @@
                     })
                 });
                 if (!r) return;
-                const link = await r.json();
+                var link = await r.json();
                 document.getElementById('generatedLink').classList.add('show');
                 document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
                 document.getElementById('linkName').value = '';
@@ -1072,18 +1017,18 @@
 
         // ===== COPY LINK =====
         function copyLink() {
-            const i = document.getElementById('generatedLinkInput');
+            var i = document.getElementById('generatedLinkInput');
             i.select();
             document.execCommand('copy');
             showToast('✅ Link copied!', 'success');
         }
 
         function copyLinkUrl(id) {
-            const url = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(url).then(() => {
+            var url = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(url).then(function() {
                 showToast('✅ Link copied!', 'success');
-            }).catch(() => {
-                const t = document.createElement('textarea');
+            }).catch(function() {
+                var t = document.createElement('textarea');
                 t.value = url;
                 document.body.appendChild(t);
                 t.select();
@@ -1104,14 +1049,14 @@
 
         async function saveEdit(id) {
             try {
-                const scheduleVal = document.getElementById('edit-schedule-' + id).value;
-                let expiryDate = null;
+                var scheduleVal = document.getElementById('edit-schedule-' + id).value;
+                var expiryDate = null;
                 if (scheduleVal) {
-                    const date = new Date();
+                    var date = new Date();
                     date.setDate(date.getDate() + parseInt(scheduleVal));
                     expiryDate = date.toISOString();
                 }
-                const r = await secureFetch(`/api/links/${id}`, {
+                var r = await secureFetch('/api/links/' + id, {
                     method: 'PUT',
                     body: JSON.stringify({
                         name: document.getElementById('edit-name-' + id).value,
@@ -1123,7 +1068,7 @@
                     })
                 });
                 if (!r) return;
-                const data = await r.json();
+                var data = await r.json();
                 if (data.error) {
                     showToast('❌ ' + data.error, 'error');
                     return;
@@ -1137,12 +1082,12 @@
         // ===== UPDATE STATUS =====
         async function updateStatus(id, status) {
             try {
-                const r = await secureFetch(`/api/links/${id}/status`, {
+                var r = await secureFetch('/api/links/' + id + '/status', {
                     method: 'PUT',
-                    body: JSON.stringify({ status })
+                    body: JSON.stringify({ status: status })
                 });
                 if (!r) return;
-                const data = await r.json();
+                var data = await r.json();
                 if (data.error) {
                     showToast('❌ ' + data.error, 'error');
                     return;
@@ -1156,9 +1101,9 @@
         async function deleteLink(id) {
             if (confirm('⚠️ Delete this link permanently?')) {
                 try {
-                    const r = await secureFetch(`/api/links/${id}`, { method: 'DELETE' });
+                    var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
                     if (!r) return;
-                    const data = await r.json();
+                    var data = await r.json();
                     if (data.success) {
                         loadLinks();
                         showToast('✅ Link deleted!', 'success');
@@ -1170,19 +1115,19 @@
         // ===== THEME =====
         async function setTheme(theme) {
             document.body.className = theme;
-            const r = await secureFetch('/api/admin/theme', {
+            var r = await secureFetch('/api/admin/theme', {
                 method: 'POST',
-                body: JSON.stringify({ theme })
+                body: JSON.stringify({ theme: theme })
             });
             if (!r) return;
-            document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
             document.getElementById('theme-' + theme).classList.add('active');
         }
 
         async function loadTheme() {
             try {
-                const r = await fetch('/api/settings');
-                const data = await r.json();
+                var r = await fetch('/api/settings');
+                var data = await r.json();
                 if (data && data.theme) {
                     document.body.className = data.theme;
                     document.getElementById('theme-' + data.theme).classList.add('active');
@@ -1204,10 +1149,10 @@
         // ===== RENEWAL MANAGEMENT =====
         async function loadPricingData() {
             try {
-                const r = await fetch('/api/pricing');
-                const data = await r.json();
-                const pricing = data.pricing || {};
-                const paymentSettings = data.paymentSettings || {};
+                var r = await fetch('/api/pricing');
+                var data = await r.json();
+                var pricing = data.pricing || {};
+                var paymentSettings = data.paymentSettings || {};
                 document.getElementById('price_3days').value = pricing['3days'] || 50;
                 document.getElementById('price_7days').value = pricing['7days'] || 100;
                 document.getElementById('price_15days').value = pricing['15days'] || 200;
@@ -1223,7 +1168,7 @@
         }
 
         async function savePricing() {
-            const pricing = {
+            var pricing = {
                 '3days': parseInt(document.getElementById('price_3days').value) || 0,
                 '7days': parseInt(document.getElementById('price_7days').value) || 0,
                 '15days': parseInt(document.getElementById('price_15days').value) || 0,
@@ -1233,14 +1178,14 @@
                 '12months': parseInt(document.getElementById('price_12months').value) || 0
             };
             
-            const method = document.getElementById('paymentMethod').value;
-            let details = {};
+            var method = document.getElementById('paymentMethod').value;
+            var details = {};
             if (method === 'UPI') {
                 details = { upiId: document.getElementById('upiInput').value };
             } else if (method === 'QR') {
-                const file = document.getElementById('qrInput').files[0];
+                var file = document.getElementById('qrInput').files[0];
                 if (file) {
-                    const reader = new FileReader();
+                    var reader = new FileReader();
                     reader.onload = function(e) {
                         details = { qrCode: e.target.result };
                         savePaymentSettings(method, details, pricing);
@@ -1255,11 +1200,11 @@
         }
 
         async function savePaymentSettings(method, details, pricing) {
-            const paymentSettings = { method, details };
+            var paymentSettings = { method: method, details: details };
             try {
-                const r = await secureFetch('/api/admin/pricing', {
+                var r = await secureFetch('/api/admin/pricing', {
                     method: 'POST',
-                    body: JSON.stringify({ pricing, paymentSettings })
+                    body: JSON.stringify({ pricing: pricing, paymentSettings: paymentSettings })
                 });
                 if (r) {
                     showToast('✅ Saved successfully!', 'success');
@@ -1272,44 +1217,24 @@
 
         async function loadRenewalRequests() {
             try {
-                const r = await secureFetch('/api/renewal/requests');
+                var r = await secureFetch('/api/renewal/requests');
                 if (!r) return;
-                const requests = await r.json();
-                const container = document.getElementById('renewalRequestsList');
+                var requests = await r.json();
+                var container = document.getElementById('renewalRequestsList');
                 if (!requests || requests.length === 0) {
                     container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
                     return;
                 }
                 container.innerHTML = '';
-                requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                requests.forEach(req => {
-                    const paidDate = req.paidAt ? new Date(req.paidAt) : null;
-                    const formattedDate = paidDate ? 
-                        paidDate.toLocaleDateString() + ' ' + 
-                        paidDate.toLocaleTimeString() + ':' + 
-                        String(paidDate.getSeconds()).padStart(2, '0') : 
-                        'Pending';
+                requests.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+                requests.forEach(function(req) {
+                    var paidDate = req.paidAt ? new Date(req.paidAt) : null;
+                    var formattedDate = paidDate ? paidDate.toLocaleDateString() + ' ' + paidDate.toLocaleTimeString() + ':' + String(paidDate.getSeconds()).padStart(2, '0') : 'Pending';
                     
-                    const div = document.createElement('div');
+                    var div = document.createElement('div');
                     div.className = 'renewal-item';
                     div.id = 'renewal-' + req.id;
-                    div.innerHTML = `
-                        <div class="info">
-                            <div class="name">${escapeHTML(req.linkName || 'Unknown Link')}</div>
-                            <div class="details">
-                                <span>📅 ${formattedDate}</span>
-                                <span>💰 ₹${req.amount}</span>
-                                <span>📆 ${req.days} days</span>
-                                <span>🆔 ${req.transactionId || 'N/A'}</span>
-                                <span class="renewal-status-badge ${req.status}">${req.status.toUpperCase()}</span>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            ${req.status === 'pending' ? `<button onclick="markPaid('${req.id}')" class="btn btn-success btn-sm">✅ Mark Paid</button>` : ''}
-                            ${req.status === 'paid' ? `<button onclick="approveRenewal('${req.id}')" class="btn btn-primary btn-sm">✅ Approve</button>` : ''}
-                            ${req.status === 'pending' || req.status === 'paid' ? `<button onclick="rejectRenewal('${req.id}')" class="btn btn-danger btn-sm">❌ Reject</button>` : ''}
-                        </div>
-                    `;
+                    div.innerHTML = '<div class="info"><div class="name">' + escapeHTML(req.linkName || 'Unknown Link') + '</div><div class="details"><span>📅 ' + formattedDate + '</span><span>💰 ₹' + req.amount + '</span><span>📆 ' + req.days + ' days</span><span>🆔 ' + (req.transactionId || 'N/A') + '</span><span class="renewal-status-badge ' + req.status + '">' + req.status.toUpperCase() + '</span></div></div><div class="actions">' + (req.status === 'pending' ? '<button onclick="markPaid(\'' + req.id + '\')" class="btn btn-success btn-sm">✅ Mark Paid</button>' : '') + (req.status === 'paid' ? '<button onclick="approveRenewal(\'' + req.id + '\')" class="btn btn-primary btn-sm">✅ Approve</button>' : '') + (req.status === 'pending' || req.status === 'paid' ? '<button onclick="rejectRenewal(\'' + req.id + '\')" class="btn btn-danger btn-sm">❌ Reject</button>' : '') + '</div>';
                     container.appendChild(div);
                 });
             } catch (e) {}
@@ -1318,7 +1243,7 @@
         async function markPaid(requestId) {
             if (!confirm('Mark this as paid?')) return;
             try {
-                const r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
+                var r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
                 if (r) {
                     showToast('✅ Marked as paid!', 'success');
                     loadRenewalRequests();
@@ -1329,15 +1254,15 @@
         async function approveRenewal(requestId) {
             if (!confirm('Approve this renewal?')) return;
             try {
-                const r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
+                var r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
                 if (r) {
                     showToast('✅ Renewal approved! Link extended.', 'success');
-                    const element = document.getElementById('renewal-' + requestId);
+                    var element = document.getElementById('renewal-' + requestId);
                     if (element) {
                         element.style.transition = 'all 0.5s ease';
                         element.style.opacity = '0';
                         element.style.transform = 'translateX(50px)';
-                        setTimeout(() => { loadRenewalRequests(); }, 500);
+                        setTimeout(function() { loadRenewalRequests(); }, 500);
                     } else {
                         loadRenewalRequests();
                     }
@@ -1348,15 +1273,15 @@
         async function rejectRenewal(requestId) {
             if (!confirm('Reject this renewal?')) return;
             try {
-                const r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
+                var r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
                 if (r) {
                     showToast('❌ Renewal rejected', 'error');
-                    const element = document.getElementById('renewal-' + requestId);
+                    var element = document.getElementById('renewal-' + requestId);
                     if (element) {
                         element.style.transition = 'all 0.5s ease';
                         element.style.opacity = '0';
                         element.style.transform = 'translateX(-50px)';
-                        setTimeout(() => { loadRenewalRequests(); }, 500);
+                        setTimeout(function() { loadRenewalRequests(); }, 500);
                     } else {
                         loadRenewalRequests();
                     }
@@ -1367,10 +1292,10 @@
         // ==================== STATS DASHBOARD ====================
         async function loadStats() {
             try {
-                const response = await secureFetch('/api/all-stats');
+                var response = await secureFetch('/api/all-stats');
                 if (!response) return;
                 if (response.ok) {
-                    const data = await response.json();
+                    var data = await response.json();
                     document.getElementById('totalVisitors').textContent = data.global?.totalVisitors || 0;
                     document.getElementById('totalClaims').textContent = data.global?.totalClaims || 0;
                     document.getElementById('todayVisitors').textContent = data.global?.todayVisitors || 0;
@@ -1382,14 +1307,14 @@
         }
 
         // ===== PERIODIC CHECKS =====
-        setInterval(() => { checkAuth(); }, 5 * 60 * 1000);
+        setInterval(function() { checkAuth(); }, 5 * 60 * 1000);
         setInterval(loadRenewalRequests, 15000);
         setInterval(loadStats, 30000);
 
         // ===== CHECK AUTH =====
         async function checkAuth() {
             try {
-                const response = await fetch('/api/links', {
+                var response = await fetch('/api/links', {
                     headers: { 'X-CSRF-Token': csrfToken }
                 });
                 if (response.status === 401 || response.status === 403) {

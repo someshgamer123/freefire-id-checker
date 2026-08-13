@@ -18,9 +18,6 @@
             display: flex;
             flex-direction: column;
             padding: 12px;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
         }
 
         .bg-glow {
@@ -95,48 +92,52 @@
             animation: fadeIn 1s ease; letter-spacing: 0.5px;
         }
 
-        /* ===== CLAIM BUTTON - ALWAYS VISIBLE ===== */
+        /* ===== CLAIM BUTTON - SIMPLE & ALWAYS VISIBLE ===== */
         .claim-btn-wrapper {
-            display: flex !important;
-            justify-content: center !important;
-            margin-top: 4px !important;
-            position: relative !important;
-            z-index: 999999 !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            position: relative;
+            z-index: 999999;
         }
 
         .claim-btn {
-            padding: 14px 60px !important;
-            border: none !important;
-            border-radius: 50px !important;
-            font-size: 18px !important;
-            font-weight: 800 !important;
-            cursor: pointer !important;
-            background: linear-gradient(135deg, #667eea, #764ba2) !important;
-            color: #fff !important;
-            transition: all 0.3s ease !important;
-            position: relative !important;
-            letter-spacing: 1px !important;
-            box-shadow: 0 0 30px rgba(102, 126, 234, 0.25) !important;
-            border: 2px solid rgba(255, 255, 255, 0.06) !important;
-            width: 100% !important;
-            max-width: 400px !important;
-            -webkit-tap-highlight-color: transparent !important;
-            z-index: 999999 !important;
-            pointer-events: auto !important;
+            padding: 16px 60px;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 1px;
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 400px;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 999999;
+            pointer-events: auto;
             opacity: 1 !important;
             visibility: visible !important;
             display: block !important;
         }
-        .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(102, 126, 234, 0.4); }
+        .claim-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 60px rgba(102, 126, 234, 0.5); }
         .claim-btn:active { transform: scale(0.97); }
         .claim-btn::before {
-            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
             border-radius: 54px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4), rgba(102, 126, 234, 0.4));
-            z-index: -1; animation: btnGlow 2s ease-in-out infinite; filter: blur(10px);
+            z-index: -1;
+            animation: btnGlow 2s ease-in-out infinite;
+            filter: blur(10px);
         }
         @keyframes btnGlow { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
 
@@ -360,7 +361,7 @@
             .video-container { border-radius: 8px; }
             .video-container::before { border-radius: 10px; }
             .headline { font-size: 14px; margin: 6px 0 3px; }
-            .claim-btn { padding: 12px 40px !important; font-size: 16px !important; max-width: 100% !important; }
+            .claim-btn { padding: 12px 40px; font-size: 16px; max-width: 100%; }
             .popup-card { padding: 18px 16px 22px; max-width: 340px; }
             .popup-card .popup-title { font-size: 17px; }
             .popup-card .popup-claim-btn { font-size: 16px; padding: 12px; }
@@ -381,7 +382,7 @@
         }
         @media (max-width: 400px) {
             .headline { font-size: 12px; }
-            .claim-btn { padding: 10px 30px !important; font-size: 14px !important; max-width: 100% !important; }
+            .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
             .popup-card { padding: 14px 12px 18px; max-width: 300px; }
             .popup-card .popup-title { font-size: 15px; }
             .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
@@ -418,8 +419,8 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video</div>
             <!-- ===== CLAIM BUTTON - ALWAYS VISIBLE ===== -->
-            <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <button class="claim-btn" id="claimBtn" onclick="mainClaimHandler(event)">🎁 Claim Now</button>
+            <div class="claim-btn-wrapper">
+                <button class="claim-btn" id="mainClaimBtn">🎁 Claim Now</button>
             </div>
         </div>
     </div>
@@ -463,21 +464,21 @@
 
     <script>
         // ==================== CONFIG ====================
-        const linkId = window.location.pathname.split('/').pop() || 'default';
-        const urlParams = new URLSearchParams(window.location.search);
-        let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
-        const claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
-        const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
-        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
+        var linkId = window.location.pathname.split('/').pop() || 'default';
+        var urlParams = new URLSearchParams(window.location.search);
+        var videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
+        var claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
+        var buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
+        var headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
 
         document.getElementById('headline').textContent = headline;
-        document.getElementById('claimBtn').textContent = buttonText;
+        document.getElementById('mainClaimBtn').textContent = buttonText;
         document.getElementById('popupClaimBtn').textContent = buttonText;
 
         function fixYouTubeUrl(url) {
             if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
             if (url.includes('youtube.com/watch?v=')) {
-                const videoId = url.split('v=')[1].split('&')[0];
+                var videoId = url.split('v=')[1].split('&')[0];
                 return 'https://youtu.be/' + videoId;
             }
             if (url.includes('youtu.be/')) return url;
@@ -488,22 +489,22 @@
         videoUrl = fixYouTubeUrl(videoUrl);
 
         // ==================== STATE ====================
-        let isUnlocked = false;
-        let isPopupClaimed = false;
-        let isCelebrationActive = false;
-        let isVideoPlaying = false;
-        let videoPlayCount = 0;
-        let backPressCount = 0;
-        let isExiting = false;
-        let pageLoadTime = Date.now();
-        let isSoundEnabled = true;
+        var isUnlocked = false;
+        var isPopupClaimed = false;
+        var isCelebrationActive = false;
+        var isVideoPlaying = false;
+        var videoPlayCount = 0;
+        var backPressCount = 0;
+        var isExiting = false;
+        var pageLoadTime = Date.now();
+        var isSoundEnabled = true;
 
         // ==================== SCREEN LOCK ====================
-        document.getElementById('videoOverlay').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
-        document.getElementById('videoOverlay').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); return false; });
-        document.getElementById('videoOverlay').addEventListener('touchmove', e => { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
-        if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait').catch(() => {}); }
-        document.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+        document.getElementById('videoOverlay').addEventListener('touchstart', function(e) { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
+        document.getElementById('videoOverlay').addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); return false; });
+        document.getElementById('videoOverlay').addEventListener('touchmove', function(e) { e.preventDefault(); e.stopPropagation(); return false; }, { passive: false });
+        if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait').catch(function() {}); }
+        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
 
         // ==================== EXIT SYSTEM ====================
         function trackVideoPlay() {
@@ -515,7 +516,7 @@
 
         function handleBackPress() {
             if (isExiting) return true;
-            const timeElapsed = (Date.now() - pageLoadTime) / 1000;
+            var timeElapsed = (Date.now() - pageLoadTime) / 1000;
             if (isUnlocked || timeElapsed >= 180) {
                 isExiting = true;
                 document.body.innerHTML = '';
@@ -534,7 +535,7 @@
         }
 
         history.pushState(null, null, window.location.href);
-        window.addEventListener('popstate', () => handleBackPress());
+        window.addEventListener('popstate', function() { handleBackPress(); });
 
         document.addEventListener('keydown', function(e) {
             if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
@@ -545,17 +546,17 @@
             }
         }, true);
 
-        document.addEventListener('contextmenu', e => { e.preventDefault(); return false; });
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
 
-        let touchStartX = 0;
-        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-        document.addEventListener('touchend', e => {
-            const diff = touchStartX - e.changedTouches[0].screenX;
+        var touchStartX = 0;
+        document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        document.addEventListener('touchend', function(e) {
+            var diff = touchStartX - e.changedTouches[0].screenX;
             if (diff > 80) { e.preventDefault(); if (!isUnlocked) handleBackPress(); return false; }
         }, { passive: false });
 
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden && !isUnlocked) { setTimeout(() => window.focus(), 50); handleBackPress(); }
+            if (document.hidden && !isUnlocked) { setTimeout(function() { window.focus(); }, 50); handleBackPress(); }
         });
 
         // ==================== SOUND ====================
@@ -567,12 +568,12 @@
         function playCelebrationSound() {
             if (!isSoundEnabled) return;
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
-                notes.forEach((freq, index) => {
-                    setTimeout(() => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
+                notes.forEach(function(freq, index) {
+                    setTimeout(function() {
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
                         osc.connect(gain); gain.connect(audioCtx.destination);
                         osc.frequency.value = freq; osc.type = 'sine';
                         gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
@@ -580,12 +581,12 @@
                         osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.35);
                     }, index * 120);
                 });
-                setTimeout(() => {
-                    const freqs = [523.25, 659.25, 783.99, 1046.50];
-                    freqs.forEach((freq, i) => {
-                        setTimeout(() => {
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
+                setTimeout(function() {
+                    var freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach(function(freq, i) {
+                        setTimeout(function() {
+                            var osc = audioCtx.createOscillator();
+                            var gain = audioCtx.createGain();
                             osc.connect(gain); gain.connect(audioCtx.destination);
                             osc.frequency.value = freq; osc.type = 'sine';
                             gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
@@ -601,80 +602,80 @@
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
-            const container = document.getElementById('confettiContainer');
+            var container = document.getElementById('confettiContainer');
             container.innerHTML = ''; container.classList.add('active');
             playCelebrationSound();
 
-            const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
+            var colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
 
-            for (let i = 0; i < 60; i++) {
-                const el = document.createElement('div');
+            for (var i = 0; i < 60; i++) {
+                var el = document.createElement('div');
                 el.className = 'confetti-burst-piece';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
+                var color = colors[Math.floor(Math.random() * colors.length)];
+                var w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
                 el.style.width = w + 'px'; el.style.height = h + 'px';
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = 150 + Math.random() * 350;
-                const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
-                const tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
-                const tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
+                var angle = Math.random() * 2 * Math.PI;
+                var dist = 150 + Math.random() * 350;
+                var tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 100;
+                var tx2 = Math.cos(angle + 0.5) * (dist * 0.7), ty2 = Math.sin(angle + 0.5) * (dist * 0.7) - 50;
+                var tx3 = Math.cos(angle + 0.8) * (dist * 0.3), ty3 = Math.sin(angle + 0.8) * (dist * 0.3) - 20;
                 el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
                 el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                 el.style.left = (50 + Math.random() * 6 - 3) + '%';
                 el.style.top = (45 + Math.random() * 10 - 5) + '%';
                 el.style.animationDelay = (Math.random() * 0.15) + 's';
-                el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
+                el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                if (Math.random() > 0.7) el.style.boxShadow = '0 0 8px ' + color;
                 container.appendChild(el);
             }
 
-            for (let i = 0; i < 80; i++) {
-                const el = document.createElement('div');
-                el.className = 'confetti-piece';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = 6 + Math.random() * 12, h = 8 + Math.random() * 14;
-                el.style.width = w + 'px'; el.style.height = h + 'px';
-                el.style.background = color;
-                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                el.style.left = Math.random() * 100 + '%';
-                el.style.top = '-10%';
-                el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-                el.style.animationDelay = (Math.random() * 1.5) + 's';
-                el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                if (Math.random() > 0.8) el.style.boxShadow = `0 0 10px ${color}`;
-                container.appendChild(el);
+            for (var j = 0; j < 80; j++) {
+                var el2 = document.createElement('div');
+                el2.className = 'confetti-piece';
+                var color2 = colors[Math.floor(Math.random() * colors.length)];
+                var w2 = 6 + Math.random() * 12, h2 = 8 + Math.random() * 14;
+                el2.style.width = w2 + 'px'; el2.style.height = h2 + 'px';
+                el2.style.background = color2;
+                el2.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                el2.style.left = Math.random() * 100 + '%';
+                el2.style.top = '-10%';
+                el2.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+                el2.style.animationDelay = (Math.random() * 1.5) + 's';
+                el2.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                if (Math.random() > 0.8) el2.style.boxShadow = '0 0 10px ' + color2;
+                container.appendChild(el2);
             }
 
-            setTimeout(() => {
-                for (let i = 0; i < 35; i++) {
-                    const el = document.createElement('div');
-                    el.className = 'confetti-burst-piece';
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    const w = 5 + Math.random() * 10, h = 7 + Math.random() * 12;
-                    el.style.width = w + 'px'; el.style.height = h + 'px';
-                    el.style.background = color;
-                    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                    const angle = Math.random() * 2 * Math.PI;
-                    const dist = 120 + Math.random() * 300;
-                    const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - 80;
-                    const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - 40;
-                    const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - 15;
-                    el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
-                    el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
-                    el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
-                    el.style.left = (20 + Math.random() * 60) + '%';
-                    el.style.top = (20 + Math.random() * 60) + '%';
-                    el.style.animationDelay = (Math.random() * 0.15) + 's';
-                    el.style.transform = `rotate(${Math.random() * 360}deg)`;
-                    if (Math.random() > 0.7) el.style.boxShadow = `0 0 8px ${color}`;
-                    container.appendChild(el);
+            setTimeout(function() {
+                for (var k = 0; k < 35; k++) {
+                    var el3 = document.createElement('div');
+                    el3.className = 'confetti-burst-piece';
+                    var color3 = colors[Math.floor(Math.random() * colors.length)];
+                    var w3 = 5 + Math.random() * 10, h3 = 7 + Math.random() * 12;
+                    el3.style.width = w3 + 'px'; el3.style.height = h3 + 'px';
+                    el3.style.background = color3;
+                    el3.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    var angle3 = Math.random() * 2 * Math.PI;
+                    var dist3 = 120 + Math.random() * 300;
+                    var tx3 = Math.cos(angle3) * dist3, ty3 = Math.sin(angle3) * dist3 - 80;
+                    var tx4 = Math.cos(angle3 + 0.5) * (dist3 * 0.6), ty4 = Math.sin(angle3 + 0.5) * (dist3 * 0.6) - 40;
+                    var tx5 = Math.cos(angle3 + 0.8) * (dist3 * 0.25), ty5 = Math.sin(angle3 + 0.8) * (dist3 * 0.25) - 15;
+                    el3.style.setProperty('--tx', tx3 + 'px'); el3.style.setProperty('--ty', ty3 + 'px');
+                    el3.style.setProperty('--tx2', tx4 + 'px'); el3.style.setProperty('--ty2', ty4 + 'px');
+                    el3.style.setProperty('--tx3', tx5 + 'px'); el3.style.setProperty('--ty3', ty5 + 'px');
+                    el3.style.left = (20 + Math.random() * 60) + '%';
+                    el3.style.top = (20 + Math.random() * 60) + '%';
+                    el3.style.animationDelay = (Math.random() * 0.15) + 's';
+                    el3.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                    if (Math.random() > 0.7) el3.style.boxShadow = '0 0 8px ' + color3;
+                    container.appendChild(el3);
                 }
             }, 350);
 
-            setTimeout(() => {
+            setTimeout(function() {
                 container.innerHTML = '';
                 container.classList.remove('active');
                 isCelebrationActive = false;
@@ -688,15 +689,14 @@
             trackClaim();
             hidePopup();
             triggerCelebration();
-            setTimeout(() => {
-                document.getElementById('headline').style.opacity = '1';
+            setTimeout(function() {
                 document.getElementById('chatSection').classList.add('show');
                 loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
+                setTimeout(function() {
+                    var iframe = document.getElementById('ytPlayer');
                     if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
+                    var video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(function() {});
                 }, 500);
             }, 200);
             isUnlocked = true;
@@ -712,30 +712,30 @@
 
         async function loadPopupData() {
             try {
-                const response = await fetch(`/api/link/${linkId}`);
+                var response = await fetch('/api/link/' + linkId);
                 if (response.ok) {
-                    const data = await response.json();
-                    const popup = data.popupSettings || {};
+                    var data = await response.json();
+                    var popup = data.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
                     document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
                     document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
                     if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
+                        var img = document.getElementById('popupImg');
+                        var placeholder = document.getElementById('popupPlaceholder');
                         img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
                     }
                     return;
                 }
-                const settingsRes = await fetch('/api/settings');
+                var settingsRes = await fetch('/api/settings');
                 if (settingsRes.ok) {
-                    const settings = await settingsRes.json();
-                    const popup = settings.popupSettings || {};
+                    var settings = await settingsRes.json();
+                    var popup = settings.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
                     document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock your reward';
                     document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
                     if (popup.image) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
+                        var img = document.getElementById('popupImg');
+                        var placeholder = document.getElementById('popupPlaceholder');
                         img.src = popup.image; img.style.display = 'block'; placeholder.style.display = 'none';
                     }
                 }
@@ -743,24 +743,24 @@
         }
 
         function showPopup() {
-            const overlay = document.getElementById('popupOverlay');
+            var overlay = document.getElementById('popupOverlay');
             overlay.classList.remove('hidden');
             overlay.classList.add('show');
             document.body.style.overflow = 'hidden';
         }
 
         function hidePopup() {
-            const overlay = document.getElementById('popupOverlay');
+            var overlay = document.getElementById('popupOverlay');
             overlay.classList.remove('show');
             overlay.classList.add('hidden');
             document.body.style.overflow = '';
         }
 
         // ============================================================
-        // ===== MAIN CLAIM BUTTON - SIMPLE onclick DIRECT =====
+        // ===== MAIN CLAIM BUTTON - SIMPLE & ALWAYS WORKING =====
         // ============================================================
         function mainClaimHandler(e) {
-            console.log('✅ CLAIM BUTTON CLICKED! (onclick)');
+            console.log('✅ MAIN CLAIM BUTTON CLICKED!');
             e.preventDefault();
             e.stopPropagation();
 
@@ -768,20 +768,20 @@
             isPopupClaimed = true;
 
             // Ripple effect
-            const btn = document.getElementById('claimBtn');
-            const rect = btn.getBoundingClientRect();
-            const ripple = document.createElement('span');
+            var btn = document.getElementById('mainClaimBtn');
+            var rect = btn.getBoundingClientRect();
+            var ripple = document.createElement('span');
             ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.4);width:60px;height:60px;transform:scale(0);animation:rippleAnim 0.6s linear;pointer-events:none;';
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            var y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
             ripple.style.left = (x - 30) + 'px';
             ripple.style.top = (y - 30) + 'px';
             btn.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
+            setTimeout(function() { ripple.remove(); }, 600);
 
             // Add ripple keyframes if not exists
             if (!document.getElementById('rippleStyle')) {
-                const style = document.createElement('style');
+                var style = document.createElement('style');
                 style.id = 'rippleStyle';
                 style.textContent = '@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }';
                 document.head.appendChild(style);
@@ -791,21 +791,27 @@
             triggerCelebration();
             hidePopup();
 
-            setTimeout(() => {
-                document.getElementById('headline').style.opacity = '1';
+            setTimeout(function() {
                 document.getElementById('chatSection').classList.add('show');
                 loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
+                setTimeout(function() {
+                    var iframe = document.getElementById('ytPlayer');
                     if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
+                    var video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(function() {});
                 }, 500);
             }, 200);
 
             isUnlocked = true;
             console.log('🔓 Unlocked via main claim button');
         }
+
+        // ===== DIRECT BUTTON BINDING =====
+        var mainBtn = document.getElementById('mainClaimBtn');
+        mainBtn.addEventListener('click', mainClaimHandler);
+        mainBtn.addEventListener('touchstart', function(e) {
+            mainClaimHandler(e);
+        }, { passive: false });
 
         // ============================================================
 
@@ -816,7 +822,7 @@
                 iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
                 iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
             } catch(e) {
-                setTimeout(() => {
+                setTimeout(function() {
                     try {
                         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                         iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
@@ -826,12 +832,12 @@
         }
 
         function loadVideo() {
-            const container = document.getElementById('videoPlayer');
+            var container = document.getElementById('videoPlayer');
             container.innerHTML = '';
-            const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            var ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             if (ytId) {
-                const videoId = ytId[1];
-                const iframe = document.createElement('iframe');
+                var videoId = ytId[1];
+                var iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
                 iframe.src = 'https://www.youtube.com/embed/' + videoId +
                     '?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId +
@@ -842,12 +848,12 @@
                 container.appendChild(iframe);
                 iframe.onload = function() {
                     forcePlayVideo(iframe);
-                    setTimeout(() => forcePlayVideo(iframe), 300);
-                    setTimeout(() => forcePlayVideo(iframe), 600);
+                    setTimeout(function() { forcePlayVideo(iframe); }, 300);
+                    setTimeout(function() { forcePlayVideo(iframe); }, 600);
                     trackVideoPlay();
                 };
-                let attempts = 0;
-                const interval = setInterval(() => {
+                var attempts = 0;
+                var interval = setInterval(function() {
                     if (attempts > 15) { clearInterval(interval); return; }
                     forcePlayVideo(iframe);
                     attempts++;
@@ -855,11 +861,11 @@
                 document.addEventListener('visibilitychange', function() {
                     if (!document.hidden && !isVideoPlaying) forcePlayVideo(iframe);
                 });
-                setTimeout(() => trackVideoPlay(), 3000);
+                setTimeout(function() { trackVideoPlay(); }, 3000);
                 return;
             }
 
-            const video = document.createElement('video');
+            var video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
             video.webkitPlaysInline = true;
@@ -867,12 +873,12 @@
             video.loop = true;
             video.controls = true;
             video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
-            const source = document.createElement('source');
+            var source = document.createElement('source');
             source.src = videoUrl;
             source.type = videoUrl.match(/\.mp4/i) ? 'video/mp4' : videoUrl.match(/\.webm/i) ? 'video/webm' : videoUrl.match(/\.ogg/i) ? 'video/ogg' : 'video/mp4';
             video.appendChild(source);
             video.onerror = function() {
-                const iframe = document.createElement('iframe');
+                var iframe = document.createElement('iframe');
                 iframe.src = videoUrl + '?autoplay=1&playsinline=1&loop=1';
                 iframe.allow = 'autoplay; encrypted-media; fullscreen';
                 iframe.allowFullscreen = true;
@@ -882,9 +888,9 @@
             };
             container.appendChild(video);
             video.onloadedmetadata = function() {
-                video.play().then(() => { trackVideoPlay(); }).catch(() => {
-                    const playOnInteraction = function() {
-                        video.play().then(() => { trackVideoPlay(); }).catch(() => {});
+                video.play().then(function() { trackVideoPlay(); }).catch(function() {
+                    var playOnInteraction = function() {
+                        video.play().then(function() { trackVideoPlay(); }).catch(function() {});
                         document.removeEventListener('click', playOnInteraction);
                         document.removeEventListener('touchstart', playOnInteraction);
                     };
@@ -892,12 +898,12 @@
                     document.addEventListener('touchstart', playOnInteraction, { once: true });
                 });
             };
-            video.addEventListener('pause', function() { if (!video.ended) video.play().catch(() => {}); });
-            if (video.readyState >= 2) { video.play().then(() => { trackVideoPlay(); }).catch(() => {}); }
-            let retryCount = 0;
-            const retryInterval = setInterval(() => {
+            video.addEventListener('pause', function() { if (!video.ended) video.play().catch(function() {}); });
+            if (video.readyState >= 2) { video.play().then(function() { trackVideoPlay(); }).catch(function() {}); }
+            var retryCount = 0;
+            var retryInterval = setInterval(function() {
                 if (retryCount < 10 && video.paused) {
-                    video.play().then(() => { trackVideoPlay(); clearInterval(retryInterval); }).catch(() => {});
+                    video.play().then(function() { trackVideoPlay(); clearInterval(retryInterval); }).catch(function() {});
                 } else if (retryCount >= 10) { clearInterval(retryInterval); }
                 retryCount++;
             }, 1500);
@@ -906,7 +912,7 @@
         // ==================== TRACK CLAIM ====================
         async function trackClaim() {
             try {
-                const response = await fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                var response = await fetch('/api/track-claim/' + linkId, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 if (response.ok) console.log('✅ Claim tracked successfully');
             } catch (e) {}
         }
@@ -916,28 +922,28 @@
             document.getElementById('emojiList').classList.toggle('open');
         }
         document.addEventListener('click', function(e) {
-            const picker = document.getElementById('emojiPickerBtn');
+            var picker = document.getElementById('emojiPickerBtn');
             if (!picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
         });
 
         // ==================== FLYING REACTIONS ====================
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
+        var flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
         function createFlyingReaction(emoji) {
-            const emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
-            const el = document.createElement('div');
+            var emojiToUse = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
+            var el = document.createElement('div');
             el.className = 'flying-reaction';
             el.textContent = emojiToUse;
             el.style.left = (10 + Math.random() * 80) + '%';
             el.style.top = (55 + Math.random() * 35) + '%';
             el.style.fontSize = (24 + Math.random() * 32) + 'px';
-            const type = Math.floor(Math.random() * 3) + 1;
+            var type = Math.floor(Math.random() * 3) + 1;
             el.classList.add('type-' + type);
             document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+            setTimeout(function() { if (el.parentNode) el.remove(); }, 3500);
         }
 
         // ==================== CHAT SYSTEM ====================
-        const users = [
+        var users = [
             { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
             { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
             { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' }, { name: 'DarkKnight', emoji: '🦇' },
@@ -946,43 +952,38 @@
             { name: 'Venom', emoji: '🕷️' }, { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
             { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
         ];
-        const messages = [
+        var messages = [
             'Thanks bhai!', 'Redeem code mil gaya!', '1000₹ ka redeem code!',
             'Best website ever!', 'Bro thanks a lot!', 'Redeem code working!',
             'Amazing!', 'Got 500₹!', 'Love this!', 'Best app!',
             'Thank you!', 'Working perfectly!', 'Awesome!', 'Great!',
             'Superb!', 'Thanks team!', 'Nice!', 'Love it!', 'Working!', 'Super!'
         ];
-        const chatContainer = document.getElementById('chatMessages');
+        var chatContainer = document.getElementById('chatMessages');
         function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
         function getRandomTime() {
-            const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
-            const s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            var m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            var s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
             return m + ':' + s;
         }
 
         function addChat() {
-            const user = getRandom(users), msg = getRandom(messages), time = getRandomTime();
-            const el = document.createElement('div');
+            var user = getRandom(users), msg = getRandom(messages), time = getRandomTime();
+            var el = document.createElement('div');
             el.className = 'chat-message';
-            el.innerHTML = `
-                <span class="avatar">${user.emoji}</span>
-                <span class="username">${user.name}</span>
-                <span class="text">${msg}</span>
-                <span class="time">${time}</span>
-            `;
+            el.innerHTML = '<span class="avatar">' + user.emoji + '</span><span class="username">' + user.name + '</span><span class="text">' + msg + '</span><span class="time">' + time + '</span>';
             chatContainer.appendChild(el);
-            const container = document.getElementById('chatContainer');
+            var container = document.getElementById('chatContainer');
             container.scrollTop = container.scrollHeight;
             while (chatContainer.children.length > 25) chatContainer.removeChild(chatContainer.firstChild);
             applyFadeEffect();
-            if (Math.random() > 0.5) setTimeout(() => createFlyingReaction(), 300);
+            if (Math.random() > 0.5) setTimeout(function() { createFlyingReaction(); }, 300);
         }
 
         function applyFadeEffect() {
-            const messages = chatContainer.querySelectorAll('.chat-message');
-            const total = messages.length;
-            messages.forEach((msg, index) => {
+            var messages = chatContainer.querySelectorAll('.chat-message');
+            var total = messages.length;
+            messages.forEach(function(msg, index) {
                 if (index >= total - 3) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '1';
@@ -1000,26 +1001,26 @@
 
         function triggerReaction(emoji, event) {
             document.getElementById('emojiList').classList.remove('open');
-            const rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
-            const x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
-            const y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
-            const el = document.createElement('div');
+            var rect = (event && event.target) ? event.target.getBoundingClientRect() : null;
+            var x = rect ? ((rect.left + rect.width/2) / window.innerWidth * 100) : (20 + Math.random() * 60);
+            var y = rect ? ((rect.top) / window.innerHeight * 100) : (70 + Math.random() * 20);
+            var el = document.createElement('div');
             el.className = 'flying-reaction';
             el.textContent = emoji;
             el.style.left = x + '%';
             el.style.top = y + '%';
             el.style.fontSize = (26 + Math.random() * 28) + 'px';
-            const type = Math.floor(Math.random() * 3) + 1;
+            var type = Math.floor(Math.random() * 3) + 1;
             el.classList.add('type-' + type);
             document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
-            setTimeout(() => createFlyingReaction(), 200);
+            setTimeout(function() { if (el.parentNode) el.remove(); }, 3500);
+            setTimeout(function() { createFlyingReaction(); }, 200);
         }
         window.triggerReaction = triggerReaction;
 
-        setInterval(() => { if (Math.random() > 0.6) createFlyingReaction(); }, 3000);
-        for (let i = 0; i < 10; i++) setTimeout(addChat, i * 120);
-        setInterval(() => { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
+        setInterval(function() { if (Math.random() > 0.6) createFlyingReaction(); }, 3000);
+        for (var i = 0; i < 10; i++) setTimeout(addChat, i * 120);
+        setInterval(function() { addChat(); if (Math.random() > 0.6) setTimeout(addChat, 300); }, 1400 + Math.random() * 1000);
 
         // ==================== KEEP AWAKE ====================
         async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
@@ -1027,27 +1028,24 @@
 
         // ==================== FULLSCREEN ====================
         document.getElementById('videoContainer').addEventListener('click', function() {
-            const elem = document.documentElement;
+            var elem = document.documentElement;
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(function() {});
                 else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
             }
         });
 
         // ==================== INIT ====================
-        document.getElementById('headline').style.opacity = '0';
-        document.getElementById('chatSection').classList.remove('show');
-
         async function init() {
             await loadPopupData();
-            setTimeout(() => showPopup(), 500);
+            setTimeout(function() { showPopup(); }, 500);
         }
         init();
 
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('🔘 Button Text:', buttonText);
-        console.log('✅ MAIN CLAIM BUTTON: ALWAYS VISIBLE - onclick DIRECT');
+        console.log('✅ MAIN CLAIM BUTTON: SIMPLE & ALWAYS VISIBLE');
     </script>
 </body>
 </html>

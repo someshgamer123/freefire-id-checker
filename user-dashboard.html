@@ -249,52 +249,53 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==================== GET LINK ID ====================
-        const pathSegments = window.location.pathname.split('/');
-        const linkId = pathSegments[pathSegments.length - 1] || '';
+        var pathSegments = window.location.pathname.split('/');
+        var linkId = pathSegments[pathSegments.length - 1] || '';
         
         if (!linkId) {
             showToast('❌ Invalid link', 'error');
             document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px;"><h2>❌ Invalid Link</h2><p style="color:rgba(255,255,255,0.5);">Please use a valid dashboard link</p></div>';
         }
 
-        let selectedPlan = null;
-        let linkData = null;
+        var selectedPlan = null;
+        var linkData = null;
 
-        // ==================== TOAST ====================
-        function showToast(msg, type = 'info') {
-            const t = document.getElementById('toast');
+        function showToast(msg, type) {
+            type = type || 'info';
+            var t = document.getElementById('toast');
             t.textContent = msg;
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(() => t.className = 'toast', 4000);
+            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
         }
 
-        // ==================== LOAD DATA ====================
         async function loadData() {
             try {
-                // Load stats
-                const statsRes = await fetch(`/api/visit-stats/${linkId}`);
+                var statsRes = await fetch('/api/visit-stats/' + linkId);
                 if (statsRes.ok) {
-                    const data = await statsRes.json();
+                    var data = await statsRes.json();
                     linkData = data;
                     
                     document.getElementById('linkName').textContent = data.name || 'Unknown';
                     document.getElementById('totalVisits').textContent = data.totalVisits || 0;
                     document.getElementById('totalClaims').textContent = data.totalClaims || 0;
-                    document.getElementById('todayVisits').textContent = data.dailyVisits ? Object.values(data.dailyVisits).reduce((a,b) => a+b, 0) : 0;
-                    document.getElementById('todayClaims').textContent = data.dailyClaims ? Object.values(data.dailyClaims).reduce((a,b) => a+b, 0) : 0;
+                    var todayVisits = 0, todayClaims = 0;
+                    if (data.dailyVisits) {
+                        var today = new Date().toISOString().split('T')[0];
+                        todayVisits = data.dailyVisits[today] || 0;
+                        todayClaims = data.dailyClaims && data.dailyClaims[today] ? data.dailyClaims[today] : 0;
+                    }
+                    document.getElementById('todayVisits').textContent = todayVisits;
+                    document.getElementById('todayClaims').textContent = todayClaims;
                     
-                    // Status
-                    const statusEl = document.getElementById('linkStatus');
-                    const status = data.status || 'unknown';
+                    var statusEl = document.getElementById('linkStatus');
+                    var status = data.status || 'unknown';
                     statusEl.textContent = status.toUpperCase();
                     statusEl.className = 'status-badge ' + status;
                     
-                    // Expiry
-                    const expiryEl = document.getElementById('expiryDate');
+                    var expiryEl = document.getElementById('expiryDate');
                     if (data.expiryDate) {
-                        const date = new Date(data.expiryDate);
+                        var date = new Date(data.expiryDate);
                         expiryEl.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
                         expiryEl.textContent = 'No expiry set';
@@ -303,7 +304,6 @@
                     showToast('❌ Failed to load stats', 'error');
                 }
 
-                // Load renewal requests
                 await loadRenewalHistory();
 
             } catch (e) {
@@ -312,33 +312,21 @@
             }
         }
 
-        // ==================== LOAD RENEWAL HISTORY ====================
         async function loadRenewalHistory() {
             try {
-                const res = await fetch(`/api/renewal/status/${linkId}`);
+                var res = await fetch('/api/renewal/status/' + linkId);
                 if (res.ok) {
-                    const data = await res.json();
-                    const container = document.getElementById('renewalHistory');
+                    var data = await res.json();
+                    var container = document.getElementById('renewalHistory');
                     if (data.hasRequest && data.request) {
-                        const req = data.request;
-                        const statusColors = {
+                        var req = data.request;
+                        var statusColors = {
                             'pending': '🟡',
                             'paid': '🔵',
                             'approved': '🟢',
                             'rejected': '🔴'
                         };
-                        container.innerHTML = `
-                            <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 16px;margin:6px 0;border-left:3px solid ${req.status === 'approved' ? '#48bb78' : req.status === 'paid' ? '#4299e1' : req.status === 'pending' ? '#f6ad55' : '#fc8181'};">
-                                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-                                    <span>${statusColors[req.status] || '📌'} ${req.plan || 'N/A'} - ${req.days || 0} days</span>
-                                    <span style="font-size:12px;color:rgba(255,255,255,0.4);">₹${req.amount || 0}</span>
-                                </div>
-                                <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">
-                                    ${new Date(req.createdAt).toLocaleDateString()} 
-                                    <span class="status-badge" style="font-size:10px;padding:2px 10px;background:rgba(255,255,255,0.05);">${req.status.toUpperCase()}</span>
-                                </div>
-                            </div>
-                        `;
+                        container.innerHTML = '<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 16px;margin:6px 0;border-left:3px solid ' + (req.status === 'approved' ? '#48bb78' : req.status === 'paid' ? '#4299e1' : req.status === 'pending' ? '#f6ad55' : '#fc8181') + ';"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><span>' + (statusColors[req.status] || '📌') + ' ' + (req.plan || 'N/A') + ' - ' + (req.days || 0) + ' days</span><span style="font-size:12px;color:rgba(255,255,255,0.4);">₹' + (req.amount || 0) + '</span></div><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">' + new Date(req.createdAt).toLocaleDateString() + ' <span class="status-badge" style="font-size:10px;padding:2px 10px;background:rgba(255,255,255,0.05);">' + req.status.toUpperCase() + '</span></div></div>';
                     } else {
                         container.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;">No renewal requests</p>';
                     }
@@ -348,34 +336,32 @@
             }
         }
 
-        // ==================== SELECT PLAN ====================
         function selectPlan(plan) {
             selectedPlan = plan;
-            document.querySelectorAll('.plan-btn').forEach(el => {
+            document.querySelectorAll('.plan-btn').forEach(function(el) {
                 el.classList.toggle('selected', el.dataset.plan === plan);
             });
             document.getElementById('selectedPlanDisplay').textContent = '✅ Selected: ' + plan;
         }
 
-        // ==================== REQUEST RENEWAL ====================
         async function requestRenewal() {
             if (!selectedPlan) {
                 showToast('⚠️ Please select a plan first', 'error');
                 return;
             }
 
-            const btn = document.getElementById('renewBtn');
+            var btn = document.getElementById('renewBtn');
             btn.textContent = '⏳ Processing...';
             btn.disabled = true;
 
             try {
-                const res = await fetch('/api/renewal/request', {
+                var res = await fetch('/api/renewal/request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ linkId, plan: selectedPlan })
+                    body: JSON.stringify({ linkId: linkId, plan: selectedPlan })
                 });
 
-                const data = await res.json();
+                var data = await res.json();
 
                 if (res.ok) {
                     showToast('✅ Renewal request submitted!', 'success');
@@ -393,10 +379,7 @@
             btn.disabled = false;
         }
 
-        // ==================== REFRESH EVERY 30 SECONDS ====================
         setInterval(loadData, 30000);
-
-        // ==================== INIT ====================
         loadData();
         
         console.log('📊 User Dashboard Loaded');
