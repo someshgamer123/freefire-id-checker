@@ -276,9 +276,8 @@
             </div>
             <div id="selectedPlanDisplay" style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:8px 0;">Select a plan above</div>
             
-            <!-- WhatsApp Renewal Button -->
             <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
-                 Request Renewal 😎
+                Request Renewal 😎
             </button>
             <div id="renewalStatus" style="margin-top:10px;font-size:14px;text-align:center;color:rgba(255,255,255,0.5);"></div>
         </div>
@@ -303,73 +302,10 @@
 
         console.log('📌 Raw ID from URL:', rawId);
 
-        // ===== FIX: Map dashboard ID to actual link ID =====
-        async function resolveLinkId() {
-            try {
-                // Check if it's a dashboard ID
-                if (rawId.startsWith('dashboard_')) {
-                    console.log('🔍 Dashboard ID detected. Fetching actual link...');
-                    
-                    // Try to get the actual link from the dashboard ID
-                    // First, try to find any link with this dashboard ID stored
-                    // For now, we'll use a simple approach: try to get stats directly
-                    // If fails, try to find the link by searching all links
-                    
-                    var response = await fetch('/api/links');
-                    if (response.ok) {
-                        var links = await response.json();
-                        // Look for link where dashboardId matches
-                        var foundLink = links.find(function(l) {
-                            return l.dashboardId === rawId;
-                        });
-                        
-                        if (foundLink) {
-                            actualLinkId = foundLink.id;
-                            console.log('✅ Found actual link ID:', actualLinkId);
-                            linkId = actualLinkId;
-                            return true;
-                        }
-                    }
-                    
-                    // If not found, check if there's a mapping stored
-                    var mapRes = await fetch('/api/dashboard-map/' + rawId);
-                    if (mapRes.ok) {
-                        var mapData = await mapRes.json();
-                        if (mapData.linkId) {
-                            actualLinkId = mapData.linkId;
-                            linkId = actualLinkId;
-                            console.log('✅ Found link via mapping:', actualLinkId);
-                            return true;
-                        }
-                    }
-                    
-                    // If still not found, try to use raw ID directly
-                    // The server might handle it
-                    console.log('⚠️ No mapping found, using raw ID:', rawId);
-                    linkId = rawId;
-                    return true;
-                } else {
-                    // Not a dashboard ID, use as is
-                    linkId = rawId;
-                    actualLinkId = rawId;
-                    return true;
-                }
-            } catch (e) {
-                console.error('Error resolving link ID:', e);
-                linkId = rawId;
-                return true;
-            }
-        }
-
         var whatsappNumber = '';
         var selectedPlan = null;
         var linkData = null;
         var renewalHistory = [];
-
-        if (!linkId) {
-            showToast('❌ Invalid link', 'error');
-            document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px;"><h2>❌ Invalid Link</h2><p style="color:rgba(255,255,255,0.5);">Please use a valid dashboard link</p></div>';
-        }
 
         function showToast(msg, type) {
             type = type || 'info';
@@ -388,12 +324,72 @@
                     whatsappNumber = data.number;
                     console.log('📱 WhatsApp Number loaded:', whatsappNumber);
                 } else {
-                    whatsappNumber = '919876543210';
+                    whatsappNumber = '916372923348';
                 }
             } catch (e) {
                 console.error('Error loading WhatsApp number:', e);
-                whatsappNumber = '919876543210';
+                whatsappNumber = '916372923348';
             }
+        }
+
+        // ===== FIX: Map dashboard ID to actual link ID =====
+        async function resolveLinkId() {
+            try {
+                if (rawId.startsWith('dashboard_')) {
+                    console.log('🔍 Dashboard ID detected. Fetching actual link...');
+                    
+                    // Try the dashboard map API
+                    try {
+                        var mapRes = await fetch('/api/dashboard-map/' + rawId);
+                        if (mapRes.ok) {
+                            var mapData = await mapRes.json();
+                            if (mapData.linkId) {
+                                actualLinkId = mapData.linkId;
+                                linkId = actualLinkId;
+                                console.log('✅ Found link via mapping:', actualLinkId);
+                                return true;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('⚠️ Dashboard map API failed, trying direct search...');
+                    }
+                    
+                    // Try to search all links
+                    var allLinksRes = await fetch('/api/links');
+                    if (allLinksRes.ok) {
+                        var allLinks = await allLinksRes.json();
+                        var matched = allLinks.find(function(l) {
+                            return l.id === rawId || 
+                                   l.dashboardId === rawId ||
+                                   rawId.includes(l.id) ||
+                                   (l.dashboardId && rawId.includes(l.dashboardId));
+                        });
+                        if (matched) {
+                            actualLinkId = matched.id;
+                            linkId = actualLinkId;
+                            console.log('✅ Found link via search:', actualLinkId);
+                            return true;
+                        }
+                    }
+                    
+                    console.log('⚠️ No mapping found, using raw ID:', rawId);
+                    linkId = rawId;
+                    return true;
+                } else {
+                    linkId = rawId;
+                    actualLinkId = rawId;
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error resolving link ID:', e);
+                linkId = rawId;
+                return true;
+            }
+        }
+
+        if (!linkId) {
+            showToast('❌ Invalid link', 'error');
+            document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px;"><h2>❌ Invalid Link</h2><p style="color:rgba(255,255,255,0.5);">Please use a valid dashboard link</p></div>';
         }
 
         async function loadData() {
@@ -409,15 +405,13 @@
                     var allLinksRes = await fetch('/api/links');
                     if (allLinksRes.ok) {
                         var allLinks = await allLinksRes.json();
-                        // Try to find by dashboardId or any match
                         var matchedLink = allLinks.find(function(l) {
-                            return l.id === rawId || l.dashboardId === rawId;
+                            return l.id === rawId || l.dashboardId === rawId || rawId.includes(l.id);
                         });
                         
                         if (matchedLink) {
                             console.log('✅ Found link by searching:', matchedLink.id);
                             linkId = matchedLink.id;
-                            // Retry with found link ID
                             statsRes = await fetch('/api/visit-stats/' + linkId);
                         }
                     }
@@ -611,9 +605,7 @@ Please verify payment and approve/reject this request.`;
                     if (reqData.success) {
                         showToast('✅ Request sent! Opening WhatsApp...', 'success');
                         document.getElementById('renewalStatus').textContent = '✅ Request sent to admin! Opening WhatsApp...';
-                        
                         window.open(whatsappUrl, '_blank');
-                        
                         setTimeout(function() {
                             loadRenewalHistory();
                             loadData();
@@ -640,24 +632,15 @@ Please verify payment and approve/reject this request.`;
         // ===== INIT =====
         async function init() {
             await loadWhatsAppNumber();
-            
-            // Resolve link ID first
             await resolveLinkId();
-            
-            // Then load data
             await loadData();
-            
             console.log('📊 User Dashboard Loaded');
             console.log('🔗 Final Link ID:', linkId);
             console.log('📱 WhatsApp Number:', whatsappNumber);
         }
 
         init();
-
-        // Periodic refresh
-        setInterval(function() {
-            loadData();
-        }, 30000);
+        setInterval(function() { loadData(); }, 30000);
     </script>
 </body>
 </html>

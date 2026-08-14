@@ -73,7 +73,7 @@ async function initializeDatabase() {
                         text: ''
                     }
                 },
-                whatsappNumber: '919876543210'
+                whatsappNumber: '916372923348'
             });
             console.log('✅ Pricing initialized');
         }
@@ -177,15 +177,15 @@ async function authMiddleware(req, res, next) {
 }
 
 // ==================== WHATSAPP NUMBER API ====================
-let whatsappNumber = '919876543210';
+let whatsappNumber = '916372923348';
 
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
-        const number = pricing?.whatsappNumber || whatsappNumber || '919876543210';
+        const number = pricing?.whatsappNumber || whatsappNumber || '916372923348';
         res.json({ number: number });
     } catch (error) {
-        res.json({ number: whatsappNumber || '919876543210' });
+        res.json({ number: whatsappNumber || '916372923348' });
     }
 });
 
@@ -209,40 +209,41 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD MAP ====================
+// ==================== DASHBOARD MAP API ====================
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const { dashboardId } = req.params;
         console.log('🔍 Dashboard map request for:', dashboardId);
         
+        // Check if it's already a valid link ID
+        const existingLink = await Link.findOne({ id: dashboardId });
+        if (existingLink) {
+            console.log('✅ Found link by direct ID:', existingLink.id);
+            return res.json({ linkId: existingLink.id });
+        }
+        
         // Try to find a link with this dashboard ID
         const link = await Link.findOne({ dashboardId: dashboardId });
-        
         if (link) {
             console.log('✅ Found link with dashboardId:', link.id);
-            res.json({ linkId: link.id });
-        } else {
-            // Try to find by ID match
-            const linkById = await Link.findOne({ id: dashboardId });
-            if (linkById) {
-                console.log('✅ Found link by ID:', linkById.id);
-                res.json({ linkId: linkById.id });
-            } else {
-                // Try to find by searching all links where ID contains the dashboardId
-                const allLinks = await Link.find({});
-                const matched = allLinks.find(l => 
-                    l.id.includes(dashboardId) || 
-                    (l.dashboardId && l.dashboardId.includes(dashboardId))
-                );
-                if (matched) {
-                    console.log('✅ Found link by partial match:', matched.id);
-                    res.json({ linkId: matched.id });
-                } else {
-                    console.log('❌ No link found for dashboardId:', dashboardId);
-                    res.status(404).json({ error: 'No link found' });
-                }
-            }
+            return res.json({ linkId: link.id });
         }
+        
+        // Try partial match
+        const allLinks = await Link.find({});
+        const matched = allLinks.find(l => 
+            l.id.includes(dashboardId) || 
+            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
+            dashboardId.includes(l.id)
+        );
+        
+        if (matched) {
+            console.log('✅ Found link by partial match:', matched.id);
+            return res.json({ linkId: matched.id });
+        }
+        
+        console.log('❌ No link found for dashboardId:', dashboardId);
+        res.status(404).json({ error: 'No link found' });
     } catch (error) {
         console.error('❌ Dashboard map error:', error);
         res.status(500).json({ error: 'Failed to map dashboard' });
@@ -770,7 +771,7 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// ==================== VISIT STATS - FIXED ====================
+// ==================== VISIT STATS ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -789,7 +790,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             const allLinks = await Link.find({});
             const matched = allLinks.find(l => 
                 l.id.includes(linkId) || 
-                (l.dashboardId && l.dashboardId.includes(linkId))
+                (l.dashboardId && l.dashboardId.includes(linkId)) ||
+                linkId.includes(l.id)
             );
             if (matched) {
                 link = matched;
@@ -826,7 +828,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
 
 // ==================== RENEWAL ====================
 
-// NEW: Request renewal from dashboard (saves in DB and sends WhatsApp)
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount } = req.body;
@@ -835,7 +836,6 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
             return res.status(400).json({ error: 'Link ID and plan required' });
         }
         
-        // Check if already has pending request
         const existing = await RenewalRequest.findOne({ 
             linkId: linkId, 
             status: { $in: ['pending', 'paid'] } 
@@ -848,7 +848,6 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
             });
         }
         
-        // Create renewal request
         const renewalRequest = new RenewalRequest({
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             linkId: linkId,
@@ -878,7 +877,6 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     }
 });
 
-// GET renewal history for a link
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -895,7 +893,6 @@ app.get('/api/renewal/history/:linkId', async (req, res) => {
     }
 });
 
-// Existing renewal routes
 app.post('/api/renewal/request', async (req, res) => {
     try {
         const { linkId, plan } = req.body;
@@ -1141,7 +1138,7 @@ app.get('/api/pricing', async (req, res) => {
         res.json({
             pricing: pricingDoc?.pricing || {},
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
-            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
+            whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
