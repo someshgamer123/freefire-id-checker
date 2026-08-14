@@ -406,7 +406,100 @@
         }
         .user-dashboard-box .btn-sm:hover { background: var(--secondary); transform: translateY(-2px); }
 
-        /* Admin WhatsApp Settings */
+        /* ===== DASHBOARD GENERATOR ===== */
+        .dashboard-generator {
+            background: rgba(102,126,234,0.05);
+            border-radius: 10px;
+            padding: 16px;
+            border: 2px solid rgba(102,126,234,0.1);
+        }
+        .dashboard-generator .search-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .dashboard-generator .search-row input {
+            flex: 1;
+            min-width: 200px;
+        }
+        .dashboard-generator .search-results {
+            margin-top: 12px;
+            display: none;
+        }
+        .dashboard-generator .search-results.show {
+            display: block;
+        }
+        .dashboard-generator .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .dashboard-generator .result-item .r-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+        }
+        .dashboard-generator .result-item .r-details {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        .dashboard-generator .generated-link-box {
+            margin-top: 12px;
+            display: none;
+            background: rgba(72,187,120,0.08);
+            border: 2px solid rgba(72,187,120,0.2);
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .dashboard-generator .generated-link-box.show {
+            display: block;
+        }
+        .dashboard-generator .generated-link-box .gl-label {
+            font-weight: 600;
+            color: #48bb78;
+            font-size: 14px;
+        }
+        .dashboard-generator .generated-link-box .gl-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .dashboard-generator .generated-link-box .gl-row input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+        }
+        .dashboard-generator .generated-link-box .gl-name {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .dashboard-generator .no-results {
+            display: none;
+            color: var(--text-light);
+            font-size: 13px;
+            text-align: center;
+            padding: 10px;
+        }
+        .dashboard-generator .no-results.show {
+            display: block;
+        }
+
+        /* ===== WHATSAPP SETTINGS ===== */
         .whatsapp-settings {
             background: rgba(72,187,120,0.05);
             border: 2px solid rgba(72,187,120,0.15);
@@ -438,6 +531,7 @@
             .renewal-item .actions { justify-content: flex-start; }
             .user-dashboard-box { flex-direction: column; align-items: stretch; text-align: center; }
             .user-dashboard-box .link { font-size: 12px; }
+            .dashboard-generator .search-row { flex-direction: column; }
         }
         @media (max-width: 480px) {
             .stats { grid-template-columns: 1fr; }
@@ -493,6 +587,37 @@
                 <div class="stat-card">
                     <div class="stat-number" id="todayClaims">0</div>
                     <div class="stat-label">Today's Claims</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== DASHBOARD LINK GENERATOR ===== -->
+        <div class="card">
+            <h3>🔗 Generate User Dashboard Link</h3>
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Search by link name or ID to generate dashboard link for users</p>
+            
+            <div class="dashboard-generator">
+                <div class="search-row">
+                    <input type="text" id="dashboardSearchInput" placeholder="Search by link name or ID..." style="flex:1;min-width:200px;padding:12px 16px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;">
+                    <button onclick="searchAndGenerateDashboard()" class="btn btn-primary" style="padding:10px 24px;white-space:nowrap;">🔍 Search</button>
+                </div>
+                
+                <div class="search-results" id="dashboardSearchResults">
+                    <div style="font-weight:600;color:var(--primary);font-size:14px;margin-bottom:6px;">📋 Search Results:</div>
+                    <div id="dashboardResultsList"></div>
+                </div>
+                
+                <div class="no-results" id="dashboardNoResults">
+                    ❌ No links found matching your search
+                </div>
+                
+                <div class="generated-link-box" id="dashboardGeneratedLink">
+                    <div class="gl-label">✅ Dashboard Link Generated!</div>
+                    <div class="gl-row">
+                        <input type="text" id="dashboardGeneratedLinkInput" readonly>
+                        <button onclick="copyDashboardGeneratedLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                    </div>
+                    <div class="gl-name">📌 Link Name: <span id="dashboardGeneratedLinkName"></span></div>
                 </div>
             </div>
         </div>
@@ -709,6 +834,13 @@
             t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
         }
 
+        function escapeHTML(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         // ===== PWA INSTALL =====
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', function(e) {
@@ -807,6 +939,98 @@
                 showToast('❌ Failed to save WhatsApp number', 'error');
             }
         }
+
+        // ===== DASHBOARD LINK GENERATOR =====
+        var dashboardSearchTimeout = null;
+
+        async function searchAndGenerateDashboard() {
+            var query = document.getElementById('dashboardSearchInput').value.trim();
+            
+            if (!query) {
+                showToast('⚠️ Please enter a link name or ID to search', 'error');
+                return;
+            }
+            
+            var resultsDiv = document.getElementById('dashboardSearchResults');
+            var resultsList = document.getElementById('dashboardResultsList');
+            var noResults = document.getElementById('dashboardNoResults');
+            var generatedDiv = document.getElementById('dashboardGeneratedLink');
+            
+            resultsDiv.style.display = 'block';
+            resultsList.innerHTML = '<div style="color:var(--text-light);font-size:13px;">⏳ Searching...</div>';
+            noResults.classList.remove('show');
+            generatedDiv.classList.remove('show');
+            
+            try {
+                var r = await secureFetch('/api/search-links?query=' + encodeURIComponent(query));
+                if (!r) return;
+                
+                var data = await r.json();
+                
+                if (data.links && data.links.length > 0) {
+                    resultsList.innerHTML = '';
+                    data.links.forEach(function(link) {
+                        var div = document.createElement('div');
+                        div.className = 'result-item';
+                        div.innerHTML = `
+                            <div>
+                                <div class="r-name">${escapeHTML(link.name)}</div>
+                                <div class="r-details">ID: ${escapeHTML(link.id)} | Status: ${link.status} | Visits: ${link.visits || 0}</div>
+                            </div>
+                            <button onclick="generateDashboardForLink('${link.id}')" class="btn btn-primary btn-sm" style="padding:6px 14px;font-size:12px;">🔗 Generate Link</button>
+                        `;
+                        resultsList.appendChild(div);
+                    });
+                    noResults.classList.remove('show');
+                } else {
+                    resultsList.innerHTML = '';
+                    noResults.classList.add('show');
+                }
+                
+            } catch (e) {
+                console.error('Search error:', e);
+                showToast('❌ Search failed', 'error');
+            }
+        }
+
+        async function generateDashboardForLink(linkId) {
+            try {
+                var r = await secureFetch('/api/generate-dashboard-link', {
+                    method: 'POST',
+                    body: JSON.stringify({ linkId: linkId })
+                });
+                
+                if (!r) return;
+                var data = await r.json();
+                
+                if (data.success) {
+                    var fullUrl = window.location.origin + data.dashboardUrl;
+                    document.getElementById('dashboardGeneratedLinkInput').value = fullUrl;
+                    document.getElementById('dashboardGeneratedLinkName').textContent = data.linkName || 'Unknown';
+                    document.getElementById('dashboardGeneratedLink').classList.add('show');
+                    showToast('✅ Dashboard link generated successfully!', 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed to generate link'), 'error');
+                }
+            } catch (e) {
+                console.error('Generate error:', e);
+                showToast('❌ Failed to generate dashboard link', 'error');
+            }
+        }
+
+        function copyDashboardGeneratedLink() {
+            var input = document.getElementById('dashboardGeneratedLinkInput');
+            input.select();
+            document.execCommand('copy');
+            showToast('✅ Dashboard link copied!', 'success');
+        }
+
+        // Enter key support for search
+        document.getElementById('dashboardSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAndGenerateDashboard();
+            }
+        });
 
         // ===== SCHEDULE =====
         var selectedExpiry = null;
@@ -993,13 +1217,6 @@
         }
 
         // ===== LOAD LINKS =====
-        function escapeHTML(str) {
-            if (!str) return '';
-            var div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
         async function loadLinks() {
             try {
                 var r = await secureFetch('/api/links');
@@ -1027,7 +1244,6 @@
                     var d = document.createElement('div');
                     d.className = 'link-item';
                     
-                    // Popup settings display
                     var popupSettings = link.popupSettings || {};
                     var popupPreview = '';
                     if (popupSettings.image || popupSettings.title) {
@@ -1035,7 +1251,6 @@
                     }
                     
                     d.innerHTML = '<div class="info"><div class="name">' + escapeHTML(link.name) + '</div><div class="details"><span>📅 ' + new Date(link.created).toLocaleDateString() + '</span><span>👁️ ' + (link.visits || 0) + '</span><span>🎬 <a href="' + escapeHTML(link.video) + '" target="_blank">Video</a></span><span>🔗 <a href="' + escapeHTML(link.claim) + '" target="_blank">Claim</a></span><span>📝 ' + escapeHTML(link.headline || 'No headline') + '</span><span class="' + (isExpired ? 'expiry-badge expired' : 'expiry-badge') + '">' + escapeHTML(expiryDisplay) + '</span></div>' + popupPreview + '</div><div class="actions"><span class="status-badge status-' + sc + '">' + link.status + '</span><select onchange="updateStatus(\'' + link.id + '\', this.value)" class="schedule-select"><option value="active" ' + (link.status === 'active' ? 'selected' : '') + '>Active</option><option value="suspended" ' + (link.status === 'suspended' ? 'selected' : '') + '>Suspend</option><option value="disabled" ' + (link.status === 'disabled' ? 'selected' : '') + '>Disable</option></select><button onclick="toggleEdit(\'' + link.id + '\')" class="btn btn-warning btn-sm">✏️</button><button onclick="copyLinkUrl(\'' + link.id + '\')" class="btn btn-success btn-sm">📋</button><button onclick="deleteLink(\'' + link.id + '\')" class="btn btn-danger btn-sm">🗑️</button></div><div class="edit-form" id="edit-' + link.id + '"><div class="edit-grid"><input type="text" id="edit-name-' + link.id + '" value="' + escapeHTML(link.name) + '" placeholder="Name"><input type="text" id="edit-video-' + link.id + '" value="' + escapeHTML(link.video) + '" placeholder="Video"><input type="text" id="edit-claim-' + link.id + '" value="' + escapeHTML(link.claim) + '" placeholder="Claim"><input type="text" id="edit-btn-' + link.id + '" value="' + escapeHTML(link.buttonText || 'Claim Now') + '" placeholder="Button"><input type="text" id="edit-headline-' + link.id + '" value="' + escapeHTML(link.headline || '') + '" placeholder="Headline"></div><div style="margin-top:10px;"><select id="edit-schedule-' + link.id + '" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;"><option value="">No Expiry</option><option value="3" ' + (link.expiryDate ? 'selected' : '') + '>3 Days</option><option value="7">7 Days</option><option value="15">15 Days</option><option value="30">30 Days</option></select></div>' +
-                    // ===== POPUP SETTINGS EDIT IN LINE =====
                     '<div class="popup-edit-section"><div style="font-weight:600;color:var(--primary);font-size:13px;margin-bottom:6px;">🖼️ Popup Settings</div><div class="grid-2"><div><label class="popup-label">Popup Title</label><input type="text" id="edit-popup-title-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '"></div><div><label class="popup-label">Popup Button Text</label><input type="text" id="edit-popup-btn-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now') + '"></div></div><label class="popup-label">Popup Subtitle</label><input type="text" id="edit-popup-sub-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward') + '"><label class="popup-label">Popup Image URL (16:9)</label><input type="text" id="edit-popup-image-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.image) || '') + '" placeholder="Enter image URL"><div class="popup-preview-small" id="popup-preview-small-' + link.id + '">' + 
                     ((link.popupSettings && link.popupSettings.image) ? '<img src="' + escapeHTML(link.popupSettings.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>') +
                     '<div class="preview-text">' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '</div>' +
@@ -1045,7 +1260,6 @@
                     '<div style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveEdit(\'' + link.id + '\')" class="btn btn-success btn-sm">💾 Save All</button><button onclick="cancelEdit(\'' + link.id + '\')" class="btn btn-danger btn-sm">Cancel</button></div></div>';
                     c.appendChild(d);
                     
-                    // Live preview update for popup in edit
                     (function(id) {
                         ['edit-popup-title-' + id, 'edit-popup-btn-' + id, 'edit-popup-sub-' + id, 'edit-popup-image-' + id].forEach(function(fieldId) {
                             document.getElementById(fieldId).addEventListener('input', function() {
@@ -1165,7 +1379,6 @@
                     expiryDate = date.toISOString();
                 }
                 
-                // Collect popup settings
                 var popupSettings = {
                     image: document.getElementById('edit-popup-image-' + id).value.trim() || null,
                     title: document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward',
