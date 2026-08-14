@@ -181,12 +181,14 @@
         .popup-card .popup-image {
             width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden;
             background: #1a1a3a; border: 2px solid rgba(255, 255, 255, 0.08); margin-bottom: 16px; position: relative;
+            pointer-events: none !important;
         }
-        .popup-card .popup-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .popup-card .popup-image img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none !important; }
         .popup-card .popup-image .placeholder {
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
             font-size: 48px; color: rgba(255, 255, 255, 0.15);
             background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
+            pointer-events: none !important;
         }
 
         .popup-card .popup-title {
@@ -216,14 +218,12 @@
             transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
         }
 
-        /* ===== CONFETTI - MOBILE OPTIMIZED ===== */
         .confetti-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
             pointer-events: none; overflow: hidden;
         }
         .confetti-container.active { pointer-events: none; }
 
-        /* Mobile-first confetti pieces - smaller size for phones */
         .confetti-piece {
             position: absolute;
             width: 6px;
@@ -238,7 +238,6 @@
             -webkit-transform: translateZ(0);
         }
 
-        /* Larger confetti for desktop */
         @media (min-width: 768px) {
             .confetti-piece {
                 width: 10px;
@@ -269,7 +268,6 @@
             -webkit-transform: translateZ(0);
         }
 
-        /* Larger burst confetti for desktop */
         @media (min-width: 768px) {
             .confetti-burst-piece {
                 width: 8px;
@@ -482,7 +480,7 @@
                 <img id="popupImg" style="display:none;" alt="Popup Image">
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap anywhere to claim your reward</div>
+            <div class="popup-sub" id="popupSub">Tap below to claim your reward</div>
             <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
         </div>
     </div>
@@ -523,8 +521,8 @@
         let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
+        let isClaimTracked = false; // FIX: Only track claim once
 
-        // Detect if mobile device
         const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
         // ==================== OVERLAY ====================
@@ -615,7 +613,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI - MOBILE OPTIMIZED ====================
+        // ==================== CONFETTI ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -625,14 +623,9 @@
 
             const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fb7', '#a66cff', '#ff9f43', '#00d2d3', '#ff4757', '#2ed573', '#f368e0', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#70a1ff', '#ff4757', '#2ed573', '#ffa502'];
 
-            // Mobile: fewer pieces, smaller size
             const burstCount = isMobile ? 35 : 60;
             const fallCount = isMobile ? 50 : 80;
-            const burstSize = isMobile ? '4px' : '8px';
-            const fallSizeW = isMobile ? '4px' : '10px';
-            const fallSizeH = isMobile ? '6px' : '14px';
 
-            // Burst confetti
             for (let i = 0; i < burstCount; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-burst-piece';
@@ -658,7 +651,6 @@
                 container.appendChild(el);
             }
 
-            // Falling confetti
             for (let i = 0; i < fallCount; i++) {
                 const el = document.createElement('div');
                 el.className = 'confetti-piece';
@@ -678,7 +670,6 @@
                 container.appendChild(el);
             }
 
-            // Clear after animation
             const clearDelay = isMobile ? 1800 : 2500;
             setTimeout(() => { 
                 container.innerHTML = ''; 
@@ -695,7 +686,7 @@
                     const data = await response.json();
                     const popup = data.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to claim your reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to claim your reward';
                     document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
                     if (popup.image) {
                         const img = document.getElementById('popupImg');
@@ -709,7 +700,7 @@
                     const settings = await settingsRes.json();
                     const popup = settings.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to claim your reward';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to claim your reward';
                     document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
                     if (popup.image) {
                         const img = document.getElementById('popupImg');
@@ -738,7 +729,6 @@
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
-            trackClaim();
             hidePopup();
             
             if (!isCelebrationActive) {
@@ -760,13 +750,29 @@
             isUnlocked = true;
         }
 
+        // ===== FIXED: Claim tracking only on button click =====
+        function trackClaimOnce() {
+            if (isClaimTracked) return;
+            isClaimTracked = true;
+            
+            console.log('🎯 Tracking claim...');
+            fetch(`/api/track-claim/${linkId}`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' } 
+            }).then(response => {
+                if (response.ok) console.log('✅ Claim tracked successfully');
+            }).catch(e => {});
+        }
+
         function handleClaimClick() {
             if (isRedirecting) return;
             isRedirecting = true;
             
+            // FIX: Track claim only on button click
+            trackClaimOnce();
+            
             if (!isPopupClaimed) {
                 isPopupClaimed = true;
-                trackClaim();
                 if (!isCelebrationActive) {
                     triggerCelebration();
                 }
@@ -806,6 +812,9 @@
             isPopupClickProcessed = true;
             console.log('✅ Popup Claim Button Clicked');
             addRipple(e, this);
+            
+            // FIX: Track claim on button click
+            trackClaimOnce();
             unlockAndPlay();
         });
 
@@ -816,10 +825,11 @@
             isPopupClickProcessed = true;
             console.log('✅ Popup Claim Button Touched');
             addRipple(e, this);
+            trackClaimOnce();
             unlockAndPlay();
         }, { passive: true });
 
-        // ===== POPUP CARD CLICK =====
+        // ===== POPUP CARD CLICK - FIXED: No claim tracking on card click =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) {
                 console.log('⚠️ Button click handled by button handler');
@@ -829,7 +839,7 @@
             if (isPopupClickProcessed) return;
             isPopupClickProcessed = true;
             
-            console.log('✅ Popup Card Clicked');
+            console.log('✅ Popup Card Clicked (No claim tracking)');
             
             if (!isCelebrationActive) {
                 triggerCelebration();
@@ -839,6 +849,7 @@
             sub.textContent = '🎉 Loading...';
             sub.style.color = '#667eea';
             
+            // FIX: No claim tracking on card click
             unlockAndPlay();
         });
 
@@ -947,14 +958,6 @@
                 } else if (retryCount >= 10) { clearInterval(retryInterval); }
                 retryCount++;
             }, 1500);
-        }
-
-        // ==================== TRACK CLAIM ====================
-        async function trackClaim() {
-            try {
-                const response = await fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                if (response.ok) console.log('✅ Claim tracked successfully');
-            } catch (e) {}
         }
 
         // ==================== EMOJI PICKER ====================
@@ -1094,10 +1097,9 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('📱 Device:', isMobile ? 'Mobile' : 'Desktop');
-        console.log('✅ CONFETTI OPTIMIZED: Smaller size for mobile, larger for desktop');
-        console.log('✅ POPUP CLICK FIXED: Both card and button are clickable');
-        console.log('✅ SINGLE CONFETTI: Only one confetti effect on any click');
-        console.log('✅ INSTANT POPUP: Shows immediately after UID verified');
+        console.log('✅ CLAIM TRACKING: Only on claim button click (not on card click)');
+        console.log('✅ UNIQUE TRACKING: 48 hours unique visitor & claim tracking');
+        console.log('✅ CONFETTI OPTIMIZED: Smaller size for mobile');
     </script>
 </body>
 </html>

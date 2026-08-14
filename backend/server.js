@@ -237,16 +237,25 @@ function getDeviceId(req) {
     return fingerprint;
 }
 
-function isUnique24hr(store, deviceId) {
+// ===== FIXED: 48 Hours Unique Tracking =====
+function isUnique48hr(store, deviceId) {
     const now = Date.now();
     const today = new Date().toISOString().split('T')[0];
+    
+    // Clean old entries (older than 48 hours)
     for (const key in store) {
-        if (store[key] && (now - store[key] > 24 * 60 * 60 * 1000)) {
+        if (store[key] && (now - store[key] > 48 * 60 * 60 * 1000)) {
             delete store[key];
         }
     }
+    
     const key = deviceId + '_' + today;
-    if (store[key]) { return false; }
+    if (store[key]) { 
+        // Check if it's still within 48 hours
+        if (now - store[key] < 48 * 60 * 60 * 1000) {
+            return false; 
+        }
+    }
     store[key] = now;
     return true;
 }
@@ -639,19 +648,25 @@ app.get('/api/link/:id', (req, res) => {
                 status: 'inactive'
             });
         }
+        
+        // ===== VISITOR TRACKING - 48 Hours Unique =====
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueVisitors) db.stats.uniqueVisitors = {};
         if (!db.stats.dailyVisitors) db.stats.dailyVisitors = {};
-        if (isUnique24hr(db.stats.uniqueVisitors, deviceId)) {
+        
+        if (isUnique48hr(db.stats.uniqueVisitors, deviceId)) {
             db.stats.totalVisitors = (db.stats.totalVisitors || 0) + 1;
             db.stats.dailyVisitors[today] = (db.stats.dailyVisitors[today] || 0) + 1;
             link.visits = (link.visits || 0) + 1;
             if (!link.dailyVisits) link.dailyVisits = {};
             link.dailyVisits[today] = (link.dailyVisits[today] || 0) + 1;
-            console.log('👤 New unique visitor:', deviceId.substring(0, 10));
+            console.log('👤 New unique visitor (48hr):', deviceId.substring(0, 10));
+        } else {
+            console.log('👤 Repeat visitor within 48hr:', deviceId.substring(0, 10));
         }
+        
         const popupSettings = link.popupSettings || db.popupSettings || {
             image: null,
             title: '🎁 Claim Your Reward',
@@ -674,7 +689,7 @@ app.get('/api/link/:id', (req, res) => {
     }
 });
 
-// ==================== TRACK CLAIM ====================
+// ==================== TRACK CLAIM - 48 Hours Unique ====================
 app.post('/api/track-claim/:linkId', (req, res) => {
     try {
         const { linkId } = req.params;
@@ -683,19 +698,25 @@ app.post('/api/track-claim/:linkId', (req, res) => {
         if (!link) {
             return res.status(404).json({ error: 'Link not found' });
         }
+        
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         if (!db.stats) db.stats = getDefaultStats();
         if (!db.stats.uniqueClaims) db.stats.uniqueClaims = {};
         if (!db.stats.dailyClaims) db.stats.dailyClaims = {};
-        if (isUnique24hr(db.stats.uniqueClaims, deviceId)) {
+        
+        // ===== CLAIM TRACKING - 48 Hours Unique =====
+        if (isUnique48hr(db.stats.uniqueClaims, deviceId)) {
             db.stats.totalClaims = (db.stats.totalClaims || 0) + 1;
             db.stats.dailyClaims[today] = (db.stats.dailyClaims[today] || 0) + 1;
             link.claims = (link.claims || 0) + 1;
             if (!link.dailyClaims) link.dailyClaims = {};
             link.dailyClaims[today] = (link.dailyClaims[today] || 0) + 1;
-            console.log('🎁 New unique claim:', deviceId.substring(0, 10));
+            console.log('🎁 New unique claim (48hr):', deviceId.substring(0, 10));
+        } else {
+            console.log('🎁 Repeat claim within 48hr:', deviceId.substring(0, 10));
         }
+        
         writeDB(db);
         res.json({
             success: true,
@@ -1105,8 +1126,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
-    console.log('💾 Data: Permanent storage with auto-recovery');
-    console.log('📊 Stats: 24hr Unique Visitor + Claim tracking');
+    console.log('📊 Stats: 48hr Unique Visitor + Claim tracking');
     console.log('📱 Popup: Per-link customizable');
     console.log('═══════════════════════════════════════════');
 });
