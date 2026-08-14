@@ -480,8 +480,8 @@
                 <img id="popupImg" style="display:none;" alt="Popup Image">
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap below to claim your reward</div>
-            <button class="popup-claim-btn" id="popupClaimBtn">🎁 Claim Now</button>
+            <div class="popup-sub" id="popupSub">Tap anywhere to unlock</div>
+            <button class="popup-claim-btn" id="popupClaimBtn">🔓 Unlock Now</button>
         </div>
     </div>
 
@@ -521,7 +521,7 @@
         let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
-        let isClaimTracked = false; // FIX: Only track claim once
+        let isClaimTracked = false;
 
         const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -686,8 +686,8 @@
                     const data = await response.json();
                     const popup = data.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to claim your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🔓 Unlock Now';
                     if (popup.image) {
                         const img = document.getElementById('popupImg');
                         const placeholder = document.getElementById('popupPlaceholder');
@@ -700,8 +700,8 @@
                     const settings = await settingsRes.json();
                     const popup = settings.popupSettings || {};
                     document.getElementById('popupTitle').textContent = popup.title || '🎁 Claim Your Reward';
-                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap below to claim your reward';
-                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🎁 Claim Now';
+                    document.getElementById('popupSub').textContent = popup.subtitle || 'Tap anywhere to unlock';
+                    document.getElementById('popupClaimBtn').textContent = popup.buttonText || '🔓 Unlock Now';
                     if (popup.image) {
                         const img = document.getElementById('popupImg');
                         const placeholder = document.getElementById('popupPlaceholder');
@@ -750,12 +750,12 @@
             isUnlocked = true;
         }
 
-        // ===== FIXED: Claim tracking only on button click =====
+        // ===== FIXED: Claim tracking ONLY on main claim button =====
         function trackClaimOnce() {
             if (isClaimTracked) return;
             isClaimTracked = true;
             
-            console.log('🎯 Tracking claim...');
+            console.log('🎯 Tracking claim from MAIN button...');
             fetch(`/api/track-claim/${linkId}`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' } 
@@ -768,7 +768,7 @@
             if (isRedirecting) return;
             isRedirecting = true;
             
-            // FIX: Track claim only on button click
+            // ✅ ONLY HERE - Claim tracking on main button click
             trackClaimOnce();
             
             if (!isPopupClaimed) {
@@ -803,18 +803,16 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // ===== POPUP CLAIM BUTTON =====
+        // ===== POPUP CLAIM BUTTON - NO CLAIM TRACKING =====
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
             if (isPopupClaimed) return;
             if (isPopupClickProcessed) return;
             isPopupClickProcessed = true;
-            console.log('✅ Popup Claim Button Clicked');
+            console.log('✅ Popup Claim Button Clicked (No claim tracking)');
             addRipple(e, this);
-            
-            // FIX: Track claim on button click
-            trackClaimOnce();
+            // ❌ NO trackClaimOnce() here
             unlockAndPlay();
         });
 
@@ -823,13 +821,13 @@
             if (isPopupClickProcessed) return;
             e.stopPropagation();
             isPopupClickProcessed = true;
-            console.log('✅ Popup Claim Button Touched');
+            console.log('✅ Popup Claim Button Touched (No claim tracking)');
             addRipple(e, this);
-            trackClaimOnce();
+            // ❌ NO trackClaimOnce() here
             unlockAndPlay();
         }, { passive: true });
 
-        // ===== POPUP CARD CLICK - FIXED: No claim tracking on card click =====
+        // ===== POPUP CARD CLICK - NO CLAIM TRACKING =====
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn')) {
                 console.log('⚠️ Button click handled by button handler');
@@ -849,21 +847,21 @@
             sub.textContent = '🎉 Loading...';
             sub.style.color = '#667eea';
             
-            // FIX: No claim tracking on card click
+            // ❌ NO trackClaimOnce() here
             unlockAndPlay();
         });
 
-        // ===== MAIN CLAIM BUTTON =====
+        // ===== MAIN CLAIM BUTTON - ONLY CLAIM TRACKING HERE =====
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
-            console.log('✅ Main Claim Button Clicked');
+            console.log('✅ Main Claim Button Clicked (Claim tracking)');
             addRipple(e, this);
-            handleClaimClick();
+            handleClaimClick(); // ✅ trackClaimOnce() is called inside this
         });
         document.getElementById('claimBtn').addEventListener('touchstart', function(e) {
-            console.log('✅ Main Claim Button Touched');
+            console.log('✅ Main Claim Button Touched (Claim tracking)');
             addRipple(e, this);
-            handleClaimClick();
+            handleClaimClick(); // ✅ trackClaimOnce() is called inside this
         }, { passive: true });
 
         // ==================== VIDEO FUNCTIONS ====================
@@ -1097,9 +1095,9 @@
         console.log('🎬 Video URL:', videoUrl);
         console.log('🎁 Claim URL:', claimUrl);
         console.log('📱 Device:', isMobile ? 'Mobile' : 'Desktop');
-        console.log('✅ CLAIM TRACKING: Only on claim button click (not on card click)');
+        console.log('✅ CLAIM TRACKING: ONLY on Main "Claim Now" button');
+        console.log('❌ Popup button/card: No claim tracking');
         console.log('✅ UNIQUE TRACKING: 48 hours unique visitor & claim tracking');
-        console.log('✅ CONFETTI OPTIMIZED: Smaller size for mobile');
     </script>
 </body>
 </html>
