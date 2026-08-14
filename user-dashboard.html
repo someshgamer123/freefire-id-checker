@@ -278,7 +278,7 @@
             
             <!-- WhatsApp Renewal Button -->
             <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
-                📱 Request Renewal via WhatsApp
+                 Request Renewal 😎
             </button>
             <div id="renewalStatus" style="margin-top:10px;font-size:14px;text-align:center;color:rgba(255,255,255,0.5);"></div>
         </div>
@@ -295,22 +295,72 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ===== FIX: Get link ID from URL correctly =====
+        // ===== GET LINK ID FROM URL =====
         var pathSegments = window.location.pathname.split('/');
-        var rawLinkId = pathSegments[pathSegments.length - 1] || '';
-        
-        // ===== FIX: Extract actual link ID from dashboard ID =====
-        // Dashboard ID format: dashboard_TIMESTAMP_RANDOM
-        // Actual link ID format: link_TIMESTAMP_RANDOM
-        var linkId = rawLinkId;
-        
-        // If it's a dashboard ID, we need to get the actual link ID from it
-        // The parent-link API returns a dashboard ID, but we need to map it to actual link ID
-        // For now, we'll use the raw ID and let the server handle it
-        // But we also store it as variable for later use
-        
-        console.log('📌 Raw Link ID:', rawLinkId);
-        
+        var rawId = pathSegments[pathSegments.length - 1] || '';
+        var linkId = rawId;
+        var actualLinkId = null;
+
+        console.log('📌 Raw ID from URL:', rawId);
+
+        // ===== FIX: Map dashboard ID to actual link ID =====
+        async function resolveLinkId() {
+            try {
+                // Check if it's a dashboard ID
+                if (rawId.startsWith('dashboard_')) {
+                    console.log('🔍 Dashboard ID detected. Fetching actual link...');
+                    
+                    // Try to get the actual link from the dashboard ID
+                    // First, try to find any link with this dashboard ID stored
+                    // For now, we'll use a simple approach: try to get stats directly
+                    // If fails, try to find the link by searching all links
+                    
+                    var response = await fetch('/api/links');
+                    if (response.ok) {
+                        var links = await response.json();
+                        // Look for link where dashboardId matches
+                        var foundLink = links.find(function(l) {
+                            return l.dashboardId === rawId;
+                        });
+                        
+                        if (foundLink) {
+                            actualLinkId = foundLink.id;
+                            console.log('✅ Found actual link ID:', actualLinkId);
+                            linkId = actualLinkId;
+                            return true;
+                        }
+                    }
+                    
+                    // If not found, check if there's a mapping stored
+                    var mapRes = await fetch('/api/dashboard-map/' + rawId);
+                    if (mapRes.ok) {
+                        var mapData = await mapRes.json();
+                        if (mapData.linkId) {
+                            actualLinkId = mapData.linkId;
+                            linkId = actualLinkId;
+                            console.log('✅ Found link via mapping:', actualLinkId);
+                            return true;
+                        }
+                    }
+                    
+                    // If still not found, try to use raw ID directly
+                    // The server might handle it
+                    console.log('⚠️ No mapping found, using raw ID:', rawId);
+                    linkId = rawId;
+                    return true;
+                } else {
+                    // Not a dashboard ID, use as is
+                    linkId = rawId;
+                    actualLinkId = rawId;
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error resolving link ID:', e);
+                linkId = rawId;
+                return true;
+            }
+        }
+
         var whatsappNumber = '';
         var selectedPlan = null;
         var linkData = null;
@@ -346,23 +396,40 @@
             }
         }
 
-        // ===== FIX: Get actual link stats using link ID =====
         async function loadData() {
             try {
-                // If it's a dashboard ID, we need to get the actual link first
-                // The server will handle this via the visit-stats API
-                // We'll try to get stats using the raw ID
+                console.log('📊 Loading data for linkId:', linkId);
                 
                 var statsRes = await fetch('/api/visit-stats/' + linkId);
                 
                 if (statsRes.status === 404) {
                     console.log('⚠️ Link not found with ID:', linkId);
-                    showToast('⚠️ Link not found. Please check your dashboard link.', 'error');
-                    document.getElementById('linkName').textContent = 'Link not found';
-                    document.getElementById('linkStatus').textContent = 'NOT FOUND';
-                    document.getElementById('linkStatus').className = 'status-badge disabled';
-                    document.getElementById('expiryDate').textContent = 'N/A';
-                    return;
+                    
+                    // Try to find the link by searching all links
+                    var allLinksRes = await fetch('/api/links');
+                    if (allLinksRes.ok) {
+                        var allLinks = await allLinksRes.json();
+                        // Try to find by dashboardId or any match
+                        var matchedLink = allLinks.find(function(l) {
+                            return l.id === rawId || l.dashboardId === rawId;
+                        });
+                        
+                        if (matchedLink) {
+                            console.log('✅ Found link by searching:', matchedLink.id);
+                            linkId = matchedLink.id;
+                            // Retry with found link ID
+                            statsRes = await fetch('/api/visit-stats/' + linkId);
+                        }
+                    }
+                    
+                    if (statsRes.status === 404) {
+                        showToast('⚠️ Link not found. Please check your dashboard link.', 'error');
+                        document.getElementById('linkName').textContent = 'Link not found';
+                        document.getElementById('linkStatus').textContent = 'NOT FOUND';
+                        document.getElementById('linkStatus').className = 'status-badge disabled';
+                        document.getElementById('expiryDate').textContent = 'N/A';
+                        return;
+                    }
                 }
                 
                 if (statsRes.ok) {
@@ -570,20 +637,27 @@ Please verify payment and approve/reject this request.`;
             btn.disabled = false;
         }
 
-        // ===== Fix: Load WhatsApp number and data =====
-        loadWhatsAppNumber();
-        
-        // Wait for WhatsApp number to load, then load data
-        setTimeout(function() {
-            loadData();
-        }, 500);
+        // ===== INIT =====
+        async function init() {
+            await loadWhatsAppNumber();
+            
+            // Resolve link ID first
+            await resolveLinkId();
+            
+            // Then load data
+            await loadData();
+            
+            console.log('📊 User Dashboard Loaded');
+            console.log('🔗 Final Link ID:', linkId);
+            console.log('📱 WhatsApp Number:', whatsappNumber);
+        }
+
+        init();
 
         // Periodic refresh
-        setInterval(loadData, 30000);
-        
-        console.log('📊 User Dashboard Loaded');
-        console.log('🔗 Link ID:', linkId);
-        console.log('📱 WhatsApp Number:', whatsappNumber);
+        setInterval(function() {
+            loadData();
+        }, 30000);
     </script>
 </body>
 </html>

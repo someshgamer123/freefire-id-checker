@@ -72,7 +72,8 @@ async function initializeDatabase() {
                         qrCode: null,
                         text: ''
                     }
-                }
+                },
+                whatsappNumber: '919876543210'
             });
             console.log('✅ Pricing initialized');
         }
@@ -176,7 +177,7 @@ async function authMiddleware(req, res, next) {
 }
 
 // ==================== WHATSAPP NUMBER API ====================
-let whatsappNumber = '919876543210'; // Default
+let whatsappNumber = '919876543210';
 
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
@@ -205,6 +206,46 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ WhatsApp number save error:', error);
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+// ==================== DASHBOARD MAP ====================
+app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
+    try {
+        const { dashboardId } = req.params;
+        console.log('🔍 Dashboard map request for:', dashboardId);
+        
+        // Try to find a link with this dashboard ID
+        const link = await Link.findOne({ dashboardId: dashboardId });
+        
+        if (link) {
+            console.log('✅ Found link with dashboardId:', link.id);
+            res.json({ linkId: link.id });
+        } else {
+            // Try to find by ID match
+            const linkById = await Link.findOne({ id: dashboardId });
+            if (linkById) {
+                console.log('✅ Found link by ID:', linkById.id);
+                res.json({ linkId: linkById.id });
+            } else {
+                // Try to find by searching all links where ID contains the dashboardId
+                const allLinks = await Link.find({});
+                const matched = allLinks.find(l => 
+                    l.id.includes(dashboardId) || 
+                    (l.dashboardId && l.dashboardId.includes(dashboardId))
+                );
+                if (matched) {
+                    console.log('✅ Found link by partial match:', matched.id);
+                    res.json({ linkId: matched.id });
+                } else {
+                    console.log('❌ No link found for dashboardId:', dashboardId);
+                    res.status(404).json({ error: 'No link found' });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Dashboard map error:', error);
+        res.status(500).json({ error: 'Failed to map dashboard' });
     }
 });
 
@@ -729,20 +770,49 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
+// ==================== VISIT STATS - FIXED ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
-        const link = await Link.findOne({ id: linkId });
+        console.log('📊 Fetching stats for linkId:', linkId);
+        
+        // Try to find the link
+        let link = await Link.findOne({ id: linkId });
+        
+        // If not found, try to find by dashboardId
+        if (!link) {
+            link = await Link.findOne({ dashboardId: linkId });
+        }
+        
+        // If still not found, try partial match
+        if (!link) {
+            const allLinks = await Link.find({});
+            const matched = allLinks.find(l => 
+                l.id.includes(linkId) || 
+                (l.dashboardId && l.dashboardId.includes(linkId))
+            );
+            if (matched) {
+                link = matched;
+            }
+        }
         
         if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
+            console.log('⚠️ Link not found with ID:', linkId);
+            return res.status(404).json({ 
+                error: 'Link not found',
+                message: 'No link found with this ID'
+            });
         }
+        
+        const today = new Date().toISOString().split('T')[0];
         
         res.json({
             linkId: link.id,
             name: link.name,
             totalVisits: link.visits || 0,
             totalClaims: link.claims || 0,
+            todayVisits: link.dailyVisits?.get(today) || 0,
+            todayClaims: link.dailyClaims?.get(today) || 0,
             dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status,
@@ -754,7 +824,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// ==================== RENEWAL - UPDATED ====================
+// ==================== RENEWAL ====================
 
 // NEW: Request renewal from dashboard (saves in DB and sends WhatsApp)
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
@@ -1011,9 +1081,6 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         request.approvedAt = new Date();
         await request.save();
         
-        // Remove from active requests (it will still be in history)
-        // But we keep it for history
-        
         res.json({ success: true, message: 'Renewal approved! Link extended.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to approve renewal' });
@@ -1152,5 +1219,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('📊 Stats: 48hr Unique Visitor + Claim tracking');
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
+    console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
     console.log('═══════════════════════════════════════════');
 });
