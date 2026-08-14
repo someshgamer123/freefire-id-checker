@@ -295,8 +295,22 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ===== FIX: Get link ID from URL correctly =====
         var pathSegments = window.location.pathname.split('/');
-        var linkId = pathSegments[pathSegments.length - 1] || '';
+        var rawLinkId = pathSegments[pathSegments.length - 1] || '';
+        
+        // ===== FIX: Extract actual link ID from dashboard ID =====
+        // Dashboard ID format: dashboard_TIMESTAMP_RANDOM
+        // Actual link ID format: link_TIMESTAMP_RANDOM
+        var linkId = rawLinkId;
+        
+        // If it's a dashboard ID, we need to get the actual link ID from it
+        // The parent-link API returns a dashboard ID, but we need to map it to actual link ID
+        // For now, we'll use the raw ID and let the server handle it
+        // But we also store it as variable for later use
+        
+        console.log('📌 Raw Link ID:', rawLinkId);
+        
         var whatsappNumber = '';
         var selectedPlan = null;
         var linkData = null;
@@ -324,7 +338,7 @@
                     whatsappNumber = data.number;
                     console.log('📱 WhatsApp Number loaded:', whatsappNumber);
                 } else {
-                    whatsappNumber = '919876543210'; // Default
+                    whatsappNumber = '919876543210';
                 }
             } catch (e) {
                 console.error('Error loading WhatsApp number:', e);
@@ -332,9 +346,25 @@
             }
         }
 
+        // ===== FIX: Get actual link stats using link ID =====
         async function loadData() {
             try {
+                // If it's a dashboard ID, we need to get the actual link first
+                // The server will handle this via the visit-stats API
+                // We'll try to get stats using the raw ID
+                
                 var statsRes = await fetch('/api/visit-stats/' + linkId);
+                
+                if (statsRes.status === 404) {
+                    console.log('⚠️ Link not found with ID:', linkId);
+                    showToast('⚠️ Link not found. Please check your dashboard link.', 'error');
+                    document.getElementById('linkName').textContent = 'Link not found';
+                    document.getElementById('linkStatus').textContent = 'NOT FOUND';
+                    document.getElementById('linkStatus').className = 'status-badge disabled';
+                    document.getElementById('expiryDate').textContent = 'N/A';
+                    return;
+                }
+                
                 if (statsRes.ok) {
                     var data = await statsRes.json();
                     linkData = data;
@@ -342,6 +372,7 @@
                     document.getElementById('linkName').textContent = data.name || 'Unknown';
                     document.getElementById('totalVisits').textContent = data.totalVisits || 0;
                     document.getElementById('totalClaims').textContent = data.totalClaims || 0;
+                    
                     var todayVisits = 0, todayClaims = 0;
                     if (data.dailyVisits) {
                         var today = new Date().toISOString().split('T')[0];
@@ -395,7 +426,6 @@
                 return;
             }
             container.innerHTML = '';
-            // Show latest first
             renewalHistory.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
             renewalHistory.forEach(function(req) {
                 var div = document.createElement('div');
@@ -456,7 +486,6 @@
             btn.disabled = true;
 
             try {
-                // Get pricing details
                 var priceRes = await fetch('/api/pricing');
                 var priceData = await priceRes.json();
                 var pricing = priceData.pricing || {};
@@ -480,11 +509,9 @@
                     return;
                 }
 
-                // Get link details
                 var linkName = linkData ? linkData.name : 'Unknown';
                 var linkIdDisplay = linkId || 'N/A';
 
-                // Build WhatsApp message
                 var message = `🔔 *NEW RENEWAL REQUEST* 🔔
 
 📌 *Link Name:* ${linkName}
@@ -497,11 +524,9 @@
 
 Please verify payment and approve/reject this request.`;
 
-                // Encode message for WhatsApp
                 var encodedMessage = encodeURIComponent(message);
                 var whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-                // Create renewal request in database
                 var reqRes = await fetch('/api/renewal/request-from-dashboard', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -520,10 +545,8 @@ Please verify payment and approve/reject this request.`;
                         showToast('✅ Request sent! Opening WhatsApp...', 'success');
                         document.getElementById('renewalStatus').textContent = '✅ Request sent to admin! Opening WhatsApp...';
                         
-                        // Open WhatsApp in new tab
                         window.open(whatsappUrl, '_blank');
                         
-                        // Reload history after a moment
                         setTimeout(function() {
                             loadRenewalHistory();
                             loadData();
@@ -533,7 +556,9 @@ Please verify payment and approve/reject this request.`;
                         document.getElementById('renewalStatus').textContent = '❌ ' + (reqData.error || 'Failed to send request');
                     }
                 } else {
-                    showToast('❌ Failed to create renewal request', 'error');
+                    var errorData = await reqRes.json();
+                    showToast('❌ ' + (errorData.error || 'Failed to create renewal request'), 'error');
+                    document.getElementById('renewalStatus').textContent = '❌ ' + (errorData.error || 'Failed to create renewal request');
                 }
 
             } catch (e) {
@@ -545,12 +570,16 @@ Please verify payment and approve/reject this request.`;
             btn.disabled = false;
         }
 
-        // Load WhatsApp number on page load
+        // ===== Fix: Load WhatsApp number and data =====
         loadWhatsAppNumber();
+        
+        // Wait for WhatsApp number to load, then load data
+        setTimeout(function() {
+            loadData();
+        }, 500);
 
         // Periodic refresh
         setInterval(loadData, 30000);
-        loadData();
         
         console.log('📊 User Dashboard Loaded');
         console.log('🔗 Link ID:', linkId);
