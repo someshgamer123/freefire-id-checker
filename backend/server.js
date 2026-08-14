@@ -73,7 +73,7 @@ async function initializeDatabase() {
                         text: ''
                     }
                 },
-                whatsappNumber: '916372923348'
+                whatsappNumber: '919876543210'
             });
             console.log('✅ Pricing initialized');
         }
@@ -177,15 +177,15 @@ async function authMiddleware(req, res, next) {
 }
 
 // ==================== WHATSAPP NUMBER API ====================
-let whatsappNumber = '916372923348';
+let whatsappNumber = '919876543210';
 
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
-        const number = pricing?.whatsappNumber || whatsappNumber || '916372923348';
+        const number = pricing?.whatsappNumber || whatsappNumber || '919876543210';
         res.json({ number: number });
     } catch (error) {
-        res.json({ number: whatsappNumber || '916372923348' });
+        res.json({ number: whatsappNumber || '919876543210' });
     }
 });
 
@@ -215,21 +215,18 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         const { dashboardId } = req.params;
         console.log('🔍 Dashboard map request for:', dashboardId);
         
-        // Check if it's already a valid link ID
         const existingLink = await Link.findOne({ id: dashboardId });
         if (existingLink) {
             console.log('✅ Found link by direct ID:', existingLink.id);
             return res.json({ linkId: existingLink.id });
         }
         
-        // Try to find a link with this dashboard ID
         const link = await Link.findOne({ dashboardId: dashboardId });
         if (link) {
             console.log('✅ Found link with dashboardId:', link.id);
             return res.json({ linkId: link.id });
         }
         
-        // Try partial match
         const allLinks = await Link.find({});
         const matched = allLinks.find(l => 
             l.id.includes(dashboardId) || 
@@ -247,6 +244,72 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     } catch (error) {
         console.error('❌ Dashboard map error:', error);
         res.status(500).json({ error: 'Failed to map dashboard' });
+    }
+});
+
+// ==================== SEARCH LINKS API ====================
+app.get('/api/search-links', authMiddleware, async (req, res) => {
+    try {
+        const { query } = req.query;
+        
+        if (!query || query.length < 1) {
+            return res.json({ links: [] });
+        }
+        
+        const searchRegex = new RegExp(query, 'i');
+        
+        const links = await Link.find({
+            $or: [
+                { name: searchRegex },
+                { id: searchRegex },
+                { dashboardId: searchRegex }
+            ]
+        }).limit(20).sort({ created: -1 });
+        
+        res.json({
+            links: links,
+            count: links.length,
+            query: query
+        });
+    } catch (error) {
+        console.error('❌ Search links error:', error);
+        res.status(500).json({ error: 'Failed to search links' });
+    }
+});
+
+// ==================== GENERATE DASHBOARD LINK API ====================
+app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
+    try {
+        const { linkId } = req.body;
+        
+        if (!linkId) {
+            return res.status(400).json({ error: 'Link ID required' });
+        }
+        
+        const link = await Link.findOne({ id: linkId });
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+        
+        link.dashboardId = dashboardId;
+        await link.save();
+        
+        const dashboardUrl = '/user-dashboard/' + dashboardId;
+        const fullUrl = req.protocol + '://' + req.get('host') + dashboardUrl;
+        
+        res.json({
+            success: true,
+            dashboardId: dashboardId,
+            dashboardUrl: dashboardUrl,
+            fullUrl: fullUrl,
+            linkName: link.name,
+            linkId: link.id
+        });
+    } catch (error) {
+        console.error('❌ Generate dashboard link error:', error);
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
     }
 });
 
@@ -602,7 +665,6 @@ app.get('/api/link/:id', async (req, res) => {
             });
         }
         
-        // ===== Visitor Tracking =====
         const deviceId = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
@@ -760,11 +822,26 @@ app.get('/api/stats/:linkId', authMiddleware, async (req, res) => {
 // ==================== USER DASHBOARD ====================
 app.get('/api/parent-link', async (req, res) => {
     try {
-        const linkId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-        res.json({
-            url: '/user-dashboard/' + linkId,
-            createdAt: new Date().toISOString()
-        });
+        const links = await Link.find({});
+        if (links.length > 0) {
+            const firstLink = links[0];
+            if (!firstLink.dashboardId) {
+                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+                await firstLink.save();
+            }
+            res.json({
+                url: '/user-dashboard/' + firstLink.dashboardId,
+                linkName: firstLink.name,
+                linkId: firstLink.id
+            });
+        } else {
+            const linkId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+            res.json({
+                url: '/user-dashboard/' + linkId,
+                linkName: null,
+                linkId: null
+            });
+        }
     } catch (error) {
         console.error('❌ Dashboard link error:', error);
         res.status(500).json({ error: 'Failed to generate dashboard link' });
@@ -777,15 +854,12 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         const { linkId } = req.params;
         console.log('📊 Fetching stats for linkId:', linkId);
         
-        // Try to find the link
         let link = await Link.findOne({ id: linkId });
         
-        // If not found, try to find by dashboardId
         if (!link) {
             link = await Link.findOne({ dashboardId: linkId });
         }
         
-        // If still not found, try partial match
         if (!link) {
             const allLinks = await Link.find({});
             const matched = allLinks.find(l => 
@@ -1138,7 +1212,7 @@ app.get('/api/pricing', async (req, res) => {
         res.json({
             pricing: pricingDoc?.pricing || {},
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
-            whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
+            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
@@ -1217,5 +1291,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📊 Stats: 48hr Unique Visitor + Claim tracking');
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
+    console.log('🔗 Dashboard Link Generator: Search by name/ID');
     console.log('═══════════════════════════════════════════');
 });
