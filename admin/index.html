@@ -104,10 +104,10 @@
         .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
         .card h3 { color: var(--text); font-size: 18px; margin-bottom: 16px; padding-bottom: 10px;
             border-bottom: 2px solid rgba(102,126,234,0.15); }
-        .card input, .card select { width: 100%; padding: 12px 16px; margin: 6px 0;
+        .card input, .card select, .card textarea { width: 100%; padding: 12px 16px; margin: 6px 0;
             border: 2px solid var(--border); border-radius: 10px; font-size: 14px;
             background: var(--bg); color: var(--text); transition: 0.3s; }
-        .card input:focus, .card select:focus { border-color: var(--primary); outline: none; }
+        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); outline: none; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
@@ -155,9 +155,73 @@
         .edit-form { display: none; width: 100%; padding-top: 12px; margin-top: 12px; border-top: 2px solid var(--border); }
         .edit-form.show { display: block; }
         .edit-form .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .edit-form .edit-grid input { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;
+        .edit-form .edit-grid input, .edit-form .edit-grid textarea { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;
             font-size: 13px; background: var(--bg); color: var(--text); }
         @media (max-width: 768px) { .edit-form .edit-grid { grid-template-columns: 1fr; } }
+
+        /* ===== POPUP SETTINGS IN EDIT FORM ===== */
+        .popup-edit-section {
+            background: rgba(102,126,234,0.05);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 10px;
+            border: 2px solid rgba(102,126,234,0.1);
+        }
+        .popup-edit-section .popup-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            display: block;
+            margin-top: 6px;
+        }
+        .popup-edit-section .popup-preview-small {
+            background: rgba(0,0,0,0.6);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .popup-edit-section .popup-preview-small .preview-img {
+            max-width: 100%;
+            max-height: 80px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        .popup-edit-section .popup-preview-small .preview-text {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .popup-edit-section .popup-preview-small .preview-sub {
+            color: rgba(255,255,255,0.5);
+            font-size: 10px;
+        }
+        .popup-edit-section .popup-preview-small .preview-btn-small {
+            padding: 6px 18px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: default;
+            margin-top: 4px;
+        }
+        .popup-edit-toggle {
+            background: rgba(102,126,234,0.1);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--primary);
+            transition: 0.3s;
+            margin-top: 6px;
+        }
+        .popup-edit-toggle:hover { background: rgba(102,126,234,0.2); }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
         .empty-state .icon { font-size: 50px; display: block; margin-bottom: 12px; }
@@ -279,7 +343,7 @@
             padding: 0 4px;
         }
         .collapse-content.open {
-            max-height: 2000px; padding: 16px 4px 4px 4px;
+            max-height: 3000px; padding: 16px 4px 4px 4px;
         }
 
         .payment-dynamic {
@@ -341,6 +405,23 @@
             transition: 0.3s; white-space: nowrap;
         }
         .user-dashboard-box .btn-sm:hover { background: var(--secondary); transform: translateY(-2px); }
+
+        /* Admin WhatsApp Settings */
+        .whatsapp-settings {
+            background: rgba(72,187,120,0.05);
+            border: 2px solid rgba(72,187,120,0.15);
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-top: 10px;
+        }
+        .whatsapp-settings .label {
+            font-weight: 600;
+            color: var(--success);
+            font-size: 14px;
+        }
+        .whatsapp-settings input {
+            margin-top: 6px;
+        }
 
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 16px 20px; }
@@ -436,7 +517,7 @@
 
             <!-- ===== POPUP SETTINGS ===== -->
             <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
-                <label style="font-weight:600;color:#667eea;font-size:14px;">🖼️ Popup Settings (Instagram Fix)</label>
+                <label style="font-weight:600;color:#667eea;font-size:14px;">🖼️ Popup Settings</label>
                 <p style="color:var(--text-light);font-size:12px;margin:4px 0 10px;">Customize popup image & text (appears before video plays)</p>
                 
                 <div class="grid-2">
@@ -538,6 +619,18 @@
                     <p style="font-size:12px;color:var(--text-light);margin-top:6px;">📌 Users can check their link stats and renew from this dashboard</p>
                 </div>
 
+                <!-- ===== WHATSAPP SETTINGS ===== -->
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📱 WhatsApp Settings</h4>
+                    <div class="whatsapp-settings">
+                        <div class="label">📞 Admin WhatsApp Number</div>
+                        <p style="font-size:12px;color:var(--text-light);margin:4px 0 8px;">Users will send renewal requests to this number</p>
+                        <input type="text" id="whatsappNumber" placeholder="e.g., 919876543210 (with country code)" value="919876543210">
+                        <button onclick="saveWhatsAppNumber()" class="btn btn-success btn-sm" style="margin-top:8px;padding:8px 20px;">💾 Save WhatsApp Number</button>
+                        <div id="whatsappStatus" style="margin-top:6px;font-size:12px;color:var(--text-light);"></div>
+                    </div>
+                </div>
+
                 <div style="margin-bottom:16px;">
                     <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💰 Pricing Plans</h4>
                     <div class="pricing-grid">
@@ -550,37 +643,6 @@
                         <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" placeholder="Price" value="3500" min="0"></div>
                     </div>
                     <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Pricing</button>
-                </div>
-
-                <div style="margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💳 Payment Settings</h4>
-                    <div class="grid-2">
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Payment Method</label>
-                            <select id="paymentMethod" onchange="togglePaymentFields()" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-size:14px;">
-                                <option value="UPI">UPI</option>
-                                <option value="QR">QR Code</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Payment Details</label>
-                            <div id="paymentDetailsContainer">
-                                <div class="payment-dynamic show" id="upiField">
-                                    <input type="text" id="upiInput" placeholder="UPI ID (e.g., admin@upi)" value="admin@upi">
-                                </div>
-                                <div class="payment-dynamic" id="qrField">
-                                    <input type="file" id="qrInput" accept="image/*" onchange="previewQR(event)">
-                                    <img id="qrPreview" class="preview-qr" alt="QR Preview">
-                                </div>
-                                <div class="payment-dynamic" id="textField">
-                                    <input type="text" id="textInput" placeholder="Bank Details / Other Info">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Payment Settings</button>
                 </div>
 
                 <div style="padding-top:16px;border-top:1px solid var(--border);">
@@ -710,32 +772,39 @@
             });
         }
 
-        // ===== PAYMENT FIELDS TOGGLE =====
-        function togglePaymentFields() {
-            var method = document.getElementById('paymentMethod').value;
-            document.getElementById('upiField').classList.remove('show');
-            document.getElementById('qrField').classList.remove('show');
-            document.getElementById('textField').classList.remove('show');
-
-            if (method === 'UPI') {
-                document.getElementById('upiField').classList.add('show');
-            } else if (method === 'QR') {
-                document.getElementById('qrField').classList.add('show');
-            } else {
-                document.getElementById('textField').classList.add('show');
+        // ===== WHATSAPP NUMBER =====
+        async function loadWhatsAppNumber() {
+            try {
+                var r = await fetch('/api/whatsapp-number');
+                var data = await r.json();
+                if (data.number) {
+                    document.getElementById('whatsappNumber').value = data.number;
+                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number loaded';
+                    document.getElementById('whatsappStatus').style.color = '#48bb78';
+                }
+            } catch (e) {
+                console.error('Error loading WhatsApp number:', e);
             }
         }
 
-        function previewQR(event) {
-            var file = event.target.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var preview = document.getElementById('qrPreview');
-                    preview.src = e.target.result;
-                    preview.classList.add('show');
-                };
-                reader.readAsDataURL(file);
+        async function saveWhatsAppNumber() {
+            var number = document.getElementById('whatsappNumber').value.trim();
+            if (!number) {
+                showToast('❌ Please enter a WhatsApp number', 'error');
+                return;
+            }
+            try {
+                var r = await secureFetch('/api/admin/whatsapp', {
+                    method: 'POST',
+                    body: JSON.stringify({ number: number })
+                });
+                if (r) {
+                    showToast('✅ WhatsApp number saved!', 'success');
+                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number saved successfully!';
+                    document.getElementById('whatsappStatus').style.color = '#48bb78';
+                }
+            } catch (e) {
+                showToast('❌ Failed to save WhatsApp number', 'error');
             }
         }
 
@@ -957,12 +1026,51 @@
                     var expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() : 'No expiry';
                     var d = document.createElement('div');
                     d.className = 'link-item';
-                    d.innerHTML = '<div class="info"><div class="name">' + escapeHTML(link.name) + '</div><div class="details"><span>📅 ' + new Date(link.created).toLocaleDateString() + '</span><span>👁️ ' + (link.visits || 0) + '</span><span>🎬 <a href="' + escapeHTML(link.video) + '" target="_blank">Video</a></span><span>🔗 <a href="' + escapeHTML(link.claim) + '" target="_blank">Claim</a></span><span>📝 ' + escapeHTML(link.headline || 'No headline') + '</span><span class="' + (isExpired ? 'expiry-badge expired' : 'expiry-badge') + '">' + escapeHTML(expiryDisplay) + '</span></div></div><div class="actions"><span class="status-badge status-' + sc + '">' + link.status + '</span><select onchange="updateStatus(\'' + link.id + '\', this.value)" class="schedule-select"><option value="active" ' + (link.status === 'active' ? 'selected' : '') + '>Active</option><option value="suspended" ' + (link.status === 'suspended' ? 'selected' : '') + '>Suspend</option><option value="disabled" ' + (link.status === 'disabled' ? 'selected' : '') + '>Disable</option></select><button onclick="toggleEdit(\'' + link.id + '\')" class="btn btn-warning btn-sm">✏️</button><button onclick="copyLinkUrl(\'' + link.id + '\')" class="btn btn-success btn-sm">📋</button><button onclick="deleteLink(\'' + link.id + '\')" class="btn btn-danger btn-sm">🗑️</button></div><div class="edit-form" id="edit-' + link.id + '"><div class="edit-grid"><input type="text" id="edit-name-' + link.id + '" value="' + escapeHTML(link.name) + '" placeholder="Name"><input type="text" id="edit-video-' + link.id + '" value="' + escapeHTML(link.video) + '" placeholder="Video"><input type="text" id="edit-claim-' + link.id + '" value="' + escapeHTML(link.claim) + '" placeholder="Claim"><input type="text" id="edit-btn-' + link.id + '" value="' + escapeHTML(link.buttonText || 'Claim Now') + '" placeholder="Button"><input type="text" id="edit-headline-' + link.id + '" value="' + escapeHTML(link.headline || '') + '" placeholder="Headline"></div><div style="margin-top:10px;"><select id="edit-schedule-' + link.id + '" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;"><option value="">No Expiry</option><option value="3" ' + (link.expiryDate ? 'selected' : '') + '>3 Days</option><option value="7">7 Days</option><option value="15">15 Days</option><option value="30">30 Days</option></select></div><div style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveEdit(\'' + link.id + '\')" class="btn btn-success btn-sm">💾 Save</button><button onclick="cancelEdit(\'' + link.id + '\')" class="btn btn-danger btn-sm">Cancel</button></div></div>';
+                    
+                    // Popup settings display
+                    var popupSettings = link.popupSettings || {};
+                    var popupPreview = '';
+                    if (popupSettings.image || popupSettings.title) {
+                        popupPreview = '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">🖼️ Popup: ' + (popupSettings.title || 'No title') + '</div>';
+                    }
+                    
+                    d.innerHTML = '<div class="info"><div class="name">' + escapeHTML(link.name) + '</div><div class="details"><span>📅 ' + new Date(link.created).toLocaleDateString() + '</span><span>👁️ ' + (link.visits || 0) + '</span><span>🎬 <a href="' + escapeHTML(link.video) + '" target="_blank">Video</a></span><span>🔗 <a href="' + escapeHTML(link.claim) + '" target="_blank">Claim</a></span><span>📝 ' + escapeHTML(link.headline || 'No headline') + '</span><span class="' + (isExpired ? 'expiry-badge expired' : 'expiry-badge') + '">' + escapeHTML(expiryDisplay) + '</span></div>' + popupPreview + '</div><div class="actions"><span class="status-badge status-' + sc + '">' + link.status + '</span><select onchange="updateStatus(\'' + link.id + '\', this.value)" class="schedule-select"><option value="active" ' + (link.status === 'active' ? 'selected' : '') + '>Active</option><option value="suspended" ' + (link.status === 'suspended' ? 'selected' : '') + '>Suspend</option><option value="disabled" ' + (link.status === 'disabled' ? 'selected' : '') + '>Disable</option></select><button onclick="toggleEdit(\'' + link.id + '\')" class="btn btn-warning btn-sm">✏️</button><button onclick="copyLinkUrl(\'' + link.id + '\')" class="btn btn-success btn-sm">📋</button><button onclick="deleteLink(\'' + link.id + '\')" class="btn btn-danger btn-sm">🗑️</button></div><div class="edit-form" id="edit-' + link.id + '"><div class="edit-grid"><input type="text" id="edit-name-' + link.id + '" value="' + escapeHTML(link.name) + '" placeholder="Name"><input type="text" id="edit-video-' + link.id + '" value="' + escapeHTML(link.video) + '" placeholder="Video"><input type="text" id="edit-claim-' + link.id + '" value="' + escapeHTML(link.claim) + '" placeholder="Claim"><input type="text" id="edit-btn-' + link.id + '" value="' + escapeHTML(link.buttonText || 'Claim Now') + '" placeholder="Button"><input type="text" id="edit-headline-' + link.id + '" value="' + escapeHTML(link.headline || '') + '" placeholder="Headline"></div><div style="margin-top:10px;"><select id="edit-schedule-' + link.id + '" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;"><option value="">No Expiry</option><option value="3" ' + (link.expiryDate ? 'selected' : '') + '>3 Days</option><option value="7">7 Days</option><option value="15">15 Days</option><option value="30">30 Days</option></select></div>' +
+                    // ===== POPUP SETTINGS EDIT IN LINE =====
+                    '<div class="popup-edit-section"><div style="font-weight:600;color:var(--primary);font-size:13px;margin-bottom:6px;">🖼️ Popup Settings</div><div class="grid-2"><div><label class="popup-label">Popup Title</label><input type="text" id="edit-popup-title-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '"></div><div><label class="popup-label">Popup Button Text</label><input type="text" id="edit-popup-btn-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now') + '"></div></div><label class="popup-label">Popup Subtitle</label><input type="text" id="edit-popup-sub-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward') + '"><label class="popup-label">Popup Image URL (16:9)</label><input type="text" id="edit-popup-image-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.image) || '') + '" placeholder="Enter image URL"><div class="popup-preview-small" id="popup-preview-small-' + link.id + '">' + 
+                    ((link.popupSettings && link.popupSettings.image) ? '<img src="' + escapeHTML(link.popupSettings.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>') +
+                    '<div class="preview-text">' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '</div>' +
+                    '<div class="preview-sub">' + escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward') + '</div>' +
+                    '<div class="preview-btn-small">' + escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now') + '</div>' +
+                    '</div></div>' +
+                    '<div style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveEdit(\'' + link.id + '\')" class="btn btn-success btn-sm">💾 Save All</button><button onclick="cancelEdit(\'' + link.id + '\')" class="btn btn-danger btn-sm">Cancel</button></div></div>';
                     c.appendChild(d);
+                    
+                    // Live preview update for popup in edit
+                    (function(id) {
+                        ['edit-popup-title-' + id, 'edit-popup-btn-' + id, 'edit-popup-sub-' + id, 'edit-popup-image-' + id].forEach(function(fieldId) {
+                            document.getElementById(fieldId).addEventListener('input', function() {
+                                updatePopupPreview(id);
+                            });
+                        });
+                    })(link.id);
                 });
             } catch (e) {
                 document.getElementById('linksList').innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links.<br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
             }
+        }
+
+        function updatePopupPreview(linkId) {
+            var title = document.getElementById('edit-popup-title-' + linkId).value || '🎁 Claim Your Reward';
+            var btn = document.getElementById('edit-popup-btn-' + linkId).value || 'Claim Now';
+            var sub = document.getElementById('edit-popup-sub-' + linkId).value || 'Tap below to unlock your reward';
+            var img = document.getElementById('edit-popup-image-' + linkId).value || '';
+            var previewDiv = document.getElementById('popup-preview-small-' + linkId);
+            
+            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>';
+            previewDiv.innerHTML = imgHtml +
+                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
+                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
+                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
         }
 
         // ===== CREATE LINK =====
@@ -1056,6 +1164,15 @@
                     date.setDate(date.getDate() + parseInt(scheduleVal));
                     expiryDate = date.toISOString();
                 }
+                
+                // Collect popup settings
+                var popupSettings = {
+                    image: document.getElementById('edit-popup-image-' + id).value.trim() || null,
+                    title: document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward',
+                    buttonText: document.getElementById('edit-popup-btn-' + id).value.trim() || 'Claim Now',
+                    subtitle: document.getElementById('edit-popup-sub-' + id).value.trim() || 'Tap below to unlock your reward'
+                };
+                
                 var r = await secureFetch('/api/links/' + id, {
                     method: 'PUT',
                     body: JSON.stringify({
@@ -1064,7 +1181,8 @@
                         claim: document.getElementById('edit-claim-' + id).value,
                         buttonText: document.getElementById('edit-btn-' + id).value,
                         headline: document.getElementById('edit-headline-' + id).value,
-                        expiryDate: expiryDate
+                        expiryDate: expiryDate,
+                        popupSettings: popupSettings
                     })
                 });
                 if (!r) return;
@@ -1075,7 +1193,7 @@
                 }
                 document.getElementById('edit-' + id).classList.remove('show');
                 loadLinks();
-                showToast('✅ Link updated!', 'success');
+                showToast('✅ Link updated with popup settings!', 'success');
             } catch (e) { showToast('❌ Failed to update', 'error'); }
         }
 
@@ -1306,6 +1424,35 @@
             }
         }
 
+        // ===== PAYMENT FIELDS TOGGLE =====
+        function togglePaymentFields() {
+            var method = document.getElementById('paymentMethod').value;
+            document.getElementById('upiField').classList.remove('show');
+            document.getElementById('qrField').classList.remove('show');
+            document.getElementById('textField').classList.remove('show');
+
+            if (method === 'UPI') {
+                document.getElementById('upiField').classList.add('show');
+            } else if (method === 'QR') {
+                document.getElementById('qrField').classList.add('show');
+            } else {
+                document.getElementById('textField').classList.add('show');
+            }
+        }
+
+        function previewQR(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var preview = document.getElementById('qrPreview');
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         // ===== PERIODIC CHECKS =====
         setInterval(function() { checkAuth(); }, 5 * 60 * 1000);
         setInterval(loadRenewalRequests, 15000);
@@ -1337,6 +1484,7 @@
         loadPricingData();
         loadRenewalRequests();
         loadStats();
+        loadWhatsAppNumber();
         setInterval(loadLinks, 30000);
         checkAuth();
         togglePaymentFields();

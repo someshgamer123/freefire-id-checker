@@ -37,7 +37,7 @@ const RenewalRequestSchema = new mongoose.Schema({
     },
     upiId: {
         type: String,
-        default: 'admin@upi'
+        default: 'pending'
     },
     createdAt: {
         type: Date,
@@ -52,5 +52,9 @@ const RenewalRequestSchema = new mongoose.Schema({
         default: null
     }
 });
+
+// Index for faster queries
+RenewalRequestSchema.index({ linkId: 1, status: 1 });
+RenewalRequestSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('RenewalRequest', RenewalRequestSchema);

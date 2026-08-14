@@ -26,7 +26,6 @@ connectDB();
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
-        // Check if admin exists
         const adminExists = await User.findOne();
         if (!adminExists) {
             const hashedPasscode = bcrypt.hashSync('951753', 10);
@@ -37,14 +36,12 @@ async function initializeDatabase() {
             console.log('✅ Admin user created with passcode: 951753');
         }
 
-        // Check if stats exist
         const statsExists = await Stats.findOne();
         if (!statsExists) {
             await Stats.create({});
             console.log('✅ Stats initialized');
         }
 
-        // Check if popup settings exist
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
             await PopupSettings.create({
@@ -56,7 +53,6 @@ async function initializeDatabase() {
             console.log('✅ Popup settings initialized');
         }
 
-        // Check if pricing exists
         const pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
@@ -85,7 +81,6 @@ async function initializeDatabase() {
     }
 }
 
-// Initialize database on startup
 initializeDatabase();
 
 app.set('trust proxy', 1);
@@ -179,6 +174,39 @@ async function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
 }
+
+// ==================== WHATSAPP NUMBER API ====================
+let whatsappNumber = '919876543210'; // Default
+
+app.get('/api/whatsapp-number', async (req, res) => {
+    try {
+        const pricing = await Pricing.findOne();
+        const number = pricing?.whatsappNumber || whatsappNumber || '919876543210';
+        res.json({ number: number });
+    } catch (error) {
+        res.json({ number: whatsappNumber || '919876543210' });
+    }
+});
+
+app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) {
+            return res.status(400).json({ error: 'WhatsApp number required' });
+        }
+        let pricing = await Pricing.findOne();
+        if (!pricing) {
+            pricing = new Pricing();
+        }
+        pricing.whatsappNumber = number;
+        whatsappNumber = number;
+        await pricing.save();
+        res.json({ success: true, number: number });
+    } catch (error) {
+        console.error('❌ WhatsApp number save error:', error);
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
 
 // ==================== ADMIN ROUTES ====================
 app.post('/api/admin/login', authLimiter, async (req, res) => {
@@ -726,7 +754,78 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// ==================== RENEWAL ====================
+// ==================== RENEWAL - UPDATED ====================
+
+// NEW: Request renewal from dashboard (saves in DB and sends WhatsApp)
+app.post('/api/renewal/request-from-dashboard', async (req, res) => {
+    try {
+        const { linkId, linkName, plan, days, amount } = req.body;
+        
+        if (!linkId || !plan) {
+            return res.status(400).json({ error: 'Link ID and plan required' });
+        }
+        
+        // Check if already has pending request
+        const existing = await RenewalRequest.findOne({ 
+            linkId: linkId, 
+            status: { $in: ['pending', 'paid'] } 
+        });
+        
+        if (existing) {
+            return res.status(400).json({
+                error: 'You already have a pending renewal request',
+                existingRequest: existing
+            });
+        }
+        
+        // Create renewal request
+        const renewalRequest = new RenewalRequest({
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId: linkId,
+            linkName: linkName || 'Unknown',
+            plan: plan,
+            days: days || 0,
+            amount: amount || 0,
+            status: 'pending',
+            createdAt: new Date(),
+            paidAt: null,
+            approvedAt: null,
+            transactionId: null,
+            upiId: 'pending'
+        });
+        
+        await renewalRequest.save();
+        
+        res.json({
+            success: true,
+            requestId: renewalRequest.id,
+            message: 'Renewal request created successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Renewal request error:', error);
+        res.status(500).json({ error: 'Failed to create renewal request' });
+    }
+});
+
+// GET renewal history for a link
+app.get('/api/renewal/history/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const history = await RenewalRequest.find({ linkId: linkId })
+            .sort({ createdAt: -1 });
+        
+        res.json({
+            history: history,
+            count: history.length
+        });
+    } catch (error) {
+        console.error('❌ Renewal history error:', error);
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+// Existing renewal routes
 app.post('/api/renewal/request', async (req, res) => {
     try {
         const { linkId, plan } = req.body;
@@ -912,6 +1011,9 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         request.approvedAt = new Date();
         await request.save();
         
+        // Remove from active requests (it will still be in history)
+        // But we keep it for history
+        
         res.json({ success: true, message: 'Renewal approved! Link extended.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to approve renewal' });
@@ -971,7 +1073,8 @@ app.get('/api/pricing', async (req, res) => {
         const pricingDoc = await Pricing.findOne();
         res.json({
             pricing: pricingDoc?.pricing || {},
-            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } }
+            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
+            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
@@ -1048,5 +1151,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('⏰ Session: 7 DAYS');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('📊 Stats: 48hr Unique Visitor + Claim tracking');
+    console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('═══════════════════════════════════════════');
 });

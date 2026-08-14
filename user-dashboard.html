@@ -12,7 +12,7 @@
             padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
         }
         .container {
             max-width: 700px;
@@ -23,6 +23,7 @@
             padding: 30px;
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            margin-top: 20px;
         }
         .header {
             text-align: center;
@@ -123,6 +124,8 @@
         .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(72,187,120,0.3); }
         .btn-danger { background: #fc8181; }
         .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(252,129,129,0.3); }
+        .btn-whatsapp { background: #25D366; }
+        .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,211,102,0.3); }
         
         .hidden { display: none !important; }
         .mt-10 { margin-top: 10px; }
@@ -140,7 +143,46 @@
         .toast.success { border-color: #48bb78; }
         .toast.error { border-color: #fc8181; }
         .toast.info { border-color: #667eea; }
+
+        .renewal-history-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 6px 0;
+            border-left: 3px solid #667eea;
+        }
+        .renewal-history-item .status-approved { border-left-color: #48bb78; }
+        .renewal-history-item .status-rejected { border-left-color: #fc8181; }
+        .renewal-history-item .status-pending { border-left-color: #f6ad55; }
+        .renewal-history-item .status-paid { border-left-color: #4299e1; }
         
+        .renewal-history-item .h-title { font-weight: 600; font-size: 14px; color: #fff; }
+        .renewal-history-item .h-details { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .renewal-history-item .h-status {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .h-status.approved { background: rgba(72,187,120,0.2); color: #48bb78; }
+        .h-status.rejected { background: rgba(252,129,129,0.2); color: #fc8181; }
+        .h-status.pending { background: rgba(246,173,85,0.2); color: #f6ad55; }
+        .h-status.paid { background: rgba(66,153,225,0.2); color: #63b3ed; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         @media (max-width: 480px) {
             .container { padding: 20px 16px; }
             .stat-card .number { font-size: 24px; }
@@ -233,7 +275,11 @@
                 </div>
             </div>
             <div id="selectedPlanDisplay" style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:8px 0;">Select a plan above</div>
-            <button class="btn btn-primary" id="renewBtn" onclick="requestRenewal()">🔄 Request Renewal</button>
+            
+            <!-- WhatsApp Renewal Button -->
+            <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
+                📱 Request Renewal via WhatsApp
+            </button>
             <div id="renewalStatus" style="margin-top:10px;font-size:14px;text-align:center;color:rgba(255,255,255,0.5);"></div>
         </div>
 
@@ -251,14 +297,15 @@
     <script>
         var pathSegments = window.location.pathname.split('/');
         var linkId = pathSegments[pathSegments.length - 1] || '';
-        
+        var whatsappNumber = '';
+        var selectedPlan = null;
+        var linkData = null;
+        var renewalHistory = [];
+
         if (!linkId) {
             showToast('❌ Invalid link', 'error');
             document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px;"><h2>❌ Invalid Link</h2><p style="color:rgba(255,255,255,0.5);">Please use a valid dashboard link</p></div>';
         }
-
-        var selectedPlan = null;
-        var linkData = null;
 
         function showToast(msg, type) {
             type = type || 'info';
@@ -267,6 +314,22 @@
             t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
             t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
+        }
+
+        async function loadWhatsAppNumber() {
+            try {
+                var r = await fetch('/api/whatsapp-number');
+                var data = await r.json();
+                if (data && data.number) {
+                    whatsappNumber = data.number;
+                    console.log('📱 WhatsApp Number loaded:', whatsappNumber);
+                } else {
+                    whatsappNumber = '919876543210'; // Default
+                }
+            } catch (e) {
+                console.error('Error loading WhatsApp number:', e);
+                whatsappNumber = '919876543210';
+            }
         }
 
         async function loadData() {
@@ -314,26 +377,54 @@
 
         async function loadRenewalHistory() {
             try {
-                var res = await fetch('/api/renewal/status/' + linkId);
+                var res = await fetch('/api/renewal/history/' + linkId);
                 if (res.ok) {
                     var data = await res.json();
-                    var container = document.getElementById('renewalHistory');
-                    if (data.hasRequest && data.request) {
-                        var req = data.request;
-                        var statusColors = {
-                            'pending': '🟡',
-                            'paid': '🔵',
-                            'approved': '🟢',
-                            'rejected': '🔴'
-                        };
-                        container.innerHTML = '<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 16px;margin:6px 0;border-left:3px solid ' + (req.status === 'approved' ? '#48bb78' : req.status === 'paid' ? '#4299e1' : req.status === 'pending' ? '#f6ad55' : '#fc8181') + ';"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><span>' + (statusColors[req.status] || '📌') + ' ' + (req.plan || 'N/A') + ' - ' + (req.days || 0) + ' days</span><span style="font-size:12px;color:rgba(255,255,255,0.4);">₹' + (req.amount || 0) + '</span></div><div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">' + new Date(req.createdAt).toLocaleDateString() + ' <span class="status-badge" style="font-size:10px;padding:2px 10px;background:rgba(255,255,255,0.05);">' + req.status.toUpperCase() + '</span></div></div>';
-                    } else {
-                        container.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;">No renewal requests</p>';
-                    }
+                    renewalHistory = data.history || [];
+                    displayRenewalHistory();
                 }
             } catch (e) {
                 console.error('Error loading renewal history:', e);
             }
+        }
+
+        function displayRenewalHistory() {
+            var container = document.getElementById('renewalHistory');
+            if (!renewalHistory || renewalHistory.length === 0) {
+                container.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;">No renewal history</p>';
+                return;
+            }
+            container.innerHTML = '';
+            // Show latest first
+            renewalHistory.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+            renewalHistory.forEach(function(req) {
+                var div = document.createElement('div');
+                div.className = 'renewal-history-item status-' + req.status;
+                var statusMap = {
+                    'approved': '✅ Approved',
+                    'rejected': '❌ Rejected',
+                    'pending': '⏳ Pending',
+                    'paid': '💰 Paid'
+                };
+                var statusClass = {
+                    'approved': 'approved',
+                    'rejected': 'rejected',
+                    'pending': 'pending',
+                    'paid': 'paid'
+                };
+                var date = new Date(req.createdAt);
+                var dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                div.innerHTML = `
+                    <div class="h-title">${req.plan || 'N/A'} - ${req.days || 0} days extension</div>
+                    <div class="h-details">
+                        <span>💰 ₹${req.amount || 0}</span>
+                        <span>📅 ${dateStr}</span>
+                        <span class="h-status ${statusClass[req.status] || 'pending'}">${statusMap[req.status] || req.status.toUpperCase()}</span>
+                        ${req.transactionId ? `<span>🆔 ${req.transactionId}</span>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         }
 
         function selectPlan(plan) {
@@ -344,46 +435,126 @@
             document.getElementById('selectedPlanDisplay').textContent = '✅ Selected: ' + plan;
         }
 
-        async function requestRenewal() {
+        async function sendWhatsAppRequest() {
             if (!selectedPlan) {
                 showToast('⚠️ Please select a plan first', 'error');
                 return;
             }
 
+            if (!whatsappNumber) {
+                showToast('⏳ Loading WhatsApp number...', 'info');
+                await loadWhatsAppNumber();
+                if (!whatsappNumber) {
+                    showToast('❌ WhatsApp number not available', 'error');
+                    return;
+                }
+            }
+
             var btn = document.getElementById('renewBtn');
-            btn.textContent = '⏳ Processing...';
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
             btn.disabled = true;
 
             try {
-                var res = await fetch('/api/renewal/request', {
+                // Get pricing details
+                var priceRes = await fetch('/api/pricing');
+                var priceData = await priceRes.json();
+                var pricing = priceData.pricing || {};
+                
+                var planMap = {
+                    '3days': 3,
+                    '7days': 7,
+                    '15days': 15,
+                    '1month': 30,
+                    '3months': 90,
+                    '6months': 180,
+                    '12months': 365
+                };
+                var days = planMap[selectedPlan] || 0;
+                var amount = pricing[selectedPlan] || 0;
+
+                if (amount === 0) {
+                    showToast('❌ Price not set for this plan', 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Get link details
+                var linkName = linkData ? linkData.name : 'Unknown';
+                var linkIdDisplay = linkId || 'N/A';
+
+                // Build WhatsApp message
+                var message = `🔔 *NEW RENEWAL REQUEST* 🔔
+
+📌 *Link Name:* ${linkName}
+🆔 *Link ID:* ${linkIdDisplay}
+📆 *Plan:* ${selectedPlan} (${days} days)
+💰 *Amount:* ₹${amount}
+📅 *Request Date:* ${new Date().toLocaleString()}
+
+🔗 *Dashboard Link:* ${window.location.href}
+
+Please verify payment and approve/reject this request.`;
+
+                // Encode message for WhatsApp
+                var encodedMessage = encodeURIComponent(message);
+                var whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+                // Create renewal request in database
+                var reqRes = await fetch('/api/renewal/request-from-dashboard', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ linkId: linkId, plan: selectedPlan })
+                    body: JSON.stringify({
+                        linkId: linkId,
+                        linkName: linkName,
+                        plan: selectedPlan,
+                        days: days,
+                        amount: amount
+                    })
                 });
 
-                var data = await res.json();
-
-                if (res.ok) {
-                    showToast('✅ Renewal request submitted!', 'success');
-                    document.getElementById('renewalStatus').textContent = '✅ Request submitted! Please complete payment.';
-                    await loadRenewalHistory();
+                if (reqRes.ok) {
+                    var reqData = await reqRes.json();
+                    if (reqData.success) {
+                        showToast('✅ Request sent! Opening WhatsApp...', 'success');
+                        document.getElementById('renewalStatus').textContent = '✅ Request sent to admin! Opening WhatsApp...';
+                        
+                        // Open WhatsApp in new tab
+                        window.open(whatsappUrl, '_blank');
+                        
+                        // Reload history after a moment
+                        setTimeout(function() {
+                            loadRenewalHistory();
+                            loadData();
+                        }, 2000);
+                    } else {
+                        showToast('❌ ' + (reqData.error || 'Failed to send request'), 'error');
+                        document.getElementById('renewalStatus').textContent = '❌ ' + (reqData.error || 'Failed to send request');
+                    }
                 } else {
-                    showToast('❌ ' + (data.error || 'Failed to request renewal'), 'error');
-                    document.getElementById('renewalStatus').textContent = '❌ ' + (data.error || 'Failed to request');
+                    showToast('❌ Failed to create renewal request', 'error');
                 }
+
             } catch (e) {
+                console.error('Error:', e);
                 showToast('❌ Network error', 'error');
             }
 
-            btn.textContent = '🔄 Request Renewal';
+            btn.innerHTML = originalText;
             btn.disabled = false;
         }
 
+        // Load WhatsApp number on page load
+        loadWhatsAppNumber();
+
+        // Periodic refresh
         setInterval(loadData, 30000);
         loadData();
         
         console.log('📊 User Dashboard Loaded');
         console.log('🔗 Link ID:', linkId);
+        console.log('📱 WhatsApp Number:', whatsappNumber);
     </script>
 </body>
 </html>
