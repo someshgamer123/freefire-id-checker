@@ -1,7 +1,7 @@
-require('dotenv').config({ path: '../.env' }); // ✅ Root folder se .env load karein
+require('dotenv').config(); // ✅ .env backend folder se load hoga
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3001; // ✅ Default port 3001 agar .env mein nahi hai
+const port = process.env.PORT || 3001;
 const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -11,7 +11,6 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-// const twilio = require('twilio'); // ✅ SMS disable kar diya
 
 // ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
@@ -21,9 +20,9 @@ const Stats = require('./models/Stats');
 const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
 const Pricing = require('./models/Pricing');
-const Session = require('./models/Session'); // ✅ Updated file
+const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
-const LoginAttempt = require('./models/LoginAttempt'); // ✅ Updated file
+const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
 const BlockedDevice = require('./models/BlockedDevice');
 const OTPVerification = require('./models/OTPVerification');
@@ -40,7 +39,7 @@ const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
-const ENABLE_2FA = process.env.ENABLE_2FA !== 'false';
+const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
 // Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
@@ -342,7 +341,6 @@ async function invalidateAllSessions(userId) {
 
 // ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
-    // Check if device is blocked
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
         const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
@@ -742,7 +740,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const { passcode, otp, step } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         
-        // Check if device is blocked
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
@@ -781,7 +778,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
                 
-                // Block device after 5 failed attempts
                 const deviceRecord = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
                 if (deviceRecord && deviceRecord.attempts >= 5) {
                     await blockDevice(req, 'Too many failed passcode attempts', LOCKOUT_TIME);
@@ -790,37 +786,59 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
             
-            // Passcode correct, generate OTP
-            const otpCode = generateOTP();
-            const adminEmail = admin.email || '';
-            
-            // Try to send OTP via email
-            let sent = false;
-            let method = 'email';
-            let contact = adminEmail;
-            
-            if (adminEmail && transporter) {
-                sent = await sendOTPEmail(adminEmail, otpCode);
-                method = 'email';
-                contact = adminEmail;
-            }
-            
-            if (!sent) {
-                return res.status(500).json({ 
-                    error: 'Unable to send OTP. Please configure email settings.' 
+            // ✅ Check if email is configured
+            if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
+                // OTP enabled
+                const otpCode = generateOTP();
+                const adminEmail = admin.email || '';
+                
+                let sent = false;
+                let method = 'email';
+                let contact = adminEmail;
+                
+                if (adminEmail && transporter) {
+                    sent = await sendOTPEmail(adminEmail, otpCode);
+                    method = 'email';
+                    contact = adminEmail;
+                }
+                
+                if (!sent) {
+                    return res.status(500).json({ 
+                        error: 'Unable to send OTP. Please configure email settings.' 
+                    });
+                }
+                
+                await saveOTP(fingerprint, otpCode, method, contact);
+                
+                return res.json({
+                    success: false,
+                    step: 'otp',
+                    message: `OTP sent to your email`,
+                    method: method,
+                    contact: contact.replace(/(.{3})(.*)(.{2})/, '$1****$3')
+                });
+            } else {
+                // ✅ DIRECT LOGIN - NO OTP REQUIRED
+                console.log('⚠️ OTP disabled or email not configured - Direct login allowed');
+                const jwtToken = generateToken('admin');
+                const csrfToken = generateCSRFToken();
+                await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+                await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
+                
+                res.cookie('adminToken', jwtToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' || true,
+                    sameSite: 'lax',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                    path: '/'
+                });
+                
+                return res.json({
+                    success: true,
+                    csrfToken: csrfToken,
+                    step: 'complete'
                 });
             }
-            
-            // Save OTP
-            await saveOTP(fingerprint, otpCode, method, contact);
-            
-            return res.json({
-                success: false,
-                step: 'otp',
-                message: `OTP sent to your email`,
-                method: method,
-                contact: contact.replace(/(.{3})(.*)(.{2})/, '$1****$3')
-            });
         }
         
         // STEP 2: Verify OTP
@@ -839,15 +857,11 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             
-            // OTP verified - complete login
             await recordLoginAttempt(ip, true);
-            
-            // Clear any device blocks
             await BlockedDevice.findOneAndDelete({ $or: [{ fingerprint }, { ip }] });
             
             const jwtToken = generateToken('admin');
             const csrfToken = generateCSRFToken();
-            
             await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
             await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
             
@@ -859,7 +873,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 path: '/'
             });
             
-            res.json({
+            return res.json({
                 success: true,
                 csrfToken: csrfToken,
                 step: 'complete'
@@ -1295,13 +1309,11 @@ app.get('/api/admin/block-status', async (req, res) => {
 });
 
 // ==================== Admin Panel Protection Middleware ====================
-// This middleware checks if someone is trying to access admin panel from a visitor link
 app.use('/admin', async (req, res, next) => {
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
     
     if (isFromVisitorLink && !req.cookies?.adminToken) {
-        // Block device if trying to access admin from visitor link
         await blockDevice(req, 'Unauthorized admin access from visitor link', 60);
         return res.status(403).send(`
             <html>
@@ -1366,11 +1378,9 @@ setInterval(async () => {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
         
-        // Clean expired OTPs
         const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
         if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
         
-        // Clean expired blocks
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() } 
         });
