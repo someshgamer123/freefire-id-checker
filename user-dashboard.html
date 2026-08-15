@@ -59,7 +59,6 @@
         }
         .info-card .label { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
         .info-card .value { font-size: 16px; font-weight: 600; margin-top: 4px; word-break: break-all; }
-        .info-card .value a { color: #667eea; text-decoration: none; }
         
         .status-badge {
             display: inline-block;
@@ -129,15 +128,8 @@
             justify-content: center;
             gap: 10px;
         }
-        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
-        .btn-success { background: #48bb78; }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(72,187,120,0.3); }
-        .btn-danger { background: #fc8181; }
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(252,129,129,0.3); }
         .btn-whatsapp { background: #25D366; }
         .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,211,102,0.3); }
-        .btn-whatsapp i { font-size: 20px; }
         
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(120px);
@@ -187,7 +179,7 @@
     <div class="container" id="app">
         <div class="header">
             <h1>📊 Link Dashboard</h1>
-            <p>View your link stats and manage renewals</p>
+            <p>View your link stats and request renewal</p>
         </div>
 
         <!-- Stats -->
@@ -285,7 +277,7 @@
             <div id="renewalStatus" style="margin-top:10px;font-size:13px;text-align:center;color:rgba(255,255,255,0.4);"></div>
         </div>
 
-        <!-- Link ID (hidden for user reference) -->
+        <!-- Link ID -->
         <div class="link-id-display" id="linkIdDisplay">🔑 Link ID: <span id="linkIdValue">Loading...</span></div>
     </div>
 
@@ -332,7 +324,6 @@
         // ===== RESOLVE LINK ID =====
         async function resolveLinkId() {
             try {
-                // If it's already a link ID (starts with 'link_'), use it directly
                 if (rawId.startsWith('link_')) {
                     console.log('✅ Direct link ID detected:', rawId);
                     linkId = rawId;
@@ -340,11 +331,9 @@
                     return true;
                 }
                 
-                // If it's a dashboard ID, try to map it
                 if (rawId.startsWith('dashboard_')) {
                     console.log('🔍 Dashboard ID detected. Fetching actual link...');
                     
-                    // Try the dashboard map API
                     try {
                         var mapRes = await fetch('/api/dashboard-map/' + rawId);
                         if (mapRes.ok) {
@@ -360,7 +349,6 @@
                         console.log('⚠️ Dashboard map API failed, trying direct search...');
                     }
                     
-                    // Try to search all links by dashboardId
                     var allLinksRes = await fetch('/api/links');
                     if (allLinksRes.ok) {
                         var allLinks = await allLinksRes.json();
@@ -398,10 +386,8 @@
             try {
                 console.log('📊 Loading data for linkId:', linkId);
                 
-                // First try to get stats using the resolved link ID
                 var statsRes = await fetch('/api/visit-stats/' + linkId);
                 
-                // If 404, try using raw ID as fallback
                 if (statsRes.status === 404 && rawId !== linkId) {
                     console.log('⚠️ Link not found with resolved ID, trying raw ID:', rawId);
                     statsRes = await fetch('/api/visit-stats/' + rawId);
@@ -410,7 +396,6 @@
                 if (statsRes.status === 404) {
                     console.log('⚠️ Link not found with ID:', linkId);
                     
-                    // Try to find the link by searching all links
                     var allLinksRes = await fetch('/api/links');
                     if (allLinksRes.ok) {
                         var allLinks = await allLinksRes.json();
@@ -512,7 +497,6 @@
             btn.disabled = true;
 
             try {
-                // Get pricing details
                 var priceRes = await fetch('/api/pricing');
                 var priceData = await priceRes.json();
                 var pricing = priceData.pricing || {};
@@ -541,64 +525,32 @@
                 var status = linkData ? linkData.status : 'Unknown';
                 var expiry = linkData && linkData.expiryDate ? new Date(linkData.expiryDate).toLocaleDateString() : 'No expiry';
 
-                // ===== BEAUTIFUL WHATSAPP MESSAGE WITH IMAGE FORMAT =====
-                var message = `╔══════════════════════════════════════╗
-║        🔔 RENEWAL REQUEST 🔔         ║
-╠══════════════════════════════════════╣
-║                                      ║
-║  📌 *Link Name:* ${linkName}         ║
-║  🆔 *Link ID:* ${linkIdDisplay}      ║
-║  📊 *Status:* ${status}               ║
-║  ⏰ *Expiry:* ${expiry}               ║
-║                                      ║
-║  📆 *Plan:* ${selectedPlan}           ║
-║  📅 *Days:* ${days} days              ║
-║  💰 *Amount:* ₹${amount}              ║
-║                                      ║
-║  📱 *Request Date:* ${new Date().toLocaleString()} ║
-║                                      ║
-║  🔗 *Dashboard:* ${window.location.href} ║
-║                                      ║
-╚══════════════════════════════════════╝
+                var message = `🔔 *RENEWAL REQUEST* 🔔
+
+📌 *Link Name:* ${linkName}
+🆔 *Link ID:* ${linkIdDisplay}
+📊 *Status:* ${status}
+⏰ *Expiry:* ${expiry}
+
+📆 *Plan:* ${selectedPlan}
+📅 *Days:* ${days} days
+💰 *Amount:* ₹${amount}
+
+📱 *Request Date:* ${new Date().toLocaleString()}
+🔗 *Dashboard:* ${window.location.href}
 
 💳 *Payment Instructions:*
-Please complete the payment of ₹${amount} for ${selectedPlan} plan.
-After payment, please reply with transaction ID.
+Please pay ₹${amount} for ${selectedPlan} plan.
+Reply with transaction ID after payment.`;
 
-✅ *Next Steps:*
-1. Complete payment
-2. Reply with transaction ID
-3. Admin will approve your renewal
-
-🙏 Thank you for choosing us!`;
-
-                // Also create a simple text version
-                var simpleMessage = `🔔 RENEWAL REQUEST 🔔
-
-📌 Link Name: ${linkName}
-🆔 Link ID: ${linkIdDisplay}
-📊 Status: ${status}
-⏰ Expiry: ${expiry}
-
-📆 Plan: ${selectedPlan}
-📅 Days: ${days} days
-💰 Amount: ₹${amount}
-
-📱 Request Date: ${new Date().toLocaleString()}
-🔗 Dashboard: ${window.location.href}
-
-💳 Payment: Please pay ₹${amount} and reply with transaction ID.`;
-
-                var encodedMessage = encodeURIComponent(simpleMessage);
+                var encodedMessage = encodeURIComponent(message);
                 var whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-                // Open WhatsApp
                 window.open(whatsappUrl, '_blank');
                 
                 showToast('✅ Opening WhatsApp with your request!', 'success');
                 document.getElementById('renewalStatus').textContent = '✅ WhatsApp opened! Send the message to admin.';
                 
-                // Reset button after a moment
                 setTimeout(function() {
                     btn.innerHTML = originalText;
                     btn.disabled = false;
@@ -625,7 +577,6 @@ After payment, please reply with transaction ID.
         init();
         setInterval(function() { loadData(); }, 30000);
         
-        // Make functions globally accessible
         window.selectPlan = selectPlan;
         window.sendWhatsAppRequest = sendWhatsAppRequest;
     </script>

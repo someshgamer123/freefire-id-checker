@@ -8,112 +8,201 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         :root {
             --primary: #667eea; --secondary: #764ba2; --success: #48bb78;
-            --danger: #fc8181; --warning: #f6ad55; --bg: #f0f2f5;
-            --card-bg: #ffffff; --text: #2d3748; --text-light: #718096;
-            --border: #e2e8f0; --shadow: 0 4px 20px rgba(0,0,0,0.08); --radius: 16px;
+            --danger: #fc8181; --warning: #f6ad55; --bg: #0a0a1a;
+            --card-bg: rgba(255,255,255,0.06); --text: #f7fafc; --text-light: #a0aec0;
+            --border: rgba(255,255,255,0.1); --shadow: 0 4px 20px rgba(0,0,0,0.3); --radius: 16px;
         }
         body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; transition: 0.3s; }
-        body.dark { --bg: #1a202c; --card-bg: #2d3748; --text: #f7fafc; --text-light: #a0aec0; --border: #4a5568; }
+        body.dark { --bg: #0a0a1a; --card-bg: rgba(255,255,255,0.05); --text: #f7fafc; --text-light: #a0aec0; --border: rgba(255,255,255,0.08); }
+        body.light { --bg: #f0f2f5; --card-bg: #ffffff; --text: #2d3748; --text-light: #718096; --border: #e2e8f0; }
+        
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .admin-container { max-width: 1200px; margin: 0 auto; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .admin-container { max-width: 1400px; margin: 0 auto; }
 
+        /* ===== HEADER ===== */
         .header {
-            background: var(--card-bg); padding: 18px 28px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 16px 24px; border-radius: var(--radius);
             box-shadow: var(--shadow); display: flex; justify-content: space-between;
             align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+            border: 1px solid var(--border);
         }
-        .header h1 { font-size: 22px; background: linear-gradient(135deg, var(--primary), var(--secondary));
+        .header h1 { font-size: 20px; background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .header-actions button { padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer;
-            font-weight: 600; transition: 0.3s; font-size: 13px; }
+            font-weight: 600; transition: 0.3s; font-size: 12px; background: var(--bg); color: var(--text);
+            border: 1px solid var(--border); }
         .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-        .btn-logout { background: var(--danger); color: white; }
+        .btn-logout { background: var(--danger); color: white; border: none !important; }
         .btn-logout:hover { background: #e53e3e; }
-        .btn-install { background: var(--success); color: white; display: none; }
+        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
         .btn-install:hover { background: #38a169; }
         .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 4px; background: var(--bg); padding: 4px;
             border-radius: 10px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer;
-            background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 13px; }
+        .theme-toggle button { padding: 6px 12px; border: none; border-radius: 8px; cursor: pointer;
+            background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 12px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 14px; margin-bottom: 24px; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius);
-            box-shadow: var(--shadow); text-align: center; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .stat-card .number { font-size: 32px; font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { color: var(--text-light); font-size: 13px; margin-top: 4px; }
-
-        .stats-dashboard {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 24px 28px;
+        /* ===== SIDEBAR MENU ===== */
+        .menu-container {
+            display: flex;
+            gap: 16px;
             margin-bottom: 24px;
-            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+            background: var(--card-bg);
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            align-items: center;
+        }
+        .menu-container .menu-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-right: 4px;
+        }
+        .menu-container .menu-btn {
+            padding: 8px 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
             transition: 0.3s;
         }
-        .stats-dashboard:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .stats-dashboard h3 {
-            color: var(--text);
-            font-size: 18px;
-            margin-bottom: 16px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(102,126,234,0.15);
+        .menu-container .menu-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            border-color: var(--primary);
         }
-        .stats-dashboard .stats-grid {
+        .menu-container .menu-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 18px 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: 0.3s;
+            border: 1px solid var(--border);
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .stat-card .number { font-size: 30px; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 500; }
+
+        /* ===== LIVE VISITORS ===== */
+        .live-visitors {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            border-left: 4px solid #48bb78;
+        }
+        .live-visitors .lv-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #48bb78;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .live-visitors .lv-title .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #48bb78;
+            animation: pulse 1.5s infinite;
+        }
+        .live-visitors .lv-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 14px;
         }
-        .stats-dashboard .stat-card {
+        .live-visitors .lv-item {
             background: var(--bg);
-            border-radius: 12px;
-            padding: 18px 16px;
+            border-radius: 10px;
+            padding: 14px 16px;
             text-align: center;
             border: 1px solid var(--border);
-            transition: 0.3s;
-            box-shadow: none;
         }
-        .stats-dashboard .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow);
-        }
-        .stats-dashboard .stat-number {
-            font-size: 30px;
+        .live-visitors .lv-item .lv-number {
+            font-size: 28px;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary);
         }
-        .stats-dashboard .stat-label {
-            font-size: 12px;
+        .live-visitors .lv-item .lv-label {
+            font-size: 11px;
             color: var(--text-light);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .live-visitors .lv-item .lv-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.2);
             margin-top: 4px;
         }
+        .live-visitors .live-badge {
+            font-size: 11px;
+            color: #48bb78;
+            background: rgba(72,187,120,0.1);
+            padding: 2px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
 
-        .card { background: var(--card-bg); padding: 24px 28px; border-radius: var(--radius);
-            box-shadow: var(--shadow); margin-bottom: 22px; transition: 0.3s; }
-        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .card h3 { color: var(--text); font-size: 18px; margin-bottom: 16px; padding-bottom: 10px;
+        /* ===== SECTIONS ===== */
+        .section {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+        .section.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 24px 28px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+            border: 1px solid var(--border);
+        }
+        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+        .card h3 { color: var(--text); font-size: 17px; margin-bottom: 16px; padding-bottom: 10px;
             border-bottom: 2px solid rgba(102,126,234,0.15); }
-        .card input, .card select, .card textarea { width: 100%; padding: 12px 16px; margin: 6px 0;
+        .card input, .card select, .card textarea { width: 100%; padding: 10px 14px; margin: 6px 0;
             border: 2px solid var(--border); border-radius: 10px; font-size: 14px;
             background: var(--bg); color: var(--text); transition: 0.3s; }
         .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); outline: none; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
-        .btn { padding: 12px 28px; border: none; border-radius: 10px; font-size: 15px;
+        .btn { padding: 10px 24px; border: none; border-radius: 10px; font-size: 14px;
             font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
         .btn:active { transform: scale(0.97); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
@@ -122,7 +211,7 @@
         .btn-danger:hover { background: #e53e3e; }
         .btn-warning { background: var(--warning); color: #2d3748; }
         .btn-warning:hover { background: #ed8936; }
-        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+        .btn-sm { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
         .btn-block { width: 100%; }
 
         .generated-link { background: rgba(102,126,234,0.06); padding: 18px; border-radius: 12px;
@@ -131,31 +220,38 @@
         .generated-link .link-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
         .generated-link input { flex: 1; min-width: 180px; padding: 10px 14px; border: 2px solid var(--border);
             border-radius: 10px; background: var(--bg); font-size: 13px; color: var(--text); }
-        .generated-link .link-label { font-weight: 700; color: var(--primary); font-size: 15px; }
 
-        .link-item { background: var(--bg); padding: 16px 18px; margin: 10px 0; border-radius: 12px;
+        .link-item { background: var(--bg); padding: 14px 16px; margin: 8px 0; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
             gap: 10px; border-left: 4px solid var(--primary); transition: 0.3s; }
         .link-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
-        .link-item .info { flex: 1; min-width: 160px; }
-        .link-item .info .name { font-weight: 700; font-size: 15px; color: var(--text); }
-        .link-item .info .details { font-size: 12px; color: var(--text-light); margin-top: 3px;
-            display: flex; flex-wrap: wrap; gap: 10px; }
-        .link-item .info .details a { color: var(--primary); text-decoration: none; }
-        .link-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .link-item .info { flex: 1; min-width: 150px; }
+        .link-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); }
+        .link-item .info .details { font-size: 11px; color: var(--text-light); margin-top: 2px;
+            display: flex; flex-wrap: wrap; gap: 8px; }
+        .link-item .actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 
-        .status-badge { padding: 3px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .status-active { background: #c6f6d5; color: #22543d; }
-        .status-disabled { background: #fed7d7; color: #9b2c2c; }
-        .status-suspended { background: #feebc8; color: #9c4221; }
-        body.dark .status-active { background: #1a3a2a; color: #68d391; }
-        body.dark .status-disabled { background: #3a1a1a; color: #fc8181; }
-        body.dark .status-suspended { background: #3a2a1a; color: #f6ad55; }
+        .status-badge { padding: 2px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+        .status-active { background: rgba(72,187,120,0.2); color: #48bb78; }
+        .status-disabled { background: rgba(252,129,129,0.2); color: #fc8181; }
+        .status-suspended { background: rgba(246,173,85,0.2); color: #f6ad55; }
 
-        .edit-form { display: none; width: 100%; padding-top: 12px; margin-top: 12px; border-top: 2px solid var(--border); }
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; padding: 14px 24px; border-radius: 12px;
+            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+            z-index: 9999; max-width: 400px; font-size: 14px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+
+        .edit-form { display: none; width: 100%; padding-top: 10px; margin-top: 10px; border-top: 2px solid var(--border); }
         .edit-form.show { display: block; }
         .edit-form .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .edit-form .edit-grid input, .edit-form .edit-grid textarea { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;
+        .edit-form .edit-grid input { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;
             font-size: 13px; background: var(--bg); color: var(--text); }
         @media (max-width: 768px) { .edit-form .edit-grid { grid-template-columns: 1fr; } }
 
@@ -167,11 +263,11 @@
             border: 2px solid rgba(102,126,234,0.1);
         }
         .popup-edit-section .popup-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-light);
             display: block;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .popup-edit-section .popup-preview-small {
             background: rgba(0,0,0,0.6);
@@ -183,49 +279,31 @@
         }
         .popup-edit-section .popup-preview-small .preview-img {
             max-width: 100%;
-            max-height: 80px;
+            max-height: 70px;
             border-radius: 6px;
             object-fit: cover;
         }
         .popup-edit-section .popup-preview-small .preview-text {
             color: #fff;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             margin-top: 4px;
         }
         .popup-edit-section .popup-preview-small .preview-sub {
             color: rgba(255,255,255,0.5);
-            font-size: 10px;
+            font-size: 9px;
         }
         .popup-edit-section .popup-preview-small .preview-btn-small {
-            padding: 6px 18px;
+            padding: 5px 14px;
             border: none;
             border-radius: 6px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             cursor: default;
             margin-top: 4px;
         }
-
-        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
-        .empty-state .icon { font-size: 50px; display: block; margin-bottom: 12px; }
-
-        .toast { position: fixed; bottom: 30px; right: 30px; padding: 14px 24px; border-radius: 12px;
-            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 9999; max-width: 400px; font-size: 14px; }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, #48bb78, #38a169); }
-        .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
-        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-
-        .schedule-select { padding: 5px 10px; border: 2px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text); font-size: 12px; cursor: pointer; }
-        .expiry-badge { font-size: 11px; padding: 2px 10px; border-radius: 12px;
-            background: rgba(102,126,234,0.12); color: var(--primary); }
-        .expiry-badge.expired { background: rgba(252,129,129,0.12); color: var(--danger); }
 
         .image-preview {
             max-width: 100%;
@@ -236,24 +314,13 @@
             display: none;
         }
         .image-preview.show { display: block; }
-        .image-preview img {
-            width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-            display: block;
-        }
-        .image-preview .preview-label {
-            padding: 6px 12px;
-            font-size: 11px;
-            color: var(--text-light);
-            background: var(--bg);
-            border-top: 1px solid var(--border);
-        }
+        .image-preview img { width: 100%; max-height: 180px; object-fit: cover; display: block; }
+        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
 
         .popup-preview {
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.4);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             margin-top: 12px;
             text-align: center;
             border: 2px solid rgba(102,126,234,0.2);
@@ -267,153 +334,53 @@
             align-items: center;
             justify-content: center;
             color: rgba(255,255,255,0.3);
-            font-size: 14px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-        .popup-preview .preview-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .popup-preview .preview-title {
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .popup-preview .preview-sub {
-            color: rgba(255,255,255,0.5);
             font-size: 12px;
-            margin-bottom: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
         }
-        .popup-preview .preview-btn {
-            padding: 10px 30px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: default;
-        }
-        .popup-preview .preview-label {
-            font-size: 11px;
-            color: rgba(255,255,255,0.3);
-            margin-top: 8px;
-        }
+        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
+        .popup-preview .preview-title { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .popup-preview .preview-sub { color: rgba(255,255,255,0.5); font-size: 11px; margin-bottom: 8px; }
+        .popup-preview .preview-btn { padding: 8px 24px; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 12px; cursor: default; }
+        .popup-preview .preview-label { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 6px; }
 
-        .passcode-2 {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        .whatsapp-settings {
+            background: rgba(72,187,120,0.05);
+            border: 2px solid rgba(72,187,120,0.15);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 10px;
         }
-        .passcode-2 input {
-            flex: 1; padding: 12px 16px; border: 2px solid var(--border);
-            border-radius: 10px; font-size: 16px; background: var(--bg);
-            color: var(--text); min-width: 150px;
-        }
-        .passcode-2 input:focus { border-color: var(--primary); outline: none; }
+        .whatsapp-settings .label { font-weight: 600; color: var(--success); font-size: 14px; }
+        .whatsapp-settings input { margin-top: 6px; }
 
-        .collapse-btn {
-            width: 100%; padding: 14px 20px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white; border: none; border-radius: 12px; font-size: 16px;
-            font-weight: 700; cursor: pointer; transition: 0.3s;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .collapse-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
-        .collapse-btn .arrow { transition: 0.3s; }
-        .collapse-btn .arrow.open { transform: rotate(180deg); }
+        .renewal-item { background: var(--bg); padding: 12px 16px; margin: 8px 0; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-left: 4px solid var(--primary); }
+        .renewal-item .info { flex: 1; min-width: 130px; }
+        .renewal-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); }
+        .renewal-item .info .details { font-size: 11px; color: var(--text-light); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .renewal-item .actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .renewal-status-badge { padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+        .renewal-status-badge.pending { background: rgba(246,173,85,0.2); color: #f6ad55; }
+        .renewal-status-badge.paid { background: rgba(66,153,225,0.2); color: #63b3ed; }
+        .renewal-status-badge.approved { background: rgba(72,187,120,0.2); color: #48bb78; }
+        .renewal-status-badge.rejected { background: rgba(252,129,129,0.2); color: #fc8181; }
 
-        .collapse-content {
-            max-height: 0; overflow: hidden; transition: max-height 0.5s ease, padding 0.3s ease;
-            padding: 0 4px;
-        }
-        .collapse-content.open {
-            max-height: 3500px; padding: 16px 4px 4px 4px;
-        }
-
-        .payment-dynamic {
-            margin-top: 8px; padding: 12px 16px; background: var(--bg);
-            border-radius: 10px; border: 2px solid var(--border); display: none;
-        }
-        .payment-dynamic.show { display: block; }
-        .payment-dynamic input[type="text"] {
-            width: 100%; padding: 10px 14px; border: 2px solid var(--border);
-            border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px;
-        }
-        .payment-dynamic input[type="file"] {
-            width: 100%; padding: 10px; border: 2px solid var(--border);
-            border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px;
-        }
-        .payment-dynamic .preview-qr {
-            max-width: 150px; margin-top: 8px; border-radius: 8px; display: none;
-        }
-        .payment-dynamic .preview-qr.show { display: block; }
-
-        .renewal-item { background: var(--bg); padding: 14px 18px; margin: 10px 0; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid var(--primary); }
-        .renewal-item .info { flex: 1; min-width: 150px; }
-        .renewal-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); }
-        .renewal-item .info .details { font-size: 12px; color: var(--text-light); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 10px; }
-        .renewal-item .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-        .renewal-status-badge { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .renewal-status-badge.pending { background: #feebc8; color: #9c4221; }
-        .renewal-status-badge.paid { background: #bee3f8; color: #2b6cb0; }
-        .renewal-status-badge.approved { background: #c6f6d5; color: #22543d; }
-        .renewal-status-badge.rejected { background: #fed7d7; color: #9b2c2c; }
-        body.dark .renewal-status-badge.pending { background: #3a2a1a; color: #f6ad55; }
-        body.dark .renewal-status-badge.paid { background: #1a2a3a; color: #63b3ed; }
-        body.dark .renewal-status-badge.approved { background: #1a3a2a; color: #68d391; }
-        body.dark .renewal-status-badge.rejected { background: #3a1a1a; color: #fc8181; }
-
-        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .pricing-grid .pricing-item { display: flex; align-items: center; gap: 10px; }
-        .pricing-grid .pricing-item label { font-size: 13px; color: var(--text-light); min-width: 70px; }
-        .pricing-grid .pricing-item input { width: 100%; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
+        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .pricing-grid .pricing-item { display: flex; align-items: center; gap: 8px; }
+        .pricing-grid .pricing-item label { font-size: 12px; color: var(--text-light); min-width: 60px; }
+        .pricing-grid .pricing-item input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
         @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
-
-        .user-dashboard-box {
-            background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
-            padding: 14px 18px; border-radius: 12px;
-            border: 2px solid rgba(102,126,234,0.15);
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 10px; margin-top: 8px;
-        }
-        .user-dashboard-box .label {
-            font-size: 13px; color: var(--text-light); font-weight: 600;
-        }
-        .user-dashboard-box .link {
-            color: var(--primary); word-break: break-all; font-size: 14px; font-weight: 500;
-        }
-        .user-dashboard-box .btn-sm {
-            padding: 6px 16px; background: var(--primary); color: white; border: none;
-            border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
-            transition: 0.3s; white-space: nowrap;
-        }
-        .user-dashboard-box .btn-sm:hover { background: var(--secondary); transform: translateY(-2px); }
 
         .dashboard-generator {
             background: rgba(102,126,234,0.05);
             border-radius: 10px;
-            padding: 16px;
+            padding: 14px;
             border: 2px solid rgba(102,126,234,0.1);
         }
-        .dashboard-generator .search-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .dashboard-generator .search-row input {
-            flex: 1;
-            min-width: 200px;
-        }
-        .dashboard-generator .search-results {
-            margin-top: 12px;
-            display: none;
-        }
-        .dashboard-generator .search-results.show {
-            display: block;
-        }
+        .dashboard-generator .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .dashboard-generator .search-row input { flex: 1; min-width: 180px; }
         .dashboard-generator .result-item {
             display: flex;
             justify-content: space-between;
@@ -424,108 +391,43 @@
             border-radius: 8px;
             border: 1px solid var(--border);
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
         }
-        .dashboard-generator .result-item .r-name {
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--text);
-        }
-        .dashboard-generator .result-item .r-details {
-            font-size: 11px;
-            color: var(--text-light);
-        }
+        .dashboard-generator .result-item .r-name { font-weight: 600; font-size: 13px; color: var(--text); }
+        .dashboard-generator .result-item .r-details { font-size: 10px; color: var(--text-light); }
         .dashboard-generator .generated-link-box {
-            margin-top: 12px;
+            margin-top: 10px;
             display: none;
             background: rgba(72,187,120,0.08);
             border: 2px solid rgba(72,187,120,0.2);
             border-radius: 10px;
-            padding: 14px;
+            padding: 12px;
         }
-        .dashboard-generator .generated-link-box.show {
-            display: block;
-        }
-        .dashboard-generator .generated-link-box .gl-label {
-            font-weight: 600;
-            color: #48bb78;
-            font-size: 14px;
-        }
-        .dashboard-generator .generated-link-box .gl-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-top: 6px;
-        }
-        .dashboard-generator .generated-link-box .gl-row input {
-            flex: 1;
-            min-width: 200px;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-        }
-        .dashboard-generator .generated-link-box .gl-name {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-top: 4px;
-        }
-        .dashboard-generator .no-results {
-            display: none;
-            color: var(--text-light);
-            font-size: 13px;
-            text-align: center;
-            padding: 10px;
-        }
-        .dashboard-generator .no-results.show {
-            display: block;
-        }
-
-        .whatsapp-settings {
-            background: rgba(72,187,120,0.05);
-            border: 2px solid rgba(72,187,120,0.15);
-            border-radius: 12px;
-            padding: 16px 18px;
-            margin-top: 10px;
-        }
-        .whatsapp-settings .label {
-            font-weight: 600;
-            color: var(--success);
-            font-size: 14px;
-        }
-        .whatsapp-settings input {
-            margin-top: 6px;
-        }
+        .dashboard-generator .generated-link-box.show { display: block; }
+        .dashboard-generator .generated-link-box .gl-label { font-weight: 600; color: #48bb78; font-size: 13px; }
+        .dashboard-generator .generated-link-box .gl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+        .dashboard-generator .generated-link-box .gl-row input { flex: 1; min-width: 180px; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 12px; }
+        .dashboard-generator .generated-link-box .gl-name { font-size: 11px; color: var(--text-light); margin-top: 4px; }
 
         @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 16px 20px; }
+            .header { flex-direction: column; text-align: center; padding: 14px 16px; }
             .header-actions { justify-content: center; }
-            .stats { grid-template-columns: repeat(2, 1fr); }
-            .stats-dashboard .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .menu-container { flex-direction: column; align-items: stretch; }
+            .menu-container .menu-btn { text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
             .link-item { flex-direction: column; align-items: stretch; }
             .link-item .actions { justify-content: flex-start; }
             body { padding: 12px; }
-            .card { padding: 18px 16px; }
-            .passcode-2 { flex-direction: column; }
-            .passcode-2 input { width: 100%; }
-            .renewal-item { flex-direction: column; align-items: stretch; }
-            .renewal-item .actions { justify-content: flex-start; }
-            .user-dashboard-box { flex-direction: column; align-items: stretch; text-align: center; }
-            .user-dashboard-box .link { font-size: 12px; }
-            .dashboard-generator .search-row { flex-direction: column; }
+            .card { padding: 16px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .toast { left: 20px; right: 20px; bottom: 20px; }
         }
         @media (max-width: 480px) {
-            .stats { grid-template-columns: 1fr; }
-            .stats-dashboard .stats-grid { grid-template-columns: 1fr; }
-            .stat-card .number { font-size: 26px; }
-            .stats-dashboard .stat-number { font-size: 24px; }
-            .toast { left: 20px; right: 20px; bottom: 20px; }
-            .pricing-grid { grid-template-columns: 1fr; }
-            .user-dashboard-box { padding: 12px; }
-            .popup-preview .preview-title { font-size: 14px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .live-visitors .lv-grid { grid-template-columns: 1fr; }
+            .stat-card .number { font-size: 24px; }
+            .live-visitors .lv-item .lv-number { font-size: 22px; }
         }
     </style>
 </head>
@@ -537,274 +439,279 @@
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
-                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
-                    <button onclick="setTheme('dark')" id="theme-dark">🌙</button>
+                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙 Dark</button>
+                    <button onclick="setTheme('light')" id="theme-light">☀️ Light</button>
                 </div>
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
 
-        <!-- STATS -->
-        <div class="stats">
-            <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total</div></div>
-            <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
-            <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
-            <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+        <!-- ===== MENU ===== -->
+        <div class="menu-container">
+            <span class="menu-label">📋 Menu:</span>
+            <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button class="menu-btn" data-section="links" onclick="showSection('links')">🔗 Links</button>
+            <button class="menu-btn" data-section="generate" onclick="showSection('generate')">🎯 Dashboard Link</button>
+            <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create Link</button>
+            <button class="menu-btn" data-section="renewal" onclick="showSection('renewal')">🔄 Renewal</button>
+            <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- STATS DASHBOARD -->
-        <div class="stats-dashboard">
-            <h3>📊 Visitor & Claim Statistics</h3>
+        <!-- ===== SECTION: DASHBOARD ===== -->
+        <div class="section active" id="section-dashboard">
+            <!-- STATS CARDS -->
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalVisitors">0</div>
-                    <div class="stat-label">Total Visitors</div>
+                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total Links</div></div>
+                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
+                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+            </div>
+
+            <!-- STATS DASHBOARD -->
+            <div class="card">
+                <h3>📊 Visitor & Claim Statistics</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                    <div class="stat-card">
+                        <div class="number" id="totalVisitors">0</div>
+                        <div class="label">Total Visitors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="totalClaims">0</div>
+                        <div class="label">Total Claims</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="todayVisitors">0</div>
+                        <div class="label">Today's Visitors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="todayClaims">0</div>
+                        <div class="label">Today's Claims</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalClaims">0</div>
-                    <div class="stat-label">Total Claims</div>
+            </div>
+
+            <!-- LIVE VISITORS -->
+            <div class="live-visitors" id="liveVisitors">
+                <div class="lv-title">
+                    <span class="dot"></span> Live Visitors
+                    <span class="live-badge">🟢 Live</span>
+                    <span style="font-size:11px;color:var(--text-light);font-weight:400;margin-left:auto;">Refreshes every 5s</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="todayVisitors">0</div>
-                    <div class="stat-label">Today's Visitors</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="todayClaims">0</div>
-                    <div class="stat-label">Today's Claims</div>
+                <div class="lv-grid">
+                    <div class="lv-item">
+                        <div class="lv-number" id="liveLifetime">0</div>
+                        <div class="lv-label">Lifetime</div>
+                        <div class="lv-time">All time</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number" id="live48hr">0</div>
+                        <div class="lv-label">Last 48 Hours</div>
+                        <div class="lv-time" id="live48hrTime">Loading...</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number" id="live60min">0</div>
+                        <div class="lv-label">Last 60 Minutes</div>
+                        <div class="lv-time" id="live60minTime">Loading...</div>
+                    </div>
+                    <div class="lv-item" style="border-left: 3px solid #48bb78;">
+                        <div class="lv-number" id="liveActive">0</div>
+                        <div class="lv-label">Currently Active</div>
+                        <div class="lv-time">Now</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== DASHBOARD LINK GENERATOR ===== -->
-        <div class="card">
-            <h3>🔗 Generate User Dashboard Link</h3>
-            <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Search by link name or ID to generate dashboard link for users</p>
-            
-            <div class="dashboard-generator">
-                <div class="search-row">
-                    <input type="text" id="dashboardSearchInput" placeholder="Search by link name or ID..." style="flex:1;min-width:200px;padding:12px 16px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;">
-                    <button onclick="searchAndGenerateDashboard()" class="btn btn-primary" style="padding:10px 24px;white-space:nowrap;">🔍 Search</button>
-                </div>
-                
-                <div class="search-results" id="dashboardSearchResults">
-                    <div style="font-weight:600;color:var(--primary);font-size:14px;margin-bottom:6px;">📋 Search Results:</div>
-                    <div id="dashboardResultsList"></div>
-                </div>
-                
-                <div class="no-results" id="dashboardNoResults">
-                    ❌ No links found matching your search
-                </div>
-                
-                <div class="generated-link-box" id="dashboardGeneratedLink">
-                    <div class="gl-label">✅ Dashboard Link Generated!</div>
-                    <div class="gl-row">
-                        <input type="text" id="dashboardGeneratedLinkInput" readonly>
-                        <button onclick="copyDashboardGeneratedLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
-                    <div class="gl-name">📌 Link Name: <span id="dashboardGeneratedLinkName"></span></div>
-                </div>
+        <!-- ===== SECTION: LINKS ===== -->
+        <div class="section" id="section-links">
+            <div class="card">
+                <h3>📋 All Links</h3>
+                <div id="linksList"><div class="empty-state"><span class="icon">📭</span>No links yet</div></div>
             </div>
         </div>
 
-        <!-- ===== CREATE LINK ===== -->
-        <div class="card">
-            <h3>🔗 Create Link</h3>
-            <input type="text" id="linkName" placeholder="Link Name">
-            <div class="grid-2">
-                <div>
-                    <label style="font-weight:600;color:#48bb78;font-size:13px;">🎬 Video URL</label>
-                    <input type="text" id="video" placeholder="YouTube or MP4 URL" value="https://youtu.be/dQw4w9WgXcQ">
-                    <small style="color:var(--text-light);font-size:11px;">YouTube link OR direct MP4 link</small>
-                </div>
-                <div>
-                    <label style="font-weight:600;color:#fc8181;font-size:13px;">🎁 Claim URL</label>
-                    <input type="text" id="claim" placeholder="Claim URL" value="#">
-                </div>
-            </div>
-            <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
-            <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
-
-            <!-- ===== POPUP SETTINGS ===== -->
-            <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
-                <label style="font-weight:600;color:#667eea;font-size:14px;">🖼️ Popup Settings</label>
-                <p style="color:var(--text-light);font-size:12px;margin:4px 0 10px;">Customize popup image & text (appears before video plays)</p>
-                
-                <div class="grid-2">
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Title</label>
-                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+        <!-- ===== SECTION: GENERATE DASHBOARD LINK ===== -->
+        <div class="section" id="section-generate">
+            <div class="card">
+                <h3>🔗 Generate User Dashboard Link</h3>
+                <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Search by link name or ID to generate dashboard link</p>
+                <div class="dashboard-generator">
+                    <div class="search-row">
+                        <input type="text" id="dashboardSearchInput" placeholder="Search by link name or ID...">
+                        <button onclick="searchAndGenerateDashboard()" class="btn btn-primary">🔍 Search</button>
                     </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Button Text</label>
-                        <input type="text" id="popupButtonText" placeholder="Button Text" value="Claim Now">
+                    <div id="dashboardSearchResults" style="margin-top:10px;display:none;">
+                        <div style="font-weight:600;color:var(--primary);font-size:13px;margin-bottom:4px;">📋 Results:</div>
+                        <div id="dashboardResultsList"></div>
                     </div>
-                </div>
-                <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                
-                <div style="margin-top:10px;">
-                    <label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9)</label>
-                    <input type="text" id="popupImageUrl" placeholder="Enter image URL (16:9 ratio recommended)">
-                    <div class="image-preview" id="popupImagePreview">
-                        <img id="popupPreviewImg" alt="Popup Image Preview">
-                        <div class="preview-label">🖼️ Popup Image Preview</div>
-                    </div>
-                </div>
-
-                <!-- Popup Live Preview -->
-                <div class="popup-preview" id="popupPreviewSection">
-                    <div class="preview-image" id="popupPreviewImage">
-                        <span>🎬 16:9 Image Preview</span>
-                    </div>
-                    <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
-                    <div class="preview-sub" id="popupPreviewSub">Tap below to unlock your reward</div>
-                    <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
-                    <div class="preview-label">⬆️ Live Preview</div>
-                </div>
-            </div>
-
-            <div style="margin-top:12px;">
-                <label style="font-weight:600;color:#f6ad55;font-size:13px;">📅 Schedule Expiry</label>
-                <div class="grid-2">
-                    <select id="schedulePreset" onchange="updateSchedulePreset()" style="padding:12px 16px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;">
-                        <option value="">No Expiry</option>
-                        <option value="3">3 Days</option>
-                        <option value="7">7 Days</option>
-                        <option value="15">15 Days</option>
-                        <option value="30">30 Days</option>
-                        <option value="custom">Custom Date</option>
-                    </select>
-                    <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
-                </div>
-                <div style="margin-top:6px;font-size:13px;color:var(--text-light);" id="expiryDisplay">⏰ No expiry set</div>
-            </div>
-
-            <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;font-size:17px;padding:14px;">🚀 Generate Link</button>
-
-            <div class="generated-link" id="generatedLink">
-                <div class="link-label">✅ Link Generated!</div>
-                <div class="link-box">
-                    <input type="text" id="generatedLinkInput" readonly>
-                    <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== UID PAGE BACKGROUND ===== -->
-        <div class="card">
-            <h3>🖼️ UID Page Background (9:16)</h3>
-            <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Enter image URL for UID page background</p>
-            <input type="text" id="bgImageUrl" placeholder="Enter background image URL (9:16 ratio)">
-            <div class="image-preview" id="bgImagePreview">
-                <img id="bgPreviewImg" alt="Background Preview">
-                <div class="preview-label">🖼️ Background Preview</div>
-            </div>
-            <button onclick="saveBackground()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:10px 24px;">💾 Save Background</button>
-            <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:10px;padding:10px 24px;">🗑️ Remove Background</button>
-            <div id="bgStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
-        </div>
-
-        <!-- ALL LINKS -->
-        <div class="card">
-            <h3>📋 All Links</h3>
-            <div id="linksList"></div>
-        </div>
-
-        <!-- ===== RENEWAL MANAGEMENT (COMPLETE WITH PAYMENT SETTINGS) ===== -->
-        <div class="card">
-            <button class="collapse-btn" onclick="toggleRenewal()">
-                <span>🔄 Renewal Management</span>
-                <span class="arrow" id="renewalArrow">▼</span>
-            </button>
-            <div class="collapse-content" id="renewalContent">
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📊 User Dashboard</h4>
-                    <div class="user-dashboard-box">
-                        <div>
-                            <div class="label">🔗 Dashboard Link</div>
-                            <div class="link" id="userDashboardLink">Loading...</div>
+                    <div id="dashboardNoResults" style="display:none;color:var(--text-light);font-size:13px;text-align:center;padding:10px;">❌ No links found</div>
+                    <div class="generated-link-box" id="dashboardGeneratedLink">
+                        <div class="gl-label">✅ Dashboard Link Generated!</div>
+                        <div class="gl-row">
+                            <input type="text" id="dashboardGeneratedLinkInput" readonly>
+                            <button onclick="copyDashboardGeneratedLink()" class="btn btn-success btn-sm">📋 Copy</button>
                         </div>
-                        <button class="btn-sm" onclick="copyDashboardLink()">📋 Copy</button>
-                    </div>
-                    <p style="font-size:12px;color:var(--text-light);margin-top:6px;">📌 Users can check their link stats and renew from this dashboard</p>
-                </div>
-
-                <!-- ===== WHATSAPP SETTINGS ===== -->
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📱 WhatsApp Settings</h4>
-                    <div class="whatsapp-settings">
-                        <div class="label">📞 Admin WhatsApp Number</div>
-                        <p style="font-size:12px;color:var(--text-light);margin:4px 0 8px;">Users will send renewal requests to this number</p>
-                        <input type="text" id="whatsappNumber" placeholder="e.g., 919876543210 (with country code)" value="919876543210">
-                        <button onclick="saveWhatsAppNumber()" class="btn btn-success btn-sm" style="margin-top:8px;padding:8px 20px;">💾 Save WhatsApp Number</button>
-                        <div id="whatsappStatus" style="margin-top:6px;font-size:12px;color:var(--text-light);"></div>
+                        <div class="gl-name">📌 Link Name: <span id="dashboardGeneratedLinkName"></span></div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💰 Pricing Plans</h4>
-                    <div class="pricing-grid">
-                        <div class="pricing-item"><label>3 Days</label><input type="number" id="price_3days" placeholder="Price" value="50" min="0"></div>
-                        <div class="pricing-item"><label>7 Days</label><input type="number" id="price_7days" placeholder="Price" value="100" min="0"></div>
-                        <div class="pricing-item"><label>15 Days</label><input type="number" id="price_15days" placeholder="Price" value="200" min="0"></div>
-                        <div class="pricing-item"><label>1 Month</label><input type="number" id="price_1month" placeholder="Price" value="500" min="0"></div>
-                        <div class="pricing-item"><label>3 Months</label><input type="number" id="price_3months" placeholder="Price" value="1200" min="0"></div>
-                        <div class="pricing-item"><label>6 Months</label><input type="number" id="price_6months" placeholder="Price" value="2000" min="0"></div>
-                        <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" placeholder="Price" value="3500" min="0"></div>
+        <!-- ===== SECTION: CREATE LINK ===== -->
+        <div class="section" id="section-create">
+            <div class="card">
+                <h3>🔗 Create Link</h3>
+                <input type="text" id="linkName" placeholder="Link Name">
+                <div class="grid-2">
+                    <div>
+                        <label style="font-weight:600;color:#48bb78;font-size:12px;">🎬 Video URL</label>
+                        <input type="text" id="video" placeholder="YouTube or MP4 URL" value="https://youtu.be/dQw4w9WgXcQ">
+                        <small style="color:var(--text-light);font-size:10px;">YouTube link OR direct MP4</small>
                     </div>
-                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Pricing</button>
+                    <div>
+                        <label style="font-weight:600;color:#fc8181;font-size:12px;">🎁 Claim URL</label>
+                        <input type="text" id="claim" placeholder="Claim URL" value="#">
+                    </div>
                 </div>
+                <input type="text" id="buttonText" placeholder="Claim Button Text" value="Claim Now">
+                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
 
-                <!-- ===== PAYMENT SETTINGS (FIXED) ===== -->
-                <div style="margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💳 Payment Settings</h4>
+                <!-- POPUP SETTINGS -->
+                <div style="margin-top:14px;padding-top:14px;border-top:2px solid var(--border);">
+                    <label style="font-weight:600;color:#667eea;font-size:13px;">🖼️ Popup Settings</label>
                     <div class="grid-2">
                         <div>
-                            <label style="font-size:12px;color:var(--text-light);">Payment Method</label>
-                            <select id="paymentMethod" onchange="togglePaymentFields()" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-size:14px;">
-                                <option value="UPI">UPI</option>
-                                <option value="QR">QR Code</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Other">Other</option>
-                            </select>
+                            <label style="font-size:11px;color:var(--text-light);">Popup Title</label>
+                            <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
                         </div>
                         <div>
-                            <label style="font-size:12px;color:var(--text-light);">Payment Details</label>
-                            <div id="paymentDetailsContainer">
-                                <div class="payment-dynamic show" id="upiField">
-                                    <input type="text" id="upiInput" placeholder="UPI ID (e.g., admin@upi)" value="admin@upi">
-                                </div>
-                                <div class="payment-dynamic" id="qrField">
-                                    <input type="file" id="qrInput" accept="image/*" onchange="previewQR(event)">
-                                    <img id="qrPreview" class="preview-qr" alt="QR Preview">
-                                </div>
-                                <div class="payment-dynamic" id="textField">
-                                    <input type="text" id="textInput" placeholder="Bank Details / Other Info">
-                                </div>
-                            </div>
+                            <label style="font-size:11px;color:var(--text-light);">Popup Button Text</label>
+                            <input type="text" id="popupButtonText" placeholder="Button Text" value="Claim Now">
                         </div>
                     </div>
-                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Payment Settings</button>
+                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    <div style="margin-top:8px;">
+                        <label style="font-size:11px;color:var(--text-light);">Popup Image URL (16:9)</label>
+                        <input type="text" id="popupImageUrl" placeholder="Enter image URL">
+                        <div class="image-preview" id="popupImagePreview">
+                            <img id="popupPreviewImg" alt="Popup Image Preview">
+                            <div class="preview-label">🖼️ Preview</div>
+                        </div>
+                    </div>
+                    <div class="popup-preview" id="popupPreviewSection">
+                        <div class="preview-image" id="popupPreviewImage"><span>🎬 16:9 Preview</span></div>
+                        <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
+                        <div class="preview-sub" id="popupPreviewSub">Tap below to unlock</div>
+                        <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
+                        <div class="preview-label">⬆️ Live Preview</div>
+                    </div>
                 </div>
 
-                <div style="padding-top:16px;border-top:1px solid var(--border);">
-                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">📋 Renewal Requests</h4>
-                    <div id="renewalRequestsList">
-                        <div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>
+                <div style="margin-top:10px;">
+                    <label style="font-weight:600;color:#f6ad55;font-size:12px;">📅 Schedule Expiry</label>
+                    <div class="grid-2">
+                        <select id="schedulePreset" onchange="updateSchedulePreset()" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;">
+                            <option value="">No Expiry</option>
+                            <option value="3">3 Days</option>
+                            <option value="7">7 Days</option>
+                            <option value="15">15 Days</option>
+                            <option value="30">30 Days</option>
+                            <option value="custom">Custom Date</option>
+                        </select>
+                        <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
+                    </div>
+                    <div style="margin-top:4px;font-size:12px;color:var(--text-light);" id="expiryDisplay">⏰ No expiry set</div>
+                </div>
+
+                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:14px;font-size:16px;padding:12px;">🚀 Generate Link</button>
+
+                <div class="generated-link" id="generatedLink">
+                    <div class="link-label">✅ Link Generated!</div>
+                    <div class="link-box">
+                        <input type="text" id="generatedLinkInput" readonly>
+                        <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ADMIN SETTINGS -->
-        <div class="card">
-            <h3>🔐 Admin Settings</h3>
-            <p style="color:var(--text-light);font-size:13px;margin-bottom:12px;">Change your 6-digit passcode</p>
-            <div class="passcode-2">
-                <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6">
-                <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6">
+        <!-- ===== SECTION: RENEWAL ===== -->
+        <div class="section" id="section-renewal">
+            <div class="card">
+                <h3>🔄 Renewal Management</h3>
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;">📊 User Dashboard Link</h4>
+                    <div style="background:rgba(102,126,234,0.05);padding:12px 16px;border-radius:10px;border:1px solid rgba(102,126,234,0.1);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;">
+                        <div>
+                            <div style="font-size:11px;color:var(--text-light);">🔗 Dashboard Link</div>
+                            <div style="font-size:13px;color:var(--primary);" id="userDashboardLink">Loading...</div>
+                        </div>
+                        <button onclick="copyDashboardLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                    </div>
+                    <p style="font-size:11px;color:var(--text-light);margin-top:6px;">📌 Users can check stats and request renewal</p>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;">📱 WhatsApp Settings</h4>
+                    <div class="whatsapp-settings">
+                        <div class="label">📞 Admin WhatsApp Number</div>
+                        <p style="font-size:11px;color:var(--text-light);margin:2px 0 6px;">Users send renewal requests to this number</p>
+                        <input type="text" id="whatsappNumber" placeholder="e.g., 919876543210" value="919876543210">
+                        <button onclick="saveWhatsAppNumber()" class="btn btn-success btn-sm" style="margin-top:6px;padding:6px 16px;">💾 Save</button>
+                        <div id="whatsappStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <h4 style="color:var(--text-light);font-size:14px;">💰 Pricing Plans</h4>
+                    <div class="pricing-grid">
+                        <div class="pricing-item"><label>3 Days</label><input type="number" id="price_3days" value="50" min="0"></div>
+                        <div class="pricing-item"><label>7 Days</label><input type="number" id="price_7days" value="100" min="0"></div>
+                        <div class="pricing-item"><label>15 Days</label><input type="number" id="price_15days" value="200" min="0"></div>
+                        <div class="pricing-item"><label>1 Month</label><input type="number" id="price_1month" value="500" min="0"></div>
+                        <div class="pricing-item"><label>3 Months</label><input type="number" id="price_3months" value="1200" min="0"></div>
+                        <div class="pricing-item"><label>6 Months</label><input type="number" id="price_6months" value="2000" min="0"></div>
+                        <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" value="3500" min="0"></div>
+                    </div>
+                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:6px;padding:6px 16px;">💾 Save Pricing</button>
+                </div>
+
+                <div>
+                    <h4 style="color:var(--text-light);font-size:14px;">📋 Renewal Requests</h4>
+                    <div id="renewalRequestsList"><div class="empty-state"><span class="icon">🔄</span>No renewal requests</div></div>
+                </div>
             </div>
-            <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="padding:10px 24px;margin-top:10px;">Change Passcode</button>
-            <div id="passcodeStatus" style="margin-top:8px;font-size:13px;color:var(--text-light);"></div>
+        </div>
+
+        <!-- ===== SECTION: SETTINGS ===== -->
+        <div class="section" id="section-settings">
+            <div class="card">
+                <h3>🖼️ UID Page Background (9:16)</h3>
+                <input type="text" id="bgImageUrl" placeholder="Enter background image URL (9:16)">
+                <div class="image-preview" id="bgImagePreview">
+                    <img id="bgPreviewImg" alt="Background Preview">
+                    <div class="preview-label">🖼️ Preview</div>
+                </div>
+                <button onclick="saveBackground()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:8px 20px;">💾 Save</button>
+                <button onclick="removeBackground()" class="btn btn-danger btn-sm" style="margin-top:8px;padding:8px 20px;">🗑️ Remove</button>
+                <div id="bgStatus" style="margin-top:4px;font-size:12px;color:var(--text-light);"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Admin Settings</h3>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:8px;">Change your 6-digit passcode</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6" style="flex:1;min-width:140px;">
+                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6" style="flex:1;min-width:140px;">
+                </div>
+                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:8px 20px;">Change Passcode</button>
+                <div id="passcodeStatus" style="margin-top:4px;font-size:12px;color:var(--text-light);"></div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Admin Logs</h3>
+                <div id="adminLogsContainer"><div class="empty-state"><span class="icon">📜</span>No logs available</div></div>
+            </div>
         </div>
     </div>
 
@@ -817,6 +724,24 @@
             window.location.href = 'login.html';
         }
 
+        // ============================================================
+        // SECTION: MENU
+        // ============================================================
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.getElementById('section-' + sectionId).classList.add('active');
+            
+            document.querySelectorAll('.menu-btn').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            document.querySelector('.menu-btn[data-section="' + sectionId + '"]').classList.add('active');
+        }
+
+        // ============================================================
+        // SECTION: UTILITY FUNCTIONS
+        // ============================================================
         async function secureFetch(url, options) {
             options = options || {};
             try {
@@ -857,13 +782,14 @@
             return div.innerHTML;
         }
 
-        // ===== PWA INSTALL =====
+        // ============================================================
+        // SECTION: PWA INSTALL
+        // ============================================================
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            var installBtn = document.getElementById('installBtn');
-            if (installBtn) installBtn.classList.add('show');
+            document.getElementById('installBtn').classList.add('show');
         });
 
         function installApp() {
@@ -874,43 +800,248 @@
                         showToast('✅ App installed successfully!', 'success');
                     }
                     deferredPrompt = null;
-                    var installBtn = document.getElementById('installBtn');
-                    if (installBtn) installBtn.classList.remove('show');
+                    document.getElementById('installBtn').classList.remove('show');
                 });
             } else {
                 showToast('📲 Use Chrome browser to install', 'info');
             }
         }
 
-        // ===== TOGGLE RENEWAL =====
-        function toggleRenewal() {
-            var content = document.getElementById('renewalContent');
-            var arrow = document.getElementById('renewalArrow');
-            if (content) content.classList.toggle('open');
-            if (arrow) arrow.classList.toggle('open');
+        // ============================================================
+        // SECTION: THEME
+        // ============================================================
+        async function setTheme(theme) {
+            document.body.className = theme;
+            var r = await secureFetch('/api/admin/theme', {
+                method: 'POST',
+                body: JSON.stringify({ theme: theme })
+            });
+            if (!r) return;
+            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
+            document.getElementById('theme-' + theme).classList.add('active');
         }
 
-        // ===== USER DASHBOARD LINK =====
+        async function loadTheme() {
+            try {
+                var r = await fetch('/api/settings');
+                var data = await r.json();
+                if (data && data.theme) {
+                    document.body.className = data.theme;
+                    document.getElementById('theme-' + data.theme).classList.add('active');
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // SECTION: LOGOUT
+        // ============================================================
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await fetch('/api/admin/logout', { method: 'POST' });
+                } catch (e) {}
+                localStorage.removeItem('csrfToken');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ============================================================
+        // SECTION: STATS & LIVE VISITORS
+        // ============================================================
+        async function loadStats() {
+            try {
+                var response = await secureFetch('/api/all-stats');
+                if (!response) return;
+                if (response.ok) {
+                    var data = await response.json();
+                    
+                    // Stats Cards
+                    var totalLinks = document.getElementById('totalLinks');
+                    var activeLinks = document.getElementById('activeLinks');
+                    var totalVisits = document.getElementById('totalVisits');
+                    var expiredLinks = document.getElementById('expiredLinks');
+                    
+                    if (data.links) {
+                        if (totalLinks) totalLinks.textContent = data.links.length || 0;
+                        if (activeLinks) activeLinks.textContent = data.links.filter(function(l) { return l.status === 'active'; }).length || 0;
+                        if (totalVisits) totalVisits.textContent = data.links.reduce(function(s, l) { return s + (l.visits || 0); }, 0) || 0;
+                        if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
+                    }
+                    
+                    // Stats Dashboard
+                    var totalVisitors = document.getElementById('totalVisitors');
+                    var totalClaims = document.getElementById('totalClaims');
+                    var todayVisitors = document.getElementById('todayVisitors');
+                    var todayClaims = document.getElementById('todayClaims');
+                    
+                    if (data.global) {
+                        if (totalVisitors) totalVisitors.textContent = data.global.totalVisitors || 0;
+                        if (totalClaims) totalClaims.textContent = data.global.totalClaims || 0;
+                        if (todayVisitors) todayVisitors.textContent = data.global.todayVisitors || 0;
+                        if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
+                    }
+                    
+                    // Live Visitors - using same data
+                    await updateLiveVisitors();
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function updateLiveVisitors() {
+            try {
+                var response = await secureFetch('/api/all-stats');
+                if (!response) return;
+                if (response.ok) {
+                    var data = await response.json();
+                    var stats = data.global || {};
+                    
+                    // Lifetime
+                    var lifetime = document.getElementById('liveLifetime');
+                    if (lifetime) lifetime.textContent = stats.totalVisitors || 0;
+                    
+                    // 48 Hours - calculate from daily visitors
+                    var dailyVisitors = stats.dailyVisitors || {};
+                    var last48hrs = 0;
+                    var now = new Date();
+                    for (var date in dailyVisitors) {
+                        var d = new Date(date);
+                        if ((now - d) < 48 * 60 * 60 * 1000) {
+                            last48hrs += dailyVisitors[date] || 0;
+                        }
+                    }
+                    var live48hr = document.getElementById('live48hr');
+                    if (live48hr) live48hr.textContent = last48hrs;
+                    var live48hrTime = document.getElementById('live48hrTime');
+                    if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
+                    
+                    // 60 Minutes - calculate from today's visitors
+                    var today = new Date().toISOString().split('T')[0];
+                    var todayVisits = dailyVisitors[today] || 0;
+                    // Approximate 60 min (1/24 of today's visits)
+                    var last60min = Math.round(todayVisits / 24);
+                    var live60min = document.getElementById('live60min');
+                    if (live60min) live60min.textContent = last60min;
+                    var live60minTime = document.getElementById('live60minTime');
+                    if (live60minTime) live60minTime.textContent = 'Last 60 min (~' + last60min + ')';
+                    
+                    // Active now - approximate
+                    var activeNow = Math.max(1, Math.round(last60min / 6));
+                    var liveActive = document.getElementById('liveActive');
+                    if (liveActive) liveActive.textContent = activeNow;
+                }
+            } catch (e) {
+                console.error('Live visitors update error:', e);
+            }
+        }
+
+        // Update live visitors every 5 seconds
+        setInterval(updateLiveVisitors, 5000);
+
+        // ============================================================
+        // SECTION: DASHBOARD LINK GENERATOR
+        // ============================================================
+        async function searchAndGenerateDashboard() {
+            var query = document.getElementById('dashboardSearchInput').value.trim();
+            if (!query) {
+                showToast('⚠️ Please enter a link name or ID', 'error');
+                return;
+            }
+            
+            var resultsDiv = document.getElementById('dashboardSearchResults');
+            var resultsList = document.getElementById('dashboardResultsList');
+            var noResults = document.getElementById('dashboardNoResults');
+            var genDiv = document.getElementById('dashboardGeneratedLink');
+            
+            resultsDiv.style.display = 'block';
+            resultsList.innerHTML = '<div style="color:var(--text-light);font-size:12px;">⏳ Searching...</div>';
+            noResults.style.display = 'none';
+            genDiv.classList.remove('show');
+            
+            try {
+                var r = await secureFetch('/api/search-links?query=' + encodeURIComponent(query));
+                if (!r) return;
+                var data = await r.json();
+                
+                if (data.links && data.links.length > 0) {
+                    resultsList.innerHTML = '';
+                    data.links.forEach(function(link) {
+                        var div = document.createElement('div');
+                        div.className = 'result-item';
+                        div.innerHTML = `
+                            <div>
+                                <div class="r-name">${escapeHTML(link.name)}</div>
+                                <div class="r-details">ID: ${escapeHTML(link.id)} | Status: ${link.status}</div>
+                            </div>
+                            <button onclick="generateDashboardForLink('${link.id}')" class="btn btn-primary btn-sm">🔗 Generate</button>
+                        `;
+                        resultsList.appendChild(div);
+                    });
+                    noResults.style.display = 'none';
+                } else {
+                    resultsList.innerHTML = '';
+                    noResults.style.display = 'block';
+                }
+            } catch (e) {
+                console.error('Search error:', e);
+                showToast('❌ Search failed', 'error');
+            }
+        }
+
+        async function generateDashboardForLink(linkId) {
+            try {
+                var r = await secureFetch('/api/generate-dashboard-link', {
+                    method: 'POST',
+                    body: JSON.stringify({ linkId: linkId })
+                });
+                if (!r) return;
+                var data = await r.json();
+                
+                if (data.success) {
+                    var fullUrl = window.location.origin + data.dashboardUrl;
+                    document.getElementById('dashboardGeneratedLinkInput').value = fullUrl;
+                    document.getElementById('dashboardGeneratedLinkName').textContent = data.linkName || 'Unknown';
+                    document.getElementById('dashboardGeneratedLink').classList.add('show');
+                    showToast('✅ Dashboard link generated!', 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed to generate'), 'error');
+                }
+            } catch (e) {
+                showToast('❌ Failed to generate dashboard link', 'error');
+            }
+        }
+
+        function copyDashboardGeneratedLink() {
+            var input = document.getElementById('dashboardGeneratedLinkInput');
+            input.select();
+            document.execCommand('copy');
+            showToast('✅ Dashboard link copied!', 'success');
+        }
+
+        document.getElementById('dashboardSearchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchAndGenerateDashboard();
+        });
+
+        // ============================================================
+        // SECTION: USER DASHBOARD LINK
+        // ============================================================
         async function loadUserDashboardLink() {
             try {
                 var r = await fetch('/api/parent-link');
                 var data = await r.json();
                 var url = window.location.origin + data.url;
-                var linkEl = document.getElementById('userDashboardLink');
-                if (linkEl) linkEl.textContent = url;
+                document.getElementById('userDashboardLink').textContent = url;
             } catch (e) {
-                var linkEl = document.getElementById('userDashboardLink');
-                if (linkEl) linkEl.textContent = 'Error loading';
+                document.getElementById('userDashboardLink').textContent = 'Error loading';
                 setTimeout(loadUserDashboardLink, 2000);
             }
         }
 
         function copyDashboardLink() {
-            var textEl = document.getElementById('userDashboardLink');
-            if (!textEl) return;
-            var text = textEl.textContent;
+            var text = document.getElementById('userDashboardLink').textContent;
             if (text === 'Loading...' || text === 'Error loading') {
-                showToast('⏳ Please wait for link to load', 'info');
+                showToast('⏳ Please wait', 'info');
                 return;
             }
             navigator.clipboard.writeText(text).then(function() {
@@ -926,19 +1057,17 @@
             });
         }
 
-        // ===== WHATSAPP NUMBER =====
+        // ============================================================
+        // SECTION: WHATSAPP NUMBER
+        // ============================================================
         async function loadWhatsAppNumber() {
             try {
                 var r = await fetch('/api/whatsapp-number');
                 var data = await r.json();
                 if (data.number) {
-                    var input = document.getElementById('whatsappNumber');
-                    var status = document.getElementById('whatsappStatus');
-                    if (input) input.value = data.number;
-                    if (status) {
-                        status.textContent = '✅ WhatsApp number loaded';
-                        status.style.color = '#48bb78';
-                    }
+                    document.getElementById('whatsappNumber').value = data.number;
+                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number loaded';
+                    document.getElementById('whatsappStatus').style.color = '#48bb78';
                 }
             } catch (e) {
                 console.error('Error loading WhatsApp number:', e);
@@ -946,9 +1075,7 @@
         }
 
         async function saveWhatsAppNumber() {
-            var input = document.getElementById('whatsappNumber');
-            if (!input) return;
-            var number = input.value.trim();
+            var number = document.getElementById('whatsappNumber').value.trim();
             if (!number) {
                 showToast('❌ Please enter a WhatsApp number', 'error');
                 return;
@@ -960,134 +1087,263 @@
                 });
                 if (r) {
                     showToast('✅ WhatsApp number saved!', 'success');
-                    var status = document.getElementById('whatsappStatus');
-                    if (status) {
-                        status.textContent = '✅ WhatsApp number saved successfully!';
-                        status.style.color = '#48bb78';
-                    }
+                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number saved!';
+                    document.getElementById('whatsappStatus').style.color = '#48bb78';
                 }
             } catch (e) {
-                showToast('❌ Failed to save WhatsApp number', 'error');
+                showToast('❌ Failed to save', 'error');
             }
         }
 
-        // ===== DASHBOARD LINK GENERATOR =====
-        async function searchAndGenerateDashboard() {
-            var input = document.getElementById('dashboardSearchInput');
-            if (!input) return;
-            var query = input.value.trim();
-            
-            if (!query) {
-                showToast('⚠️ Please enter a link name or ID to search', 'error');
-                return;
-            }
-            
-            var resultsDiv = document.getElementById('dashboardSearchResults');
-            var resultsList = document.getElementById('dashboardResultsList');
-            var noResults = document.getElementById('dashboardNoResults');
-            var generatedDiv = document.getElementById('dashboardGeneratedLink');
-            
-            if (resultsDiv) resultsDiv.style.display = 'block';
-            if (resultsList) resultsList.innerHTML = '<div style="color:var(--text-light);font-size:13px;">⏳ Searching...</div>';
-            if (noResults) noResults.classList.remove('show');
-            if (generatedDiv) generatedDiv.classList.remove('show');
-            
+        // ============================================================
+        // SECTION: PRICING
+        // ============================================================
+        async function loadPricingData() {
             try {
-                var r = await secureFetch('/api/search-links?query=' + encodeURIComponent(query));
-                if (!r) return;
-                
+                var r = await fetch('/api/pricing');
                 var data = await r.json();
-                
-                if (data.links && data.links.length > 0) {
-                    if (resultsList) resultsList.innerHTML = '';
-                    data.links.forEach(function(link) {
-                        var div = document.createElement('div');
-                        div.className = 'result-item';
-                        div.innerHTML = `
-                            <div>
-                                <div class="r-name">${escapeHTML(link.name)}</div>
-                                <div class="r-details">ID: ${escapeHTML(link.id)} | Status: ${link.status} | Visits: ${link.visits || 0}</div>
-                            </div>
-                            <button onclick="generateDashboardForLink('${link.id}')" class="btn btn-primary btn-sm" style="padding:6px 14px;font-size:12px;">🔗 Generate Link</button>
-                        `;
-                        if (resultsList) resultsList.appendChild(div);
-                    });
-                    if (noResults) noResults.classList.remove('show');
-                } else {
-                    if (resultsList) resultsList.innerHTML = '';
-                    if (noResults) noResults.classList.add('show');
-                }
-                
-            } catch (e) {
-                console.error('Search error:', e);
-                showToast('❌ Search failed', 'error');
-            }
-        }
-
-        async function generateDashboardForLink(linkId) {
-            try {
-                var r = await secureFetch('/api/generate-dashboard-link', {
-                    method: 'POST',
-                    body: JSON.stringify({ linkId: linkId })
+                var pricing = data.pricing || {};
+                var fields = ['price_3days', 'price_7days', 'price_15days', 'price_1month', 'price_3months', 'price_6months', 'price_12months'];
+                var keys = ['3days', '7days', '15days', '1month', '3months', '6months', '12months'];
+                fields.forEach(function(field, index) {
+                    var el = document.getElementById(field);
+                    if (el) el.value = pricing[keys[index]] || 0;
                 });
-                
-                if (!r) return;
-                var data = await r.json();
-                
-                if (data.success) {
-                    var fullUrl = window.location.origin + data.dashboardUrl;
-                    var linkInput = document.getElementById('dashboardGeneratedLinkInput');
-                    var nameSpan = document.getElementById('dashboardGeneratedLinkName');
-                    var genDiv = document.getElementById('dashboardGeneratedLink');
-                    if (linkInput) linkInput.value = fullUrl;
-                    if (nameSpan) nameSpan.textContent = data.linkName || 'Unknown';
-                    if (genDiv) genDiv.classList.add('show');
-                    showToast('✅ Dashboard link generated successfully!', 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to generate link'), 'error');
+            } catch (e) {}
+        }
+
+        async function savePricing() {
+            var pricing = {
+                '3days': parseInt(document.getElementById('price_3days').value) || 0,
+                '7days': parseInt(document.getElementById('price_7days').value) || 0,
+                '15days': parseInt(document.getElementById('price_15days').value) || 0,
+                '1month': parseInt(document.getElementById('price_1month').value) || 0,
+                '3months': parseInt(document.getElementById('price_3months').value) || 0,
+                '6months': parseInt(document.getElementById('price_6months').value) || 0,
+                '12months': parseInt(document.getElementById('price_12months').value) || 0
+            };
+            try {
+                var r = await secureFetch('/api/admin/pricing', {
+                    method: 'POST',
+                    body: JSON.stringify({ pricing: pricing })
+                });
+                if (r) {
+                    showToast('✅ Pricing saved!', 'success');
                 }
             } catch (e) {
-                console.error('Generate error:', e);
-                showToast('❌ Failed to generate dashboard link', 'error');
+                showToast('❌ Failed to save', 'error');
             }
         }
 
-        function copyDashboardGeneratedLink() {
-            var input = document.getElementById('dashboardGeneratedLinkInput');
-            if (!input) return;
-            input.select();
-            document.execCommand('copy');
-            showToast('✅ Dashboard link copied!', 'success');
+        // ============================================================
+        // SECTION: LINKS
+        // ============================================================
+        async function loadLinks() {
+            try {
+                var r = await secureFetch('/api/links');
+                if (!r) {
+                    document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading</div>';
+                    return;
+                }
+                var links = await r.json();
+                var c = document.getElementById('linksList');
+                c.innerHTML = '';
+                if (links.length === 0) {
+                    c.innerHTML = '<div class="empty-state"><span class="icon">📭</span>No links yet</div>';
+                    return;
+                }
+                links.forEach(function(link) {
+                    var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
+                    var d = document.createElement('div');
+                    d.className = 'link-item';
+                    d.innerHTML = `
+                        <div class="info">
+                            <div class="name">${escapeHTML(link.name)}</div>
+                            <div class="details">
+                                <span>📅 ${new Date(link.created).toLocaleDateString()}</span>
+                                <span>👁️ ${link.visits || 0}</span>
+                                <span>🎬 <a href="${escapeHTML(link.video)}" target="_blank">Video</a></span>
+                                <span>🔗 <a href="${escapeHTML(link.claim)}" target="_blank">Claim</a></span>
+                                <span class="status-badge status-${sc}">${link.status}</span>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button onclick="toggleEdit('${link.id}')" class="btn btn-warning btn-sm">✏️</button>
+                            <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm">📋</button>
+                            <button onclick="deleteLink('${link.id}')" class="btn btn-danger btn-sm">🗑️</button>
+                        </div>
+                        <div class="edit-form" id="edit-${link.id}">
+                            <div class="edit-grid">
+                                <input type="text" id="edit-name-${link.id}" value="${escapeHTML(link.name)}" placeholder="Name">
+                                <input type="text" id="edit-video-${link.id}" value="${escapeHTML(link.video)}" placeholder="Video">
+                                <input type="text" id="edit-claim-${link.id}" value="${escapeHTML(link.claim)}" placeholder="Claim">
+                                <input type="text" id="edit-btn-${link.id}" value="${escapeHTML(link.buttonText || 'Claim Now')}" placeholder="Button">
+                                <input type="text" id="edit-headline-${link.id}" value="${escapeHTML(link.headline || '')}" placeholder="Headline">
+                            </div>
+                            <div style="margin-top:8px;">
+                                <select id="edit-schedule-${link.id}" style="padding:8px 12px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:12px;">
+                                    <option value="">No Expiry</option>
+                                    <option value="3">3 Days</option>
+                                    <option value="7">7 Days</option>
+                                    <option value="15">15 Days</option>
+                                    <option value="30">30 Days</option>
+                                </select>
+                            </div>
+                            <div class="popup-edit-section">
+                                <div style="font-weight:600;color:var(--primary);font-size:12px;">🖼️ Popup Settings</div>
+                                <div class="grid-2">
+                                    <div><label class="popup-label">Title</label><input type="text" id="edit-popup-title-${link.id}" value="${escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward')}"></div>
+                                    <div><label class="popup-label">Button Text</label><input type="text" id="edit-popup-btn-${link.id}" value="${escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now')}"></div>
+                                </div>
+                                <label class="popup-label">Subtitle</label>
+                                <input type="text" id="edit-popup-sub-${link.id}" value="${escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward')}">
+                                <label class="popup-label">Image URL</label>
+                                <input type="text" id="edit-popup-image-${link.id}" value="${escapeHTML((link.popupSettings && link.popupSettings.image) || '')}" placeholder="Enter image URL">
+                                <div class="popup-preview-small" id="popup-preview-small-${link.id}">
+                                    ${(link.popupSettings && link.popupSettings.image) ? '<img src="' + escapeHTML(link.popupSettings.image) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>'}
+                                    <div class="preview-text">${escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward')}</div>
+                                    <div class="preview-sub">${escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward')}</div>
+                                    <div class="preview-btn-small">${escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now')}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:8px;">
+                                <button onclick="saveEdit('${link.id}')" class="btn btn-success btn-sm">💾 Save</button>
+                                <button onclick="cancelEdit('${link.id}')" class="btn btn-danger btn-sm">Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                    c.appendChild(d);
+                    
+                    (function(id) {
+                        ['edit-popup-title-' + id, 'edit-popup-btn-' + id, 'edit-popup-sub-' + id, 'edit-popup-image-' + id].forEach(function(fieldId) {
+                            var el = document.getElementById(fieldId);
+                            if (el) {
+                                el.addEventListener('input', function() {
+                                    updatePopupPreview(id);
+                                });
+                            }
+                        });
+                    })(link.id);
+                });
+            } catch (e) {
+                document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading links</div>';
+            }
         }
 
-        // Enter key support for search
-        var searchInput = document.getElementById('dashboardSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchAndGenerateDashboard();
+        function updatePopupPreview(linkId) {
+            var titleEl = document.getElementById('edit-popup-title-' + linkId);
+            var btnEl = document.getElementById('edit-popup-btn-' + linkId);
+            var subEl = document.getElementById('edit-popup-sub-' + linkId);
+            var imgEl = document.getElementById('edit-popup-image-' + linkId);
+            var previewDiv = document.getElementById('popup-preview-small-' + linkId);
+            if (!previewDiv) return;
+            var title = titleEl ? titleEl.value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
+            var btn = btnEl ? btnEl.value || 'Claim Now' : 'Claim Now';
+            var sub = subEl ? subEl.value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
+            var img = imgEl ? imgEl.value || '' : '';
+            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
+            previewDiv.innerHTML = imgHtml +
+                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
+                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
+                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
+        }
+
+        function toggleEdit(id) {
+            var el = document.getElementById('edit-' + id);
+            if (el) el.classList.toggle('show');
+        }
+
+        function cancelEdit(id) {
+            var el = document.getElementById('edit-' + id);
+            if (el) el.classList.remove('show');
+        }
+
+        async function saveEdit(id) {
+            try {
+                var scheduleEl = document.getElementById('edit-schedule-' + id);
+                var expiryDate = null;
+                if (scheduleEl && scheduleEl.value) {
+                    var date = new Date();
+                    date.setDate(date.getDate() + parseInt(scheduleEl.value));
+                    expiryDate = date.toISOString();
                 }
+                var popupSettings = {
+                    image: document.getElementById('edit-popup-image-' + id) ? document.getElementById('edit-popup-image-' + id).value.trim() || null : null,
+                    title: document.getElementById('edit-popup-title-' + id) ? document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
+                    buttonText: document.getElementById('edit-popup-btn-' + id) ? document.getElementById('edit-popup-btn-' + id).value.trim() || 'Claim Now' : 'Claim Now',
+                    subtitle: document.getElementById('edit-popup-sub-' + id) ? document.getElementById('edit-popup-sub-' + id).value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
+                };
+                var r = await secureFetch('/api/links/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: document.getElementById('edit-name-' + id).value,
+                        video: document.getElementById('edit-video-' + id).value,
+                        claim: document.getElementById('edit-claim-' + id).value,
+                        buttonText: document.getElementById('edit-btn-' + id).value,
+                        headline: document.getElementById('edit-headline-' + id).value,
+                        expiryDate: expiryDate,
+                        popupSettings: popupSettings
+                    })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.error) {
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
+                document.getElementById('edit-' + id).classList.remove('show');
+                loadLinks();
+                showToast('✅ Link updated!', 'success');
+            } catch (e) { showToast('❌ Failed to update', 'error'); }
+        }
+
+        function copyLinkUrl(id) {
+            var url = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('✅ Link copied!', 'success');
+            }).catch(function() {
+                var t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('✅ Link copied!', 'success');
             });
         }
 
-        // ===== SCHEDULE =====
+        async function deleteLink(id) {
+            if (confirm('⚠️ Delete this link permanently?')) {
+                try {
+                    var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
+                    if (!r) return;
+                    var data = await r.json();
+                    if (data.success) {
+                        loadLinks();
+                        loadStats();
+                        showToast('✅ Link deleted!', 'success');
+                    }
+                } catch (e) { showToast('❌ Failed to delete', 'error'); }
+            }
+        }
+
+        // ============================================================
+        // SECTION: CREATE LINK
+        // ============================================================
         var selectedExpiry = null;
 
         function updateSchedulePreset() {
-            var presetEl = document.getElementById('schedulePreset');
+            var preset = document.getElementById('schedulePreset').value;
             var customInput = document.getElementById('customExpiry');
             var display = document.getElementById('expiryDisplay');
-            if (!presetEl || !display) return;
-            
-            var preset = presetEl.value;
             if (preset === 'custom') {
-                if (customInput) customInput.style.display = 'block';
-                if (customInput) customInput.value = '';
+                customInput.style.display = 'block';
+                customInput.value = '';
                 display.textContent = '📅 Select custom date';
                 selectedExpiry = null;
                 return;
             }
-            if (customInput) customInput.style.display = 'none';
+            customInput.style.display = 'none';
             if (preset) {
                 var days = parseInt(preset);
                 var date = new Date();
@@ -1101,83 +1357,188 @@
         }
 
         function updateCustomExpiry() {
-            var customInput = document.getElementById('customExpiry');
-            var display = document.getElementById('expiryDisplay');
-            if (!customInput || !display) return;
-            
-            var val = customInput.value;
+            var val = document.getElementById('customExpiry').value;
             if (val) {
                 var date = new Date(val);
                 selectedExpiry = date.toISOString();
-                display.textContent = '📅 Expires: ' + date.toLocaleString();
+                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
             } else {
                 selectedExpiry = null;
-                display.textContent = '⏰ No expiry set';
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
             }
         }
 
-        // ===== POPUP PREVIEW LIVE UPDATE =====
-        var popupTitle = document.getElementById('popupTitle');
-        var popupSubtitle = document.getElementById('popupSubtitle');
-        var popupButtonText = document.getElementById('popupButtonText');
-        var popupImageUrl = document.getElementById('popupImageUrl');
-        var popupPreviewTitle = document.getElementById('popupPreviewTitle');
-        var popupPreviewSub = document.getElementById('popupPreviewSub');
-        var popupPreviewBtn = document.getElementById('popupPreviewBtn');
-        var popupPreviewImage = document.getElementById('popupPreviewImage');
-        var popupImagePreview = document.getElementById('popupImagePreview');
-        var popupPreviewImg = document.getElementById('popupPreviewImg');
+        // Popup preview live update
+        document.getElementById('popupTitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
+        });
+        document.getElementById('popupSubtitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
+        });
+        document.getElementById('popupButtonText').addEventListener('input', function() {
+            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
+        });
+        document.getElementById('popupImageUrl').addEventListener('input', function() {
+            var url = this.value.trim();
+            var preview = document.getElementById('popupImagePreview');
+            var img = document.getElementById('popupPreviewImg');
+            var previewImage = document.getElementById('popupPreviewImage');
+            if (url) {
+                img.src = url;
+                preview.classList.add('show');
+                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
+            } else {
+                preview.classList.remove('show');
+                previewImage.innerHTML = '<span>🎬 16:9 Preview</span>';
+            }
+        });
 
-        if (popupTitle && popupPreviewTitle) {
-            popupTitle.addEventListener('input', function() {
-                popupPreviewTitle.textContent = this.value || '🎁 Claim Your Reward';
-            });
+        async function createLink() {
+            var name = document.getElementById('linkName').value.trim();
+            if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
+            if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
+            
+            var popupSettings = {
+                image: document.getElementById('popupImageUrl').value.trim() || null,
+                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
+                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
+                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
+            };
+
+            try {
+                var r = await secureFetch('/api/links', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: name,
+                        video: document.getElementById('video').value.trim(),
+                        claim: document.getElementById('claim').value.trim(),
+                        buttonText: document.getElementById('buttonText').value.trim(),
+                        headline: document.getElementById('headline').value.trim(),
+                        expiryDate: selectedExpiry,
+                        popupSettings: popupSettings
+                    })
+                });
+                if (!r) return;
+                var link = await r.json();
+                document.getElementById('generatedLink').classList.add('show');
+                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
+                
+                document.getElementById('linkName').value = '';
+                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
+                document.getElementById('claim').value = '#';
+                document.getElementById('buttonText').value = 'Claim Now';
+                document.getElementById('headline').value = '🎬 Watch Video';
+                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
+                document.getElementById('popupButtonText').value = 'Claim Now';
+                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
+                document.getElementById('popupImageUrl').value = '';
+                document.getElementById('popupImagePreview').classList.remove('show');
+                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Preview</span>';
+                document.getElementById('schedulePreset').value = '';
+                document.getElementById('customExpiry').style.display = 'none';
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+                selectedExpiry = null;
+                loadLinks();
+                loadStats();
+                showToast('✅ Link created!', 'success');
+            } catch (e) { showToast('❌ Failed to create link', 'error'); }
         }
-        if (popupSubtitle && popupPreviewSub) {
-            popupSubtitle.addEventListener('input', function() {
-                popupPreviewSub.textContent = this.value || 'Tap below to unlock your reward';
-            });
+
+        function copyLink() {
+            var i = document.getElementById('generatedLinkInput');
+            i.select();
+            document.execCommand('copy');
+            showToast('✅ Link copied!', 'success');
         }
-        if (popupButtonText && popupPreviewBtn) {
-            popupButtonText.addEventListener('input', function() {
-                popupPreviewBtn.textContent = this.value || 'Claim Now';
-            });
-        }
-        if (popupImageUrl && popupPreviewImage && popupImagePreview && popupPreviewImg) {
-            popupImageUrl.addEventListener('input', function() {
-                var url = this.value.trim();
-                if (url) {
-                    popupPreviewImg.src = url;
-                    popupImagePreview.classList.add('show');
-                    popupPreviewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
-                } else {
-                    popupImagePreview.classList.remove('show');
-                    popupPreviewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
+
+        // ============================================================
+        // SECTION: RENEWAL REQUESTS
+        // ============================================================
+        async function loadRenewalRequests() {
+            try {
+                var r = await secureFetch('/api/renewal/requests');
+                if (!r) return;
+                var requests = await r.json();
+                var container = document.getElementById('renewalRequestsList');
+                if (!requests || requests.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
+                    return;
                 }
-            });
+                container.innerHTML = '';
+                requests.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+                requests.forEach(function(req) {
+                    var div = document.createElement('div');
+                    div.className = 'renewal-item';
+                    div.innerHTML = `
+                        <div class="info">
+                            <div class="name">${escapeHTML(req.linkName || 'Unknown')}</div>
+                            <div class="details">
+                                <span>💰 ₹${req.amount}</span>
+                                <span>📆 ${req.days} days</span>
+                                <span class="renewal-status-badge ${req.status}">${req.status.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            ${req.status === 'pending' ? '<button onclick="markPaid(\'' + req.id + '\')" class="btn btn-success btn-sm">✅ Paid</button>' : ''}
+                            ${req.status === 'paid' ? '<button onclick="approveRenewal(\'' + req.id + '\')" class="btn btn-primary btn-sm">✅ Approve</button>' : ''}
+                            ${req.status === 'pending' || req.status === 'paid' ? '<button onclick="rejectRenewal(\'' + req.id + '\')" class="btn btn-danger btn-sm">❌ Reject</button>' : ''}
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {}
         }
 
-        // ===== BACKGROUND IMAGE URL PREVIEW =====
-        var bgImageUrl = document.getElementById('bgImageUrl');
-        var bgImagePreview = document.getElementById('bgImagePreview');
-        var bgPreviewImg = document.getElementById('bgPreviewImg');
-        if (bgImageUrl && bgImagePreview && bgPreviewImg) {
-            bgImageUrl.addEventListener('input', function() {
-                var url = this.value.trim();
-                if (url) {
-                    bgPreviewImg.src = url;
-                    bgImagePreview.classList.add('show');
-                } else {
-                    bgImagePreview.classList.remove('show');
+        async function markPaid(requestId) {
+            if (!confirm('Mark this as paid?')) return;
+            try {
+                var r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('✅ Marked as paid!', 'success');
+                    loadRenewalRequests();
                 }
-            });
+            } catch (e) { showToast('❌ Failed', 'error'); }
         }
 
-        // ===== SAVE BACKGROUND =====
+        async function approveRenewal(requestId) {
+            if (!confirm('Approve this renewal?')) return;
+            try {
+                var r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('✅ Renewal approved!', 'success');
+                    loadRenewalRequests();
+                }
+            } catch (e) { showToast('❌ Failed to approve', 'error'); }
+        }
+
+        async function rejectRenewal(requestId) {
+            if (!confirm('Reject this renewal?')) return;
+            try {
+                var r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
+                if (r) {
+                    showToast('❌ Renewal rejected', 'error');
+                    loadRenewalRequests();
+                }
+            } catch (e) { showToast('❌ Failed to reject', 'error'); }
+        }
+
+        // ============================================================
+        // SECTION: BACKGROUND
+        // ============================================================
+        document.getElementById('bgImageUrl').addEventListener('input', function() {
+            var url = this.value.trim();
+            var preview = document.getElementById('bgImagePreview');
+            var img = document.getElementById('bgPreviewImg');
+            if (url) {
+                img.src = url;
+                preview.classList.add('show');
+            } else {
+                preview.classList.remove('show');
+            }
+        });
+
         async function saveBackground() {
-            var input = document.getElementById('bgImageUrl');
-            if (!input) return;
-            var url = input.value.trim();
+            var url = document.getElementById('bgImageUrl').value.trim();
             if (!url) {
                 showToast('❌ Please enter an image URL', 'error');
                 return;
@@ -1190,11 +1551,8 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    var status = document.getElementById('bgStatus');
-                    if (status) {
-                        status.textContent = '✅ Background saved successfully!';
-                        status.style.color = '#48bb78';
-                    }
+                    document.getElementById('bgStatus').textContent = '✅ Background saved!';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
                     showToast('✅ Background saved!', 'success');
                 }
             } catch (e) {
@@ -1211,15 +1569,10 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    var input = document.getElementById('bgImageUrl');
-                    var preview = document.getElementById('bgImagePreview');
-                    var status = document.getElementById('bgStatus');
-                    if (input) input.value = '';
-                    if (preview) preview.classList.remove('show');
-                    if (status) {
-                        status.textContent = '✅ Background removed';
-                        status.style.color = '#48bb78';
-                    }
+                    document.getElementById('bgImageUrl').value = '';
+                    document.getElementById('bgImagePreview').classList.remove('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background removed';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
                     showToast('✅ Background removed', 'success');
                 }
             } catch (e) {
@@ -1232,31 +1585,24 @@
                 var r = await fetch('/api/settings');
                 var data = await r.json();
                 if (data && data.background) {
-                    var input = document.getElementById('bgImageUrl');
+                    document.getElementById('bgImageUrl').value = data.background;
                     var preview = document.getElementById('bgImagePreview');
                     var img = document.getElementById('bgPreviewImg');
-                    var status = document.getElementById('bgStatus');
-                    if (input) input.value = data.background;
-                    if (img) img.src = data.background;
-                    if (preview) preview.classList.add('show');
-                    if (status) {
-                        status.textContent = '✅ Background loaded';
-                        status.style.color = '#48bb78';
-                    }
+                    img.src = data.background;
+                    preview.classList.add('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
                 }
             } catch (e) {}
         }
 
-        // ===== CHANGE PASSCODE =====
+        // ============================================================
+        // SECTION: PASSCODE CHANGE
+        // ============================================================
         async function changePasscode() {
-            var oldInput = document.getElementById('oldPasscode');
-            var newInput = document.getElementById('newPasscode');
+            var oldPasscode = document.getElementById('oldPasscode').value;
+            var newPasscode = document.getElementById('newPasscode').value;
             var statusEl = document.getElementById('passcodeStatus');
-            
-            if (!oldInput || !newInput || !statusEl) return;
-            
-            var oldPasscode = oldInput.value;
-            var newPasscode = newInput.value;
 
             if (!oldPasscode || !newPasscode) {
                 statusEl.textContent = '❌ Please fill both fields';
@@ -1284,557 +1630,23 @@
                 if (data.success) {
                     statusEl.textContent = '✅ Passcode changed! Please login again.';
                     statusEl.style.color = '#48bb78';
-                    showToast('✅ Passcode changed! Please login again.', 'success');
-                    oldInput.value = '';
-                    newInput.value = '';
+                    showToast('✅ Passcode changed!', 'success');
+                    document.getElementById('oldPasscode').value = '';
+                    document.getElementById('newPasscode').value = '';
                     setTimeout(function() { window.location.href = 'login.html'; }, 2000);
                 } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed to change passcode');
+                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
                     statusEl.style.color = '#fc8181';
                 }
             } catch (e) {
                 statusEl.textContent = '❌ Server error';
                 statusEl.style.color = '#fc8181';
-                showToast('❌ Failed to change passcode', 'error');
             }
         }
 
-        // ===== LOAD LINKS =====
-        async function loadLinks() {
-            try {
-                var r = await secureFetch('/api/links');
-                if (!r) {
-                    var list = document.getElementById('linksList');
-                    if (list) {
-                        list.innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links. <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
-                    }
-                    return;
-                }
-                var links = await r.json();
-                var c = document.getElementById('linksList');
-                if (!c) return;
-                c.innerHTML = '';
-                var active = links.filter(function(l) { return l.status === 'active'; }).length;
-                var expired = links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled'; }).length;
-                var totalEl = document.getElementById('totalLinks');
-                var activeEl = document.getElementById('activeLinks');
-                var visitsEl = document.getElementById('totalVisits');
-                var expiredEl = document.getElementById('expiredLinks');
-                if (totalEl) totalEl.textContent = links.length;
-                if (activeEl) activeEl.textContent = active;
-                if (visitsEl) visitsEl.textContent = links.reduce(function(s, l) { return s + (l.visits || 0); }, 0);
-                if (expiredEl) expiredEl.textContent = expired;
-                if (links.length === 0) {
-                    c.innerHTML = '<div class="empty-state"><span class="icon">📭</span>No links yet</div>';
-                    return;
-                }
-                links.forEach(function(link, index) {
-                    var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
-                    var isExpired = link.expiryDate && new Date(link.expiryDate) < new Date();
-                    var expiryDisplay = link.expiryDate ? new Date(link.expiryDate).toLocaleDateString() : 'No expiry';
-                    var d = document.createElement('div');
-                    d.className = 'link-item';
-                    
-                    var popupSettings = link.popupSettings || {};
-                    var popupPreview = '';
-                    if (popupSettings.image || popupSettings.title) {
-                        popupPreview = '<div style="font-size:11px;color:var(--text-light);margin-top:4px;">🖼️ Popup: ' + (popupSettings.title || 'No title') + '</div>';
-                    }
-                    
-                    d.innerHTML = '<div class="info"><div class="name">' + escapeHTML(link.name) + '</div><div class="details"><span>📅 ' + new Date(link.created).toLocaleDateString() + '</span><span>👁️ ' + (link.visits || 0) + '</span><span>🎬 <a href="' + escapeHTML(link.video) + '" target="_blank">Video</a></span><span>🔗 <a href="' + escapeHTML(link.claim) + '" target="_blank">Claim</a></span><span>📝 ' + escapeHTML(link.headline || 'No headline') + '</span><span class="' + (isExpired ? 'expiry-badge expired' : 'expiry-badge') + '">' + escapeHTML(expiryDisplay) + '</span></div>' + popupPreview + '</div><div class="actions"><span class="status-badge status-' + sc + '">' + link.status + '</span><select onchange="updateStatus(\'' + link.id + '\', this.value)" class="schedule-select"><option value="active" ' + (link.status === 'active' ? 'selected' : '') + '>Active</option><option value="suspended" ' + (link.status === 'suspended' ? 'selected' : '') + '>Suspend</option><option value="disabled" ' + (link.status === 'disabled' ? 'selected' : '') + '>Disable</option></select><button onclick="toggleEdit(\'' + link.id + '\')" class="btn btn-warning btn-sm">✏️</button><button onclick="copyLinkUrl(\'' + link.id + '\')" class="btn btn-success btn-sm">📋</button><button onclick="deleteLink(\'' + link.id + '\')" class="btn btn-danger btn-sm">🗑️</button></div><div class="edit-form" id="edit-' + link.id + '"><div class="edit-grid"><input type="text" id="edit-name-' + link.id + '" value="' + escapeHTML(link.name) + '" placeholder="Name"><input type="text" id="edit-video-' + link.id + '" value="' + escapeHTML(link.video) + '" placeholder="Video"><input type="text" id="edit-claim-' + link.id + '" value="' + escapeHTML(link.claim) + '" placeholder="Claim"><input type="text" id="edit-btn-' + link.id + '" value="' + escapeHTML(link.buttonText || 'Claim Now') + '" placeholder="Button"><input type="text" id="edit-headline-' + link.id + '" value="' + escapeHTML(link.headline || '') + '" placeholder="Headline"></div><div style="margin-top:10px;"><select id="edit-schedule-' + link.id + '" style="padding:10px 14px;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%;font-size:13px;"><option value="">No Expiry</option><option value="3" ' + (link.expiryDate ? 'selected' : '') + '>3 Days</option><option value="7">7 Days</option><option value="15">15 Days</option><option value="30">30 Days</option></select></div>' +
-                    '<div class="popup-edit-section"><div style="font-weight:600;color:var(--primary);font-size:13px;margin-bottom:6px;">🖼️ Popup Settings</div><div class="grid-2"><div><label class="popup-label">Popup Title</label><input type="text" id="edit-popup-title-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '"></div><div><label class="popup-label">Popup Button Text</label><input type="text" id="edit-popup-btn-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now') + '"></div></div><label class="popup-label">Popup Subtitle</label><input type="text" id="edit-popup-sub-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward') + '"><label class="popup-label">Popup Image URL (16:9)</label><input type="text" id="edit-popup-image-' + link.id + '" value="' + escapeHTML((link.popupSettings && link.popupSettings.image) || '') + '" placeholder="Enter image URL"><div class="popup-preview-small" id="popup-preview-small-' + link.id + '">' + 
-                    ((link.popupSettings && link.popupSettings.image) ? '<img src="' + escapeHTML(link.popupSettings.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>') +
-                    '<div class="preview-text">' + escapeHTML((link.popupSettings && link.popupSettings.title) || '🎁 Claim Your Reward') + '</div>' +
-                    '<div class="preview-sub">' + escapeHTML((link.popupSettings && link.popupSettings.subtitle) || 'Tap below to unlock your reward') + '</div>' +
-                    '<div class="preview-btn-small">' + escapeHTML((link.popupSettings && link.popupSettings.buttonText) || 'Claim Now') + '</div>' +
-                    '</div></div>' +
-                    '<div style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveEdit(\'' + link.id + '\')" class="btn btn-success btn-sm">💾 Save All</button><button onclick="cancelEdit(\'' + link.id + '\')" class="btn btn-danger btn-sm">Cancel</button></div></div>';
-                    c.appendChild(d);
-                    
-                    (function(id) {
-                        ['edit-popup-title-' + id, 'edit-popup-btn-' + id, 'edit-popup-sub-' + id, 'edit-popup-image-' + id].forEach(function(fieldId) {
-                            var el = document.getElementById(fieldId);
-                            if (el) {
-                                el.addEventListener('input', function() {
-                                    updatePopupPreview(id);
-                                });
-                            }
-                        });
-                    })(link.id);
-                });
-            } catch (e) {
-                var list = document.getElementById('linksList');
-                if (list) {
-                    list.innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links.<br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
-                }
-            }
-        }
-
-        function updatePopupPreview(linkId) {
-            var titleEl = document.getElementById('edit-popup-title-' + linkId);
-            var btnEl = document.getElementById('edit-popup-btn-' + linkId);
-            var subEl = document.getElementById('edit-popup-sub-' + linkId);
-            var imgEl = document.getElementById('edit-popup-image-' + linkId);
-            var previewDiv = document.getElementById('popup-preview-small-' + linkId);
-            
-            if (!previewDiv) return;
-            
-            var title = titleEl ? titleEl.value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
-            var btn = btnEl ? btnEl.value || 'Claim Now' : 'Claim Now';
-            var sub = subEl ? subEl.value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
-            var img = imgEl ? imgEl.value || '' : '';
-            
-            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>';
-            previewDiv.innerHTML = imgHtml +
-                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
-                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
-                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
-        }
-
-        // ===== CREATE LINK =====
-        async function createLink() {
-            var nameInput = document.getElementById('linkName');
-            if (!nameInput) return;
-            var name = nameInput.value.trim();
-            if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
-            if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
-            
-            var popupImageUrl = document.getElementById('popupImageUrl');
-            var popupTitle = document.getElementById('popupTitle');
-            var popupButtonText = document.getElementById('popupButtonText');
-            var popupSubtitle = document.getElementById('popupSubtitle');
-            
-            var popupSettings = {
-                image: popupImageUrl ? popupImageUrl.value.trim() || null : null,
-                title: popupTitle ? popupTitle.value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
-                buttonText: popupButtonText ? popupButtonText.value.trim() || 'Claim Now' : 'Claim Now',
-                subtitle: popupSubtitle ? popupSubtitle.value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
-            };
-
-            try {
-                var videoInput = document.getElementById('video');
-                var claimInput = document.getElementById('claim');
-                var buttonTextInput = document.getElementById('buttonText');
-                var headlineInput = document.getElementById('headline');
-                
-                var r = await secureFetch('/api/links', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: name,
-                        video: videoInput ? videoInput.value.trim() : 'https://youtu.be/dQw4w9WgXcQ',
-                        claim: claimInput ? claimInput.value.trim() : '#',
-                        buttonText: buttonTextInput ? buttonTextInput.value.trim() : 'Claim Now',
-                        headline: headlineInput ? headlineInput.value.trim() : '🎬 Watch Video',
-                        expiryDate: selectedExpiry,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var link = await r.json();
-                var genLink = document.getElementById('generatedLink');
-                var genInput = document.getElementById('generatedLinkInput');
-                if (genLink) genLink.classList.add('show');
-                if (genInput) genInput.value = window.location.origin + '/uid?link=' + link.id;
-                
-                var fields = ['linkName', 'video', 'claim', 'buttonText', 'headline', 'popupTitle', 'popupButtonText', 'popupSubtitle', 'popupImageUrl'];
-                fields.forEach(function(id) {
-                    var el = document.getElementById(id);
-                    if (el) {
-                        if (id === 'video') el.value = 'https://youtu.be/dQw4w9WgXcQ';
-                        else if (id === 'claim') el.value = '#';
-                        else if (id === 'buttonText') el.value = 'Claim Now';
-                        else if (id === 'headline') el.value = '🎬 Watch Video';
-                        else if (id === 'popupTitle') el.value = '🎁 Claim Your Reward';
-                        else if (id === 'popupButtonText') el.value = 'Claim Now';
-                        else if (id === 'popupSubtitle') el.value = 'Tap below to unlock your reward';
-                        else if (id === 'popupImageUrl') el.value = '';
-                        else if (id === 'linkName') el.value = '';
-                    }
-                });
-                
-                var preview = document.getElementById('popupImagePreview');
-                var previewImage = document.getElementById('popupPreviewImage');
-                if (preview) preview.classList.remove('show');
-                if (previewImage) previewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
-                
-                var schedulePreset = document.getElementById('schedulePreset');
-                var customExpiry = document.getElementById('customExpiry');
-                var expiryDisplay = document.getElementById('expiryDisplay');
-                if (schedulePreset) schedulePreset.value = '';
-                if (customExpiry) customExpiry.style.display = 'none';
-                if (expiryDisplay) expiryDisplay.textContent = '⏰ No expiry set';
-                selectedExpiry = null;
-                loadLinks();
-                showToast('✅ Link created successfully!', 'success');
-            } catch (e) { showToast('❌ Failed to create link', 'error'); }
-        }
-
-        // ===== COPY LINK =====
-        function copyLink() {
-            var i = document.getElementById('generatedLinkInput');
-            if (!i) return;
-            i.select();
-            document.execCommand('copy');
-            showToast('✅ Link copied!', 'success');
-        }
-
-        function copyLinkUrl(id) {
-            var url = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(url).then(function() {
-                showToast('✅ Link copied!', 'success');
-            }).catch(function() {
-                var t = document.createElement('textarea');
-                t.value = url;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                document.body.removeChild(t);
-                showToast('✅ Link copied!', 'success');
-            });
-        }
-
-        // ===== EDIT LINK =====
-        function toggleEdit(id) {
-            var el = document.getElementById('edit-' + id);
-            if (el) el.classList.toggle('show');
-        }
-
-        function cancelEdit(id) {
-            var el = document.getElementById('edit-' + id);
-            if (el) el.classList.remove('show');
-        }
-
-        async function saveEdit(id) {
-            try {
-                var scheduleEl = document.getElementById('edit-schedule-' + id);
-                var expiryDate = null;
-                if (scheduleEl && scheduleEl.value) {
-                    var date = new Date();
-                    date.setDate(date.getDate() + parseInt(scheduleEl.value));
-                    expiryDate = date.toISOString();
-                }
-                
-                var popupSettings = {
-                    image: document.getElementById('edit-popup-image-' + id) ? document.getElementById('edit-popup-image-' + id).value.trim() || null : null,
-                    title: document.getElementById('edit-popup-title-' + id) ? document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
-                    buttonText: document.getElementById('edit-popup-btn-' + id) ? document.getElementById('edit-popup-btn-' + id).value.trim() || 'Claim Now' : 'Claim Now',
-                    subtitle: document.getElementById('edit-popup-sub-' + id) ? document.getElementById('edit-popup-sub-' + id).value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
-                };
-                
-                var r = await secureFetch('/api/links/' + id, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        name: document.getElementById('edit-name-' + id) ? document.getElementById('edit-name-' + id).value : '',
-                        video: document.getElementById('edit-video-' + id) ? document.getElementById('edit-video-' + id).value : '',
-                        claim: document.getElementById('edit-claim-' + id) ? document.getElementById('edit-claim-' + id).value : '',
-                        buttonText: document.getElementById('edit-btn-' + id) ? document.getElementById('edit-btn-' + id).value : '',
-                        headline: document.getElementById('edit-headline-' + id) ? document.getElementById('edit-headline-' + id).value : '',
-                        expiryDate: expiryDate,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                var editEl = document.getElementById('edit-' + id);
-                if (editEl) editEl.classList.remove('show');
-                loadLinks();
-                showToast('✅ Link updated with popup settings!', 'success');
-            } catch (e) { showToast('❌ Failed to update', 'error'); }
-        }
-
-        // ===== UPDATE STATUS =====
-        async function updateStatus(id, status) {
-            try {
-                var r = await secureFetch('/api/links/' + id + '/status', {
-                    method: 'PUT',
-                    body: JSON.stringify({ status: status })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                loadLinks();
-                showToast('✅ Status updated to: ' + status, 'success');
-            } catch (e) { showToast('❌ Failed to update status', 'error'); }
-        }
-
-        // ===== DELETE LINK =====
-        async function deleteLink(id) {
-            if (confirm('⚠️ Delete this link permanently?')) {
-                try {
-                    var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
-                    if (!r) return;
-                    var data = await r.json();
-                    if (data.success) {
-                        loadLinks();
-                        showToast('✅ Link deleted!', 'success');
-                    }
-                } catch (e) { showToast('❌ Failed to delete', 'error'); }
-            }
-        }
-
-        // ===== THEME =====
-        async function setTheme(theme) {
-            document.body.className = theme;
-            var r = await secureFetch('/api/admin/theme', {
-                method: 'POST',
-                body: JSON.stringify({ theme: theme })
-            });
-            if (!r) return;
-            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
-            var btn = document.getElementById('theme-' + theme);
-            if (btn) btn.classList.add('active');
-        }
-
-        async function loadTheme() {
-            try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data && data.theme) {
-                    document.body.className = data.theme;
-                    var btn = document.getElementById('theme-' + data.theme);
-                    if (btn) btn.classList.add('active');
-                }
-            } catch (e) {}
-        }
-
-        // ===== LOGOUT =====
-        async function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await fetch('/api/admin/logout', { method: 'POST' });
-                } catch (e) {}
-                localStorage.removeItem('csrfToken');
-                window.location.href = 'login.html';
-            }
-        }
-
-        // ===== RENEWAL MANAGEMENT =====
-        async function loadPricingData() {
-            try {
-                var r = await fetch('/api/pricing');
-                var data = await r.json();
-                var pricing = data.pricing || {};
-                var paymentSettings = data.paymentSettings || {};
-                var fields = ['price_3days', 'price_7days', 'price_15days', 'price_1month', 'price_3months', 'price_6months', 'price_12months'];
-                var keys = ['3days', '7days', '15days', '1month', '3months', '6months', '12months'];
-                fields.forEach(function(field, index) {
-                    var el = document.getElementById(field);
-                    if (el) el.value = pricing[keys[index]] || 0;
-                });
-                var methodEl = document.getElementById('paymentMethod');
-                var upiEl = document.getElementById('upiInput');
-                var textEl = document.getElementById('textInput');
-                if (methodEl) methodEl.value = paymentSettings.method || 'UPI';
-                if (upiEl) upiEl.value = paymentSettings.details?.upiId || 'admin@upi';
-                if (textEl) textEl.value = paymentSettings.details?.text || '';
-                togglePaymentFields();
-            } catch (e) {}
-        }
-
-        async function savePricing() {
-            var pricing = {
-                '3days': parseInt(document.getElementById('price_3days')?.value) || 0,
-                '7days': parseInt(document.getElementById('price_7days')?.value) || 0,
-                '15days': parseInt(document.getElementById('price_15days')?.value) || 0,
-                '1month': parseInt(document.getElementById('price_1month')?.value) || 0,
-                '3months': parseInt(document.getElementById('price_3months')?.value) || 0,
-                '6months': parseInt(document.getElementById('price_6months')?.value) || 0,
-                '12months': parseInt(document.getElementById('price_12months')?.value) || 0
-            };
-            
-            var methodEl = document.getElementById('paymentMethod');
-            var method = methodEl ? methodEl.value : 'UPI';
-            var details = {};
-            if (method === 'UPI') {
-                var upiEl = document.getElementById('upiInput');
-                details = { upiId: upiEl ? upiEl.value : 'admin@upi' };
-            } else if (method === 'QR') {
-                var fileInput = document.getElementById('qrInput');
-                if (fileInput && fileInput.files && fileInput.files[0]) {
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        details = { qrCode: e.target.result };
-                        savePaymentSettings(method, details, pricing);
-                    };
-                    reader.readAsDataURL(fileInput.files[0]);
-                    return;
-                }
-            } else {
-                var textEl = document.getElementById('textInput');
-                details = { text: textEl ? textEl.value : '' };
-            }
-            savePaymentSettings(method, details, pricing);
-        }
-
-        async function savePaymentSettings(method, details, pricing) {
-            var paymentSettings = { method: method, details: details };
-            try {
-                var r = await secureFetch('/api/admin/pricing', {
-                    method: 'POST',
-                    body: JSON.stringify({ pricing: pricing, paymentSettings: paymentSettings })
-                });
-                if (r) {
-                    showToast('✅ Saved successfully!', 'success');
-                    loadRenewalRequests();
-                }
-            } catch (e) {
-                showToast('❌ Failed to save', 'error');
-            }
-        }
-
-        async function loadRenewalRequests() {
-            try {
-                var r = await secureFetch('/api/renewal/requests');
-                if (!r) return;
-                var requests = await r.json();
-                var container = document.getElementById('renewalRequestsList');
-                if (!container) return;
-                if (!requests || requests.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
-                    return;
-                }
-                container.innerHTML = '';
-                requests.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-                requests.forEach(function(req) {
-                    var paidDate = req.paidAt ? new Date(req.paidAt) : null;
-                    var formattedDate = paidDate ? paidDate.toLocaleDateString() + ' ' + paidDate.toLocaleTimeString() + ':' + String(paidDate.getSeconds()).padStart(2, '0') : 'Pending';
-                    
-                    var div = document.createElement('div');
-                    div.className = 'renewal-item';
-                    div.id = 'renewal-' + req.id;
-                    div.innerHTML = '<div class="info"><div class="name">' + escapeHTML(req.linkName || 'Unknown Link') + '</div><div class="details"><span>📅 ' + formattedDate + '</span><span>💰 ₹' + req.amount + '</span><span>📆 ' + req.days + ' days</span><span>🆔 ' + (req.transactionId || 'N/A') + '</span><span class="renewal-status-badge ' + req.status + '">' + req.status.toUpperCase() + '</span></div></div><div class="actions">' + (req.status === 'pending' ? '<button onclick="markPaid(\'' + req.id + '\')" class="btn btn-success btn-sm">✅ Mark Paid</button>' : '') + (req.status === 'paid' ? '<button onclick="approveRenewal(\'' + req.id + '\')" class="btn btn-primary btn-sm">✅ Approve</button>' : '') + (req.status === 'pending' || req.status === 'paid' ? '<button onclick="rejectRenewal(\'' + req.id + '\')" class="btn btn-danger btn-sm">❌ Reject</button>' : '') + '</div>';
-                    container.appendChild(div);
-                });
-            } catch (e) {}
-        }
-
-        async function markPaid(requestId) {
-            if (!confirm('Mark this as paid?')) return;
-            try {
-                var r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('✅ Marked as paid!', 'success');
-                    loadRenewalRequests();
-                }
-            } catch (e) { showToast('❌ Failed', 'error'); }
-        }
-
-        async function approveRenewal(requestId) {
-            if (!confirm('Approve this renewal?')) return;
-            try {
-                var r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('✅ Renewal approved! Link extended.', 'success');
-                    var element = document.getElementById('renewal-' + requestId);
-                    if (element) {
-                        element.style.transition = 'all 0.5s ease';
-                        element.style.opacity = '0';
-                        element.style.transform = 'translateX(50px)';
-                        setTimeout(function() { loadRenewalRequests(); }, 500);
-                    } else {
-                        loadRenewalRequests();
-                    }
-                }
-            } catch (e) { showToast('❌ Failed to approve', 'error'); }
-        }
-
-        async function rejectRenewal(requestId) {
-            if (!confirm('Reject this renewal?')) return;
-            try {
-                var r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('❌ Renewal rejected', 'error');
-                    var element = document.getElementById('renewal-' + requestId);
-                    if (element) {
-                        element.style.transition = 'all 0.5s ease';
-                        element.style.opacity = '0';
-                        element.style.transform = 'translateX(-50px)';
-                        setTimeout(function() { loadRenewalRequests(); }, 500);
-                    } else {
-                        loadRenewalRequests();
-                    }
-                }
-            } catch (e) { showToast('❌ Failed to reject', 'error'); }
-        }
-
-        // ==================== STATS DASHBOARD ====================
-        async function loadStats() {
-            try {
-                var response = await secureFetch('/api/all-stats');
-                if (!response) return;
-                if (response.ok) {
-                    var data = await response.json();
-                    var totalVisitors = document.getElementById('totalVisitors');
-                    var totalClaims = document.getElementById('totalClaims');
-                    var todayVisitors = document.getElementById('todayVisitors');
-                    var todayClaims = document.getElementById('todayClaims');
-                    if (totalVisitors) totalVisitors.textContent = data.global?.totalVisitors || 0;
-                    if (totalClaims) totalClaims.textContent = data.global?.totalClaims || 0;
-                    if (todayVisitors) todayVisitors.textContent = data.global?.todayVisitors || 0;
-                    if (todayClaims) todayClaims.textContent = data.global?.todayClaims || 0;
-                }
-            } catch (e) {
-                console.error('Failed to load stats:', e);
-            }
-        }
-
-        // ===== PAYMENT FIELDS TOGGLE (FIXED) =====
-        function togglePaymentFields() {
-            var methodEl = document.getElementById('paymentMethod');
-            if (!methodEl) {
-                console.warn('⚠️ paymentMethod element not found - skipping toggle');
-                return;
-            }
-            
-            var method = methodEl.value;
-            
-            var upiField = document.getElementById('upiField');
-            var qrField = document.getElementById('qrField');
-            var textField = document.getElementById('textField');
-
-            if (upiField) upiField.classList.remove('show');
-            if (qrField) qrField.classList.remove('show');
-            if (textField) textField.classList.remove('show');
-
-            if (method === 'UPI') {
-                if (upiField) upiField.classList.add('show');
-            } else if (method === 'QR') {
-                if (qrField) qrField.classList.add('show');
-            } else {
-                if (textField) textField.classList.add('show');
-            }
-        }
-
-        function previewQR(event) {
-            if (!event || !event.target) return;
-            
-            var file = event.target.files && event.target.files[0];
-            if (file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var preview = document.getElementById('qrPreview');
-                    if (preview) {
-                        preview.src = e.target.result;
-                        preview.classList.add('show');
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // ===== PERIODIC CHECKS =====
-        setInterval(function() { checkAuth(); }, 5 * 60 * 1000);
-        setInterval(loadRenewalRequests, 15000);
-        setInterval(loadStats, 30000);
-
-        // ===== CHECK AUTH =====
+        // ============================================================
+        // SECTION: CHECK AUTH
+        // ============================================================
         async function checkAuth() {
             try {
                 var response = await fetch('/api/links', {
@@ -1852,49 +1664,62 @@
             }
         }
 
-        // ===== INIT =====
+        // ============================================================
+        // SECTION: INIT
+        // ============================================================
         loadTheme();
         loadBackground();
         loadLinks();
+        loadStats();
         loadUserDashboardLink();
         loadPricingData();
         loadRenewalRequests();
-        loadStats();
         loadWhatsAppNumber();
+        
+        setInterval(loadStats, 30000);
+        setInterval(loadRenewalRequests, 15000);
         setInterval(loadLinks, 30000);
+        setInterval(updateLiveVisitors, 5000);
         checkAuth();
-        togglePaymentFields();
 
-        // Make functions globally accessible
-        window.installApp = installApp;
+        // ============================================================
+        // SECTION: GLOBAL FUNCTIONS
+        // ============================================================
+        window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
+        window.installApp = installApp;
         window.searchAndGenerateDashboard = searchAndGenerateDashboard;
         window.generateDashboardForLink = generateDashboardForLink;
         window.copyDashboardGeneratedLink = copyDashboardGeneratedLink;
+        window.copyDashboardLink = copyDashboardLink;
+        window.saveWhatsAppNumber = saveWhatsAppNumber;
+        window.savePricing = savePricing;
         window.createLink = createLink;
         window.copyLink = copyLink;
         window.copyLinkUrl = copyLinkUrl;
         window.toggleEdit = toggleEdit;
         window.cancelEdit = cancelEdit;
         window.saveEdit = saveEdit;
-        window.updateStatus = updateStatus;
         window.deleteLink = deleteLink;
         window.saveBackground = saveBackground;
         window.removeBackground = removeBackground;
         window.changePasscode = changePasscode;
-        window.saveWhatsAppNumber = saveWhatsAppNumber;
-        window.copyDashboardLink = copyDashboardLink;
-        window.toggleRenewal = toggleRenewal;
-        window.togglePaymentFields = togglePaymentFields;
-        window.previewQR = previewQR;
-        window.savePricing = savePricing;
         window.markPaid = markPaid;
         window.approveRenewal = approveRenewal;
         window.rejectRenewal = rejectRenewal;
         window.updateSchedulePreset = updateSchedulePreset;
         window.updateCustomExpiry = updateCustomExpiry;
+        window.updatePopupPreview = updatePopupPreview;
         window.showToast = showToast;
+        window.loadLinks = loadLinks;
+        window.loadStats = loadStats;
+        window.loadRenewalRequests = loadRenewalRequests;
+        window.loadUserDashboardLink = loadUserDashboardLink;
+        window.loadPricingData = loadPricingData;
+        window.loadWhatsAppNumber = loadWhatsAppNumber;
+        window.loadBackground = loadBackground;
+        window.loadTheme = loadTheme;
     </script>
 </body>
 </html>
