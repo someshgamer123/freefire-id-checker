@@ -115,7 +115,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers ====================
+// ==================== Security Headers (CSP FIXED for Videos) ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -124,9 +124,11 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             styleSrcAttr: ["'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            imgSrc: ["'self'", "data:", "https:", "http:"],
             connectSrc: ["'self'"],
-            frameSrc: ["'self'", "https://www.youtube.com"],
+            frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
+            // FIX: Allow media from all sources
+            mediaSrc: ["'self'", "https:", "http:", "https://*.image2url.com", "https://*.terabox.com", "*"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
         }
@@ -151,7 +153,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting (RELAXED FOR USER DASHBOARD) ====================
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -161,16 +163,14 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// Public routes - less strict
 const publicLimiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
+    windowMs: 60 * 1000,
     max: 30,
     message: 'Too many requests, please slow down.',
     standardHeaders: true,
     legacyHeaders: false
 });
 
-// Auth routes - strict
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
@@ -325,7 +325,7 @@ async function invalidateAllSessions(userId) {
     );
 }
 
-// ==================== Auth Middleware (OPTIONAL for public routes) ====================
+// ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
@@ -361,9 +361,9 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== PUBLIC ROUTES (No Auth Required) ====================
+// ==================== PUBLIC ROUTES (No Auth) ====================
 
-// WHATSAPP NUMBER API
+// WHATSAPP NUMBER
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -374,7 +374,7 @@ app.get('/api/whatsapp-number', async (req, res) => {
     }
 });
 
-// DASHBOARD MAP API - FIXED
+// DASHBOARD MAP - FIXED
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const { dashboardId } = req.params;
@@ -463,7 +463,7 @@ app.get('/api/visit-stats/:linkId', publicLimiter, async (req, res) => {
     }
 });
 
-// PARENT LINK (User Dashboard) - PUBLIC
+// PARENT LINK
 app.get('/api/parent-link', async (req, res) => {
     try {
         const links = await Link.find({});
@@ -492,7 +492,7 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// PRICING - PUBLIC
+// PRICING
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
@@ -593,7 +593,7 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
-// TRACK CLAIM - PUBLIC
+// TRACK CLAIM
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -655,7 +655,7 @@ app.get('/api/renewal/history/:linkId', async (req, res) => {
 
 // ==================== ADMIN ROUTES (Auth Required) ====================
 
-// SEARCH LINKS - ADMIN
+// SEARCH LINKS
 app.get('/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
@@ -685,7 +685,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
-// GENERATE DASHBOARD LINK - ADMIN
+// GENERATE DASHBOARD LINK
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -936,7 +936,7 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
-// RENEWAL REQUESTS - ADMIN
+// RENEWAL REQUESTS
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ 
@@ -949,7 +949,7 @@ app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     }
 });
 
-// LINK CRUD - ADMIN
+// LINK CRUD
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -1129,7 +1129,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN POPUP SETTINGS
+// ADMIN POPUP
 app.post('/api/admin/popup', authMiddleware, async (req, res) => {
     try {
         const { image, title, buttonText, subtitle, linkId } = req.body;
@@ -1628,6 +1628,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📊 Claim Tracking: Only on Main Claim Button');
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
+    console.log('📹 Video CSP: All media sources allowed');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
 });
