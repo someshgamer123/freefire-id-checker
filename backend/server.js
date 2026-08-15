@@ -161,6 +161,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
+// ==================== NO-CACHE HEADERS (STEP 3) ====================
+app.use((req, res, next) => {
+    // Prevent caching for HTML files
+    if (req.path.endsWith('.html') || req.path === '/' || req.path === '') {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+    next();
+});
+
 // ==================== JWT & Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
@@ -573,7 +584,7 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 
 // ==================== SECURE ADMIN ROUTES ====================
 
-// Secure Admin Login Page
+// Secure Admin Login Page (STEP 4)
 app.get(ADMIN_PATH, (req, res) => {
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -1143,16 +1154,17 @@ setInterval(async () => {
     }
 }, 60 * 60 * 1000);
 
-// ==================== START SERVER ====================
+// ==================== START SERVER (STEP 5) ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
     console.log('═══════════════════════════════════════════');
-    console.log(`🔧 Admin Panel: https://freefire-id-checker.onrender.com${ADMIN_PATH}`);
+    console.log(`🔧 Admin Panel: http://localhost:${port}${ADMIN_PATH}`);
     console.log(`🔑 ADMIN PASSCODE: 951753`);
     console.log('🛡️ F12 Blocked: ✅ Enabled');
     console.log('🛡️ Right Click Blocked: ✅ Enabled');
     console.log('🛡️ Old Admin Paths: ✅ Redirected');
+    console.log('🛡️ No-Cache Headers: ✅ Enabled');
     console.log('📌 Save this path securely!');
     console.log('═══════════════════════════════════════════');
 });
