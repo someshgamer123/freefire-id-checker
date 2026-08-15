@@ -277,7 +277,7 @@
             <div id="selectedPlanDisplay" style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:8px 0;">Select a plan above</div>
             
             <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
-                Request Renewal 😎
+                📱 Request Renewal via WhatsApp
             </button>
             <div id="renewalStatus" style="margin-top:10px;font-size:14px;text-align:center;color:rgba(255,255,255,0.5);"></div>
         </div>
@@ -324,17 +324,26 @@
                     whatsappNumber = data.number;
                     console.log('📱 WhatsApp Number loaded:', whatsappNumber);
                 } else {
-                    whatsappNumber = '916372923348';
+                    whatsappNumber = '919876543210';
                 }
             } catch (e) {
                 console.error('Error loading WhatsApp number:', e);
-                whatsappNumber = '916372923348';
+                whatsappNumber = '919876543210';
             }
         }
 
-        // ===== FIX: Map dashboard ID to actual link ID =====
+        // ===== FIXED: Map dashboard ID to actual link ID =====
         async function resolveLinkId() {
             try {
+                // If it's already a link ID (starts with 'link_'), use it directly
+                if (rawId.startsWith('link_')) {
+                    console.log('✅ Direct link ID detected:', rawId);
+                    linkId = rawId;
+                    actualLinkId = rawId;
+                    return true;
+                }
+                
+                // If it's a dashboard ID, try to map it
                 if (rawId.startsWith('dashboard_')) {
                     console.log('🔍 Dashboard ID detected. Fetching actual link...');
                     
@@ -346,7 +355,7 @@
                             if (mapData.linkId) {
                                 actualLinkId = mapData.linkId;
                                 linkId = actualLinkId;
-                                console.log('✅ Found link via mapping:', actualLinkId);
+                                console.log('✅ Found link via mapping API:', actualLinkId);
                                 return true;
                             }
                         }
@@ -354,35 +363,38 @@
                         console.log('⚠️ Dashboard map API failed, trying direct search...');
                     }
                     
-                    // Try to search all links
+                    // Try to search all links by dashboardId
                     var allLinksRes = await fetch('/api/links');
                     if (allLinksRes.ok) {
                         var allLinks = await allLinksRes.json();
                         var matched = allLinks.find(function(l) {
-                            return l.id === rawId || 
-                                   l.dashboardId === rawId ||
-                                   rawId.includes(l.id) ||
-                                   (l.dashboardId && rawId.includes(l.dashboardId));
+                            return l.dashboardId === rawId;
                         });
                         if (matched) {
                             actualLinkId = matched.id;
                             linkId = actualLinkId;
-                            console.log('✅ Found link via search:', actualLinkId);
+                            console.log('✅ Found link via dashboardId search:', actualLinkId);
                             return true;
                         }
                     }
                     
-                    console.log('⚠️ No mapping found, using raw ID:', rawId);
-                    linkId = rawId;
-                    return true;
-                } else {
+                    console.log('⚠️ No mapping found for dashboardId:', rawId);
+                    
+                    // Try to use raw ID directly (maybe it's a link ID in disguise)
                     linkId = rawId;
                     actualLinkId = rawId;
                     return true;
                 }
+                
+                // Default: use raw ID
+                linkId = rawId;
+                actualLinkId = rawId;
+                return true;
+                
             } catch (e) {
                 console.error('Error resolving link ID:', e);
                 linkId = rawId;
+                actualLinkId = rawId;
                 return true;
             }
         }
@@ -396,7 +408,14 @@
             try {
                 console.log('📊 Loading data for linkId:', linkId);
                 
+                // First try to get stats using the resolved link ID
                 var statsRes = await fetch('/api/visit-stats/' + linkId);
+                
+                // If 404, try using raw ID as fallback
+                if (statsRes.status === 404 && rawId !== linkId) {
+                    console.log('⚠️ Link not found with resolved ID, trying raw ID:', rawId);
+                    statsRes = await fetch('/api/visit-stats/' + rawId);
+                }
                 
                 if (statsRes.status === 404) {
                     console.log('⚠️ Link not found with ID:', linkId);
@@ -406,12 +425,16 @@
                     if (allLinksRes.ok) {
                         var allLinks = await allLinksRes.json();
                         var matchedLink = allLinks.find(function(l) {
-                            return l.id === rawId || l.dashboardId === rawId || rawId.includes(l.id);
+                            return l.id === rawId || 
+                                   l.dashboardId === rawId || 
+                                   rawId.includes(l.id) ||
+                                   (l.dashboardId && rawId.includes(l.dashboardId));
                         });
                         
                         if (matchedLink) {
                             console.log('✅ Found link by searching:', matchedLink.id);
                             linkId = matchedLink.id;
+                            actualLinkId = matchedLink.id;
                             statsRes = await fetch('/api/visit-stats/' + linkId);
                         }
                     }
