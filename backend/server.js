@@ -60,7 +60,6 @@ async function initializeDatabase() {
                     verifiedAt: new Date()
                 });
                 console.log('✅ 2FA enabled for admin');
-                console.log('📱 2FA Secret:', secret.base32);
             }
         }
 
@@ -116,13 +115,15 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers ====================
+// ==================== Security Headers (FIXED CSP) ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            scriptSrcAttr: ["'unsafe-inline'"],  // ← FIXED
             styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'", "https://www.youtube.com"],
