@@ -215,21 +215,21 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         const { dashboardId } = req.params;
         console.log('🔍 Dashboard map request for:', dashboardId);
         
-        // 1. Check if dashboardId itself is a link ID
+        // Check if dashboardId itself is a link ID
         const existingLink = await Link.findOne({ id: dashboardId });
         if (existingLink) {
             console.log('✅ Found link by direct ID:', existingLink.id);
             return res.json({ linkId: existingLink.id });
         }
         
-        // 2. Find link where dashboardId matches
+        // Find link where dashboardId matches
         const link = await Link.findOne({ dashboardId: dashboardId });
         if (link) {
             console.log('✅ Found link with dashboardId:', link.id);
             return res.json({ linkId: link.id });
         }
         
-        // 3. Partial match - search all links
+        // Partial match - search all links
         const allLinks = await Link.find({});
         const matched = allLinks.find(l => 
             l.id.includes(dashboardId) || 
