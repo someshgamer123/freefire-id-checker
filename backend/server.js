@@ -386,6 +386,65 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== PARENT LINK (User Dashboard) ====================
+app.get('/api/parent-link', async (req, res) => {
+    try {
+        const links = await Link.find({});
+        if (links.length > 0) {
+            const firstLink = links[0];
+            if (!firstLink.dashboardId) {
+                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+                await firstLink.save();
+            }
+            res.json({
+                url: '/user-dashboard/' + firstLink.dashboardId,
+                linkName: firstLink.name,
+                linkId: firstLink.id
+            });
+        } else {
+            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+            res.json({
+                url: '/user-dashboard/' + dashboardId,
+                linkName: null,
+                linkId: null
+            });
+        }
+    } catch (error) {
+        console.error('❌ Parent link error:', error);
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
+    }
+});
+
+// ==================== SEARCH LINKS ====================
+app.get('/api/search-links', authMiddleware, async (req, res) => {
+    try {
+        const { query } = req.query;
+        
+        if (!query || query.length < 1) {
+            return res.json({ links: [] });
+        }
+        
+        const searchRegex = new RegExp(query, 'i');
+        
+        const links = await Link.find({
+            $or: [
+                { name: searchRegex },
+                { id: searchRegex },
+                { dashboardId: searchRegex }
+            ]
+        }).limit(20).sort({ created: -1 });
+        
+        res.json({
+            links: links,
+            count: links.length,
+            query: query
+        });
+    } catch (error) {
+        console.error('❌ Search links error:', error);
+        res.status(500).json({ error: 'Failed to search links' });
+    }
+});
+
 // ==================== DASHBOARD MAP API ====================
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
@@ -420,7 +479,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     }
 });
 
-// ==================== GENERATE DASHBOARD LINK API ====================
+// ==================== GENERATE DASHBOARD LINK ====================
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -596,7 +655,6 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ADMIN ROUTES ====================
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
@@ -665,6 +723,19 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ Logs error:', error);
         res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
+// ==================== RENEWAL REQUESTS ====================
+app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
+    try {
+        const requests = await RenewalRequest.find({ 
+            status: { $in: ['pending', 'paid'] } 
+        }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) {
+        console.error('❌ Renewal requests error:', error);
+        res.status(500).json({ error: 'Failed to fetch renewal requests' });
     }
 });
 
@@ -846,7 +917,6 @@ app.get('/api/link/:id', async (req, res) => {
             });
         }
         
-        // ===== VISITOR TRACKING - 48hr Unique =====
         const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
@@ -1108,6 +1178,295 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
+// ==================== RENEWAL ====================
+app.post('/api/renewal/request-from-dashboard', async (req, res) => {
+    try {
+        const { linkId, linkName, plan, days, amount } = req.body;
+        
+        if (!linkId || !plan) {
+            return res.status(400).json({ error: 'Link ID and plan required' });
+        }
+        
+        const existing = await RenewalRequest.findOne({ 
+            linkId: linkId, 
+            status: { $in: ['pending', 'paid'] } 
+        });
+        
+        if (existing) {
+            return res.status(400).json({
+                error: 'You already have a pending renewal request',
+                existingRequest: existing
+            });
+        }
+        
+        const renewalRequest = new RenewalRequest({
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId: linkId,
+            linkName: linkName || 'Unknown',
+            plan: plan,
+            days: days || 0,
+            amount: amount || 0,
+            status: 'pending',
+            createdAt: new Date(),
+            paidAt: null,
+            approvedAt: null,
+            transactionId: null,
+            upiId: 'pending'
+        });
+        
+        await renewalRequest.save();
+        res.json({
+            success: true,
+            requestId: renewalRequest.id,
+            message: 'Renewal request created successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Renewal request error:', error);
+        res.status(500).json({ error: 'Failed to create renewal request' });
+    }
+});
+
+app.get('/api/renewal/history/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const history = await RenewalRequest.find({ linkId: linkId })
+            .sort({ createdAt: -1 });
+        
+        res.json({
+            history: history,
+            count: history.length
+        });
+    } catch (error) {
+        console.error('❌ Renewal history error:', error);
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+app.post('/api/renewal/request', async (req, res) => {
+    try {
+        const { linkId, plan } = req.body;
+        const link = await Link.findOne({ id: linkId });
+        
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        const pricingDoc = await Pricing.findOne();
+        const pricing = pricingDoc?.pricing || {};
+        
+        const planDays = {
+            '3days': 3,
+            '7days': 7,
+            '15days': 15,
+            '1month': 30,
+            '3months': 90,
+            '6months': 180,
+            '12months': 365
+        };
+        
+        const days = planDays[plan];
+        if (!days) {
+            return res.status(400).json({ error: 'Invalid plan' });
+        }
+        
+        const amount = pricing[plan] || 0;
+        if (amount === 0) {
+            return res.status(400).json({ error: 'Price not set for this plan' });
+        }
+        
+        const existing = await RenewalRequest.findOne({ 
+            linkId: linkId, 
+            status: { $in: ['pending', 'paid'] } 
+        });
+        
+        if (existing) {
+            return res.status(400).json({
+                error: 'You already have a pending renewal request',
+                existingRequest: existing
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Please complete payment to submit renewal request',
+            amount: amount,
+            plan: plan,
+            days: days,
+            requiresPayment: true
+        });
+    } catch (error) {
+        console.error('❌ Renewal request error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
+app.post('/api/renewal/confirm-payment', async (req, res) => {
+    try {
+        const { linkId, plan, transactionId } = req.body;
+        const link = await Link.findOne({ id: linkId });
+        
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        const pricingDoc = await Pricing.findOne();
+        const pricing = pricingDoc?.pricing || {};
+        const paymentSettings = pricingDoc?.paymentSettings || {};
+        
+        const planDays = {
+            '3days': 3,
+            '7days': 7,
+            '15days': 15,
+            '1month': 30,
+            '3months': 90,
+            '6months': 180,
+            '12months': 365
+        };
+        
+        const days = planDays[plan];
+        const amount = pricing[plan] || 0;
+        
+        const renewalRequest = new RenewalRequest({
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId: linkId,
+            linkName: link.name,
+            plan: plan,
+            days: days,
+            amount: amount,
+            status: 'paid',
+            paidAt: new Date(),
+            transactionId: transactionId || 'TXN_' + Date.now(),
+            upiId: paymentSettings?.details?.upiId || 'admin@upi'
+        });
+        
+        await renewalRequest.save();
+        res.json({
+            success: true,
+            requestId: renewalRequest.id,
+            message: 'Payment confirmed! Waiting for admin approval.'
+        });
+    } catch (error) {
+        console.error('❌ Confirm payment error:', error);
+        res.status(500).json({ error: 'Failed to confirm payment' });
+    }
+});
+
+app.get('/api/renewal/status/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const request = await RenewalRequest.findOne({ linkId: linkId })
+            .sort({ createdAt: -1 });
+        
+        res.json({
+            hasRequest: !!request,
+            request: request || null,
+            status: request?.status || 'none'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch status' });
+    }
+});
+
+app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status === 'approved' || request.status === 'rejected') {
+            return res.status(400).json({ error: 'Request already processed' });
+        }
+        
+        request.status = 'paid';
+        request.paidAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'MARK_PAID', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        res.json({ success: true, message: 'Payment marked as paid' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark payment' });
+    }
+});
+
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status !== 'paid') {
+            return res.status(400).json({ error: 'Payment not confirmed yet' });
+        }
+        
+        const link = await Link.findOne({ id: request.linkId });
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry.toISOString();
+            link.status = 'active';
+            await link.save();
+        }
+        
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'APPROVE_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId,
+            plan: request.plan
+        }, req);
+        res.json({ success: true, message: 'Renewal approved! Link extended.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to approve renewal' });
+    }
+});
+
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        request.status = 'rejected';
+        await request.save();
+        await logAdminAction('admin', 'REJECT_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        res.json({ success: true, message: 'Renewal rejected' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject renewal' });
+    }
+});
+
+app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (request) {
+            await logAdminAction('admin', 'DELETE_RENEWAL', { 
+                requestId: requestId,
+                linkId: request.linkId
+            }, req);
+        }
+        await RenewalRequest.findOneAndDelete({ id: requestId });
+        res.json({ success: true, message: 'Request removed' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove request' });
+    }
+});
+
 // ==================== SERVE PAGES ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
@@ -1168,7 +1527,8 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 ADMIN LOGIN: Strong password required');
+    console.log('🔑 ADMIN PASSCODE: 951753');
+    console.log('⏰ Session: 7 DAYS');
     console.log('🔐 2FA: ' + (ENABLE_2FA ? '✅ Enabled' : '❌ Disabled'));
     console.log('🛡️ IP Whitelist: ' + IP_WHITELIST);
     console.log('⏰ Session Timeout: ' + SESSION_TIMEOUT + ' minutes');
@@ -1176,6 +1536,8 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📋 Audit Logging: ✅ Enabled');
     console.log('📊 48hr Unique Visitor Tracking: ✅ Enabled');
     console.log('📊 Claim Tracking: Only on Main Claim Button');
+    console.log('📱 WhatsApp: Renewal requests via WhatsApp');
+    console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
 });
