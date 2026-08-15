@@ -38,6 +38,10 @@ const LinkSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    dashboardId: {
+        type: String,
+        default: null
+    },
     visits: {
         type: Number,
         default: 0

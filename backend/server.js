@@ -1,7 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' }); // ✅ Root folder se .env load karein
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001; // ✅ Default port 3001 agar .env mein nahi hai
 const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -10,6 +10,8 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+// const twilio = require('twilio'); // ✅ SMS disable kar diya
 
 // ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
@@ -19,10 +21,12 @@ const Stats = require('./models/Stats');
 const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
 const Pricing = require('./models/Pricing');
-const Session = require('./models/Session');
+const Session = require('./models/Session'); // ✅ Updated file
 const AdminLog = require('./models/AdminLog');
-const LoginAttempt = require('./models/LoginAttempt');
+const LoginAttempt = require('./models/LoginAttempt'); // ✅ Updated file
 const TwoFactorAuth = require('./models/TwoFactorAuth');
+const BlockedDevice = require('./models/BlockedDevice');
+const OTPVerification = require('./models/OTPVerification');
 
 // ==================== Security Module ====================
 const Security = require('./config/security');
@@ -32,11 +36,27 @@ connectDB();
 
 // ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 20;
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA !== 'false';
+
+// Email Config
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASS = process.env.EMAIL_PASS || '';
+
+// ==================== Email Transporter ====================
+let transporter = null;
+if (EMAIL_USER && EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
+        }
+    });
+}
 
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
@@ -46,7 +66,9 @@ async function initializeDatabase() {
             const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
             await User.create({
                 passcode: hashedPasscode,
-                theme: 'light'
+                theme: 'light',
+                email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || ''
             });
             console.log('✅ Admin user created');
 
@@ -140,7 +162,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://freefire-id-checker.onrender.com'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://freefire-id-checker.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
@@ -188,7 +210,8 @@ function generateCSRFToken() {
 function getDeviceId(req) {
     const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    return { ip, userAgent, fingerprint: crypto.createHash('sha256').update(ip + userAgent).digest('hex') };
+    const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+    return { ip, userAgent, fingerprint };
 }
 
 // ==================== Logging Function ====================
@@ -199,6 +222,59 @@ async function logAdminAction(userId, action, details = {}, req = null) {
         await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
     } catch (error) {
         console.error('❌ Logging error:', error);
+    }
+}
+
+// ==================== Device Blocking ====================
+async function isDeviceBlocked(req) {
+    const { fingerprint, ip } = getDeviceId(req);
+    const blocked = await BlockedDevice.findOne({
+        $or: [{ fingerprint }, { ip }],
+        blockedUntil: { $gt: new Date() }
+    });
+    return blocked;
+}
+
+async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 60) {
+    const { fingerprint, ip } = getDeviceId(req);
+    const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+    
+    await BlockedDevice.findOneAndUpdate(
+        { $or: [{ fingerprint }, { ip }] },
+        {
+            fingerprint,
+            ip,
+            reason,
+            blockedUntil,
+            attempts: 1,
+            lastAttempt: new Date()
+        },
+        { upsert: true }
+    );
+}
+
+async function incrementDeviceAttempts(req) {
+    const { fingerprint, ip } = getDeviceId(req);
+    const record = await BlockedDevice.findOne({
+        $or: [{ fingerprint }, { ip }]
+    });
+    if (record) {
+        record.attempts = (record.attempts || 0) + 1;
+        record.lastAttempt = new Date();
+        if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
+            record.blockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
+            record.reason = 'Too many failed attempts';
+        }
+        await record.save();
+    } else {
+        await BlockedDevice.create({
+            fingerprint,
+            ip,
+            attempts: 1,
+            reason: 'Login attempt',
+            blockedUntil: null,
+            lastAttempt: new Date()
+        });
     }
 }
 
@@ -266,28 +342,105 @@ async function invalidateAllSessions(userId) {
 
 // ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
+    // Check if device is blocked
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+        return res.status(403).json({
+            error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
+            blockedUntil: blocked.blockedUntil
+        });
+    }
+
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
+    
     if (!token) return res.status(401).json({ error: 'Authentication required' });
+    
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
+    
     const session = await validateSession(token);
     if (!session) {
         res.clearCookie('adminToken');
         return res.status(401).json({ error: 'Session expired. Please login again.' });
     }
+    
     if (csrfToken !== session.csrfToken) {
         await logAdminAction('admin', 'CSRF_ATTEMPT', { token }, req);
+        await incrementDeviceAttempts(req);
         return res.status(403).json({ error: 'Invalid CSRF token' });
     }
+    
     const { ip } = getDeviceId(req);
     if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
         await logAdminAction('admin', 'IP_BLOCKED', { ip }, req);
+        await blockDevice(req, 'IP not whitelisted', 60);
         return res.status(403).json({ error: 'Access denied from this IP address' });
     }
+    
     req.user = decoded;
     req.session = session;
     next();
+}
+
+// ==================== OTP Verification Functions ====================
+function generateOTP() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOTPEmail(email, otp) {
+    if (!transporter) return false;
+    try {
+        const mailOptions = {
+            from: EMAIL_USER,
+            to: email,
+            subject: 'Admin Login OTP Verification',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <h2 style="color: #667eea; text-align: center;">🔐 Admin Login OTP</h2>
+                    <p style="font-size: 16px; color: #333; text-align: center;">Your One-Time Password (OTP) for admin login is:</p>
+                    <div style="background: #667eea; color: white; font-size: 32px; font-weight: 800; text-align: center; padding: 20px; border-radius: 10px; margin: 20px 0; letter-spacing: 5px;">
+                        ${otp}
+                    </div>
+                    <p style="font-size: 14px; color: #666; text-align: center;">This OTP is valid for 5 minutes. Do not share this with anyone.</p>
+                    <p style="font-size: 12px; color: #999; text-align: center; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
+                </div>
+            `
+        };
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('❌ Email send error:', error);
+        return false;
+    }
+}
+
+async function saveOTP(deviceId, otp, method, contact) {
+    await OTPVerification.findOneAndDelete({ deviceId });
+    await OTPVerification.create({
+        deviceId,
+        otp,
+        method,
+        contact,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+    });
+}
+
+async function verifyOTP(deviceId, otp) {
+    const record = await OTPVerification.findOne({
+        deviceId,
+        otp,
+        expiresAt: { $gt: new Date() },
+        verified: false
+    });
+    if (record) {
+        record.verified = true;
+        record.verifiedAt = new Date();
+        await record.save();
+        return true;
+    }
+    return false;
 }
 
 // ================================================================
@@ -544,7 +697,9 @@ app.get('/api/settings', async (req, res) => {
                 title: '🎁 Claim Your Reward',
                 buttonText: 'Claim Now',
                 subtitle: 'Tap below to unlock your reward'
-            }
+            },
+            adminEmail: admin?.email || '',
+            adminPhone: admin?.phone || ''
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch settings' });
@@ -581,11 +736,21 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
-// ==================== ADMIN LOGIN ====================
+// ==================== ADMIN LOGIN (WITH OTP VERIFICATION) ====================
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
-        const { passcode, token } = req.body;
-        const { ip, userAgent } = getDeviceId(req);
+        const { passcode, otp, step } = req.body;
+        const { ip, userAgent, fingerprint } = getDeviceId(req);
+        
+        // Check if device is blocked
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+            return res.status(403).json({
+                error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
+                blockedUntil: blocked.blockedUntil
+            });
+        }
         
         const attemptCheck = await checkLoginAttempts(ip);
         if (!attemptCheck.allowed) {
@@ -598,63 +763,108 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             });
         }
         
-        if (!passcode) {
-            return res.status(400).json({ error: 'Passcode required' });
-        }
-        
-        const admin = await User.findOne();
-        if (!admin) {
-            return res.status(500).json({ error: 'Admin not found' });
-        }
-        
-        const isValid = bcrypt.compareSync(passcode, admin.passcode);
-        
-        if (!isValid) {
-            await recordLoginAttempt(ip, false);
-            await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
-            return res.status(401).json({ error: 'Invalid passcode' });
-        }
-        
-        if (ENABLE_2FA) {
-            const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
-            if (twoFactor && twoFactor.isEnabled) {
-                if (!token) {
-                    return res.status(200).json({ 
-                        requires2FA: true,
-                        message: '2FA token required'
-                    });
+        // STEP 1: Verify passcode first
+        if (!step || step === 'passcode') {
+            if (!passcode) {
+                return res.status(400).json({ error: 'Passcode required' });
+            }
+            
+            const admin = await User.findOne();
+            if (!admin) {
+                return res.status(500).json({ error: 'Admin not found' });
+            }
+            
+            const isValid = bcrypt.compareSync(passcode, admin.passcode);
+            
+            if (!isValid) {
+                await recordLoginAttempt(ip, false);
+                await incrementDeviceAttempts(req);
+                await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
+                
+                // Block device after 5 failed attempts
+                const deviceRecord = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+                if (deviceRecord && deviceRecord.attempts >= 5) {
+                    await blockDevice(req, 'Too many failed passcode attempts', LOCKOUT_TIME);
                 }
                 
-                const isValid2FA = Security.verify2FAToken(twoFactor.secret, token);
-                if (!isValid2FA) {
-                    await logAdminAction('admin', '2FA_FAILED', { ip: ip }, req);
-                    return res.status(401).json({ error: 'Invalid 2FA token' });
-                }
+                return res.status(401).json({ error: 'Invalid passcode' });
             }
+            
+            // Passcode correct, generate OTP
+            const otpCode = generateOTP();
+            const adminEmail = admin.email || '';
+            
+            // Try to send OTP via email
+            let sent = false;
+            let method = 'email';
+            let contact = adminEmail;
+            
+            if (adminEmail && transporter) {
+                sent = await sendOTPEmail(adminEmail, otpCode);
+                method = 'email';
+                contact = adminEmail;
+            }
+            
+            if (!sent) {
+                return res.status(500).json({ 
+                    error: 'Unable to send OTP. Please configure email settings.' 
+                });
+            }
+            
+            // Save OTP
+            await saveOTP(fingerprint, otpCode, method, contact);
+            
+            return res.json({
+                success: false,
+                step: 'otp',
+                message: `OTP sent to your email`,
+                method: method,
+                contact: contact.replace(/(.{3})(.*)(.{2})/, '$1****$3')
+            });
         }
         
-        await recordLoginAttempt(ip, true);
-        
-        const jwtToken = generateToken('admin');
-        const csrfToken = generateCSRFToken();
-        
-        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
-        
-        await logAdminAction('admin', 'LOGIN', { ip: ip }, req);
-        
-        res.cookie('adminToken', jwtToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/'
-        });
-        
-        res.json({
-            success: true,
-            csrfToken: csrfToken,
-            requires2FA: false
-        });
+        // STEP 2: Verify OTP
+        if (step === 'otp') {
+            if (!otp || otp.length !== 6) {
+                return res.status(400).json({ error: 'Valid 6-digit OTP required' });
+            }
+            
+            const verified = await verifyOTP(fingerprint, otp);
+            if (!verified) {
+                await incrementDeviceAttempts(req);
+                const deviceRecord = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+                if (deviceRecord && deviceRecord.attempts >= 3) {
+                    await blockDevice(req, 'Too many failed OTP attempts', LOCKOUT_TIME);
+                }
+                return res.status(401).json({ error: 'Invalid or expired OTP' });
+            }
+            
+            // OTP verified - complete login
+            await recordLoginAttempt(ip, true);
+            
+            // Clear any device blocks
+            await BlockedDevice.findOneAndDelete({ $or: [{ fingerprint }, { ip }] });
+            
+            const jwtToken = generateToken('admin');
+            const csrfToken = generateCSRFToken();
+            
+            await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+            await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
+            
+            res.cookie('adminToken', jwtToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production' || true,
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                path: '/'
+            });
+            
+            res.json({
+                success: true,
+                csrfToken: csrfToken,
+                step: 'complete'
+            });
+        }
         
     } catch (error) {
         console.error('❌ Login error:', error);
@@ -1044,7 +1254,76 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
-// ==================== SERVE PAGES ====================
+// ==================== Update Admin Contact Info (Email & Phone) ====================
+app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        const admin = await User.findOne();
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        
+        if (email !== undefined) admin.email = email;
+        if (phone !== undefined) admin.phone = phone;
+        
+        await admin.save();
+        await logAdminAction('admin', 'UPDATE_CONTACT', { email, phone }, req);
+        res.json({ success: true, email: admin.email, phone: admin.phone });
+    } catch (error) {
+        console.error('❌ Update contact error:', error);
+        res.status(500).json({ error: 'Failed to update contact info' });
+    }
+});
+
+// ==================== Check Device Block Status ====================
+app.get('/api/admin/block-status', async (req, res) => {
+    try {
+        const { fingerprint } = getDeviceId(req);
+        const blocked = await BlockedDevice.findOne({ fingerprint });
+        if (blocked && blocked.blockedUntil && blocked.blockedUntil > new Date()) {
+            const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+            res.json({
+                blocked: true,
+                reason: blocked.reason,
+                remainingMinutes,
+                blockedUntil: blocked.blockedUntil
+            });
+        } else {
+            res.json({ blocked: false });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to check block status' });
+    }
+});
+
+// ==================== Admin Panel Protection Middleware ====================
+// This middleware checks if someone is trying to access admin panel from a visitor link
+app.use('/admin', async (req, res, next) => {
+    const referer = req.headers.referer || '';
+    const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
+    
+    if (isFromVisitorLink && !req.cookies?.adminToken) {
+        // Block device if trying to access admin from visitor link
+        await blockDevice(req, 'Unauthorized admin access from visitor link', 60);
+        return res.status(403).send(`
+            <html>
+                <body style="background:#0a0a1a;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Arial,sans-serif;flex-direction:column;text-align:center;padding:20px;">
+                    <div style="font-size:80px;">🚫</div>
+                    <h1 style="color:#fc8181;">Access Denied!</h1>
+                    <p style="color:rgba(255,255,255,0.6);max-width:400px;">
+                        Your device has been blocked for attempting unauthorized access to the admin panel.
+                        Please contact the administrator if this is a mistake.
+                    </p>
+                    <div style="margin-top:20px;padding:15px;background:rgba(252,129,129,0.1);border-radius:10px;border:1px solid rgba(252,129,129,0.2);">
+                        <p style="font-size:13px;color:#fc8181;">🚨 Block Reason: Unauthorized admin access attempt</p>
+                        <p style="font-size:12px;color:rgba(255,255,255,0.3);">Block duration: 60 minutes</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+    next();
+});
+
+// ==================== Serve Pages ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -1086,6 +1365,16 @@ setInterval(async () => {
     try {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
+        
+        // Clean expired OTPs
+        const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+        if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
+        
+        // Clean expired blocks
+        const blockResult = await BlockedDevice.deleteMany({ 
+            blockedUntil: { $lt: new Date() } 
+        });
+        if (blockResult.deletedCount > 0) console.log(`🧹 Cleaned ${blockResult.deletedCount} expired device blocks`);
     } catch (error) {
         console.error('❌ Session cleanup error:', error);
     }
@@ -1114,5 +1403,11 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📹 Video CSP: All media sources allowed');
     console.log('📦 CDN: cdn.jsdelivr.net allowed for html2canvas');
     console.log('🗄️ Database: MongoDB Atlas');
+    console.log('═══════════════════════════════════════════');
+    console.log('🚨 NEW SECURITY FEATURES:');
+    console.log('🛡️ Device-based blocking: Individual device blocks');
+    console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
+    console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
+    console.log('📱 OTP Methods: Email support (SMS disabled)');
     console.log('═══════════════════════════════════════════');
 });

@@ -53,7 +53,6 @@ const RenewalRequestSchema = new mongoose.Schema({
     }
 });
 
-// Index for faster queries
 RenewalRequestSchema.index({ linkId: 1, status: 1 });
 RenewalRequestSchema.index({ createdAt: -1 });
 

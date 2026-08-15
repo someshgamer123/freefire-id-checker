@@ -18,6 +18,10 @@ const PricingSchema = new mongoose.Schema({
             text: { type: String, default: '' }
         }
     },
+    whatsappNumber: {
+        type: String,
+        default: '919876543210'
+    },
     updatedAt: {
         type: Date,
         default: Date.now

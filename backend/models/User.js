@@ -10,6 +10,14 @@ const UserSchema = new mongoose.Schema({
         default: 'light',
         enum: ['light', 'dark']
     },
+    email: {
+        type: String,
+        default: ''
+    },
+    phone: {
+        type: String,
+        default: ''
+    },
     createdAt: {
         type: Date,
         default: Date.now

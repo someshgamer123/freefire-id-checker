@@ -29,35 +29,87 @@
         .login-box .logo { font-size: 60px; margin-bottom: 10px; }
         .login-box h2 { color: #333; margin-bottom: 6px; font-size: 24px; font-weight: 700; }
         .login-box .sub-title { color: #666; margin-bottom: 25px; font-size: 14px; }
-        .login-box .passcode-inputs {
+        
+        .passcode-inputs {
             display: flex; gap: 10px; justify-content: center; margin: 15px 0;
         }
-        .login-box .passcode-inputs input {
+        .passcode-inputs input {
             width: 50px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
             border: 2px solid #ddd; border-radius: 12px; transition: 0.3s;
             background: #f8f9fa; color: #333; caret-color: #667eea;
         }
-        .login-box .passcode-inputs input:focus {
+        .passcode-inputs input:focus {
             border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
             background: white;
         }
-        .login-box .passcode-inputs input.filled {
+        .passcode-inputs input.filled {
             border-color: #667eea; background: rgba(102,126,234,0.05);
         }
-        .login-box .passcode-inputs input.error {
+        .passcode-inputs input.error {
             border-color: #fc8181; background: rgba(252,129,129,0.05);
             animation: shake 0.5s ease;
         }
-        .login-box .btn {
+        
+        .otp-input-wrapper {
+            display: none;
+            margin: 15px 0;
+        }
+        .otp-input-wrapper.show {
+            display: block;
+            animation: fadeInUp 0.4s ease;
+        }
+        .otp-input-wrapper input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 8px;
+            background: #f8f9fa;
+            color: #333;
+            transition: 0.3s;
+        }
+        .otp-input-wrapper input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+            background: white;
+        }
+        .otp-input-wrapper input.error {
+            border-color: #fc8181;
+            background: rgba(252,129,129,0.05);
+        }
+        .otp-input-wrapper .otp-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .otp-input-wrapper .otp-method-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+        
+        .btn {
             width: 100%; padding: 15px; font-size: 18px; margin-top: 15px;
             background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none;
             border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: 600;
         }
-        .login-box .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
-        .login-box .btn:active { transform: scale(0.97); }
-        .login-box .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #333;
+        }
+        .btn-secondary:hover { background: #cbd5e0; }
+        
         .error { color: #fc8181; margin: 10px 0; font-weight: 600; min-height: 24px; font-size: 14px; }
         .error:empty { display: none; }
+        .error.success { color: #48bb78; }
+        
         .passcode-hint {
             color: #999; font-size: 13px; margin: 8px 0; display: flex;
             align-items: center; justify-content: center; gap: 6px;
@@ -68,9 +120,11 @@
         }
         .passcode-hint .dot.filled { background: #667eea; }
         .passcode-hint .dot.active { background: #667eea; animation: pulse 1s infinite; }
+        
         .footer-text { color: #aaa; font-size: 12px; margin-top: 20px; }
         .footer-text a { color: #667eea; text-decoration: none; }
         .footer-text a:hover { text-decoration: underline; }
+        
         .security-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -85,33 +139,7 @@
             background: rgba(252,129,129,0.15);
             color: #fc8181;
         }
-        .twofa-input {
-            margin-top: 10px;
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 16px;
-            text-align: center;
-            letter-spacing: 3px;
-            background: #f8f9fa;
-            color: #333;
-            display: none;
-        }
-        .twofa-input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
-            background: white;
-        }
-        .twofa-input.show { display: block; }
-        .twofa-label {
-            font-size: 11px;
-            color: #999;
-            margin-top: 4px;
-            display: none;
-        }
-        .twofa-label.show { display: block; }
+        
         .rate-limit-msg {
             background: #fff3cd;
             color: #856404;
@@ -123,14 +151,47 @@
             border: 1px solid #ffc107;
         }
         .rate-limit-msg.show { display: block; }
+        
+        .blocked-msg {
+            background: #fc8181;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin: 10px 0;
+            display: none;
+            font-weight: 600;
+        }
+        .blocked-msg.show { display: block; }
+        .blocked-msg .block-time {
+            font-size: 20px;
+            font-weight: 800;
+            display: block;
+            margin: 6px 0;
+        }
+        
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 6px;
+            text-decoration: underline;
+        }
+        .resend-btn:hover { color: #764ba2; }
+        .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         @media (max-width: 480px) {
             .login-box { padding: 30px 20px; }
-            .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
-            .login-box .passcode-inputs { gap: 8px; }
+            .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
+            .passcode-inputs { gap: 8px; }
+            .otp-input-wrapper input { font-size: 18px; padding: 12px; letter-spacing: 6px; }
         }
         @media (max-width: 380px) {
-            .login-box .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
-            .login-box .passcode-inputs { gap: 5px; }
+            .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
+            .passcode-inputs { gap: 5px; }
         }
     </style>
 </head>
@@ -145,51 +206,103 @@
             ⚠️ Too many login attempts. Please wait <span id="rateLimitCountdown">30</span> minutes.
         </div>
         
-        <div class="passcode-inputs" id="passcodeContainer">
-            <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
-            <input type="password" id="pin2" maxlength="1" inputmode="numeric" aria-label="Pin 2">
-            <input type="password" id="pin3" maxlength="1" inputmode="numeric" aria-label="Pin 3">
-            <input type="password" id="pin4" maxlength="1" inputmode="numeric" aria-label="Pin 4">
-            <input type="password" id="pin5" maxlength="1" inputmode="numeric" aria-label="Pin 5">
-            <input type="password" id="pin6" maxlength="1" inputmode="numeric" aria-label="Pin 6">
+        <div class="blocked-msg" id="blockedMsg">
+            🚫 Device Blocked!
+            <span class="block-time" id="blockTime">60 minutes</span>
+            <span style="font-size:13px;font-weight:400;display:block;margin-top:4px;">Reason: <span id="blockReason">Too many attempts</span></span>
         </div>
         
-        <div class="passcode-hint" id="passcodeHint">
-            <span class="dot" id="dot1"></span>
-            <span class="dot" id="dot2"></span>
-            <span class="dot" id="dot3"></span>
-            <span class="dot" id="dot4"></span>
-            <span class="dot" id="dot5"></span>
-            <span class="dot" id="dot6"></span>
+        <!-- Step 1: Passcode -->
+        <div id="stepPasscode">
+            <div class="passcode-inputs" id="passcodeContainer">
+                <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
+                <input type="password" id="pin2" maxlength="1" inputmode="numeric" aria-label="Pin 2">
+                <input type="password" id="pin3" maxlength="1" inputmode="numeric" aria-label="Pin 3">
+                <input type="password" id="pin4" maxlength="1" inputmode="numeric" aria-label="Pin 4">
+                <input type="password" id="pin5" maxlength="1" inputmode="numeric" aria-label="Pin 5">
+                <input type="password" id="pin6" maxlength="1" inputmode="numeric" aria-label="Pin 6">
+            </div>
+            
+            <div class="passcode-hint" id="passcodeHint">
+                <span class="dot" id="dot1"></span>
+                <span class="dot" id="dot2"></span>
+                <span class="dot" id="dot3"></span>
+                <span class="dot" id="dot4"></span>
+                <span class="dot" id="dot5"></span>
+                <span class="dot" id="dot6"></span>
+            </div>
+            
+            <button onclick="verifyPasscode()" class="btn" id="loginBtn">🔑 Continue</button>
         </div>
         
-        <input type="text" class="twofa-input" id="twoFAToken" placeholder="Enter 2FA token" maxlength="6" inputmode="numeric" aria-label="2FA Token">
-        <div class="twofa-label" id="twoFALabel">Enter the 6-digit code from your authenticator app</div>
+        <!-- Step 2: OTP -->
+        <div id="stepOTP" style="display:none;">
+            <div class="otp-input-wrapper show">
+                <label class="otp-label">📱 Enter 6-Digit OTP</label>
+                <input type="text" id="otpInput" maxlength="6" inputmode="numeric" placeholder="000000" autofocus>
+                <div class="otp-method-info" id="otpMethodInfo">OTP sent to your registered email/phone</div>
+                <button class="resend-btn" id="resendBtn" onclick="resendOTP()">Resend OTP</button>
+            </div>
+            <button onclick="verifyOTP()" class="btn" id="otpBtn">✅ Verify & Login</button>
+            <button onclick="backToPasscode()" class="btn btn-secondary" style="margin-top:8px;">← Back</button>
+        </div>
         
-        <button onclick="login()" class="btn" id="loginBtn">🔑 Login</button>
         <div id="error" class="error"></div>
         <div class="footer-text">
             🔒 Secure | <a href="#" onclick="clearAll(event)">Clear</a>
             <span style="margin:0 8px;">|</span>
-            <span style="color:#999;font-size:11px;">2FA Enabled</span>
+            <span style="color:#999;font-size:11px;">2-Step Verification</span>
         </div>
     </div>
+    
     <script>
         var inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
         var dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
         var errorEl = document.getElementById('error');
         var loginBtn = document.getElementById('loginBtn');
-        var is2FARequired = false;
-        var twoFAToken = document.getElementById('twoFAToken');
-        var twoFALabel = document.getElementById('twoFALabel');
+        var otpBtn = document.getElementById('otpBtn');
+        var otpInput = document.getElementById('otpInput');
+        var stepPasscode = document.getElementById('stepPasscode');
+        var stepOTP = document.getElementById('stepOTP');
+        var loginSubtitle = document.getElementById('loginSubtitle');
+        var otpMethodInfo = document.getElementById('otpMethodInfo');
+        var resendBtn = document.getElementById('resendBtn');
+        var blockedMsg = document.getElementById('blockedMsg');
+        var blockTime = document.getElementById('blockTime');
+        var blockReason = document.getElementById('blockReason');
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
 
+        var currentStep = 'passcode'; // 'passcode' or 'otp'
+        var otpSent = false;
+        var resendCooldown = 0;
+
         window.addEventListener('load', function() { 
+            checkBlockStatus();
             var pin1 = document.getElementById('pin1');
             if (pin1) pin1.focus(); 
         });
 
+        // ==================== Check Block Status ====================
+        async function checkBlockStatus() {
+            try {
+                var r = await fetch('/api/admin/block-status');
+                var data = await r.json();
+                if (data.blocked) {
+                    showBlocked(data.reason, data.remainingMinutes);
+                }
+            } catch (e) {}
+        }
+
+        function showBlocked(reason, minutes) {
+            blockedMsg.classList.add('show');
+            blockReason.textContent = reason || 'Too many failed attempts';
+            blockTime.textContent = minutes + ' minutes';
+            loginBtn.disabled = true;
+            loginBtn.textContent = '⏳ Blocked';
+        }
+
+        // ==================== Passcode Input Handlers ====================
         inputs.forEach(function(id, index) {
             var input = document.getElementById(id);
             var dot = document.getElementById(dots[index]);
@@ -207,7 +320,7 @@
                         var next = document.getElementById(inputs[index + 1]);
                         if (next) next.focus();
                     } else {
-                        setTimeout(function() { login(); }, 300);
+                        setTimeout(function() { verifyPasscode(); }, 300);
                     }
                 } else {
                     this.classList.remove('filled');
@@ -224,7 +337,7 @@
                         prev.select();
                     }
                 }
-                if (e.key === 'Enter') login();
+                if (e.key === 'Enter') verifyPasscode();
                 if (e.key === 'Escape') clearAll(e);
             });
 
@@ -267,7 +380,7 @@
                     if (next) next.focus();
                     updateDots();
                     if (digits.length === 6) {
-                        setTimeout(login, 300);
+                        setTimeout(verifyPasscode, 300);
                     }
                 }
             });
@@ -315,22 +428,21 @@
             if (pin1) pin1.focus();
             if (loginBtn) {
                 loginBtn.disabled = false;
-                loginBtn.textContent = '🔑 Login';
+                loginBtn.textContent = '🔑 Continue';
             }
-            var subTitle = document.getElementById('loginSubtitle');
-            if (subTitle) subTitle.textContent = 'Enter your passcode';
-            is2FARequired = false;
-            if (twoFAToken) {
-                twoFAToken.value = '';
-                twoFAToken.classList.remove('show');
-            }
-            if (twoFALabel) twoFALabel.classList.remove('show');
-            if (rateLimitMsg) rateLimitMsg.classList.remove('show');
+            
+            // Reset OTP step
+            stepOTP.style.display = 'none';
+            stepPasscode.style.display = 'block';
+            currentStep = 'passcode';
+            loginSubtitle.textContent = 'Enter your passcode';
+            otpInput.value = '';
         }
 
         function showError(message) {
             if (!errorEl) return;
             errorEl.textContent = '❌ ' + message;
+            errorEl.className = 'error';
             for (var i = 0; i < 6; i++) {
                 var input = document.getElementById(inputs[i]);
                 if (!input) continue;
@@ -339,9 +451,234 @@
                     if (input) input.classList.remove('error'); 
                 }, 600);
             }
-            setTimeout(function() { clearAll(null); }, 800);
         }
 
+        function showSuccess(message) {
+            if (!errorEl) return;
+            errorEl.textContent = '✅ ' + message;
+            errorEl.className = 'error success';
+        }
+
+        // ==================== Step 1: Verify Passcode ====================
+        async function verifyPasscode() {
+            var passcode = getPasscode();
+            if (!errorEl) return;
+            errorEl.textContent = '';
+            
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Verifying...';
+            }
+
+            if (!passcode || passcode.length !== 6) {
+                showError('Please enter complete 6-digit passcode');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Continue';
+                }
+                return;
+            }
+
+            try {
+                var response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passcode: passcode, step: 'passcode' })
+                });
+
+                if (response.status === 403) {
+                    var errorData = await response.json();
+                    if (errorData.blockedUntil) {
+                        var remainingMinutes = Math.ceil((new Date(errorData.blockedUntil) - new Date()) / (1000 * 60));
+                        showBlocked(errorData.error || 'Device blocked', remainingMinutes);
+                    } else {
+                        showError(errorData.error || 'Access denied');
+                    }
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Continue';
+                    }
+                    return;
+                }
+
+                if (response.status === 429) {
+                    var text = await response.text();
+                    showRateLimit(30 * 60);
+                    showError(text || 'Too many attempts. Please wait 30 minutes.');
+                    if (loginBtn) {
+                        loginBtn.disabled = true;
+                        loginBtn.textContent = '⏳ Locked';
+                    }
+                    return;
+                }
+
+                var data = await response.json();
+
+                if (data.success && data.step === 'complete') {
+                    // Direct login (no OTP needed)
+                    handleLoginSuccess(data);
+                } else if (data.step === 'otp') {
+                    // OTP required
+                    showOTPStep(data.method, data.contact);
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Continue';
+                    }
+                } else if (data.error) {
+                    showError(data.error);
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Continue';
+                    }
+                }
+            } catch (e) {
+                console.error('Login error:', e);
+                showError('Connection error. Please try again.');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Continue';
+                }
+            }
+        }
+
+        // ==================== Step 2: OTP Verification ====================
+        function showOTPStep(method, contact) {
+            stepPasscode.style.display = 'none';
+            stepOTP.style.display = 'block';
+            currentStep = 'otp';
+            loginSubtitle.textContent = '📱 Enter OTP';
+            
+            var methodText = method === 'email' ? 'email' : 'phone';
+            otpMethodInfo.textContent = 'OTP sent to your ' + methodText + ' (' + contact + ')';
+            
+            otpInput.focus();
+            otpInput.select();
+            
+            otpSent = true;
+            startResendTimer();
+        }
+
+        function backToPasscode() {
+            stepOTP.style.display = 'none';
+            stepPasscode.style.display = 'block';
+            currentStep = 'passcode';
+            loginSubtitle.textContent = 'Enter your passcode';
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '🔑 Continue';
+            }
+            var pin1 = document.getElementById('pin1');
+            if (pin1) pin1.focus();
+        }
+
+        async function verifyOTP() {
+            var otp = otpInput.value.trim();
+            if (!otp || otp.length !== 6 || !/^\d+$/.test(otp)) {
+                showError('Please enter valid 6-digit OTP');
+                return;
+            }
+
+            if (otpBtn) {
+                otpBtn.disabled = true;
+                otpBtn.textContent = '⏳ Verifying...';
+            }
+
+            try {
+                var passcode = getPasscode();
+                var response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        passcode: passcode, 
+                        otp: otp,
+                        step: 'otp'
+                    })
+                });
+
+                var data = await response.json();
+
+                if (data.success && data.step === 'complete') {
+                    handleLoginSuccess(data);
+                } else if (data.error) {
+                    showError(data.error);
+                    if (otpBtn) {
+                        otpBtn.disabled = false;
+                        otpBtn.textContent = '✅ Verify & Login';
+                    }
+                }
+            } catch (e) {
+                console.error('OTP verification error:', e);
+                showError('Connection error. Please try again.');
+                if (otpBtn) {
+                    otpBtn.disabled = false;
+                    otpBtn.textContent = '✅ Verify & Login';
+                }
+            }
+        }
+
+        async function resendOTP() {
+            if (resendCooldown > 0) {
+                showError('Please wait ' + resendCooldown + ' seconds before resending');
+                return;
+            }
+
+            resendBtn.disabled = true;
+            resendBtn.textContent = '⏳ Sending...';
+
+            try {
+                var passcode = getPasscode();
+                var response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        passcode: passcode, 
+                        step: 'passcode' 
+                    })
+                });
+
+                var data = await response.json();
+                if (data.step === 'otp') {
+                    showSuccess('OTP resent successfully!');
+                    otpInput.value = '';
+                    otpInput.focus();
+                    startResendTimer();
+                } else if (data.error) {
+                    showError(data.error);
+                }
+            } catch (e) {
+                showError('Failed to resend OTP');
+            } finally {
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend OTP';
+            }
+        }
+
+        function startResendTimer() {
+            resendCooldown = 30;
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Resend OTP (' + resendCooldown + 's)';
+            
+            var interval = setInterval(function() {
+                resendCooldown--;
+                if (resendCooldown <= 0) {
+                    clearInterval(interval);
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend OTP';
+                } else {
+                    resendBtn.textContent = 'Resend OTP (' + resendCooldown + 's)';
+                }
+            }, 1000);
+        }
+
+        // ==================== Login Success ====================
+        function handleLoginSuccess(data) {
+            window.csrfToken = data.csrfToken;
+            localStorage.setItem('csrfToken', data.csrfToken);
+            localStorage.setItem('loginTime', Date.now());
+            window.location.href = 'index.html';
+        }
+
+        // ==================== Rate Limit ====================
         function showRateLimit(seconds) {
             if (rateLimitMsg) {
                 rateLimitMsg.classList.add('show');
@@ -356,144 +693,40 @@
             }
         }
 
-        async function login() {
-            var passcode = getPasscode();
-            if (!errorEl) return;
-            errorEl.textContent = '';
-            if (loginBtn) {
-                loginBtn.disabled = true;
-                loginBtn.textContent = '⏳ Verifying...';
+        // ==================== OTP Input Auto-submit ====================
+        otpInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+            if (this.value.length === 6) {
+                setTimeout(verifyOTP, 400);
             }
+        });
 
-            if (!passcode || passcode.length !== 6) {
-                showError('Please enter complete 6-digit passcode');
-                if (loginBtn) {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = '🔑 Login';
-                }
-                return;
-            }
+        otpInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') verifyOTP();
+            if (e.key === 'Escape') backToPasscode();
+        });
 
-            try {
-                var requestBody = { passcode: passcode };
-                
-                if (is2FARequired && twoFAToken) {
-                    if (twoFAToken.value && twoFAToken.value.length >= 6) {
-                        requestBody.token = twoFAToken.value;
-                    } else {
-                        showError('Please enter 2FA token');
-                        if (loginBtn) {
-                            loginBtn.disabled = false;
-                            loginBtn.textContent = '🔑 Login';
-                        }
-                        return;
-                    }
-                }
-                
-                var response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (response.status === 429) {
-                    var text = await response.text();
-                    showRateLimit(30 * 60);
-                    showError(text || 'Too many attempts. Please wait 30 minutes.');
-                    if (loginBtn) {
-                        loginBtn.disabled = true;
-                        loginBtn.textContent = '⏳ Locked';
-                    }
-                    return;
-                }
-
-                var data;
-                try {
-                    data = await response.json();
-                } catch (e) {
-                    var text = await response.text();
-                    showError(text || 'Server error. Please try again.');
-                    if (loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = '🔑 Login';
-                    }
-                    return;
-                }
-
-                if (data.success) {
-                    window.csrfToken = data.csrfToken;
-                    localStorage.setItem('csrfToken', data.csrfToken);
-                    localStorage.setItem('loginTime', Date.now());
-                    window.location.href = 'index.html';
-                } else if (data.requires2FA) {
-                    is2FARequired = true;
-                    var subTitle = document.getElementById('loginSubtitle');
-                    if (subTitle) subTitle.textContent = 'Enter 2FA token';
-                    if (loginBtn) {
-                        loginBtn.textContent = '🔑 Verify 2FA';
-                        loginBtn.disabled = false;
-                    }
-                    
-                    if (twoFAToken) {
-                        twoFAToken.classList.add('show');
-                        twoFAToken.value = '';
-                        twoFAToken.focus();
-                    }
-                    if (twoFALabel) twoFALabel.classList.add('show');
-                    
-                    if (errorEl) {
-                        errorEl.textContent = '🔐 2FA required. Enter your authenticator code.';
-                        errorEl.style.color = '#667eea';
-                    }
-                } else {
-                    showError(data.error || 'Invalid passcode!');
-                    if (loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = '🔑 Login';
-                    }
-                }
-            } catch (e) {
-                console.error('Login error:', e);
-                showError('Connection error. Please try again.');
-                if (loginBtn) {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = '🔑 Login';
-                }
-            }
-        }
-
+        // ==================== Keyboard Shortcuts ====================
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'C') { 
                 clearAll(e); 
                 e.preventDefault(); 
             }
             if (e.ctrlKey && e.key === 'Enter') { 
-                login(); 
+                if (currentStep === 'passcode') verifyPasscode();
+                else verifyOTP();
                 e.preventDefault(); 
             }
         });
 
-        document.addEventListener('input', function() {
-            var allFilled = true;
-            for (var i = 0; i < 6; i++) {
-                var input = document.getElementById(inputs[i]);
-                if (!input || input.value === '') { allFilled = false; break; }
-            }
-            if (allFilled && !is2FARequired) {
-                clearTimeout(window._loginTimeout);
-                window._loginTimeout = setTimeout(function() { login(); }, 400);
-            }
-            
-            if (twoFAToken && twoFAToken.value.length >= 6) {
-                clearTimeout(window._loginTimeout);
-                window._loginTimeout = setTimeout(function() { login(); }, 400);
-            }
-        });
+        // ==================== Auto-check block status ====================
+        setInterval(checkBlockStatus, 30000);
 
         console.log('🔐 Secure Admin Login Panel');
-        console.log('🛡️ 2FA Enabled');
+        console.log('🛡️ 2-Step Verification Enabled');
+        console.log('📱 OTP via Email/SMS');
         console.log('🔒 Strong Password Required');
-        console.log('⏰ Session: 60 minutes');
+        console.log('⏰ Session: 7 days');
     </script>
 </body>
 </html>

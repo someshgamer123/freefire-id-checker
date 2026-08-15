@@ -40,7 +40,7 @@ const SessionSchema = new mongoose.Schema({
     }
 });
 
-// Indexes
+// ✅ Only these indexes - NO DUPLICATES
 SessionSchema.index({ token: 1 });
 SessionSchema.index({ expiresAt: 1 });
 SessionSchema.index({ userId: 1, isActive: 1 });

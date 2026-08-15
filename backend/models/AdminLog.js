@@ -36,7 +36,6 @@ const AdminLogSchema = new mongoose.Schema({
     }
 });
 
-// Indexes
 AdminLogSchema.index({ userId: 1, timestamp: -1 });
 AdminLogSchema.index({ action: 1 });
 AdminLogSchema.index({ timestamp: -1 });

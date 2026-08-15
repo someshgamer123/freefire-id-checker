@@ -484,6 +484,41 @@
         }
         .search-bar input:focus { border-color: var(--primary); outline: none; }
 
+        /* ===== CONTACT SETTINGS ===== */
+        .contact-settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 768px) {
+            .contact-settings-grid { grid-template-columns: 1fr; }
+        }
+        .contact-settings-grid .contact-field label {
+            font-size: 10px;
+            color: var(--text-light);
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+        .contact-settings-grid .contact-field input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+        }
+        .contact-settings-grid .contact-field input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        .contact-status {
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 12px; }
             .header-actions { justify-content: center; }
@@ -729,8 +764,25 @@
             </div>
 
             <div class="card">
-                <h3>🔐 Admin Settings</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode</p>
+                <h3>📱 Contact & OTP Settings</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
+                <div class="contact-settings-grid">
+                    <div class="contact-field">
+                        <label>📧 Email Address</label>
+                        <input type="email" id="adminEmail" placeholder="admin@example.com">
+                    </div>
+                    <div class="contact-field">
+                        <label>📞 Phone Number (with country code)</label>
+                        <input type="text" id="adminPhone" placeholder="+919876543210">
+                    </div>
+                </div>
+                <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:8px 20px;">💾 Save Contact Info</button>
+                <div id="contactStatus" class="contact-status"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Admin Passcode</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode (OTP will be required after change)</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
@@ -1787,6 +1839,46 @@
         }
 
         // ============================================================
+        // SECTION: CONTACT SETTINGS (EMAIL & PHONE)
+        // ============================================================
+        async function updateContactInfo() {
+            var email = document.getElementById('adminEmail').value.trim();
+            var phone = document.getElementById('adminPhone').value.trim();
+            var statusEl = document.getElementById('contactStatus');
+            
+            try {
+                var r = await secureFetch('/api/admin/update-contact', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, phone })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    statusEl.textContent = '✅ Contact info updated! OTP will be sent to these.';
+                    statusEl.style.color = '#48bb78';
+                    showToast('✅ Contact info updated!', 'success');
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
+                    statusEl.style.color = '#fc8181';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Failed to update';
+                statusEl.style.color = '#fc8181';
+            }
+        }
+
+        async function loadContactInfo() {
+            try {
+                var r = await fetch('/api/settings');
+                var data = await r.json();
+                if (data) {
+                    if (data.adminEmail) document.getElementById('adminEmail').value = data.adminEmail;
+                    if (data.adminPhone) document.getElementById('adminPhone').value = data.adminPhone;
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
         // SECTION: PASSCODE CHANGE
         // ============================================================
         async function changePasscode() {
@@ -1818,7 +1910,7 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    statusEl.textContent = '✅ Passcode changed! Please login again.';
+                    statusEl.textContent = '✅ Passcode changed! Please login again with OTP.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Passcode changed!', 'success');
                     document.getElementById('oldPasscode').value = '';
@@ -1860,6 +1952,7 @@
         loadLinks();
         loadStats();
         loadAnalyticsLinks();
+        loadContactInfo();
         startLiveRefresh();
         checkAuth();
 
@@ -1890,6 +1983,7 @@
         window.updateSchedulePreset = updateSchedulePreset;
         window.updateCustomExpiry = updateCustomExpiry;
         window.showToast = showToast;
+        window.updateContactInfo = updateContactInfo;
     </script>
 </body>
 </html>
