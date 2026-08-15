@@ -44,7 +44,6 @@
             background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        /* ===== MENU ===== */
         .menu-container {
             display: flex;
             gap: 8px;
@@ -85,7 +84,6 @@
             border-color: var(--primary);
         }
 
-        /* ===== SEARCH BAR ===== */
         .search-bar {
             display: flex;
             gap: 10px;
@@ -110,7 +108,6 @@
             margin-left: auto;
         }
 
-        /* ===== STATS CARDS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -132,7 +129,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
 
-        /* ===== LIVE VISITORS ===== */
         .live-visitors {
             background: var(--card-bg);
             border-radius: var(--radius);
@@ -191,7 +187,6 @@
             display: inline-block;
         }
 
-        /* ===== SECTIONS ===== */
         .section {
             display: none;
             animation: fadeInUp 0.4s ease;
@@ -232,7 +227,6 @@
         .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
         .btn-block { width: 100%; }
 
-        /* ===== COMPACT LINK ITEMS ===== */
         .link-item {
             background: var(--bg);
             padding: 10px 14px;
@@ -289,7 +283,6 @@
         .status-disabled { background: rgba(252,129,129,0.2); color: #fc8181; }
         .status-suspended { background: rgba(246,173,85,0.2); color: #f6ad55; }
 
-        /* ===== EDIT MODAL ===== */
         .edit-modal {
             display: none;
             position: fixed;
@@ -411,7 +404,6 @@
         .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
         .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        /* ===== ANALYTICS ===== */
         .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
         .analytics-container .analytics-header select { padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
@@ -482,7 +474,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- HEADER -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
@@ -495,7 +486,6 @@
             </div>
         </header>
 
-        <!-- ===== MENU ===== -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -505,7 +495,7 @@
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- ===== SECTION: DASHBOARD ===== -->
+        <!-- Dashboard -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
@@ -537,7 +527,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: LINKS ===== -->
+        <!-- Links -->
         <div class="section" id="section-links">
             <div class="card">
                 <h3>🔍 Search Links</h3>
@@ -549,7 +539,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: ANALYTICS ===== -->
+        <!-- Analytics -->
         <div class="section" id="section-analytics">
             <div class="analytics-container">
                 <div class="analytics-header">
@@ -591,7 +581,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: CREATE ===== -->
+        <!-- Create -->
         <div class="section" id="section-create">
             <div class="card">
                 <h3>➕ Create Link</h3>
@@ -662,7 +652,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: SETTINGS ===== -->
+        <!-- Settings -->
         <div class="section" id="section-settings">
             <div class="card">
                 <h3>🖼️ UID Background (9:16)</h3>
@@ -691,7 +681,7 @@
         </div>
     </div>
 
-    <!-- ===== EDIT MODAL ===== -->
+    <!-- Edit Modal -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeEditModal()">✕</button>
@@ -705,1092 +695,1042 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script>
-    // ============================================================
-    // DYNAMIC ADMIN PATH DETECTION
-    // ============================================================
-    function getAdminPath() {
-        var path = window.location.pathname;
-        var match = path.match(/^\/admin_[a-f0-9]+/);
-        return match ? match[0] : '';
-    }
+        var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
-    var ADMIN_PATH = getAdminPath();
-    console.log('🔐 Admin API Path:', ADMIN_PATH);
-
-    // Helper function for API calls
-    async function apiCall(endpoint, options) {
-        options = options || {};
-        var url = ADMIN_PATH ? ADMIN_PATH + endpoint : endpoint;
-        var response = await fetch(url, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken || '',
-                ...options.headers
-            },
-            credentials: 'include'
-        });
-        
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('adminCsrfToken');
-            localStorage.removeItem('csrfToken');
-            var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-            window.location.href = loginUrl;
-            throw new Error('Session expired');
+        if (!csrfToken) {
+            window.location.href = 'login.html';
         }
-        
-        return response;
-    }
 
-    // ============================================================
-    // AUTH CHECK
-    // ============================================================
-    var csrfToken = localStorage.getItem('adminCsrfToken') || localStorage.getItem('csrfToken') || '';
-
-    if (!csrfToken) {
-        var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-        window.location.href = loginUrl;
-    }
-
-    // ============================================================
-    // SECTION: MENU
-    // ============================================================
-    function showSection(sectionId) {
-        document.querySelectorAll('.section').forEach(function(el) {
-            el.classList.remove('active');
-        });
-        var target = document.getElementById('section-' + sectionId);
-        if (target) target.classList.add('active');
-        
-        document.querySelectorAll('.menu-btn').forEach(function(el) {
-            el.classList.remove('active');
-        });
-        var btn = document.querySelector('.menu-btn[data-section="' + sectionId + '"]');
-        if (btn) btn.classList.add('active');
-
-        if (sectionId === 'analytics') {
-            loadAnalyticsLinks();
-        }
-        if (sectionId === 'links') {
-            filterLinks();
-        }
-    }
-
-    // ============================================================
-    // SECTION: UTILITY
-    // ============================================================
-    async function secureFetch(url, options) {
-        options = options || {};
-        try {
-            var response = await apiCall(url, options);
-            return response;
-        } catch (e) {
-            if (e.message === 'Session expired') {
-                showToast('❌ Session expired. Please login again.', 'error');
-                setTimeout(function() { 
-                    var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-                    window.location.href = loginUrl; 
-                }, 1500);
-            } else {
-                showToast('❌ Network error', 'error');
-            }
-            return null;
-        }
-    }
-
-    function showToast(msg, type) {
-        type = type || 'info';
-        var t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = 'toast ' + type + ' show';
-        clearTimeout(t._timeout);
-        t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
-    }
-
-    function escapeHTML(str) {
-        if (!str) return '';
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    // ============================================================
-    // SECTION: PWA INSTALL
-    // ============================================================
-    var deferredPrompt;
-    window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('installBtn').classList.add('show');
-    });
-
-    function installApp() {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function(result) {
-                if (result.outcome === 'accepted') {
-                    showToast('✅ App installed!', 'success');
-                }
-                deferredPrompt = null;
-                document.getElementById('installBtn').classList.remove('show');
+        // ============================================================
+        // SECTION: MENU
+        // ============================================================
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(function(el) {
+                el.classList.remove('active');
             });
-        } else {
-            showToast('📲 Use Chrome browser to install', 'info');
-        }
-    }
-
-    // ============================================================
-    // SECTION: THEME
-    // ============================================================
-    async function setTheme(theme) {
-        document.body.className = theme;
-        try {
-            var r = await apiCall('/api/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
-            if (r) {
-                document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
-                document.getElementById('theme-' + theme).classList.add('active');
-            }
-        } catch (e) {
-            console.error('Theme error:', e);
-        }
-    }
-
-    async function loadTheme() {
-        try {
-            var r = await fetch('/api/settings');
-            var data = await r.json();
-            if (data && data.theme) {
-                document.body.className = data.theme;
-                document.getElementById('theme-' + data.theme).classList.add('active');
-            }
-        } catch (e) {}
-    }
-
-    // ============================================================
-    // SECTION: LOGOUT
-    // ============================================================
-    async function logout() {
-        if (confirm('Are you sure you want to logout?')) {
-            try {
-                await apiCall('/api/logout', { method: 'POST' });
-            } catch (e) {}
-            localStorage.removeItem('adminCsrfToken');
-            localStorage.removeItem('csrfToken');
-            var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-            window.location.href = loginUrl;
-        }
-    }
-
-    // ============================================================
-    // SECTION: STATS & LIVE VISITORS
-    // ============================================================
-    async function loadStats() {
-        try {
-            var response = await apiCall('/api/all-stats');
-            if (!response) return;
-            if (response.ok) {
-                var data = await response.json();
-                var totalLinks = document.getElementById('totalLinks');
-                var activeLinks = document.getElementById('activeLinks');
-                var totalVisits = document.getElementById('totalVisits');
-                var expiredLinks = document.getElementById('expiredLinks');
-                
-                if (data.links) {
-                    if (totalLinks) totalLinks.textContent = data.links.length || 0;
-                    if (activeLinks) activeLinks.textContent = data.links.filter(function(l) { return l.status === 'active'; }).length || 0;
-                    if (totalVisits) totalVisits.textContent = data.links.reduce(function(s, l) { return s + (l.visits || 0); }, 0) || 0;
-                    if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
-                }
-                
-                var totalVisitors = document.getElementById('totalVisitors');
-                var totalClaims = document.getElementById('totalClaims');
-                var todayVisitors = document.getElementById('todayVisitors');
-                var todayClaims = document.getElementById('todayClaims');
-                
-                if (data.global) {
-                    if (totalVisitors) totalVisitors.textContent = data.global.totalVisitors || 0;
-                    if (totalClaims) totalClaims.textContent = data.global.totalClaims || 0;
-                    if (todayVisitors) todayVisitors.textContent = data.global.todayVisitors || 0;
-                    if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
-                }
-                
-                await updateLiveVisitors();
-            }
-        } catch (e) {
-            console.error('Failed to load stats:', e);
-        }
-    }
-
-    async function updateLiveVisitors() {
-        try {
-            var response = await apiCall('/api/all-stats');
-            if (!response) return;
-            if (response.ok) {
-                var data = await response.json();
-                var stats = data.global || {};
-                var lifetime = document.getElementById('liveLifetime');
-                if (lifetime) lifetime.textContent = stats.totalVisitors || 0;
-                
-                var dailyVisitors = stats.dailyVisitors || {};
-                var last48hrs = 0;
-                var now = new Date();
-                for (var date in dailyVisitors) {
-                    var d = new Date(date);
-                    if ((now - d) < 48 * 60 * 60 * 1000) {
-                        last48hrs += dailyVisitors[date] || 0;
-                    }
-                }
-                var live48hr = document.getElementById('live48hr');
-                if (live48hr) live48hr.textContent = last48hrs;
-                
-                var today = new Date().toISOString().split('T')[0];
-                var todayVisits = dailyVisitors[today] || 0;
-                var last60min = Math.round(todayVisits / 24);
-                var live60min = document.getElementById('live60min');
-                if (live60min) live60min.textContent = last60min;
-                
-                var activeNow = Math.max(1, Math.round(last60min / 6));
-                var liveActive = document.getElementById('liveActive');
-                if (liveActive) liveActive.textContent = activeNow;
-            }
-        } catch (e) {
-            console.error('Live visitors update error:', e);
-        }
-    }
-
-    setInterval(updateLiveVisitors, 5000);
-
-    // ============================================================
-    // SECTION: LINKS (Compact + Search)
-    // ============================================================
-    var allLinks = [];
-
-    async function loadLinks() {
-        try {
-            var r = await apiCall('/api/links');
-            if (!r) {
-                document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading</div>';
-                return;
-            }
-            allLinks = await r.json();
-            filterLinks();
-        } catch (e) {
-            document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading links</div>';
-        }
-    }
-
-    function filterLinks() {
-        var query = document.getElementById('searchLinksInput').value.toLowerCase().trim();
-        var filtered = allLinks;
-        
-        if (query) {
-            filtered = allLinks.filter(function(link) {
-                return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
-            });
-        }
-        
-        var c = document.getElementById('linksList');
-        var countEl = document.getElementById('searchResultsCount');
-        
-        if (filtered.length === 0) {
-            c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
-            if (countEl) countEl.textContent = 'No results';
-            return;
-        }
-        
-        if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
-        
-        c.innerHTML = '';
-        filtered.forEach(function(link) {
-            var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
-            var created = new Date(link.created).toLocaleDateString();
-            var visits = link.visits || 0;
+            var target = document.getElementById('section-' + sectionId);
+            if (target) target.classList.add('active');
             
-            var d = document.createElement('div');
-            d.className = 'link-item';
-            d.innerHTML = `
-                <div class="info">
-                    <span class="name">${escapeHTML(link.name)}</span>
-                    <span class="details">
-                        <span>📅 ${created}</span>
-                        <span class="visits">👁️ ${visits}</span>
-                        <span class="status-badge status-${sc}">${link.status}</span>
-                    </span>
-                </div>
-                <div class="actions">
-                    <button onclick="openEditModal('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
-                    <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
-                    <select onchange="handleStatusAction('${link.id}', this.value)" class="status-dropdown">
-                        <option value="">⚡ Action</option>
-                        <option value="active">✅ Activate</option>
-                        <option value="suspended">⏸️ Suspend</option>
-                        <option value="disabled">⛔ Disable</option>
-                        <option value="delete">🗑️ Delete</option>
-                    </select>
-                </div>
-            `;
-            c.appendChild(d);
-        });
-    }
-
-    function copyLinkUrl(id) {
-        var url = window.location.origin + '/uid?link=' + id;
-        navigator.clipboard.writeText(url).then(function() {
-            showToast('✅ Link copied!', 'success');
-        }).catch(function() {
-            var t = document.createElement('textarea');
-            t.value = url;
-            document.body.appendChild(t);
-            t.select();
-            document.execCommand('copy');
-            document.body.removeChild(t);
-            showToast('✅ Link copied!', 'success');
-        });
-    }
-
-    async function handleStatusAction(id, action) {
-        if (!action) return;
-        
-        if (action === 'delete') {
-            if (confirm('⚠️ Delete this link permanently?')) {
-                try {
-                    var r = await apiCall('/api/links/' + id, { method: 'DELETE' });
-                    if (!r) return;
-                    var data = await r.json();
-                    if (data.success) {
-                        loadLinks();
-                        loadStats();
-                        showToast('✅ Link deleted!', 'success');
-                    }
-                } catch (e) { showToast('❌ Failed to delete', 'error'); }
-            }
-            return;
-        }
-        
-        try {
-            var r = await apiCall('/api/links/' + id + '/status', {
-                method: 'PUT',
-                body: JSON.stringify({ status: action })
+            document.querySelectorAll('.menu-btn').forEach(function(el) {
+                el.classList.remove('active');
             });
-            if (!r) return;
-            var data = await r.json();
-            if (data.error) {
-                showToast('❌ ' + data.error, 'error');
-                return;
+            var btn = document.querySelector('.menu-btn[data-section="' + sectionId + '"]');
+            if (btn) btn.classList.add('active');
+
+            if (sectionId === 'analytics') {
+                loadAnalyticsLinks();
             }
-            loadLinks();
-            loadStats();
-            showToast('✅ Status updated to: ' + action, 'success');
-        } catch (e) { showToast('❌ Failed to update status', 'error'); }
-    }
-
-    // ============================================================
-    // SECTION: EDIT MODAL
-    // ============================================================
-    var editingLinkId = null;
-
-    function openEditModal(linkId) {
-        var link = allLinks.find(function(l) { return l.id === linkId; });
-        if (!link) {
-            showToast('❌ Link not found', 'error');
-            return;
+            if (sectionId === 'links') {
+                filterLinks();
+            }
         }
-        
-        editingLinkId = linkId;
-        var body = document.getElementById('editModalBody');
-        
-        var popup = link.popupSettings || {};
-        var expiry = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-        
-        body.innerHTML = `
-            <div class="form-group">
-                <label>Link Name</label>
-                <input type="text" id="editName" value="${escapeHTML(link.name)}">
-            </div>
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>🎬 Video URL</label>
-                    <input type="text" id="editVideo" value="${escapeHTML(link.video)}">
-                </div>
-                <div class="form-group">
-                    <label>🎁 Claim URL</label>
-                    <input type="text" id="editClaim" value="${escapeHTML(link.claim)}">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Button Text</label>
-                <input type="text" id="editButton" value="${escapeHTML(link.buttonText || 'Claim Now')}">
-            </div>
-            <div class="form-group">
-                <label>Headline</label>
-                <input type="text" id="editHeadline" value="${escapeHTML(link.headline || '')}">
-            </div>
-            <div class="form-group">
-                <label>Status</label>
-                <select id="editStatus">
-                    <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
-                    <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspended</option>
-                    <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Expiry Date</label>
-                <input type="datetime-local" id="editExpiry" value="${expiry}">
-            </div>
-            <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--border);">
-                <label style="font-weight:600;color:#667eea;font-size:12px;">🖼️ Popup Settings</label>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>Popup Title</label>
-                        <input type="text" id="editPopupTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
-                    </div>
-                    <div class="form-group">
-                        <label>Popup Button</label>
-                        <input type="text" id="editPopupBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Popup Subtitle</label>
-                    <input type="text" id="editPopupSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
-                </div>
-                <div class="form-group">
-                    <label>Popup Image URL (16:9)</label>
-                    <input type="text" id="editPopupImage" value="${escapeHTML(popup.image || '')}" placeholder="Enter image URL">
-                </div>
-                <div class="popup-preview-small" id="editPopupPreview">
-                    ${popup.image ? '<img src="' + escapeHTML(popup.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>'}
-                    <div class="preview-text">${escapeHTML(popup.title || '🎁 Claim Your Reward')}</div>
-                    <div class="preview-sub">${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}</div>
-                    <div class="preview-btn-small">${escapeHTML(popup.buttonText || 'Claim Now')}</div>
-                </div>
-            </div>
-            <div class="form-actions">
-                <button onclick="saveEditLink()" class="btn btn-success">💾 Save Changes</button>
-                <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
-            </div>
-        `;
-        
-        // Live preview for popup in edit modal
-        ['editPopupTitle', 'editPopupBtn', 'editPopupSub', 'editPopupImage'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', function() {
-                    updateEditPopupPreview();
+
+        // ============================================================
+        // SECTION: UTILITY
+        // ============================================================
+        async function secureFetch(url, options) {
+            options = options || {};
+            try {
+                var response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    showToast('❌ Session expired. Please login again.', 'error');
+                    localStorage.removeItem('csrfToken');
+                    setTimeout(function() { window.location.href = 'login.html'; }, 1500);
+                    return null;
+                }
+                return response;
+            } catch (e) {
+                showToast('❌ Network error', 'error');
+                return null;
+            }
+        }
+
+        function showToast(msg, type) {
+            type = type || 'info';
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // SECTION: PWA INSTALL
+        // ============================================================
+        var deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.add('show');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(result) {
+                    if (result.outcome === 'accepted') {
+                        showToast('✅ App installed!', 'success');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').classList.remove('show');
+                });
+            } else {
+                showToast('📲 Use Chrome browser to install', 'info');
+            }
+        }
+
+        // ============================================================
+        // SECTION: THEME
+        // ============================================================
+        async function setTheme(theme) {
+            document.body.className = theme;
+            var r = await secureFetch('/api/admin/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
+            if (!r) return;
+            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
+            document.getElementById('theme-' + theme).classList.add('active');
+        }
+
+        async function loadTheme() {
+            try {
+                var r = await fetch('/api/settings');
+                var data = await r.json();
+                if (data && data.theme) {
+                    document.body.className = data.theme;
+                    document.getElementById('theme-' + data.theme).classList.add('active');
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // SECTION: LOGOUT
+        // ============================================================
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await fetch('/api/admin/logout', { method: 'POST' });
+                } catch (e) {}
+                localStorage.removeItem('csrfToken');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ============================================================
+        // SECTION: STATS & LIVE VISITORS
+        // ============================================================
+        async function loadStats() {
+            try {
+                var response = await secureFetch('/api/all-stats');
+                if (!response) return;
+                if (response.ok) {
+                    var data = await response.json();
+                    var totalLinks = document.getElementById('totalLinks');
+                    var activeLinks = document.getElementById('activeLinks');
+                    var totalVisits = document.getElementById('totalVisits');
+                    var expiredLinks = document.getElementById('expiredLinks');
+                    
+                    if (data.links) {
+                        if (totalLinks) totalLinks.textContent = data.links.length || 0;
+                        if (activeLinks) activeLinks.textContent = data.links.filter(function(l) { return l.status === 'active'; }).length || 0;
+                        if (totalVisits) totalVisits.textContent = data.links.reduce(function(s, l) { return s + (l.visits || 0); }, 0) || 0;
+                        if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
+                    }
+                    
+                    var totalVisitors = document.getElementById('totalVisitors');
+                    var totalClaims = document.getElementById('totalClaims');
+                    var todayVisitors = document.getElementById('todayVisitors');
+                    var todayClaims = document.getElementById('todayClaims');
+                    
+                    if (data.global) {
+                        if (totalVisitors) totalVisitors.textContent = data.global.totalVisitors || 0;
+                        if (totalClaims) totalClaims.textContent = data.global.totalClaims || 0;
+                        if (todayVisitors) todayVisitors.textContent = data.global.todayVisitors || 0;
+                        if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
+                    }
+                    
+                    await updateLiveVisitors();
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function updateLiveVisitors() {
+            try {
+                var response = await secureFetch('/api/all-stats');
+                if (!response) return;
+                if (response.ok) {
+                    var data = await response.json();
+                    var stats = data.global || {};
+                    var lifetime = document.getElementById('liveLifetime');
+                    if (lifetime) lifetime.textContent = stats.totalVisitors || 0;
+                    
+                    var dailyVisitors = stats.dailyVisitors || {};
+                    var last48hrs = 0;
+                    var now = new Date();
+                    for (var date in dailyVisitors) {
+                        var d = new Date(date);
+                        if ((now - d) < 48 * 60 * 60 * 1000) {
+                            last48hrs += dailyVisitors[date] || 0;
+                        }
+                    }
+                    var live48hr = document.getElementById('live48hr');
+                    if (live48hr) live48hr.textContent = last48hrs;
+                    
+                    var today = new Date().toISOString().split('T')[0];
+                    var todayVisits = dailyVisitors[today] || 0;
+                    var last60min = Math.round(todayVisits / 24);
+                    var live60min = document.getElementById('live60min');
+                    if (live60min) live60min.textContent = last60min;
+                    
+                    var activeNow = Math.max(1, Math.round(last60min / 6));
+                    var liveActive = document.getElementById('liveActive');
+                    if (liveActive) liveActive.textContent = activeNow;
+                }
+            } catch (e) {
+                console.error('Live visitors update error:', e);
+            }
+        }
+
+        setInterval(updateLiveVisitors, 5000);
+
+        // ============================================================
+        // SECTION: LINKS
+        // ============================================================
+        var allLinks = [];
+
+        async function loadLinks() {
+            try {
+                var r = await secureFetch('/api/links');
+                if (!r) {
+                    document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading</div>';
+                    return;
+                }
+                allLinks = await r.json();
+                filterLinks();
+            } catch (e) {
+                document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading links</div>';
+            }
+        }
+
+        function filterLinks() {
+            var query = document.getElementById('searchLinksInput').value.toLowerCase().trim();
+            var filtered = allLinks;
+            
+            if (query) {
+                filtered = allLinks.filter(function(link) {
+                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
                 });
             }
-        });
-        
-        document.getElementById('editModal').classList.add('show');
-    }
-
-    function updateEditPopupPreview() {
-        var title = document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
-        var btn = document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value || 'Claim Now' : 'Claim Now';
-        var sub = document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
-        var img = document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value || '' : '';
-        var preview = document.getElementById('editPopupPreview');
-        if (!preview) return;
-        
-        var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
-        preview.innerHTML = imgHtml +
-            '<div class="preview-text">' + escapeHTML(title) + '</div>' +
-            '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
-            '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
-    }
-
-    function closeEditModal() {
-        document.getElementById('editModal').classList.remove('show');
-        editingLinkId = null;
-    }
-
-    async function saveEditLink() {
-        if (!editingLinkId) {
-            showToast('❌ No link selected', 'error');
-            return;
-        }
-        
-        var popupSettings = {
-            image: document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value.trim() || null : null,
-            title: document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
-            buttonText: document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value.trim() || 'Claim Now' : 'Claim Now',
-            subtitle: document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
-        };
-        
-        var expiryDate = document.getElementById('editExpiry') ? document.getElementById('editExpiry').value || null : null;
-        if (expiryDate) {
-            expiryDate = new Date(expiryDate).toISOString();
-        }
-        
-        try {
-            var r = await apiCall('/api/links/' + editingLinkId, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    name: document.getElementById('editName').value,
-                    video: document.getElementById('editVideo').value,
-                    claim: document.getElementById('editClaim').value,
-                    buttonText: document.getElementById('editButton').value,
-                    headline: document.getElementById('editHeadline').value,
-                    status: document.getElementById('editStatus').value,
-                    expiryDate: expiryDate,
-                    popupSettings: popupSettings
-                })
-            });
-            if (!r) return;
-            var data = await r.json();
-            if (data.error) {
-                showToast('❌ ' + data.error, 'error');
+            
+            var c = document.getElementById('linksList');
+            var countEl = document.getElementById('searchResultsCount');
+            
+            if (filtered.length === 0) {
+                c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
+                if (countEl) countEl.textContent = 'No results';
                 return;
             }
-            closeEditModal();
-            loadLinks();
-            loadStats();
-            showToast('✅ Link updated successfully!', 'success');
-        } catch (e) {
-            showToast('❌ Failed to update link', 'error');
-        }
-    }
-
-    // Click outside modal to close
-    document.getElementById('editModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeEditModal();
-        }
-    });
-
-    // ============================================================
-    // SECTION: CREATE LINK
-    // ============================================================
-    var selectedExpiry = null;
-
-    function updateSchedulePreset() {
-        var preset = document.getElementById('schedulePreset').value;
-        var customInput = document.getElementById('customExpiry');
-        var display = document.getElementById('expiryDisplay');
-        if (preset === 'custom') {
-            customInput.style.display = 'block';
-            customInput.value = '';
-            display.textContent = '📅 Select custom date';
-            selectedExpiry = null;
-            return;
-        }
-        customInput.style.display = 'none';
-        if (preset) {
-            var days = parseInt(preset);
-            var date = new Date();
-            date.setDate(date.getDate() + days);
-            selectedExpiry = date.toISOString();
-            display.textContent = '📅 Expires: ' + date.toLocaleString();
-        } else {
-            selectedExpiry = null;
-            display.textContent = '⏰ No expiry set';
-        }
-    }
-
-    function updateCustomExpiry() {
-        var val = document.getElementById('customExpiry').value;
-        if (val) {
-            var date = new Date(val);
-            selectedExpiry = date.toISOString();
-            document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
-        } else {
-            selectedExpiry = null;
-            document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-        }
-    }
-
-    // Popup preview live update
-    document.getElementById('popupTitle').addEventListener('input', function() {
-        document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
-    });
-    document.getElementById('popupSubtitle').addEventListener('input', function() {
-        document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
-    });
-    document.getElementById('popupButtonText').addEventListener('input', function() {
-        document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
-    });
-    document.getElementById('popupImageUrl').addEventListener('input', function() {
-        var url = this.value.trim();
-        var preview = document.getElementById('popupImagePreview');
-        var img = document.getElementById('popupPreviewImg');
-        var previewImage = document.getElementById('popupPreviewImage');
-        if (url) {
-            img.src = url;
-            preview.classList.add('show');
-            previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
-        } else {
-            preview.classList.remove('show');
-            previewImage.innerHTML = '<span>🎬 16:9 Preview</span>';
-        }
-    });
-
-    async function createLink() {
-        var name = document.getElementById('linkName').value.trim();
-        if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
-        if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
-        
-        var popupSettings = {
-            image: document.getElementById('popupImageUrl').value.trim() || null,
-            title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
-            buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
-            subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
-        };
-
-        try {
-            var r = await apiCall('/api/links', {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: name,
-                    video: document.getElementById('video').value.trim(),
-                    claim: document.getElementById('claim').value.trim(),
-                    buttonText: document.getElementById('buttonText').value.trim(),
-                    headline: document.getElementById('headline').value.trim(),
-                    expiryDate: selectedExpiry,
-                    popupSettings: popupSettings
-                })
-            });
-            if (!r) return;
-            var link = await r.json();
-            document.getElementById('generatedLink').classList.add('show');
-            document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
             
-            document.getElementById('linkName').value = '';
-            document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
-            document.getElementById('claim').value = '#';
-            document.getElementById('buttonText').value = 'Claim Now';
-            document.getElementById('headline').value = '🎬 Watch Video';
-            document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
-            document.getElementById('popupButtonText').value = 'Claim Now';
-            document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
-            document.getElementById('popupImageUrl').value = '';
-            document.getElementById('popupImagePreview').classList.remove('show');
-            document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Preview</span>';
-            document.getElementById('schedulePreset').value = '';
-            document.getElementById('customExpiry').style.display = 'none';
-            document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-            selectedExpiry = null;
-            loadLinks();
-            loadStats();
-            showToast('✅ Link created!', 'success');
-        } catch (e) { showToast('❌ Failed to create link', 'error'); }
-    }
-
-    function copyLink() {
-        var i = document.getElementById('generatedLinkInput');
-        i.select();
-        document.execCommand('copy');
-        showToast('✅ Link copied!', 'success');
-    }
-
-    // ============================================================
-    // SECTION: ANALYTICS
-    // ============================================================
-    var currentFilter = 'lifetime';
-    var currentLinkId = null;
-    var analyticsData = null;
-
-    async function loadAnalyticsLinks() {
-        try {
-            var r = await apiCall('/api/links');
-            if (!r) return;
-            var links = await r.json();
-            var select = document.getElementById('analyticsLinkSelect');
-            select.innerHTML = '<option value="">-- Select --</option>';
-            links.forEach(function(link) {
-                var opt = document.createElement('option');
-                opt.value = link.id;
-                opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
-                select.appendChild(opt);
+            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
+            
+            c.innerHTML = '';
+            filtered.forEach(function(link) {
+                var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
+                var created = new Date(link.created).toLocaleDateString();
+                var visits = link.visits || 0;
+                
+                var d = document.createElement('div');
+                d.className = 'link-item';
+                d.innerHTML = `
+                    <div class="info">
+                        <span class="name">${escapeHTML(link.name)}</span>
+                        <span class="details">
+                            <span>📅 ${created}</span>
+                            <span class="visits">👁️ ${visits}</span>
+                            <span class="status-badge status-${sc}">${link.status}</span>
+                        </span>
+                    </div>
+                    <div class="actions">
+                        <button onclick="openEditModal('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
+                        <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
+                        <select onchange="handleStatusAction('${link.id}', this.value)" class="status-dropdown">
+                            <option value="">⚡ Action</option>
+                            <option value="active">✅ Activate</option>
+                            <option value="suspended">⏸️ Suspend</option>
+                            <option value="disabled">⛔ Disable</option>
+                            <option value="delete">🗑️ Delete</option>
+                        </select>
+                    </div>
+                `;
+                c.appendChild(d);
             });
-            if (links.length > 0) {
-                select.value = links[0].id;
-                loadAnalytics();
-            }
-        } catch (e) {
-            console.error('Error loading analytics links:', e);
         }
-    }
 
-    function setTimeFilter(filter) {
-        currentFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach(function(el) {
-            el.classList.remove('active');
-        });
-        var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
-        if (btn) btn.classList.add('active');
-        
-        var customPicker = document.getElementById('customDatePicker');
-        if (filter === 'custom') {
-            customPicker.style.display = 'flex';
-        } else {
-            customPicker.style.display = 'none';
+        function copyLinkUrl(id) {
+            var url = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('✅ Link copied!', 'success');
+            }).catch(function() {
+                var t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('✅ Link copied!', 'success');
+            });
         }
-        loadAnalytics();
-    }
 
-    async function loadAnalytics() {
-        var select = document.getElementById('analyticsLinkSelect');
-        var linkId = select.value;
-        if (!linkId) {
-            document.getElementById('analyticsLinkName').textContent = 'Not selected';
-            document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 Select a link</div>';
-            return;
-        }
-        
-        currentLinkId = linkId;
-        
-        try {
-            var r = await fetch('/api/visit-stats/' + linkId);
-            if (!r.ok) {
-                showToast('❌ Failed to load analytics', 'error');
+        async function handleStatusAction(id, action) {
+            if (!action) return;
+            
+            if (action === 'delete') {
+                if (confirm('⚠️ Delete this link permanently?')) {
+                    try {
+                        var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
+                        if (!r) return;
+                        var data = await r.json();
+                        if (data.success) {
+                            loadLinks();
+                            loadStats();
+                            showToast('✅ Link deleted!', 'success');
+                        }
+                    } catch (e) { showToast('❌ Failed to delete', 'error'); }
+                }
                 return;
             }
-            var data = await r.json();
-            analyticsData = data;
             
-            document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
-            document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
-            document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
-            document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
-            
-            var filteredData = getFilteredData(data);
-            
-            document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
-            document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
-            document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
-            document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
-            
-            renderChart(filteredData);
-            
-        } catch (e) {
-            console.error('Error loading analytics:', e);
-            showToast('❌ Failed to load analytics', 'error');
+            try {
+                var r = await secureFetch('/api/links/' + id + '/status', {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: action })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.error) {
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
+                loadLinks();
+                loadStats();
+                showToast('✅ Status updated to: ' + action, 'success');
+            } catch (e) { showToast('❌ Failed to update status', 'error'); }
         }
-    }
 
-    function getFilteredData(data) {
-        var result = { totalVisits: 0, totalClaims: 0, uniqueVisitors: 0, uniqueClaims: 0, dailyData: {} };
-        var dailyVisits = data.dailyVisits || {};
-        var dailyClaims = data.dailyClaims || {};
-        var allDates = Object.keys(dailyVisits);
-        if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-            allDates = Object.keys(dailyClaims);
-        }
-        allDates.sort();
-        if (allDates.length === 0) {
-            var today = new Date().toISOString().split('T')[0];
-            allDates.push(today);
-            dailyVisits[today] = 0;
-            dailyClaims[today] = 0;
-        }
-        
-        var now = new Date();
-        var filteredDates = [];
-        if (currentFilter === 'lifetime') {
-            filteredDates = allDates;
-        } else if (currentFilter === '24h') {
-            var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
-        } else if (currentFilter === '60m') {
-            var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-            filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneHourAgo; });
-        } else if (currentFilter === 'custom') {
-            var fromDate = document.getElementById('analyticsFromDate').value;
-            var toDate = document.getElementById('analyticsToDate').value;
-            if (fromDate) {
-                var from = new Date(fromDate);
-                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= from; });
-            }
-            if (toDate) {
-                var to = new Date(toDate);
-                to.setDate(to.getDate() + 1);
-                filteredDates = filteredDates.filter(function(d) { var date = new Date(d); return date <= to; });
-            }
-            if (!fromDate && !toDate) filteredDates = allDates;
-        }
-        if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
-        
-        filteredDates.forEach(function(date) {
-            result.totalVisits += dailyVisits[date] || 0;
-            result.totalClaims += dailyClaims[date] || 0;
-            result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
-        });
-        
-        var uniqueDays = Object.keys(result.dailyData).length;
-        result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 1.5);
-        result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 1.2);
-        
-        return result;
-    }
+        // ============================================================
+        // SECTION: EDIT MODAL
+        // ============================================================
+        var editingLinkId = null;
 
-    function renderChart(data) {
-        var container = document.getElementById('analyticsChart');
-        var dates = Object.keys(data.dailyData);
-        dates.sort();
-        
-        if (dates.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 No data</div>';
-            return;
-        }
-        
-        var maxVisits = 0;
-        dates.forEach(function(d) { if (data.dailyData[d].visits > maxVisits) maxVisits = data.dailyData[d].visits; });
-        maxVisits = Math.max(maxVisits, 1);
-        
-        var html = '<div class="chart-bar-container">';
-        dates.forEach(function(date) {
-            var visitCount = data.dailyData[date].visits || 0;
-            var height = Math.max(3, (visitCount / maxVisits) * 130);
-            var label = date.substring(5);
-            html += `
-                <div class="bar-wrapper">
-                    <div class="bar-value">${visitCount}</div>
-                    <div class="bar" style="height:${height}px;" title="${date}: Visits: ${visitCount}"></div>
-                    <div class="bar-label">${label}</div>
+        function openEditModal(linkId) {
+            var link = allLinks.find(function(l) { return l.id === linkId; });
+            if (!link) {
+                showToast('❌ Link not found', 'error');
+                return;
+            }
+            
+            editingLinkId = linkId;
+            var body = document.getElementById('editModalBody');
+            
+            var popup = link.popupSettings || {};
+            var expiry = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
+            
+            body.innerHTML = `
+                <div class="form-group">
+                    <label>Link Name</label>
+                    <input type="text" id="editName" value="${escapeHTML(link.name)}">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>🎬 Video URL</label>
+                        <input type="text" id="editVideo" value="${escapeHTML(link.video)}">
+                    </div>
+                    <div class="form-group">
+                        <label>🎁 Claim URL</label>
+                        <input type="text" id="editClaim" value="${escapeHTML(link.claim)}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Button Text</label>
+                    <input type="text" id="editButton" value="${escapeHTML(link.buttonText || 'Claim Now')}">
+                </div>
+                <div class="form-group">
+                    <label>Headline</label>
+                    <input type="text" id="editHeadline" value="${escapeHTML(link.headline || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="editStatus">
+                        <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspended</option>
+                        <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input type="datetime-local" id="editExpiry" value="${expiry}">
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--border);">
+                    <label style="font-weight:600;color:#667eea;font-size:12px;">🖼️ Popup Settings</label>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Popup Title</label>
+                            <input type="text" id="editPopupTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Popup Button</label>
+                            <input type="text" id="editPopupBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Popup Subtitle</label>
+                        <input type="text" id="editPopupSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
+                    </div>
+                    <div class="form-group">
+                        <label>Popup Image URL (16:9)</label>
+                        <input type="text" id="editPopupImage" value="${escapeHTML(popup.image || '')}" placeholder="Enter image URL">
+                    </div>
+                    <div class="popup-preview-small" id="editPopupPreview">
+                        ${popup.image ? '<img src="' + escapeHTML(popup.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>'}
+                        <div class="preview-text">${escapeHTML(popup.title || '🎁 Claim Your Reward')}</div>
+                        <div class="preview-sub">${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}</div>
+                        <div class="preview-btn-small">${escapeHTML(popup.buttonText || 'Claim Now')}</div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button onclick="saveEditLink()" class="btn btn-success">💾 Save Changes</button>
+                    <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
                 </div>
             `;
-        });
-        html += '</div>';
-        html += `<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px;color:var(--text-light);">
-            <span>📊 Daily Visits</span>
-            <span>📅 ${dates.length} days</span>
-        </div>`;
-        container.innerHTML = html;
-    }
-
-    // ============================================================
-    // SECTION: DOWNLOAD ANALYTICS
-    // ============================================================
-    async function downloadAnalyticsImage() {
-        if (!currentLinkId) {
-            showToast('⚠️ Please select a link', 'error');
-            return;
-        }
-        var container = document.getElementById('analyticsChart');
-        var wrapper = document.createElement('div');
-        wrapper.style.cssText = 'background:#0a0a1a;padding:24px;border-radius:12px;min-width:700px;color:#fff;font-family:Segoe UI,system-ui,sans-serif;position:absolute;left:-9999px;top:0;z-index:9999;';
-        wrapper.innerHTML = `
-            <h2 style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📊 Analytics Report</h2>
-            <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.05);">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
-                    <div><span style="color:#a0aec0;">Link:</span> <strong>${document.getElementById('analyticsLinkName').textContent}</strong></div>
-                    <div><span style="color:#a0aec0;">ID:</span> <strong>${document.getElementById('analyticsLinkId').textContent}</strong></div>
-                    <div><span style="color:#a0aec0;">Status:</span> <strong>${document.getElementById('analyticsLinkStatus').textContent}</strong></div>
-                    <div><span style="color:#a0aec0;">Created:</span> <strong>${document.getElementById('analyticsLinkCreated').textContent}</strong></div>
-                </div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-                ${['analyticsTotalVisits','analyticsTotalClaims','analyticsUniqueVisitors','analyticsUniqueClaims'].map(function(id, i) {
-                    var labels = ['👁️ Total Visits','🎁 Total Claims','👤 Unique Visitors','🏷️ Unique Claims'];
-                    return `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.03);">
-                        <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById(id).textContent}</div>
-                        <div style="font-size:10px;color:#a0aec0;">${labels[i]}</div>
-                    </div>`;
-                }).join('')}
-            </div>
-            <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.03);">${container.innerHTML}</div>
-            <div style="text-align:center;margin-top:10px;font-size:10px;color:#a0aec0;">Generated: ${new Date().toLocaleString()} | Filter: ${currentFilter}</div>
-        `;
-        document.body.appendChild(wrapper);
-        try {
-            var canvas = await html2canvas(wrapper, { scale: 2, backgroundColor: '#0a0a1a', allowTaint: true, useCORS: true });
-            var link = document.createElement('a');
-            link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showToast('✅ Image downloaded!', 'success');
-        } catch (e) { console.error(e); showToast('❌ Failed to download', 'error'); }
-        document.body.removeChild(wrapper);
-    }
-
-    function downloadAnalyticsCSV() {
-        if (!currentLinkId || !analyticsData) {
-            showToast('⚠️ Please select a link', 'error');
-            return;
-        }
-        var data = analyticsData;
-        var dailyVisits = data.dailyVisits || {};
-        var dailyClaims = data.dailyClaims || {};
-        var allDates = Object.keys(dailyVisits);
-        if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-            allDates = Object.keys(dailyClaims);
-        }
-        allDates.sort();
-        var csv = 'Date,Visits,Claims\n';
-        allDates.forEach(function(date) {
-            csv += date + ',' + (dailyVisits[date] || 0) + ',' + (dailyClaims[date] || 0) + '\n';
-        });
-        var blob = new Blob([csv], { type: 'text/csv' });
-        var link = document.createElement('a');
-        link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.csv';
-        link.href = URL.createObjectURL(blob);
-        link.click();
-        showToast('✅ CSV downloaded!', 'success');
-    }
-
-    // ============================================================
-    // SECTION: BACKGROUND
-    // ============================================================
-    document.getElementById('bgImageUrl').addEventListener('input', function() {
-        var url = this.value.trim();
-        var preview = document.getElementById('bgImagePreview');
-        var img = document.getElementById('bgPreviewImg');
-        if (url) { img.src = url; preview.classList.add('show'); } 
-        else { preview.classList.remove('show'); }
-    });
-
-    async function saveBackground() {
-        var url = document.getElementById('bgImageUrl').value.trim();
-        if (!url) { showToast('❌ Please enter an image URL', 'error'); return; }
-        try {
-            var r = await apiCall('/api/background', { method: 'POST', body: JSON.stringify({ background: url }) });
-            if (!r) return;
-            var data = await r.json();
-            if (data.success) {
-                document.getElementById('bgStatus').textContent = '✅ Background saved!';
-                document.getElementById('bgStatus').style.color = '#48bb78';
-                showToast('✅ Background saved!', 'success');
-            }
-        } catch (e) { showToast('❌ Failed to save background', 'error'); }
-    }
-
-    async function removeBackground() {
-        try {
-            var r = await apiCall('/api/background', { method: 'POST', body: JSON.stringify({ background: null }) });
-            if (!r) return;
-            var data = await r.json();
-            if (data.success) {
-                document.getElementById('bgImageUrl').value = '';
-                document.getElementById('bgImagePreview').classList.remove('show');
-                document.getElementById('bgStatus').textContent = '✅ Background removed';
-                document.getElementById('bgStatus').style.color = '#48bb78';
-                showToast('✅ Background removed', 'success');
-            }
-        } catch (e) { showToast('❌ Failed to remove background', 'error'); }
-    }
-
-    async function loadBackground() {
-        try {
-            var r = await fetch('/api/settings');
-            var data = await r.json();
-            if (data && data.background) {
-                document.getElementById('bgImageUrl').value = data.background;
-                var preview = document.getElementById('bgImagePreview');
-                var img = document.getElementById('bgPreviewImg');
-                img.src = data.background;
-                preview.classList.add('show');
-                document.getElementById('bgStatus').textContent = '✅ Background loaded';
-                document.getElementById('bgStatus').style.color = '#48bb78';
-            }
-        } catch (e) {}
-    }
-
-    // ============================================================
-    // SECTION: PASSCODE CHANGE
-    // ============================================================
-    async function changePasscode() {
-        var oldPasscode = document.getElementById('oldPasscode').value;
-        var newPasscode = document.getElementById('newPasscode').value;
-        var statusEl = document.getElementById('passcodeStatus');
-
-        if (!oldPasscode || !newPasscode) {
-            statusEl.textContent = '❌ Please fill both fields';
-            statusEl.style.color = '#fc8181';
-            return;
-        }
-        if (oldPasscode.length !== 6 || newPasscode.length !== 6) {
-            statusEl.textContent = '❌ Passcode must be 6 digits';
-            statusEl.style.color = '#fc8181';
-            return;
-        }
-        if (oldPasscode === newPasscode) {
-            statusEl.textContent = '❌ New passcode must be different';
-            statusEl.style.color = '#fc8181';
-            return;
-        }
-
-        try {
-            var r = await apiCall('/api/passcode', {
-                method: 'POST',
-                body: JSON.stringify({ oldPasscode: oldPasscode, newPasscode: newPasscode })
+            
+            ['editPopupTitle', 'editPopupBtn', 'editPopupSub', 'editPopupImage'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function() {
+                        updateEditPopupPreview();
+                    });
+                }
             });
-            if (!r) return;
-            var data = await r.json();
-            if (data.success) {
-                statusEl.textContent = '✅ Passcode changed! Please login again.';
-                statusEl.style.color = '#48bb78';
-                showToast('✅ Passcode changed!', 'success');
-                document.getElementById('oldPasscode').value = '';
-                document.getElementById('newPasscode').value = '';
-                setTimeout(function() { 
-                    var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-                    window.location.href = loginUrl; 
-                }, 2000);
+            
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function updateEditPopupPreview() {
+            var title = document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
+            var btn = document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value || 'Claim Now' : 'Claim Now';
+            var sub = document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
+            var img = document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value || '' : '';
+            var preview = document.getElementById('editPopupPreview');
+            if (!preview) return;
+            
+            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
+            preview.innerHTML = imgHtml +
+                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
+                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
+                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editingLinkId = null;
+        }
+
+        async function saveEditLink() {
+            if (!editingLinkId) {
+                showToast('❌ No link selected', 'error');
+                return;
+            }
+            
+            var popupSettings = {
+                image: document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value.trim() || null : null,
+                title: document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
+                buttonText: document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value.trim() || 'Claim Now' : 'Claim Now',
+                subtitle: document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
+            };
+            
+            var expiryDate = document.getElementById('editExpiry') ? document.getElementById('editExpiry').value || null : null;
+            if (expiryDate) {
+                expiryDate = new Date(expiryDate).toISOString();
+            }
+            
+            try {
+                var r = await secureFetch('/api/links/' + editingLinkId, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: document.getElementById('editName').value,
+                        video: document.getElementById('editVideo').value,
+                        claim: document.getElementById('editClaim').value,
+                        buttonText: document.getElementById('editButton').value,
+                        headline: document.getElementById('editHeadline').value,
+                        status: document.getElementById('editStatus').value,
+                        expiryDate: expiryDate,
+                        popupSettings: popupSettings
+                    })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.error) {
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
+                closeEditModal();
+                loadLinks();
+                loadStats();
+                showToast('✅ Link updated successfully!', 'success');
+            } catch (e) {
+                showToast('❌ Failed to update link', 'error');
+            }
+        }
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+
+        // ============================================================
+        // SECTION: CREATE LINK
+        // ============================================================
+        var selectedExpiry = null;
+
+        function updateSchedulePreset() {
+            var preset = document.getElementById('schedulePreset').value;
+            var customInput = document.getElementById('customExpiry');
+            var display = document.getElementById('expiryDisplay');
+            if (preset === 'custom') {
+                customInput.style.display = 'block';
+                customInput.value = '';
+                display.textContent = '📅 Select custom date';
+                selectedExpiry = null;
+                return;
+            }
+            customInput.style.display = 'none';
+            if (preset) {
+                var days = parseInt(preset);
+                var date = new Date();
+                date.setDate(date.getDate() + days);
+                selectedExpiry = date.toISOString();
+                display.textContent = '📅 Expires: ' + date.toLocaleString();
             } else {
-                statusEl.textContent = '❌ ' + (data.error || 'Failed');
+                selectedExpiry = null;
+                display.textContent = '⏰ No expiry set';
+            }
+        }
+
+        function updateCustomExpiry() {
+            var val = document.getElementById('customExpiry').value;
+            if (val) {
+                var date = new Date(val);
+                selectedExpiry = date.toISOString();
+                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
+            } else {
+                selectedExpiry = null;
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+            }
+        }
+
+        document.getElementById('popupTitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
+        });
+        document.getElementById('popupSubtitle').addEventListener('input', function() {
+            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
+        });
+        document.getElementById('popupButtonText').addEventListener('input', function() {
+            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
+        });
+        document.getElementById('popupImageUrl').addEventListener('input', function() {
+            var url = this.value.trim();
+            var preview = document.getElementById('popupImagePreview');
+            var img = document.getElementById('popupPreviewImg');
+            var previewImage = document.getElementById('popupPreviewImage');
+            if (url) {
+                img.src = url;
+                preview.classList.add('show');
+                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
+            } else {
+                preview.classList.remove('show');
+                previewImage.innerHTML = '<span>🎬 16:9 Preview</span>';
+            }
+        });
+
+        async function createLink() {
+            var name = document.getElementById('linkName').value.trim();
+            if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
+            if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
+            
+            var popupSettings = {
+                image: document.getElementById('popupImageUrl').value.trim() || null,
+                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
+                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
+                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
+            };
+
+            try {
+                var r = await secureFetch('/api/links', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: name,
+                        video: document.getElementById('video').value.trim(),
+                        claim: document.getElementById('claim').value.trim(),
+                        buttonText: document.getElementById('buttonText').value.trim(),
+                        headline: document.getElementById('headline').value.trim(),
+                        expiryDate: selectedExpiry,
+                        popupSettings: popupSettings
+                    })
+                });
+                if (!r) return;
+                var link = await r.json();
+                document.getElementById('generatedLink').classList.add('show');
+                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
+                
+                document.getElementById('linkName').value = '';
+                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
+                document.getElementById('claim').value = '#';
+                document.getElementById('buttonText').value = 'Claim Now';
+                document.getElementById('headline').value = '🎬 Watch Video';
+                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
+                document.getElementById('popupButtonText').value = 'Claim Now';
+                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
+                document.getElementById('popupImageUrl').value = '';
+                document.getElementById('popupImagePreview').classList.remove('show');
+                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Preview</span>';
+                document.getElementById('schedulePreset').value = '';
+                document.getElementById('customExpiry').style.display = 'none';
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+                selectedExpiry = null;
+                loadLinks();
+                loadStats();
+                showToast('✅ Link created!', 'success');
+            } catch (e) { showToast('❌ Failed to create link', 'error'); }
+        }
+
+        function copyLink() {
+            var i = document.getElementById('generatedLinkInput');
+            i.select();
+            document.execCommand('copy');
+            showToast('✅ Link copied!', 'success');
+        }
+
+        // ============================================================
+        // SECTION: ANALYTICS
+        // ============================================================
+        var currentFilter = 'lifetime';
+        var currentLinkId = null;
+        var analyticsData = null;
+
+        async function loadAnalyticsLinks() {
+            try {
+                var r = await secureFetch('/api/links');
+                if (!r) return;
+                var links = await r.json();
+                var select = document.getElementById('analyticsLinkSelect');
+                select.innerHTML = '<option value="">-- Select --</option>';
+                links.forEach(function(link) {
+                    var opt = document.createElement('option');
+                    opt.value = link.id;
+                    opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
+                    select.appendChild(opt);
+                });
+                if (links.length > 0) {
+                    select.value = links[0].id;
+                    loadAnalytics();
+                }
+            } catch (e) {
+                console.error('Error loading analytics links:', e);
+            }
+        }
+
+        function setTimeFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
+            if (btn) btn.classList.add('active');
+            
+            var customPicker = document.getElementById('customDatePicker');
+            if (filter === 'custom') {
+                customPicker.style.display = 'flex';
+            } else {
+                customPicker.style.display = 'none';
+            }
+            loadAnalytics();
+        }
+
+        async function loadAnalytics() {
+            var select = document.getElementById('analyticsLinkSelect');
+            var linkId = select.value;
+            if (!linkId) {
+                document.getElementById('analyticsLinkName').textContent = 'Not selected';
+                document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 Select a link</div>';
+                return;
+            }
+            
+            currentLinkId = linkId;
+            
+            try {
+                var r = await fetch('/api/visit-stats/' + linkId);
+                if (!r.ok) {
+                    showToast('❌ Failed to load analytics', 'error');
+                    return;
+                }
+                var data = await r.json();
+                analyticsData = data;
+                
+                document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
+                document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
+                document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
+                document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
+                
+                var filteredData = getFilteredData(data);
+                
+                document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
+                document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
+                document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
+                document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
+                
+                renderChart(filteredData);
+                
+            } catch (e) {
+                console.error('Error loading analytics:', e);
+                showToast('❌ Failed to load analytics', 'error');
+            }
+        }
+
+        function getFilteredData(data) {
+            var result = { totalVisits: 0, totalClaims: 0, uniqueVisitors: 0, uniqueClaims: 0, dailyData: {} };
+            var dailyVisits = data.dailyVisits || {};
+            var dailyClaims = data.dailyClaims || {};
+            var allDates = Object.keys(dailyVisits);
+            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
+                allDates = Object.keys(dailyClaims);
+            }
+            allDates.sort();
+            if (allDates.length === 0) {
+                var today = new Date().toISOString().split('T')[0];
+                allDates.push(today);
+                dailyVisits[today] = 0;
+                dailyClaims[today] = 0;
+            }
+            
+            var now = new Date();
+            var filteredDates = [];
+            if (currentFilter === 'lifetime') {
+                filteredDates = allDates;
+            } else if (currentFilter === '24h') {
+                var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
+            } else if (currentFilter === '60m') {
+                var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneHourAgo; });
+            } else if (currentFilter === 'custom') {
+                var fromDate = document.getElementById('analyticsFromDate').value;
+                var toDate = document.getElementById('analyticsToDate').value;
+                if (fromDate) {
+                    var from = new Date(fromDate);
+                    filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= from; });
+                }
+                if (toDate) {
+                    var to = new Date(toDate);
+                    to.setDate(to.getDate() + 1);
+                    filteredDates = filteredDates.filter(function(d) { var date = new Date(d); return date <= to; });
+                }
+                if (!fromDate && !toDate) filteredDates = allDates;
+            }
+            if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
+            
+            filteredDates.forEach(function(date) {
+                result.totalVisits += dailyVisits[date] || 0;
+                result.totalClaims += dailyClaims[date] || 0;
+                result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
+            });
+            
+            var uniqueDays = Object.keys(result.dailyData).length;
+            result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 1.5);
+            result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 1.2);
+            
+            return result;
+        }
+
+        function renderChart(data) {
+            var container = document.getElementById('analyticsChart');
+            var dates = Object.keys(data.dailyData);
+            dates.sort();
+            
+            if (dates.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 No data</div>';
+                return;
+            }
+            
+            var maxVisits = 0;
+            dates.forEach(function(d) { if (data.dailyData[d].visits > maxVisits) maxVisits = data.dailyData[d].visits; });
+            maxVisits = Math.max(maxVisits, 1);
+            
+            var html = '<div class="chart-bar-container">';
+            dates.forEach(function(date) {
+                var visitCount = data.dailyData[date].visits || 0;
+                var height = Math.max(3, (visitCount / maxVisits) * 130);
+                var label = date.substring(5);
+                html += `
+                    <div class="bar-wrapper">
+                        <div class="bar-value">${visitCount}</div>
+                        <div class="bar" style="height:${height}px;" title="${date}: Visits: ${visitCount}"></div>
+                        <div class="bar-label">${label}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            html += `<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px;color:var(--text-light);">
+                <span>📊 Daily Visits</span>
+                <span>📅 ${dates.length} days</span>
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // SECTION: DOWNLOAD ANALYTICS
+        // ============================================================
+        async function downloadAnalyticsImage() {
+            if (!currentLinkId) {
+                showToast('⚠️ Please select a link', 'error');
+                return;
+            }
+            var container = document.getElementById('analyticsChart');
+            var wrapper = document.createElement('div');
+            wrapper.style.cssText = 'background:#0a0a1a;padding:24px;border-radius:12px;min-width:700px;color:#fff;font-family:Segoe UI,system-ui,sans-serif;position:absolute;left:-9999px;top:0;z-index:9999;';
+            wrapper.innerHTML = `
+                <h2 style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📊 Analytics Report</h2>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.05);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
+                        <div><span style="color:#a0aec0;">Link:</span> <strong>${document.getElementById('analyticsLinkName').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">ID:</span> <strong>${document.getElementById('analyticsLinkId').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">Status:</span> <strong>${document.getElementById('analyticsLinkStatus').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">Created:</span> <strong>${document.getElementById('analyticsLinkCreated').textContent}</strong></div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+                    ${['analyticsTotalVisits','analyticsTotalClaims','analyticsUniqueVisitors','analyticsUniqueClaims'].map(function(id, i) {
+                        var labels = ['👁️ Total Visits','🎁 Total Claims','👤 Unique Visitors','🏷️ Unique Claims'];
+                        return `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.03);">
+                            <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById(id).textContent}</div>
+                            <div style="font-size:10px;color:#a0aec0;">${labels[i]}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.03);">${container.innerHTML}</div>
+                <div style="text-align:center;margin-top:10px;font-size:10px;color:#a0aec0;">Generated: ${new Date().toLocaleString()} | Filter: ${currentFilter}</div>
+            `;
+            document.body.appendChild(wrapper);
+            try {
+                var canvas = await html2canvas(wrapper, { scale: 2, backgroundColor: '#0a0a1a', allowTaint: true, useCORS: true });
+                var link = document.createElement('a');
+                link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('✅ Image downloaded!', 'success');
+            } catch (e) { console.error(e); showToast('❌ Failed to download', 'error'); }
+            document.body.removeChild(wrapper);
+        }
+
+        function downloadAnalyticsCSV() {
+            if (!currentLinkId || !analyticsData) {
+                showToast('⚠️ Please select a link', 'error');
+                return;
+            }
+            var data = analyticsData;
+            var dailyVisits = data.dailyVisits || {};
+            var dailyClaims = data.dailyClaims || {};
+            var allDates = Object.keys(dailyVisits);
+            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
+                allDates = Object.keys(dailyClaims);
+            }
+            allDates.sort();
+            var csv = 'Date,Visits,Claims\n';
+            allDates.forEach(function(date) {
+                csv += date + ',' + (dailyVisits[date] || 0) + ',' + (dailyClaims[date] || 0) + '\n';
+            });
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var link = document.createElement('a');
+            link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.csv';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            showToast('✅ CSV downloaded!', 'success');
+        }
+
+        // ============================================================
+        // SECTION: BACKGROUND
+        // ============================================================
+        document.getElementById('bgImageUrl').addEventListener('input', function() {
+            var url = this.value.trim();
+            var preview = document.getElementById('bgImagePreview');
+            var img = document.getElementById('bgPreviewImg');
+            if (url) { img.src = url; preview.classList.add('show'); } 
+            else { preview.classList.remove('show'); }
+        });
+
+        async function saveBackground() {
+            var url = document.getElementById('bgImageUrl').value.trim();
+            if (!url) { showToast('❌ Please enter an image URL', 'error'); return; }
+            try {
+                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: url }) });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    document.getElementById('bgStatus').textContent = '✅ Background saved!';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    showToast('✅ Background saved!', 'success');
+                }
+            } catch (e) { showToast('❌ Failed to save background', 'error'); }
+        }
+
+        async function removeBackground() {
+            try {
+                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: null }) });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    document.getElementById('bgImageUrl').value = '';
+                    document.getElementById('bgImagePreview').classList.remove('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background removed';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    showToast('✅ Background removed', 'success');
+                }
+            } catch (e) { showToast('❌ Failed to remove background', 'error'); }
+        }
+
+        async function loadBackground() {
+            try {
+                var r = await fetch('/api/settings');
+                var data = await r.json();
+                if (data && data.background) {
+                    document.getElementById('bgImageUrl').value = data.background;
+                    var preview = document.getElementById('bgImagePreview');
+                    var img = document.getElementById('bgPreviewImg');
+                    img.src = data.background;
+                    preview.classList.add('show');
+                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
+                    document.getElementById('bgStatus').style.color = '#48bb78';
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // SECTION: PASSCODE CHANGE
+        // ============================================================
+        async function changePasscode() {
+            var oldPasscode = document.getElementById('oldPasscode').value;
+            var newPasscode = document.getElementById('newPasscode').value;
+            var statusEl = document.getElementById('passcodeStatus');
+
+            if (!oldPasscode || !newPasscode) {
+                statusEl.textContent = '❌ Please fill both fields';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+            if (oldPasscode.length !== 6 || newPasscode.length !== 6) {
+                statusEl.textContent = '❌ Passcode must be 6 digits';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+            if (oldPasscode === newPasscode) {
+                statusEl.textContent = '❌ New passcode must be different';
+                statusEl.style.color = '#fc8181';
+                return;
+            }
+
+            try {
+                var r = await secureFetch('/api/admin/passcode', {
+                    method: 'POST',
+                    body: JSON.stringify({ oldPasscode: oldPasscode, newPasscode: newPasscode })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    statusEl.textContent = '✅ Passcode changed! Please login again.';
+                    statusEl.style.color = '#48bb78';
+                    showToast('✅ Passcode changed!', 'success');
+                    document.getElementById('oldPasscode').value = '';
+                    document.getElementById('newPasscode').value = '';
+                    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
+                    statusEl.style.color = '#fc8181';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Server error';
                 statusEl.style.color = '#fc8181';
             }
-        } catch (e) {
-            statusEl.textContent = '❌ Server error';
-            statusEl.style.color = '#fc8181';
         }
-    }
 
-    // ============================================================
-    // SECTION: CHECK AUTH
-    // ============================================================
-    async function checkAuth() {
-        try {
-            var response = await apiCall('/api/links');
-            if (!response) {
-                var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-                window.location.href = loginUrl;
+        // ============================================================
+        // SECTION: CHECK AUTH
+        // ============================================================
+        async function checkAuth() {
+            try {
+                var response = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('csrfToken');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                window.location.href = 'login.html';
                 return false;
             }
-            return true;
-        } catch (e) {
-            var loginUrl = ADMIN_PATH ? ADMIN_PATH : '/admin/login';
-            window.location.href = loginUrl;
-            return false;
         }
-    }
 
-    // ============================================================
-    // SECTION: INIT
-    // ============================================================
-    loadTheme();
-    loadBackground();
-    loadLinks();
-    loadStats();
-    loadAnalyticsLinks();
-    setInterval(loadStats, 30000);
-    setInterval(updateLiveVisitors, 5000);
-    checkAuth();
+        // ============================================================
+        // SECTION: INIT
+        // ============================================================
+        loadTheme();
+        loadBackground();
+        loadLinks();
+        loadStats();
+        loadAnalyticsLinks();
+        setInterval(loadStats, 30000);
+        setInterval(updateLiveVisitors, 5000);
+        checkAuth();
 
-    window.showSection = showSection;
-    window.setTheme = setTheme;
-    window.logout = logout;
-    window.installApp = installApp;
-    window.loadLinks = loadLinks;
-    window.loadStats = loadStats;
-    window.loadAnalyticsLinks = loadAnalyticsLinks;
-    window.loadAnalytics = loadAnalytics;
-    window.setTimeFilter = setTimeFilter;
-    window.downloadAnalyticsImage = downloadAnalyticsImage;
-    window.downloadAnalyticsCSV = downloadAnalyticsCSV;
-    window.filterLinks = filterLinks;
-    window.openEditModal = openEditModal;
-    window.closeEditModal = closeEditModal;
-    window.saveEditLink = saveEditLink;
-    window.handleStatusAction = handleStatusAction;
-    window.copyLinkUrl = copyLinkUrl;
-    window.createLink = createLink;
-    window.copyLink = copyLink;
-    window.saveBackground = saveBackground;
-    window.removeBackground = removeBackground;
-    window.changePasscode = changePasscode;
-    window.updateSchedulePreset = updateSchedulePreset;
-    window.updateCustomExpiry = updateCustomExpiry;
-    window.showToast = showToast;
+        window.showSection = showSection;
+        window.setTheme = setTheme;
+        window.logout = logout;
+        window.installApp = installApp;
+        window.loadLinks = loadLinks;
+        window.loadStats = loadStats;
+        window.loadAnalyticsLinks = loadAnalyticsLinks;
+        window.loadAnalytics = loadAnalytics;
+        window.setTimeFilter = setTimeFilter;
+        window.downloadAnalyticsImage = downloadAnalyticsImage;
+        window.downloadAnalyticsCSV = downloadAnalyticsCSV;
+        window.filterLinks = filterLinks;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.saveEditLink = saveEditLink;
+        window.handleStatusAction = handleStatusAction;
+        window.copyLinkUrl = copyLinkUrl;
+        window.createLink = createLink;
+        window.copyLink = copyLink;
+        window.saveBackground = saveBackground;
+        window.removeBackground = removeBackground;
+        window.changePasscode = changePasscode;
+        window.updateSchedulePreset = updateSchedulePreset;
+        window.updateCustomExpiry = updateCustomExpiry;
+        window.showToast = showToast;
     </script>
 </body>
 </html>

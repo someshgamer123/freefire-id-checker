@@ -123,18 +123,6 @@
             border: 1px solid #ffc107;
         }
         .rate-limit-msg.show { display: block; }
-        .secure-badge {
-            background: rgba(102,126,234,0.08);
-            color: #667eea;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            border: 1px solid rgba(102,126,234,0.15);
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-        .secure-badge .lock-icon { font-size: 14px; }
         @media (max-width: 480px) {
             .login-box { padding: 30px 20px; }
             .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
@@ -150,8 +138,7 @@
     <div class="login-box">
         <div class="logo">🔐</div>
         <h2>Admin Login</h2>
-        <div class="secure-badge"><span class="lock-icon">🔒</span> Secure Session</div>
-        <div class="security-badge" id="securityBadge">🛡️ IP Locked</div>
+        <div class="security-badge" id="securityBadge">🔒 Secure Connection</div>
         <p class="sub-title" id="loginSubtitle">Enter your passcode</p>
         
         <div class="rate-limit-msg" id="rateLimitMsg">
@@ -188,10 +175,6 @@
         </div>
     </div>
     <script>
-        // Get token from URL
-        var urlParams = new URLSearchParams(window.location.search);
-        var loginToken = urlParams.get('token') || '';
-        
         var inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
         var dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
         var errorEl = document.getElementById('error');
@@ -201,10 +184,6 @@
         var twoFALabel = document.getElementById('twoFALabel');
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
-
-        console.log('🔐 Secure Admin Login Panel');
-        console.log('🛡️ IP-Based Rate Limiting: Enabled');
-        console.log('🔒 Token: ' + (loginToken ? '✅ Present' : '❌ Not Present'));
 
         window.addEventListener('load', function() { 
             var pin1 = document.getElementById('pin1');
@@ -396,14 +375,11 @@
             }
 
             try {
-                var requestBody = { 
-                    passcode: passcode,
-                    token: loginToken  // Send token for secure login
-                };
+                var requestBody = { passcode: passcode };
                 
                 if (is2FARequired && twoFAToken) {
                     if (twoFAToken.value && twoFAToken.value.length >= 6) {
-                        requestBody.token2fa = twoFAToken.value;
+                        requestBody.token = twoFAToken.value;
                     } else {
                         showError('Please enter 2FA token');
                         if (loginBtn) {
@@ -420,7 +396,6 @@
                     body: JSON.stringify(requestBody)
                 });
 
-                // Handle rate limit
                 if (response.status === 429) {
                     var text = await response.text();
                     showRateLimit(30 * 60);
@@ -432,7 +407,6 @@
                     return;
                 }
 
-                // Parse JSON
                 var data;
                 try {
                     data = await response.json();
@@ -470,18 +444,6 @@
                     if (errorEl) {
                         errorEl.textContent = '🔐 2FA required. Enter your authenticator code.';
                         errorEl.style.color = '#667eea';
-                    }
-                } else if (data.code === 'ADMIN_LOGGED_IN_ELSEWHERE') {
-                    showError('Admin already logged in from another IP');
-                    if (loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.textContent = '🔑 Login';
-                    }
-                } else if (data.code === 'SECURE_LOGIN_REQUIRED') {
-                    showError('Please use secure login link');
-                    if (loginBtn) {
-                        loginBtn.disabled = true;
-                        loginBtn.textContent = '🔒 Secure Only';
                     }
                 } else {
                     showError(data.error || 'Invalid passcode!');
@@ -527,6 +489,11 @@
                 window._loginTimeout = setTimeout(function() { login(); }, 400);
             }
         });
+
+        console.log('🔐 Secure Admin Login Panel');
+        console.log('🛡️ 2FA Enabled');
+        console.log('🔒 Strong Password Required');
+        console.log('⏰ Session: 60 minutes');
     </script>
 </body>
 </html>
