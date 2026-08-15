@@ -3,6 +3,7 @@
 <head>
     <title>Admin Login</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -215,7 +216,7 @@
         <!-- Step 1: Passcode -->
         <div id="stepPasscode">
             <div class="passcode-inputs" id="passcodeContainer">
-                <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
+                <input type="password" id="pin1" maxlength="1" inputmode="numeric" aria-label="Pin 1">
                 <input type="password" id="pin2" maxlength="1" inputmode="numeric" aria-label="Pin 2">
                 <input type="password" id="pin3" maxlength="1" inputmode="numeric" aria-label="Pin 3">
                 <input type="password" id="pin4" maxlength="1" inputmode="numeric" aria-label="Pin 4">
@@ -240,7 +241,7 @@
             <div class="otp-input-wrapper show">
                 <label class="otp-label">📱 Enter 6-Digit OTP</label>
                 <input type="text" id="otpInput" maxlength="6" inputmode="numeric" placeholder="000000" autofocus>
-                <div class="otp-method-info" id="otpMethodInfo">OTP sent to your registered email/phone</div>
+                <div class="otp-method-info" id="otpMethodInfo">OTP sent to your registered email</div>
                 <button class="resend-btn" id="resendBtn" onclick="resendOTP()">Resend OTP</button>
             </div>
             <button onclick="verifyOTP()" class="btn" id="otpBtn">✅ Verify & Login</button>
@@ -279,8 +280,10 @@
 
         window.addEventListener('load', function() { 
             checkBlockStatus();
-            var pin1 = document.getElementById('pin1');
-            if (pin1) pin1.focus(); 
+            setTimeout(function() {
+                var pin1 = document.getElementById('pin1');
+                if (pin1) pin1.focus(); 
+            }, 100);
         });
 
         // ==================== Check Block Status ====================
