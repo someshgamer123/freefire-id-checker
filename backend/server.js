@@ -19,21 +19,49 @@ const Stats = require('./models/Stats');
 const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
 const Pricing = require('./models/Pricing');
+const Session = require('./models/Session');
+const AdminLog = require('./models/AdminLog');
+const LoginAttempt = require('./models/LoginAttempt');
+const TwoFactorAuth = require('./models/TwoFactorAuth');
+
+// ==================== Security Module ====================
+const Security = require('./config/security');
 
 // Connect to MongoDB
 connectDB();
+
+// ==================== Environment Variables ====================
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
+const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
+const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
+const ENABLE_2FA = process.env.ENABLE_2FA !== 'false';
 
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
         const adminExists = await User.findOne();
         if (!adminExists) {
-            const hashedPasscode = bcrypt.hashSync('951753', 10);
-            await User.create({
+            const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
+            const admin = await User.create({
                 passcode: hashedPasscode,
                 theme: 'light'
             });
-            console.log('✅ Admin user created with passcode: 951753');
+            console.log('✅ Admin user created with strong password');
+
+            if (ENABLE_2FA) {
+                const secret = Security.generate2FASecret();
+                await TwoFactorAuth.create({
+                    userId: 'admin',
+                    secret: secret.base32,
+                    backupCodes: Security.generateBackupCodes(),
+                    isEnabled: true,
+                    verifiedAt: new Date()
+                });
+                console.log('✅ 2FA enabled for admin');
+                console.log('📱 2FA Secret:', secret.base32);
+            }
         }
 
         const statsExists = await Stats.findOne();
@@ -77,6 +105,10 @@ async function initializeDatabase() {
             });
             console.log('✅ Pricing initialized');
         }
+
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        console.log('✅ Expired sessions cleaned');
+        
     } catch (error) {
         console.error('❌ Database initialization error:', error);
     }
@@ -84,29 +116,35 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-app.set('trust proxy', 1);
-
 // ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            scriptSrcAttr: ["'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
-            styleSrcAttr: ["'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "blob:", "*"],
+            imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"],
-            frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
-            mediaSrc: ["'self'", "https://*.image2url.com", "https://*.terabox.com", "*"],
+            frameSrc: ["'self'", "https://www.youtube.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
         }
-    }
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    },
+    frameguard: {
+        action: 'deny'
+    },
+    noSniff: true,
+    xssFilter: true,
+    hidePoweredBy: true
 }));
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://freefire-id-checker.onrender.com', 'https://*.onrender.com'],
+    origin: ['http://localhost:3000', 'https://freefire-id-checker.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
@@ -116,14 +154,18 @@ app.use(cors({
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: 'Too many requests, please try again later.'
+    message: 'Too many requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: 'Too many login attempts, please try again after 15 minutes'
+    max: MAX_LOGIN_ATTEMPTS,
+    message: 'Too many login attempts, account temporarily locked. Try after 30 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -136,7 +178,7 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 const JWT_EXPIRY = '7d';
 
 function generateToken(userId) {
-    return jwt.sign({ id: userId, role: 'admin' }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+    return jwt.sign({ id: userId, role: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
 function verifyToken(token) {
@@ -154,8 +196,122 @@ function generateCSRFToken() {
 function getDeviceId(req) {
     const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
-    const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
-    return fingerprint;
+    return { ip, userAgent, fingerprint: crypto.createHash('sha256').update(ip + userAgent).digest('hex') };
+}
+
+// ==================== Logging Function ====================
+async function logAdminAction(userId, action, details = {}, req = null) {
+    try {
+        const ip = req?.ip || req?.connection?.remoteAddress || null;
+        const userAgent = req?.headers?.['user-agent'] || null;
+        
+        await AdminLog.create({
+            userId: userId,
+            action: action,
+            details: details,
+            ip: ip,
+            userAgent: userAgent,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        console.error('❌ Logging error:', error);
+    }
+}
+
+// ==================== Login Attempt Tracking ====================
+async function checkLoginAttempts(ip) {
+    const record = await LoginAttempt.findOne({ ip: ip });
+    
+    if (!record) {
+        return { allowed: true, attempts: 0 };
+    }
+    
+    if (record.lockedUntil && record.lockedUntil > new Date()) {
+        const remainingMinutes = Math.ceil((record.lockedUntil - new Date()) / (1000 * 60));
+        return { 
+            allowed: false, 
+            attempts: record.attempts,
+            lockedUntil: record.lockedUntil,
+            remainingMinutes: remainingMinutes
+        };
+    }
+    
+    if (record.lockedUntil && record.lockedUntil < new Date()) {
+        record.attempts = 0;
+        record.lockedUntil = null;
+        await record.save();
+        return { allowed: true, attempts: 0 };
+    }
+    
+    return { allowed: record.attempts < MAX_LOGIN_ATTEMPTS, attempts: record.attempts };
+}
+
+async function recordLoginAttempt(ip, success) {
+    let record = await LoginAttempt.findOne({ ip: ip });
+    
+    if (!record) {
+        record = new LoginAttempt({ ip: ip });
+    }
+    
+    if (success) {
+        record.attempts = 0;
+        record.lockedUntil = null;
+    } else {
+        record.attempts = (record.attempts || 0) + 1;
+        record.lastAttempt = new Date();
+        
+        if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
+            record.lockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
+        }
+    }
+    
+    await record.save();
+    return record;
+}
+
+// ==================== Session Management ====================
+async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
+    const session = new Session({
+        token: token,
+        userId: userId,
+        csrfToken: csrfToken,
+        ip: ip,
+        userAgent: userAgent,
+        expiresAt: new Date(Date.now() + SESSION_TIMEOUT * 60 * 1000),
+        lastActivity: new Date(),
+        isActive: true
+    });
+    await session.save();
+    return session;
+}
+
+async function validateSession(token) {
+    const session = await Session.findOne({ 
+        token: token,
+        isActive: true,
+        expiresAt: { $gt: new Date() }
+    });
+    
+    if (!session) return null;
+    
+    session.lastActivity = new Date();
+    await session.save();
+    
+    return session;
+}
+
+async function invalidateSession(token) {
+    await Session.findOneAndUpdate(
+        { token: token },
+        { isActive: false }
+    );
+}
+
+async function invalidateAllSessions(userId) {
+    await Session.updateMany(
+        { userId: userId, isActive: true },
+        { isActive: false }
+    );
 }
 
 // ==================== Auth Middleware ====================
@@ -172,7 +328,25 @@ async function authMiddleware(req, res, next) {
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
     
+    const session = await validateSession(token);
+    if (!session) {
+        res.clearCookie('adminToken');
+        return res.status(401).json({ error: 'Session expired. Please login again.' });
+    }
+    
+    if (csrfToken !== session.csrfToken) {
+        await logAdminAction('admin', 'CSRF_ATTEMPT', { token: token }, req);
+        return res.status(403).json({ error: 'Invalid CSRF token' });
+    }
+    
+    const { ip } = getDeviceId(req);
+    if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
+        await logAdminAction('admin', 'IP_BLOCKED', { ip: ip }, req);
+        return res.status(403).json({ error: 'Access denied from this IP address' });
+    }
+    
     req.user = decoded;
+    req.session = session;
     next();
 }
 
@@ -202,10 +376,550 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
         pricing.whatsappNumber = number;
         whatsappNumber = number;
         await pricing.save();
+        
+        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number: number }, req);
         res.json({ success: true, number: number });
     } catch (error) {
         console.error('❌ WhatsApp number save error:', error);
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+// ==================== 2FA SETUP ====================
+const speakeasy = require('speakeasy');
+
+app.post('/api/admin/2fa/setup', authMiddleware, async (req, res) => {
+    try {
+        const secret = Security.generate2FASecret();
+        
+        let twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) {
+            twoFactor = new TwoFactorAuth({
+                userId: 'admin',
+                secret: secret.base32,
+                backupCodes: Security.generateBackupCodes(),
+                isEnabled: false
+            });
+        } else {
+            twoFactor.secret = secret.base32;
+            twoFactor.backupCodes = Security.generateBackupCodes();
+            twoFactor.isEnabled = false;
+            twoFactor.verifiedAt = null;
+        }
+        await twoFactor.save();
+        
+        const otpauthUrl = speakeasy.otpauthURL({
+            secret: secret.base32,
+            label: 'FreeFire ID Checker',
+            issuer: 'Admin Panel'
+        });
+        
+        const qrCode = await Security.generateQRCode(otpauthUrl);
+        
+        await logAdminAction('admin', '2FA_SETUP_STARTED', {}, req);
+        
+        res.json({
+            success: true,
+            secret: secret.base32,
+            otpauthUrl: otpauthUrl,
+            qrCode: qrCode,
+            backupCodes: twoFactor.backupCodes
+        });
+        
+    } catch (error) {
+        console.error('❌ 2FA setup error:', error);
+        res.status(500).json({ error: 'Failed to setup 2FA' });
+    }
+});
+
+app.post('/api/admin/2fa/verify', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ error: 'Token required' });
+        }
+        
+        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) {
+            return res.status(404).json({ error: '2FA not set up' });
+        }
+        
+        const isValid = Security.verify2FAToken(twoFactor.secret, token);
+        
+        if (isValid) {
+            twoFactor.isEnabled = true;
+            twoFactor.verifiedAt = new Date();
+            await twoFactor.save();
+            
+            await logAdminAction('admin', '2FA_VERIFIED', {}, req);
+            res.json({ success: true, message: '2FA enabled successfully' });
+        } else {
+            res.status(400).json({ error: 'Invalid token' });
+        }
+        
+    } catch (error) {
+        console.error('❌ 2FA verify error:', error);
+        res.status(500).json({ error: 'Failed to verify 2FA' });
+    }
+});
+
+app.post('/api/admin/2fa/disable', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) {
+            return res.status(404).json({ error: '2FA not set up' });
+        }
+        
+        const isValid = Security.verify2FAToken(twoFactor.secret, token);
+        if (!isValid) {
+            return res.status(400).json({ error: 'Invalid token' });
+        }
+        
+        twoFactor.isEnabled = false;
+        await twoFactor.save();
+        
+        await logAdminAction('admin', '2FA_DISABLED', {}, req);
+        res.json({ success: true, message: '2FA disabled' });
+        
+    } catch (error) {
+        console.error('❌ 2FA disable error:', error);
+        res.status(500).json({ error: 'Failed to disable 2FA' });
+    }
+});
+
+// ==================== ADMIN LOGIN ====================
+app.post('/api/admin/login', authLimiter, async (req, res) => {
+    try {
+        const { passcode, token } = req.body;
+        const { ip, userAgent } = getDeviceId(req);
+        
+        const attemptCheck = await checkLoginAttempts(ip);
+        if (!attemptCheck.allowed) {
+            await logAdminAction('admin', 'LOGIN_LOCKED', { 
+                ip: ip, 
+                remainingMinutes: attemptCheck.remainingMinutes 
+            }, req);
+            return res.status(429).json({ 
+                error: `Too many attempts. Account locked for ${attemptCheck.remainingMinutes} minutes.` 
+            });
+        }
+        
+        if (!passcode) {
+            return res.status(400).json({ error: 'Passcode required' });
+        }
+        
+        const admin = await User.findOne();
+        if (!admin) {
+            return res.status(500).json({ error: 'Admin not found' });
+        }
+        
+        const isValid = bcrypt.compareSync(passcode, admin.passcode);
+        
+        if (!isValid) {
+            await recordLoginAttempt(ip, false);
+            await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
+            return res.status(401).json({ error: 'Invalid passcode' });
+        }
+        
+        if (ENABLE_2FA) {
+            const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+            if (twoFactor && twoFactor.isEnabled) {
+                if (!token) {
+                    return res.status(200).json({ 
+                        requires2FA: true,
+                        message: '2FA token required'
+                    });
+                }
+                
+                const isValid2FA = Security.verify2FAToken(twoFactor.secret, token);
+                if (!isValid2FA) {
+                    await logAdminAction('admin', '2FA_FAILED', { ip: ip }, req);
+                    return res.status(401).json({ error: 'Invalid 2FA token' });
+                }
+            }
+        }
+        
+        await recordLoginAttempt(ip, true);
+        
+        const jwtToken = generateToken('admin');
+        const csrfToken = generateCSRFToken();
+        
+        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+        
+        await logAdminAction('admin', 'LOGIN', { ip: ip }, req);
+        
+        res.cookie('adminToken', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || true,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+        
+        res.json({
+            success: true,
+            csrfToken: csrfToken,
+            requires2FA: false
+        });
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// ==================== ADMIN LOGOUT ====================
+app.post('/api/admin/logout', authMiddleware, async (req, res) => {
+    try {
+        const token = req.cookies?.adminToken;
+        if (token) {
+            await invalidateSession(token);
+            await logAdminAction('admin', 'LOGOUT', {}, req);
+        }
+        res.clearCookie('adminToken');
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Logout failed' });
+    }
+});
+
+// ==================== ADMIN PASSCODE CHANGE ====================
+app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
+    try {
+        const { oldPasscode, newPasscode } = req.body;
+        
+        if (!oldPasscode || !newPasscode) {
+            return res.status(400).json({ error: 'Both passcodes required' });
+        }
+        
+        const passwordCheck = Security.isStrongPassword(newPasscode);
+        if (!passwordCheck.valid) {
+            return res.status(400).json({ error: passwordCheck.message });
+        }
+        
+        const admin = await User.findOne();
+        if (!admin) {
+            return res.status(500).json({ error: 'Admin not found' });
+        }
+        
+        const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
+        if (!isValid) {
+            await logAdminAction('admin', 'PASSCODE_CHANGE_FAILED', {}, req);
+            return res.status(401).json({ error: 'Current passcode is incorrect' });
+        }
+        
+        admin.passcode = bcrypt.hashSync(newPasscode, 10);
+        await admin.save();
+        
+        await invalidateAllSessions('admin');
+        
+        await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
+        
+        res.clearCookie('adminToken');
+        res.json({ success: true, message: 'Passcode changed. Please login again.' });
+        
+    } catch (error) {
+        console.error('❌ Passcode change error:', error);
+        res.status(500).json({ error: 'Passcode change failed' });
+    }
+});
+
+// ==================== ADMIN ROUTES ====================
+app.post('/api/admin/theme', authMiddleware, async (req, res) => {
+    try {
+        const { theme } = req.body;
+        if (!['light', 'dark'].includes(theme)) {
+            return res.status(400).json({ error: 'Invalid theme' });
+        }
+        
+        const admin = await User.findOne();
+        if (admin) {
+            admin.theme = theme;
+            await admin.save();
+        }
+        
+        await logAdminAction('admin', 'THEME_CHANGE', { theme: theme }, req);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update theme' });
+    }
+});
+
+app.post('/api/admin/background', authMiddleware, async (req, res) => {
+    try {
+        const { background } = req.body;
+        if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
+            return res.status(400).json({ error: 'Invalid image format' });
+        }
+        
+        const popupSettings = await PopupSettings.findOne();
+        if (popupSettings) {
+            popupSettings.image = background || null;
+            await popupSettings.save();
+        }
+        
+        await logAdminAction('admin', 'BACKGROUND_CHANGE', { hasImage: !!background }, req);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Background update error:', error);
+        res.status(500).json({ error: 'Failed to update background' });
+    }
+});
+
+// ==================== ADMIN LOGS ====================
+app.get('/api/admin/logs', authMiddleware, async (req, res) => {
+    try {
+        const { limit = 50, action, from, to } = req.query;
+        
+        const query = {};
+        if (action) query.action = action;
+        if (from || to) {
+            query.timestamp = {};
+            if (from) query.timestamp.$gte = new Date(from);
+            if (to) query.timestamp.$lte = new Date(to);
+        }
+        
+        const logs = await AdminLog.find(query)
+            .sort({ timestamp: -1 })
+            .limit(parseInt(limit));
+        
+        const count = await AdminLog.countDocuments(query);
+        
+        res.json({
+            logs: logs,
+            count: count,
+            limit: parseInt(limit)
+        });
+    } catch (error) {
+        console.error('❌ Logs error:', error);
+        res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
+// ==================== LINK ROUTES ====================
+app.get('/api/links', authMiddleware, async (req, res) => {
+    try {
+        const links = await Link.find().sort({ created: -1 });
+        res.json(links);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch links' });
+    }
+});
+
+app.post('/api/links', authMiddleware, async (req, res) => {
+    try {
+        const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
+        
+        if (!name || name.length < 1 || name.length > 100) {
+            return res.status(400).json({ error: 'Invalid link name (1-100 characters)' });
+        }
+        
+        const urlRegex = /^(https?:\/\/[^\s]+)$/;
+        if (video && !urlRegex.test(video)) {
+            return res.status(400).json({ error: 'Invalid video URL format' });
+        }
+        if (claim && claim !== '#' && !urlRegex.test(claim)) {
+            return res.status(400).json({ error: 'Invalid claim URL format' });
+        }
+        
+        const newLink = new Link({
+            id: 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex'),
+            name: name.substring(0, 100),
+            video: video || 'https://youtu.be/dQw4w9WgXcQ',
+            claim: claim || '#',
+            buttonText: (buttonText || 'Claim Now').substring(0, 50),
+            headline: (headline || '').substring(0, 200),
+            expiryDate: expiryDate || null,
+            status: 'active',
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
+        });
+        
+        await newLink.save();
+        await logAdminAction('admin', 'CREATE_LINK', { linkId: newLink.id, name: newLink.name }, req);
+        res.json(newLink);
+    } catch (error) {
+        console.error('❌ Create link error:', error);
+        res.status(500).json({ error: 'Failed to create link' });
+    }
+});
+
+app.put('/api/links/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
+        
+        const link = await Link.findOne({ id: id });
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        if (name && (name.length < 1 || name.length > 100)) {
+            return res.status(400).json({ error: 'Invalid link name' });
+        }
+        
+        const urlRegex = /^(https?:\/\/[^\s]+)$/;
+        if (video && !urlRegex.test(video)) {
+            return res.status(400).json({ error: 'Invalid video URL' });
+        }
+        if (claim && claim !== '#' && !urlRegex.test(claim)) {
+            return res.status(400).json({ error: 'Invalid claim URL' });
+        }
+        
+        const changes = {};
+        if (name !== undefined) { link.name = name.substring(0, 100); changes.name = name; }
+        if (video !== undefined) { link.video = video; changes.video = video; }
+        if (claim !== undefined) { link.claim = claim; changes.claim = claim; }
+        if (buttonText !== undefined) { link.buttonText = buttonText.substring(0, 50); changes.buttonText = buttonText; }
+        if (headline !== undefined) { link.headline = headline.substring(0, 200); changes.headline = headline; }
+        if (status !== undefined && ['active', 'suspended', 'disabled'].includes(status)) {
+            link.status = status;
+            changes.status = status;
+        }
+        if (expiryDate !== undefined) { link.expiryDate = expiryDate; changes.expiryDate = expiryDate; }
+        if (popupSettings !== undefined) {
+            link.popupSettings = { ...link.popupSettings, ...popupSettings };
+            changes.popupSettings = popupSettings;
+        }
+        
+        await link.save();
+        await logAdminAction('admin', 'UPDATE_LINK', { linkId: link.id, changes: changes }, req);
+        res.json(link);
+    } catch (error) {
+        console.error('❌ Update link error:', error);
+        res.status(500).json({ error: 'Failed to update link' });
+    }
+});
+
+app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        if (!['active', 'suspended', 'disabled'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        
+        const link = await Link.findOne({ id: id });
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        link.status = status;
+        await link.save();
+        await logAdminAction('admin', 'UPDATE_STATUS', { linkId: link.id, name: link.name, newStatus: status }, req);
+        res.json(link);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update status' });
+    }
+});
+
+app.delete('/api/links/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await Link.findOne({ id: id });
+        if (link) {
+            await logAdminAction('admin', 'DELETE_LINK', { linkId: link.id, name: link.name }, req);
+        }
+        await Link.findOneAndDelete({ id: id });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete link' });
+    }
+});
+
+// ==================== RENEWAL ====================
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status !== 'paid') {
+            return res.status(400).json({ error: 'Payment not confirmed yet' });
+        }
+        
+        const link = await Link.findOne({ id: request.linkId });
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry.toISOString();
+            link.status = 'active';
+            await link.save();
+        }
+        
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        
+        await logAdminAction('admin', 'APPROVE_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId,
+            plan: request.plan
+        }, req);
+        
+        res.json({ success: true, message: 'Renewal approved! Link extended.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to approve renewal' });
+    }
+});
+
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        request.status = 'rejected';
+        await request.save();
+        
+        await logAdminAction('admin', 'REJECT_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        
+        res.json({ success: true, message: 'Renewal rejected' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject renewal' });
+    }
+});
+
+app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status === 'approved' || request.status === 'rejected') {
+            return res.status(400).json({ error: 'Request already processed' });
+        }
+        
+        request.status = 'paid';
+        request.paidAt = new Date();
+        await request.save();
+        
+        await logAdminAction('admin', 'MARK_PAID', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        
+        res.json({ success: true, message: 'Payment marked as paid' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark payment' });
     }
 });
 
@@ -215,21 +929,16 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         const { dashboardId } = req.params;
         console.log('🔍 Dashboard map request for:', dashboardId);
         
-        // Check if dashboardId itself is a link ID
         const existingLink = await Link.findOne({ id: dashboardId });
         if (existingLink) {
-            console.log('✅ Found link by direct ID:', existingLink.id);
             return res.json({ linkId: existingLink.id });
         }
         
-        // Find link where dashboardId matches
         const link = await Link.findOne({ dashboardId: dashboardId });
         if (link) {
-            console.log('✅ Found link with dashboardId:', link.id);
             return res.json({ linkId: link.id });
         }
         
-        // Partial match - search all links
         const allLinks = await Link.find({});
         const matched = allLinks.find(l => 
             l.id.includes(dashboardId) || 
@@ -238,11 +947,9 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         );
         
         if (matched) {
-            console.log('✅ Found link by partial match:', matched.id);
             return res.json({ linkId: matched.id });
         }
         
-        console.log('❌ No link found for dashboardId:', dashboardId);
         res.status(404).json({ error: 'No link found' });
     } catch (error) {
         console.error('❌ Dashboard map error:', error);
@@ -302,6 +1009,11 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
         const dashboardUrl = '/user-dashboard/' + dashboardId;
         const fullUrl = req.protocol + '://' + req.get('host') + dashboardUrl;
         
+        await logAdminAction('admin', 'CREATE_DASHBOARD_LINK', { 
+            linkId: linkId,
+            dashboardId: dashboardId
+        }, req);
+        
         res.json({
             success: true,
             dashboardId: dashboardId,
@@ -316,127 +1028,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ADMIN ROUTES ====================
-app.post('/api/admin/login', authLimiter, async (req, res) => {
-    try {
-        const { passcode } = req.body;
-        if (!passcode) {
-            return res.status(400).json({ error: 'Passcode required' });
-        }
-        if (!/^\d+$/.test(passcode) || passcode.length !== 6) {
-            return res.status(400).json({ error: 'Invalid passcode format (6 digits required)' });
-        }
-        
-        const admin = await User.findOne();
-        if (!admin) {
-            return res.status(500).json({ error: 'Admin not found' });
-        }
-        
-        const isValid = bcrypt.compareSync(passcode, admin.passcode);
-        if (!isValid) {
-            return res.status(401).json({ error: 'Invalid passcode' });
-        }
-        
-        const token = generateToken('admin');
-        const csrfToken = generateCSRFToken();
-        
-        res.cookie('adminToken', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/'
-        });
-        
-        res.json({
-            success: true,
-            csrfToken: csrfToken
-        });
-    } catch (error) {
-        console.error('❌ Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
-
-app.post('/api/admin/logout', authMiddleware, async (req, res) => {
-    try {
-        res.clearCookie('adminToken');
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Logout failed' });
-    }
-});
-
-app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
-    try {
-        const { oldPasscode, newPasscode } = req.body;
-        if (!oldPasscode || !newPasscode) {
-            return res.status(400).json({ error: 'Both passcodes required' });
-        }
-        if (!/^\d+$/.test(newPasscode) || newPasscode.length !== 6) {
-            return res.status(400).json({ error: 'New passcode must be 6 digits' });
-        }
-        
-        const admin = await User.findOne();
-        if (!admin) {
-            return res.status(500).json({ error: 'Admin not found' });
-        }
-        
-        const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
-        if (!isValid) {
-            return res.status(401).json({ error: 'Current passcode is incorrect' });
-        }
-        
-        admin.passcode = bcrypt.hashSync(newPasscode, 10);
-        await admin.save();
-        
-        res.clearCookie('adminToken');
-        res.json({ success: true, message: 'Passcode changed. Please login again.' });
-    } catch (error) {
-        console.error('❌ Passcode change error:', error);
-        res.status(500).json({ error: 'Passcode change failed' });
-    }
-});
-
-app.post('/api/admin/theme', authMiddleware, async (req, res) => {
-    try {
-        const { theme } = req.body;
-        if (!['light', 'dark'].includes(theme)) {
-            return res.status(400).json({ error: 'Invalid theme' });
-        }
-        
-        const admin = await User.findOne();
-        if (admin) {
-            admin.theme = theme;
-            await admin.save();
-        }
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update theme' });
-    }
-});
-
-app.post('/api/admin/background', authMiddleware, async (req, res) => {
-    try {
-        const { background } = req.body;
-        if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
-            return res.status(400).json({ error: 'Invalid image format' });
-        }
-        
-        const popupSettings = await PopupSettings.findOne();
-        if (popupSettings) {
-            popupSettings.image = background || null;
-            await popupSettings.save();
-        }
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('❌ Background update error:', error);
-        res.status(500).json({ error: 'Failed to update background' });
-    }
-});
-
+// ==================== POPUP SETTINGS ====================
 app.post('/api/admin/popup', authMiddleware, async (req, res) => {
     try {
         const { image, title, buttonText, subtitle, linkId } = req.body;
@@ -461,6 +1053,11 @@ app.post('/api/admin/popup', authMiddleware, async (req, res) => {
                 await popupSettings.save();
             }
         }
+        
+        await logAdminAction('admin', 'UPDATE_SETTINGS', { 
+            type: 'popup',
+            linkId: linkId || 'global'
+        }, req);
         
         res.json({ success: true });
     } catch (error) {
@@ -500,133 +1097,7 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
-// ==================== LINK ROUTES ====================
-app.get('/api/links', authMiddleware, async (req, res) => {
-    try {
-        const links = await Link.find().sort({ created: -1 });
-        res.json(links);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch links' });
-    }
-});
-
-app.post('/api/links', authMiddleware, async (req, res) => {
-    try {
-        const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
-        
-        if (!name || name.length < 1 || name.length > 100) {
-            return res.status(400).json({ error: 'Invalid link name (1-100 characters)' });
-        }
-        
-        const urlRegex = /^(https?:\/\/[^\s]+)$/;
-        if (video && !urlRegex.test(video)) {
-            return res.status(400).json({ error: 'Invalid video URL format' });
-        }
-        if (claim && claim !== '#' && !urlRegex.test(claim)) {
-            return res.status(400).json({ error: 'Invalid claim URL format' });
-        }
-        
-        const newLink = new Link({
-            id: 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex'),
-            name: name.substring(0, 100),
-            video: video || 'https://youtu.be/dQw4w9WgXcQ',
-            claim: claim || '#',
-            buttonText: (buttonText || 'Claim Now').substring(0, 50),
-            headline: (headline || '').substring(0, 200),
-            expiryDate: expiryDate || null,
-            status: 'active',
-            popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            }
-        });
-        
-        await newLink.save();
-        res.json(newLink);
-    } catch (error) {
-        console.error('❌ Create link error:', error);
-        res.status(500).json({ error: 'Failed to create link' });
-    }
-});
-
-app.put('/api/links/:id', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
-        
-        const link = await Link.findOne({ id: id });
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        if (name && (name.length < 1 || name.length > 100)) {
-            return res.status(400).json({ error: 'Invalid link name' });
-        }
-        
-        const urlRegex = /^(https?:\/\/[^\s]+)$/;
-        if (video && !urlRegex.test(video)) {
-            return res.status(400).json({ error: 'Invalid video URL' });
-        }
-        if (claim && claim !== '#' && !urlRegex.test(claim)) {
-            return res.status(400).json({ error: 'Invalid claim URL' });
-        }
-        
-        if (name !== undefined) link.name = name.substring(0, 100);
-        if (video !== undefined) link.video = video;
-        if (claim !== undefined) link.claim = claim;
-        if (buttonText !== undefined) link.buttonText = buttonText.substring(0, 50);
-        if (headline !== undefined) link.headline = headline.substring(0, 200);
-        if (status !== undefined && ['active', 'suspended', 'disabled'].includes(status)) {
-            link.status = status;
-        }
-        if (expiryDate !== undefined) link.expiryDate = expiryDate;
-        if (popupSettings !== undefined) {
-            link.popupSettings = { ...link.popupSettings, ...popupSettings };
-        }
-        
-        await link.save();
-        res.json(link);
-    } catch (error) {
-        console.error('❌ Update link error:', error);
-        res.status(500).json({ error: 'Failed to update link' });
-    }
-});
-
-app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        
-        if (!['active', 'suspended', 'disabled'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-        
-        const link = await Link.findOne({ id: id });
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        link.status = status;
-        await link.save();
-        res.json(link);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update status' });
-    }
-});
-
-app.delete('/api/links/:id', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        await Link.findOneAndDelete({ id: id });
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete link' });
-    }
-});
-
-// ==================== PUBLIC LINK ====================
+// ==================== PUBLIC ROUTES ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -668,14 +1139,14 @@ app.get('/api/link/:id', async (req, res) => {
             });
         }
         
-        const deviceId = getDeviceId(req);
+        const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
         if (!stats) {
             stats = await Stats.create({});
         }
         
-        const uniqueKey = deviceId + '_' + today;
+        const uniqueKey = fingerprint + '_' + today;
         const uniqueVisitors = stats.uniqueVisitors || new Map();
         
         if (!uniqueVisitors.has(uniqueKey) || 
@@ -688,7 +1159,7 @@ app.get('/api/link/:id', async (req, res) => {
             
             await link.save();
             await stats.save();
-            console.log('👤 New unique visitor (48hr):', deviceId.substring(0, 10));
+            console.log('👤 New unique visitor (48hr):', fingerprint.substring(0, 10));
         }
         
         const popupSettings = link.popupSettings || {
@@ -713,7 +1184,6 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
-// ==================== TRACK CLAIM ====================
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -723,14 +1193,14 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
         
-        const deviceId = getDeviceId(req);
+        const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
         if (!stats) {
             stats = await Stats.create({});
         }
         
-        const uniqueKey = deviceId + '_' + today;
+        const uniqueKey = fingerprint + '_' + today;
         const uniqueClaims = stats.uniqueClaims || new Map();
         
         if (!uniqueClaims.has(uniqueKey) || 
@@ -743,7 +1213,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             
             await link.save();
             await stats.save();
-            console.log('🎁 New unique claim (48hr):', deviceId.substring(0, 10));
+            console.log('🎁 New unique claim (48hr):', fingerprint.substring(0, 10));
         }
         
         res.json({
@@ -851,7 +1321,6 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// ==================== VISIT STATS ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -903,8 +1372,62 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// ==================== RENEWAL ====================
+// ==================== PRICING ====================
+app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, paymentSettings } = req.body;
+        let pricingDoc = await Pricing.findOne();
+        
+        if (!pricingDoc) {
+            pricingDoc = new Pricing();
+        }
+        
+        if (pricing) pricingDoc.pricing = pricing;
+        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
+        pricingDoc.updatedAt = new Date();
+        
+        await pricingDoc.save();
+        await logAdminAction('admin', 'UPDATE_PRICING', { pricing: pricing }, req);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update pricing' });
+    }
+});
 
+app.get('/api/pricing', async (req, res) => {
+    try {
+        const pricingDoc = await Pricing.findOne();
+        res.json({
+            pricing: pricingDoc?.pricing || {},
+            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
+            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch pricing' });
+    }
+});
+
+app.get('/api/settings', async (req, res) => {
+    try {
+        const admin = await User.findOne();
+        const popupSettings = await PopupSettings.findOne();
+        
+        res.json({
+            theme: admin?.theme || 'light',
+            background: popupSettings?.image || null,
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// ==================== RENEWAL REQUESTS ====================
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount } = req.body;
@@ -941,7 +1464,6 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
         });
         
         await renewalRequest.save();
-        
         res.json({
             success: true,
             requestId: renewalRequest.id,
@@ -1068,7 +1590,6 @@ app.post('/api/renewal/confirm-payment', async (req, res) => {
         });
         
         await renewalRequest.save();
-        
         res.json({
             success: true,
             requestId: renewalRequest.id,
@@ -1107,138 +1628,20 @@ app.get('/api/renewal/status/:linkId', async (req, res) => {
     }
 });
 
-app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status === 'approved' || request.status === 'rejected') {
-            return res.status(400).json({ error: 'Request already processed' });
-        }
-        
-        request.status = 'paid';
-        request.paidAt = new Date();
-        await request.save();
-        
-        res.json({ success: true, message: 'Payment marked as paid' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to mark payment' });
-    }
-});
-
-app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status !== 'paid') {
-            return res.status(400).json({ error: 'Payment not confirmed yet' });
-        }
-        
-        const link = await Link.findOne({ id: request.linkId });
-        if (link) {
-            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-            const newExpiry = new Date(currentExpiry);
-            newExpiry.setDate(newExpiry.getDate() + request.days);
-            link.expiryDate = newExpiry.toISOString();
-            link.status = 'active';
-            await link.save();
-        }
-        
-        request.status = 'approved';
-        request.approvedAt = new Date();
-        await request.save();
-        
-        res.json({ success: true, message: 'Renewal approved! Link extended.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to approve renewal' });
-    }
-});
-
-app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        
-        request.status = 'rejected';
-        await request.save();
-        
-        res.json({ success: true, message: 'Renewal rejected' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reject renewal' });
-    }
-});
-
 app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
     try {
         const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (request) {
+            await logAdminAction('admin', 'DELETE_RENEWAL', { 
+                requestId: requestId,
+                linkId: request.linkId
+            }, req);
+        }
         await RenewalRequest.findOneAndDelete({ id: requestId });
         res.json({ success: true, message: 'Request removed' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to remove request' });
-    }
-});
-
-app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
-    try {
-        const { pricing, paymentSettings } = req.body;
-        let pricingDoc = await Pricing.findOne();
-        
-        if (!pricingDoc) {
-            pricingDoc = new Pricing();
-        }
-        
-        if (pricing) pricingDoc.pricing = pricing;
-        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
-        pricingDoc.updatedAt = new Date();
-        
-        await pricingDoc.save();
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update pricing' });
-    }
-});
-
-app.get('/api/pricing', async (req, res) => {
-    try {
-        const pricingDoc = await Pricing.findOne();
-        res.json({
-            pricing: pricingDoc?.pricing || {},
-            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
-            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch pricing' });
-    }
-});
-
-app.get('/api/settings', async (req, res) => {
-    try {
-        const admin = await User.findOne();
-        const popupSettings = await PopupSettings.findOne();
-        
-        res.json({
-            theme: admin?.theme || 'light',
-            background: popupSettings?.image || null,
-            popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch settings' });
     }
 });
 
@@ -1279,6 +1682,20 @@ app.get('/', (req, res) => {
     res.redirect('/admin/login.html');
 });
 
+// ==================== Session Cleanup ====================
+setInterval(async () => {
+    try {
+        const result = await Session.deleteMany({ 
+            expiresAt: { $lt: new Date() } 
+        });
+        if (result.deletedCount > 0) {
+            console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
+        }
+    } catch (error) {
+        console.error('❌ Session cleanup error:', error);
+    }
+}, 60 * 60 * 1000);
+
 // ==================== START SERVER ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
@@ -1288,12 +1705,12 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
-    console.log('🔑 ADMIN PASSCODE: 951753');
-    console.log('⏰ Session: 7 DAYS');
+    console.log('🔑 ADMIN LOGIN: Strong password required');
+    console.log('🔐 2FA: ' + (ENABLE_2FA ? '✅ Enabled' : '❌ Disabled'));
+    console.log('🛡️ IP Whitelist: ' + IP_WHITELIST);
+    console.log('⏰ Session Timeout: ' + SESSION_TIMEOUT + ' minutes');
+    console.log('🔒 Max Login Attempts: ' + MAX_LOGIN_ATTEMPTS);
+    console.log('📋 Audit Logging: ✅ Enabled');
     console.log('🗄️ Database: MongoDB Atlas');
-    console.log('📊 Stats: 48hr Unique Visitor + Claim tracking');
-    console.log('📱 WhatsApp: Renewal requests via WhatsApp');
-    console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
-    console.log('🔗 Dashboard Link Generator: Search by name/ID');
     console.log('═══════════════════════════════════════════');
 });
