@@ -17,7 +17,7 @@ const AdminSessionSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: 86400 // 24 hours (automatic expiry)
+        expires: 86400 // 24 hours
     },
     expiresAt: {
         type: Date,
@@ -29,7 +29,7 @@ const AdminSessionSchema = new mongoose.Schema({
     }
 });
 
-// Indexes for faster queries
+// Indexes
 AdminSessionSchema.index({ token: 1 });
 AdminSessionSchema.index({ expiresAt: 1 });
 AdminSessionSchema.index({ ip: 1 });
