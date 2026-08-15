@@ -329,7 +329,7 @@
             padding: 0 4px;
         }
         .collapse-content.open {
-            max-height: 3000px; padding: 16px 4px 4px 4px;
+            max-height: 3500px; padding: 16px 4px 4px 4px;
         }
 
         .payment-dynamic {
@@ -709,7 +709,7 @@
             <div id="linksList"></div>
         </div>
 
-        <!-- RENEWAL MANAGEMENT -->
+        <!-- ===== RENEWAL MANAGEMENT (COMPLETE WITH PAYMENT SETTINGS) ===== -->
         <div class="card">
             <button class="collapse-btn" onclick="toggleRenewal()">
                 <span>🔄 Renewal Management</span>
@@ -752,6 +752,38 @@
                         <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" placeholder="Price" value="3500" min="0"></div>
                     </div>
                     <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Pricing</button>
+                </div>
+
+                <!-- ===== PAYMENT SETTINGS (FIXED) ===== -->
+                <div style="margin-bottom:16px;padding-top:16px;border-top:1px solid var(--border);">
+                    <h4 style="color:var(--text-light);font-size:14px;margin-bottom:8px;">💳 Payment Settings</h4>
+                    <div class="grid-2">
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Payment Method</label>
+                            <select id="paymentMethod" onchange="togglePaymentFields()" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-size:14px;">
+                                <option value="UPI">UPI</option>
+                                <option value="QR">QR Code</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Payment Details</label>
+                            <div id="paymentDetailsContainer">
+                                <div class="payment-dynamic show" id="upiField">
+                                    <input type="text" id="upiInput" placeholder="UPI ID (e.g., admin@upi)" value="admin@upi">
+                                </div>
+                                <div class="payment-dynamic" id="qrField">
+                                    <input type="file" id="qrInput" accept="image/*" onchange="previewQR(event)">
+                                    <img id="qrPreview" class="preview-qr" alt="QR Preview">
+                                </div>
+                                <div class="payment-dynamic" id="textField">
+                                    <input type="text" id="textInput" placeholder="Bank Details / Other Info">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:10px 20px;">💾 Save Payment Settings</button>
                 </div>
 
                 <div style="padding-top:16px;border-top:1px solid var(--border);">
@@ -1753,11 +1785,11 @@
             }
         }
 
-        // ===== PAYMENT FIELDS TOGGLE =====
+        // ===== PAYMENT FIELDS TOGGLE (FIXED) =====
         function togglePaymentFields() {
             var methodEl = document.getElementById('paymentMethod');
             if (!methodEl) {
-                console.warn('⚠️ paymentMethod element not found');
+                console.warn('⚠️ paymentMethod element not found - skipping toggle');
                 return;
             }
             
