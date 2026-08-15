@@ -84,6 +84,11 @@
             margin-bottom: 12px;
             color: rgba(255,255,255,0.8);
         }
+        .renewal-section .sub-text {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 15px;
+        }
         .plan-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -91,7 +96,7 @@
             margin: 12px 0;
         }
         .plan-btn {
-            padding: 12px 8px;
+            padding: 14px 8px;
             border: 2px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             background: rgba(255,255,255,0.03);
@@ -103,12 +108,14 @@
             font-weight: 600;
         }
         .plan-btn:hover { border-color: #667eea; background: rgba(102,126,234,0.1); transform: translateY(-2px); }
-        .plan-btn .price { font-size: 18px; color: #667eea; display: block; margin-top: 4px; }
-        .plan-btn .days { font-size: 11px; color: rgba(255,255,255,0.4); display: block; }
-        .plan-btn.selected { border-color: #667eea; background: rgba(102,126,234,0.15); }
+        .plan-btn .price { font-size: 20px; color: #667eea; display: block; margin-top: 4px; font-weight: 800; }
+        .plan-btn .days { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 2px; }
+        .plan-btn.selected { border-color: #667eea; background: rgba(102,126,234,0.15); box-shadow: 0 0 30px rgba(102,126,234,0.1); }
+        .plan-btn .check-mark { display: none; color: #48bb78; font-size: 16px; }
+        .plan-btn.selected .check-mark { display: inline-block; }
         
         .btn {
-            padding: 12px 30px;
+            padding: 14px 30px;
             border: none;
             border-radius: 12px;
             font-size: 16px;
@@ -117,6 +124,10 @@
             transition: 0.3s;
             width: 100%;
             color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
@@ -126,10 +137,7 @@
         .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(252,129,129,0.3); }
         .btn-whatsapp { background: #25D366; }
         .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,211,102,0.3); }
-        
-        .hidden { display: none !important; }
-        .mt-10 { margin-top: 10px; }
-        .mb-10 { margin-bottom: 10px; }
+        .btn-whatsapp i { font-size: 20px; }
         
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(120px);
@@ -144,51 +152,34 @@
         .toast.error { border-color: #fc8181; }
         .toast.info { border-color: #667eea; }
 
-        .renewal-history-item {
+        .selected-plan-display {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin: 10px 0;
+            padding: 8px;
             background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin: 6px 0;
-            border-left: 3px solid #667eea;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .renewal-history-item .status-approved { border-left-color: #48bb78; }
-        .renewal-history-item .status-rejected { border-left-color: #fc8181; }
-        .renewal-history-item .status-pending { border-left-color: #f6ad55; }
-        .renewal-history-item .status-paid { border-left-color: #4299e1; }
-        
-        .renewal-history-item .h-title { font-weight: 600; font-size: 14px; color: #fff; }
-        .renewal-history-item .h-details { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 10px; }
-        .renewal-history-item .h-status {
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        .h-status.approved { background: rgba(72,187,120,0.2); color: #48bb78; }
-        .h-status.rejected { background: rgba(252,129,129,0.2); color: #fc8181; }
-        .h-status.pending { background: rgba(246,173,85,0.2); color: #f6ad55; }
-        .h-status.paid { background: rgba(66,153,225,0.2); color: #63b3ed; }
+        .selected-plan-display strong { color: #667eea; }
 
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.1);
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-right: 8px;
-            vertical-align: middle;
+        .link-id-display {
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            word-break: break-all;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         @media (max-width: 480px) {
             .container { padding: 20px 16px; }
             .stat-card .number { font-size: 24px; }
             .plan-grid { grid-template-columns: repeat(3, 1fr); }
             .plan-btn { padding: 10px 6px; font-size: 11px; }
-            .plan-btn .price { font-size: 15px; }
+            .plan-btn .price { font-size: 16px; }
         }
     </style>
 </head>
@@ -236,59 +227,66 @@
         <!-- Renewal Section -->
         <div class="renewal-section" id="renewalSection">
             <h3>🔄 Renew Your Link</h3>
-            <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:10px;">Select a plan to extend your link</p>
+            <p class="sub-text">Select a plan and contact admin via WhatsApp to renew your link</p>
+            
             <div class="plan-grid" id="planGrid">
                 <div class="plan-btn" data-plan="3days" onclick="selectPlan('3days')">
                     3 Days
                     <span class="price">₹50</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="7days" onclick="selectPlan('7days')">
                     7 Days
                     <span class="price">₹100</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="15days" onclick="selectPlan('15days')">
                     15 Days
                     <span class="price">₹200</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="1month" onclick="selectPlan('1month')">
                     1 Month
                     <span class="price">₹500</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="3months" onclick="selectPlan('3months')">
                     3 Months
                     <span class="price">₹1200</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="6months" onclick="selectPlan('6months')">
                     6 Months
                     <span class="price">₹2000</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
                 <div class="plan-btn" data-plan="12months" onclick="selectPlan('12months')">
                     12 Months
                     <span class="price">₹3500</span>
                     <span class="days">Extension</span>
+                    <span class="check-mark">✅</span>
                 </div>
             </div>
-            <div id="selectedPlanDisplay" style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:8px 0;">Select a plan above</div>
+            
+            <div class="selected-plan-display" id="selectedPlanDisplay">
+                💡 Select a plan above
+            </div>
             
             <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
-                📱 Request Renewal via WhatsApp
+                📱 Contact Admin via WhatsApp
             </button>
-            <div id="renewalStatus" style="margin-top:10px;font-size:14px;text-align:center;color:rgba(255,255,255,0.5);"></div>
+            
+            <div id="renewalStatus" style="margin-top:10px;font-size:13px;text-align:center;color:rgba(255,255,255,0.4);"></div>
         </div>
 
-        <!-- Renewal History -->
-        <div class="renewal-section" id="historySection">
-            <h3>📋 Renewal History</h3>
-            <div id="renewalHistory">
-                <p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;">No renewal history</p>
-            </div>
-        </div>
+        <!-- Link ID (hidden for user reference) -->
+        <div class="link-id-display" id="linkIdDisplay">🔑 Link ID: <span id="linkIdValue">Loading...</span></div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -299,13 +297,11 @@
         var rawId = pathSegments[pathSegments.length - 1] || '';
         var linkId = rawId;
         var actualLinkId = null;
-
-        console.log('📌 Raw ID from URL:', rawId);
-
         var whatsappNumber = '';
         var selectedPlan = null;
         var linkData = null;
-        var renewalHistory = [];
+
+        console.log('📌 Raw ID from URL:', rawId);
 
         function showToast(msg, type) {
             type = type || 'info';
@@ -316,6 +312,7 @@
             t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
         }
 
+        // ===== LOAD WHATSAPP NUMBER =====
         async function loadWhatsAppNumber() {
             try {
                 var r = await fetch('/api/whatsapp-number');
@@ -332,7 +329,7 @@
             }
         }
 
-        // ===== FIXED: Map dashboard ID to actual link ID =====
+        // ===== RESOLVE LINK ID =====
         async function resolveLinkId() {
             try {
                 // If it's already a link ID (starts with 'link_'), use it directly
@@ -379,14 +376,11 @@
                     }
                     
                     console.log('⚠️ No mapping found for dashboardId:', rawId);
-                    
-                    // Try to use raw ID directly (maybe it's a link ID in disguise)
                     linkId = rawId;
                     actualLinkId = rawId;
                     return true;
                 }
                 
-                // Default: use raw ID
                 linkId = rawId;
                 actualLinkId = rawId;
                 return true;
@@ -399,11 +393,7 @@
             }
         }
 
-        if (!linkId) {
-            showToast('❌ Invalid link', 'error');
-            document.getElementById('app').innerHTML = '<div style="text-align:center;padding:40px;"><h2>❌ Invalid Link</h2><p style="color:rgba(255,255,255,0.5);">Please use a valid dashboard link</p></div>';
-        }
-
+        // ===== LOAD DATA =====
         async function loadData() {
             try {
                 console.log('📊 Loading data for linkId:', linkId);
@@ -445,6 +435,7 @@
                         document.getElementById('linkStatus').textContent = 'NOT FOUND';
                         document.getElementById('linkStatus').className = 'status-badge disabled';
                         document.getElementById('expiryDate').textContent = 'N/A';
+                        document.getElementById('linkIdValue').textContent = linkId;
                         return;
                     }
                 }
@@ -478,11 +469,11 @@
                     } else {
                         expiryEl.textContent = 'No expiry set';
                     }
+                    
+                    document.getElementById('linkIdValue').textContent = linkId;
                 } else {
                     showToast('❌ Failed to load stats', 'error');
                 }
-
-                await loadRenewalHistory();
 
             } catch (e) {
                 console.error('Error loading data:', e);
@@ -490,65 +481,16 @@
             }
         }
 
-        async function loadRenewalHistory() {
-            try {
-                var res = await fetch('/api/renewal/history/' + linkId);
-                if (res.ok) {
-                    var data = await res.json();
-                    renewalHistory = data.history || [];
-                    displayRenewalHistory();
-                }
-            } catch (e) {
-                console.error('Error loading renewal history:', e);
-            }
-        }
-
-        function displayRenewalHistory() {
-            var container = document.getElementById('renewalHistory');
-            if (!renewalHistory || renewalHistory.length === 0) {
-                container.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center;">No renewal history</p>';
-                return;
-            }
-            container.innerHTML = '';
-            renewalHistory.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-            renewalHistory.forEach(function(req) {
-                var div = document.createElement('div');
-                div.className = 'renewal-history-item status-' + req.status;
-                var statusMap = {
-                    'approved': '✅ Approved',
-                    'rejected': '❌ Rejected',
-                    'pending': '⏳ Pending',
-                    'paid': '💰 Paid'
-                };
-                var statusClass = {
-                    'approved': 'approved',
-                    'rejected': 'rejected',
-                    'pending': 'pending',
-                    'paid': 'paid'
-                };
-                var date = new Date(req.createdAt);
-                var dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-                div.innerHTML = `
-                    <div class="h-title">${req.plan || 'N/A'} - ${req.days || 0} days extension</div>
-                    <div class="h-details">
-                        <span>💰 ₹${req.amount || 0}</span>
-                        <span>📅 ${dateStr}</span>
-                        <span class="h-status ${statusClass[req.status] || 'pending'}">${statusMap[req.status] || req.status.toUpperCase()}</span>
-                        ${req.transactionId ? `<span>🆔 ${req.transactionId}</span>` : ''}
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
+        // ===== SELECT PLAN =====
         function selectPlan(plan) {
             selectedPlan = plan;
             document.querySelectorAll('.plan-btn').forEach(function(el) {
                 el.classList.toggle('selected', el.dataset.plan === plan);
             });
-            document.getElementById('selectedPlanDisplay').textContent = '✅ Selected: ' + plan;
+            document.getElementById('selectedPlanDisplay').innerHTML = '✅ Selected: <strong>' + plan + '</strong>';
         }
 
+        // ===== SEND WHATSAPP REQUEST =====
         async function sendWhatsAppRequest() {
             if (!selectedPlan) {
                 showToast('⚠️ Please select a plan first', 'error');
@@ -566,10 +508,11 @@
 
             var btn = document.getElementById('renewBtn');
             var originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+            btn.innerHTML = '⏳ Processing...';
             btn.disabled = true;
 
             try {
+                // Get pricing details
                 var priceRes = await fetch('/api/pricing');
                 var priceData = await priceRes.json();
                 var pricing = priceData.pricing || {};
@@ -595,61 +538,78 @@
 
                 var linkName = linkData ? linkData.name : 'Unknown';
                 var linkIdDisplay = linkId || 'N/A';
+                var status = linkData ? linkData.status : 'Unknown';
+                var expiry = linkData && linkData.expiryDate ? new Date(linkData.expiryDate).toLocaleDateString() : 'No expiry';
 
-                var message = `🔔 *NEW RENEWAL REQUEST* 🔔
+                // ===== BEAUTIFUL WHATSAPP MESSAGE WITH IMAGE FORMAT =====
+                var message = `╔══════════════════════════════════════╗
+║        🔔 RENEWAL REQUEST 🔔         ║
+╠══════════════════════════════════════╣
+║                                      ║
+║  📌 *Link Name:* ${linkName}         ║
+║  🆔 *Link ID:* ${linkIdDisplay}      ║
+║  📊 *Status:* ${status}               ║
+║  ⏰ *Expiry:* ${expiry}               ║
+║                                      ║
+║  📆 *Plan:* ${selectedPlan}           ║
+║  📅 *Days:* ${days} days              ║
+║  💰 *Amount:* ₹${amount}              ║
+║                                      ║
+║  📱 *Request Date:* ${new Date().toLocaleString()} ║
+║                                      ║
+║  🔗 *Dashboard:* ${window.location.href} ║
+║                                      ║
+╚══════════════════════════════════════╝
 
-📌 *Link Name:* ${linkName}
-🆔 *Link ID:* ${linkIdDisplay}
-📆 *Plan:* ${selectedPlan} (${days} days)
-💰 *Amount:* ₹${amount}
-📅 *Request Date:* ${new Date().toLocaleString()}
+💳 *Payment Instructions:*
+Please complete the payment of ₹${amount} for ${selectedPlan} plan.
+After payment, please reply with transaction ID.
 
-🔗 *Dashboard Link:* ${window.location.href}
+✅ *Next Steps:*
+1. Complete payment
+2. Reply with transaction ID
+3. Admin will approve your renewal
 
-Please verify payment and approve/reject this request.`;
+🙏 Thank you for choosing us!`;
 
-                var encodedMessage = encodeURIComponent(message);
+                // Also create a simple text version
+                var simpleMessage = `🔔 RENEWAL REQUEST 🔔
+
+📌 Link Name: ${linkName}
+🆔 Link ID: ${linkIdDisplay}
+📊 Status: ${status}
+⏰ Expiry: ${expiry}
+
+📆 Plan: ${selectedPlan}
+📅 Days: ${days} days
+💰 Amount: ₹${amount}
+
+📱 Request Date: ${new Date().toLocaleString()}
+🔗 Dashboard: ${window.location.href}
+
+💳 Payment: Please pay ₹${amount} and reply with transaction ID.`;
+
+                var encodedMessage = encodeURIComponent(simpleMessage);
                 var whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-                var reqRes = await fetch('/api/renewal/request-from-dashboard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        linkId: linkId,
-                        linkName: linkName,
-                        plan: selectedPlan,
-                        days: days,
-                        amount: amount
-                    })
-                });
-
-                if (reqRes.ok) {
-                    var reqData = await reqRes.json();
-                    if (reqData.success) {
-                        showToast('✅ Request sent! Opening WhatsApp...', 'success');
-                        document.getElementById('renewalStatus').textContent = '✅ Request sent to admin! Opening WhatsApp...';
-                        window.open(whatsappUrl, '_blank');
-                        setTimeout(function() {
-                            loadRenewalHistory();
-                            loadData();
-                        }, 2000);
-                    } else {
-                        showToast('❌ ' + (reqData.error || 'Failed to send request'), 'error');
-                        document.getElementById('renewalStatus').textContent = '❌ ' + (reqData.error || 'Failed to send request');
-                    }
-                } else {
-                    var errorData = await reqRes.json();
-                    showToast('❌ ' + (errorData.error || 'Failed to create renewal request'), 'error');
-                    document.getElementById('renewalStatus').textContent = '❌ ' + (errorData.error || 'Failed to create renewal request');
-                }
+                // Open WhatsApp
+                window.open(whatsappUrl, '_blank');
+                
+                showToast('✅ Opening WhatsApp with your request!', 'success');
+                document.getElementById('renewalStatus').textContent = '✅ WhatsApp opened! Send the message to admin.';
+                
+                // Reset button after a moment
+                setTimeout(function() {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 3000);
 
             } catch (e) {
                 console.error('Error:', e);
                 showToast('❌ Network error', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
-
-            btn.innerHTML = originalText;
-            btn.disabled = false;
         }
 
         // ===== INIT =====
@@ -664,6 +624,10 @@ Please verify payment and approve/reject this request.`;
 
         init();
         setInterval(function() { loadData(); }, 30000);
+        
+        // Make functions globally accessible
+        window.selectPlan = selectPlan;
+        window.sendWhatsAppRequest = sendWhatsAppRequest;
     </script>
 </body>
 </html>

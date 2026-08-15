@@ -44,7 +44,7 @@ async function initializeDatabase() {
         const adminExists = await User.findOne();
         if (!adminExists) {
             const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
-            const admin = await User.create({
+            await User.create({
                 passcode: hashedPasscode,
                 theme: 'light'
             });
@@ -115,13 +115,13 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers (FIXED CSP) ====================
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            scriptSrcAttr: ["'unsafe-inline'"],  // ← FIXED
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
@@ -386,111 +386,82 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== 2FA SETUP ====================
-const speakeasy = require('speakeasy');
-
-app.post('/api/admin/2fa/setup', authMiddleware, async (req, res) => {
+// ==================== DASHBOARD MAP API ====================
+app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
-        const secret = Security.generate2FASecret();
+        const { dashboardId } = req.params;
+        console.log('🔍 Dashboard map request for:', dashboardId);
         
-        let twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
-        if (!twoFactor) {
-            twoFactor = new TwoFactorAuth({
-                userId: 'admin',
-                secret: secret.base32,
-                backupCodes: Security.generateBackupCodes(),
-                isEnabled: false
-            });
-        } else {
-            twoFactor.secret = secret.base32;
-            twoFactor.backupCodes = Security.generateBackupCodes();
-            twoFactor.isEnabled = false;
-            twoFactor.verifiedAt = null;
+        const existingLink = await Link.findOne({ id: dashboardId });
+        if (existingLink) {
+            return res.json({ linkId: existingLink.id });
         }
-        await twoFactor.save();
         
-        const otpauthUrl = speakeasy.otpauthURL({
-            secret: secret.base32,
-            label: 'FreeFire ID Checker',
-            issuer: 'Admin Panel'
-        });
+        const link = await Link.findOne({ dashboardId: dashboardId });
+        if (link) {
+            return res.json({ linkId: link.id });
+        }
         
-        const qrCode = await Security.generateQRCode(otpauthUrl);
+        const allLinks = await Link.find({});
+        const matched = allLinks.find(l => 
+            l.id.includes(dashboardId) || 
+            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
+            dashboardId.includes(l.id)
+        );
         
-        await logAdminAction('admin', '2FA_SETUP_STARTED', {}, req);
+        if (matched) {
+            return res.json({ linkId: matched.id });
+        }
+        
+        res.status(404).json({ error: 'No link found' });
+    } catch (error) {
+        console.error('❌ Dashboard map error:', error);
+        res.status(500).json({ error: 'Failed to map dashboard' });
+    }
+});
+
+// ==================== GENERATE DASHBOARD LINK API ====================
+app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
+    try {
+        const { linkId } = req.body;
+        
+        if (!linkId) {
+            return res.status(400).json({ error: 'Link ID required' });
+        }
+        
+        const link = await Link.findOne({ id: linkId });
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+        
+        link.dashboardId = dashboardId;
+        await link.save();
+        
+        const dashboardUrl = '/user-dashboard/' + dashboardId;
+        const fullUrl = req.protocol + '://' + req.get('host') + dashboardUrl;
+        
+        await logAdminAction('admin', 'CREATE_DASHBOARD_LINK', { 
+            linkId: linkId,
+            dashboardId: dashboardId
+        }, req);
         
         res.json({
             success: true,
-            secret: secret.base32,
-            otpauthUrl: otpauthUrl,
-            qrCode: qrCode,
-            backupCodes: twoFactor.backupCodes
+            dashboardId: dashboardId,
+            dashboardUrl: dashboardUrl,
+            fullUrl: fullUrl,
+            linkName: link.name,
+            linkId: link.id
         });
-        
     } catch (error) {
-        console.error('❌ 2FA setup error:', error);
-        res.status(500).json({ error: 'Failed to setup 2FA' });
+        console.error('❌ Generate dashboard link error:', error);
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
     }
 });
 
-app.post('/api/admin/2fa/verify', authMiddleware, async (req, res) => {
-    try {
-        const { token } = req.body;
-        if (!token) {
-            return res.status(400).json({ error: 'Token required' });
-        }
-        
-        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
-        if (!twoFactor) {
-            return res.status(404).json({ error: '2FA not set up' });
-        }
-        
-        const isValid = Security.verify2FAToken(twoFactor.secret, token);
-        
-        if (isValid) {
-            twoFactor.isEnabled = true;
-            twoFactor.verifiedAt = new Date();
-            await twoFactor.save();
-            
-            await logAdminAction('admin', '2FA_VERIFIED', {}, req);
-            res.json({ success: true, message: '2FA enabled successfully' });
-        } else {
-            res.status(400).json({ error: 'Invalid token' });
-        }
-        
-    } catch (error) {
-        console.error('❌ 2FA verify error:', error);
-        res.status(500).json({ error: 'Failed to verify 2FA' });
-    }
-});
-
-app.post('/api/admin/2fa/disable', authMiddleware, async (req, res) => {
-    try {
-        const { token } = req.body;
-        
-        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
-        if (!twoFactor) {
-            return res.status(404).json({ error: '2FA not set up' });
-        }
-        
-        const isValid = Security.verify2FAToken(twoFactor.secret, token);
-        if (!isValid) {
-            return res.status(400).json({ error: 'Invalid token' });
-        }
-        
-        twoFactor.isEnabled = false;
-        await twoFactor.save();
-        
-        await logAdminAction('admin', '2FA_DISABLED', {}, req);
-        res.json({ success: true, message: '2FA disabled' });
-        
-    } catch (error) {
-        console.error('❌ 2FA disable error:', error);
-        res.status(500).json({ error: 'Failed to disable 2FA' });
-    }
-});
-
-// ==================== ADMIN LOGIN ====================
+// ==================== ADMIN ROUTES ====================
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode, token } = req.body;
@@ -571,7 +542,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     }
 });
 
-// ==================== ADMIN LOGOUT ====================
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
@@ -586,7 +556,6 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ADMIN PASSCODE CHANGE ====================
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -835,270 +804,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== RENEWAL ====================
-app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status !== 'paid') {
-            return res.status(400).json({ error: 'Payment not confirmed yet' });
-        }
-        
-        const link = await Link.findOne({ id: request.linkId });
-        if (link) {
-            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-            const newExpiry = new Date(currentExpiry);
-            newExpiry.setDate(newExpiry.getDate() + request.days);
-            link.expiryDate = newExpiry.toISOString();
-            link.status = 'active';
-            await link.save();
-        }
-        
-        request.status = 'approved';
-        request.approvedAt = new Date();
-        await request.save();
-        
-        await logAdminAction('admin', 'APPROVE_RENEWAL', { 
-            requestId: requestId,
-            linkId: request.linkId,
-            plan: request.plan
-        }, req);
-        
-        res.json({ success: true, message: 'Renewal approved! Link extended.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to approve renewal' });
-    }
-});
-
-app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        
-        request.status = 'rejected';
-        await request.save();
-        
-        await logAdminAction('admin', 'REJECT_RENEWAL', { 
-            requestId: requestId,
-            linkId: request.linkId
-        }, req);
-        
-        res.json({ success: true, message: 'Renewal rejected' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reject renewal' });
-    }
-});
-
-app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status === 'approved' || request.status === 'rejected') {
-            return res.status(400).json({ error: 'Request already processed' });
-        }
-        
-        request.status = 'paid';
-        request.paidAt = new Date();
-        await request.save();
-        
-        await logAdminAction('admin', 'MARK_PAID', { 
-            requestId: requestId,
-            linkId: request.linkId
-        }, req);
-        
-        res.json({ success: true, message: 'Payment marked as paid' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to mark payment' });
-    }
-});
-
-// ==================== DASHBOARD MAP API ====================
-app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
-    try {
-        const { dashboardId } = req.params;
-        console.log('🔍 Dashboard map request for:', dashboardId);
-        
-        const existingLink = await Link.findOne({ id: dashboardId });
-        if (existingLink) {
-            return res.json({ linkId: existingLink.id });
-        }
-        
-        const link = await Link.findOne({ dashboardId: dashboardId });
-        if (link) {
-            return res.json({ linkId: link.id });
-        }
-        
-        const allLinks = await Link.find({});
-        const matched = allLinks.find(l => 
-            l.id.includes(dashboardId) || 
-            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
-            dashboardId.includes(l.id)
-        );
-        
-        if (matched) {
-            return res.json({ linkId: matched.id });
-        }
-        
-        res.status(404).json({ error: 'No link found' });
-    } catch (error) {
-        console.error('❌ Dashboard map error:', error);
-        res.status(500).json({ error: 'Failed to map dashboard' });
-    }
-});
-
-// ==================== SEARCH LINKS API ====================
-app.get('/api/search-links', authMiddleware, async (req, res) => {
-    try {
-        const { query } = req.query;
-        
-        if (!query || query.length < 1) {
-            return res.json({ links: [] });
-        }
-        
-        const searchRegex = new RegExp(query, 'i');
-        
-        const links = await Link.find({
-            $or: [
-                { name: searchRegex },
-                { id: searchRegex },
-                { dashboardId: searchRegex }
-            ]
-        }).limit(20).sort({ created: -1 });
-        
-        res.json({
-            links: links,
-            count: links.length,
-            query: query
-        });
-    } catch (error) {
-        console.error('❌ Search links error:', error);
-        res.status(500).json({ error: 'Failed to search links' });
-    }
-});
-
-// ==================== GENERATE DASHBOARD LINK API ====================
-app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
-    try {
-        const { linkId } = req.body;
-        
-        if (!linkId) {
-            return res.status(400).json({ error: 'Link ID required' });
-        }
-        
-        const link = await Link.findOne({ id: linkId });
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-        
-        link.dashboardId = dashboardId;
-        await link.save();
-        
-        const dashboardUrl = '/user-dashboard/' + dashboardId;
-        const fullUrl = req.protocol + '://' + req.get('host') + dashboardUrl;
-        
-        await logAdminAction('admin', 'CREATE_DASHBOARD_LINK', { 
-            linkId: linkId,
-            dashboardId: dashboardId
-        }, req);
-        
-        res.json({
-            success: true,
-            dashboardId: dashboardId,
-            dashboardUrl: dashboardUrl,
-            fullUrl: fullUrl,
-            linkName: link.name,
-            linkId: link.id
-        });
-    } catch (error) {
-        console.error('❌ Generate dashboard link error:', error);
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
-    }
-});
-
-// ==================== POPUP SETTINGS ====================
-app.post('/api/admin/popup', authMiddleware, async (req, res) => {
-    try {
-        const { image, title, buttonText, subtitle, linkId } = req.body;
-        
-        if (linkId) {
-            const link = await Link.findOne({ id: linkId });
-            if (!link) {
-                return res.status(404).json({ error: 'Link not found' });
-            }
-            if (image !== undefined) link.popupSettings.image = image;
-            if (title !== undefined) link.popupSettings.title = title;
-            if (buttonText !== undefined) link.popupSettings.buttonText = buttonText;
-            if (subtitle !== undefined) link.popupSettings.subtitle = subtitle;
-            await link.save();
-        } else {
-            const popupSettings = await PopupSettings.findOne();
-            if (popupSettings) {
-                if (image !== undefined) popupSettings.image = image;
-                if (title !== undefined) popupSettings.title = title;
-                if (buttonText !== undefined) popupSettings.buttonText = buttonText;
-                if (subtitle !== undefined) popupSettings.subtitle = subtitle;
-                await popupSettings.save();
-            }
-        }
-        
-        await logAdminAction('admin', 'UPDATE_SETTINGS', { 
-            type: 'popup',
-            linkId: linkId || 'global'
-        }, req);
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('❌ Popup update error:', error);
-        res.status(500).json({ error: 'Failed to update popup settings' });
-    }
-});
-
-app.get('/api/popup-settings/:linkId?', async (req, res) => {
-    try {
-        const { linkId } = req.params;
-        
-        if (linkId) {
-            const link = await Link.findOne({ id: linkId });
-            if (!link) {
-                return res.status(404).json({ error: 'Link not found' });
-            }
-            const settings = link.popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            };
-            return res.json(settings);
-        }
-        
-        const popupSettings = await PopupSettings.findOne();
-        res.json(popupSettings || {
-            image: null,
-            title: '🎁 Claim Your Reward',
-            buttonText: 'Claim Now',
-            subtitle: 'Tap below to unlock your reward'
-        });
-    } catch (error) {
-        console.error('❌ Popup settings error:', error);
-        res.status(500).json({ error: 'Failed to fetch popup settings' });
-    }
-});
-
-// ==================== PUBLIC ROUTES ====================
+// ==================== PUBLIC LINK ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1140,6 +846,7 @@ app.get('/api/link/:id', async (req, res) => {
             });
         }
         
+        // ===== VISITOR TRACKING - 48hr Unique =====
         const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
@@ -1185,6 +892,7 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
+// ==================== TRACK CLAIM ====================
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -1293,35 +1001,7 @@ app.get('/api/stats/:linkId', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== USER DASHBOARD ====================
-app.get('/api/parent-link', async (req, res) => {
-    try {
-        const links = await Link.find({});
-        if (links.length > 0) {
-            const firstLink = links[0];
-            if (!firstLink.dashboardId) {
-                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-                await firstLink.save();
-            }
-            res.json({
-                url: '/user-dashboard/' + firstLink.dashboardId,
-                linkName: firstLink.name,
-                linkId: firstLink.id
-            });
-        } else {
-            const linkId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-            res.json({
-                url: '/user-dashboard/' + linkId,
-                linkName: null,
-                linkId: null
-            });
-        }
-    } catch (error) {
-        console.error('❌ Dashboard link error:', error);
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
-    }
-});
-
+// ==================== VISIT STATS ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -1428,224 +1108,6 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
-// ==================== RENEWAL REQUESTS ====================
-app.post('/api/renewal/request-from-dashboard', async (req, res) => {
-    try {
-        const { linkId, linkName, plan, days, amount } = req.body;
-        
-        if (!linkId || !plan) {
-            return res.status(400).json({ error: 'Link ID and plan required' });
-        }
-        
-        const existing = await RenewalRequest.findOne({ 
-            linkId: linkId, 
-            status: { $in: ['pending', 'paid'] } 
-        });
-        
-        if (existing) {
-            return res.status(400).json({
-                error: 'You already have a pending renewal request',
-                existingRequest: existing
-            });
-        }
-        
-        const renewalRequest = new RenewalRequest({
-            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-            linkId: linkId,
-            linkName: linkName || 'Unknown',
-            plan: plan,
-            days: days || 0,
-            amount: amount || 0,
-            status: 'pending',
-            createdAt: new Date(),
-            paidAt: null,
-            approvedAt: null,
-            transactionId: null,
-            upiId: 'pending'
-        });
-        
-        await renewalRequest.save();
-        res.json({
-            success: true,
-            requestId: renewalRequest.id,
-            message: 'Renewal request created successfully'
-        });
-        
-    } catch (error) {
-        console.error('❌ Renewal request error:', error);
-        res.status(500).json({ error: 'Failed to create renewal request' });
-    }
-});
-
-app.get('/api/renewal/history/:linkId', async (req, res) => {
-    try {
-        const { linkId } = req.params;
-        const history = await RenewalRequest.find({ linkId: linkId })
-            .sort({ createdAt: -1 });
-        
-        res.json({
-            history: history,
-            count: history.length
-        });
-    } catch (error) {
-        console.error('❌ Renewal history error:', error);
-        res.status(500).json({ error: 'Failed to fetch history' });
-    }
-});
-
-app.post('/api/renewal/request', async (req, res) => {
-    try {
-        const { linkId, plan } = req.body;
-        const link = await Link.findOne({ id: linkId });
-        
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        const pricingDoc = await Pricing.findOne();
-        const pricing = pricingDoc?.pricing || {};
-        
-        const planDays = {
-            '3days': 3,
-            '7days': 7,
-            '15days': 15,
-            '1month': 30,
-            '3months': 90,
-            '6months': 180,
-            '12months': 365
-        };
-        
-        const days = planDays[plan];
-        if (!days) {
-            return res.status(400).json({ error: 'Invalid plan' });
-        }
-        
-        const amount = pricing[plan] || 0;
-        if (amount === 0) {
-            return res.status(400).json({ error: 'Price not set for this plan' });
-        }
-        
-        const existing = await RenewalRequest.findOne({ 
-            linkId: linkId, 
-            status: { $in: ['pending', 'paid'] } 
-        });
-        
-        if (existing) {
-            return res.status(400).json({
-                error: 'You already have a pending renewal request',
-                existingRequest: existing
-            });
-        }
-        
-        res.json({
-            success: true,
-            message: 'Please complete payment to submit renewal request',
-            amount: amount,
-            plan: plan,
-            days: days,
-            requiresPayment: true
-        });
-    } catch (error) {
-        console.error('❌ Renewal request error:', error);
-        res.status(500).json({ error: 'Failed to process request' });
-    }
-});
-
-app.post('/api/renewal/confirm-payment', async (req, res) => {
-    try {
-        const { linkId, plan, transactionId } = req.body;
-        const link = await Link.findOne({ id: linkId });
-        
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        const pricingDoc = await Pricing.findOne();
-        const pricing = pricingDoc?.pricing || {};
-        const paymentSettings = pricingDoc?.paymentSettings || {};
-        
-        const planDays = {
-            '3days': 3,
-            '7days': 7,
-            '15days': 15,
-            '1month': 30,
-            '3months': 90,
-            '6months': 180,
-            '12months': 365
-        };
-        
-        const days = planDays[plan];
-        const amount = pricing[plan] || 0;
-        
-        const renewalRequest = new RenewalRequest({
-            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-            linkId: linkId,
-            linkName: link.name,
-            plan: plan,
-            days: days,
-            amount: amount,
-            status: 'paid',
-            paidAt: new Date(),
-            transactionId: transactionId || 'TXN_' + Date.now(),
-            upiId: paymentSettings?.details?.upiId || 'admin@upi'
-        });
-        
-        await renewalRequest.save();
-        res.json({
-            success: true,
-            requestId: renewalRequest.id,
-            message: 'Payment confirmed! Waiting for admin approval.'
-        });
-    } catch (error) {
-        console.error('❌ Confirm payment error:', error);
-        res.status(500).json({ error: 'Failed to confirm payment' });
-    }
-});
-
-app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
-    try {
-        const requests = await RenewalRequest.find({ 
-            status: { $in: ['pending', 'paid'] } 
-        }).sort({ createdAt: -1 });
-        res.json(requests);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch requests' });
-    }
-});
-
-app.get('/api/renewal/status/:linkId', async (req, res) => {
-    try {
-        const { linkId } = req.params;
-        const request = await RenewalRequest.findOne({ linkId: linkId })
-            .sort({ createdAt: -1 });
-        
-        res.json({
-            hasRequest: !!request,
-            request: request || null,
-            status: request?.status || 'none'
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch status' });
-    }
-});
-
-app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        if (request) {
-            await logAdminAction('admin', 'DELETE_RENEWAL', { 
-                requestId: requestId,
-                linkId: request.linkId
-            }, req);
-        }
-        await RenewalRequest.findOneAndDelete({ id: requestId });
-        res.json({ success: true, message: 'Request removed' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove request' });
-    }
-});
-
 // ==================== SERVE PAGES ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
@@ -1712,6 +1174,8 @@ app.listen(port, '0.0.0.0', () => {
     console.log('⏰ Session Timeout: ' + SESSION_TIMEOUT + ' minutes');
     console.log('🔒 Max Login Attempts: ' + MAX_LOGIN_ATTEMPTS);
     console.log('📋 Audit Logging: ✅ Enabled');
+    console.log('📊 48hr Unique Visitor Tracking: ✅ Enabled');
+    console.log('📊 Claim Tracking: Only on Main Claim Button');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
 });
