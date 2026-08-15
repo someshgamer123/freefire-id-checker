@@ -23,7 +23,6 @@ const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
 const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
-// const AdminSession = require('./models/AdminSession'); // TEMPORARILY REMOVED
 
 // ==================== Security Module ====================
 const Security = require('./config/security');
@@ -38,6 +37,14 @@ const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA !== 'false';
+
+// ==================== Generate Secure Admin Path ====================
+const ADMIN_SECRET = crypto.randomBytes(32).toString('hex');
+const ADMIN_PATH = '/admin_' + ADMIN_SECRET;
+
+console.log('🔐 Secure Admin Path:', ADMIN_PATH);
+console.log('🔑 ADMIN PASSCODE: 951753');
+console.log('📌 Save this path securely!');
 
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
@@ -279,7 +286,8 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== WHATSAPP NUMBER API ====================
+// ==================== PUBLIC ROUTES ====================
+
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -303,7 +311,6 @@ app.post('/api/whatsapp-number', async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD MAP API ====================
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const { dashboardId } = req.params;
@@ -325,7 +332,6 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     }
 });
 
-// ==================== VISIT STATS ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -362,7 +368,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// ==================== PARENT LINK ====================
 app.get('/api/parent-link', async (req, res) => {
     try {
         const links = await Link.find({});
@@ -387,7 +392,6 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// ==================== PRICING ====================
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
@@ -401,7 +405,6 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ==================== PUBLIC LINK ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -454,7 +457,6 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
-// ==================== TRACK CLAIM ====================
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -482,7 +484,6 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
-// ==================== RENEWAL HISTORY ====================
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -570,10 +571,24 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
-// ==================== ADMIN ROUTES ====================
+// ==================== SECURE ADMIN ROUTES ====================
 
-// ===== ADMIN LOGIN =====
-app.post('/api/admin/login', authLimiter, async (req, res) => {
+// Secure Admin Login Page
+app.get(ADMIN_PATH, (req, res) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.sendFile(path.join(__dirname, '..', 'admin', 'secure-login.html'));
+});
+
+// Secure Admin Dashboard
+app.get(ADMIN_PATH + '/index.html', authMiddleware, (req, res) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+});
+
+// Secure Admin API - Login
+app.post(ADMIN_PATH + '/api/login', authLimiter, async (req, res) => {
     try {
         const { passcode, token } = req.body;
         const { ip, userAgent } = getDeviceId(req);
@@ -633,117 +648,8 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     }
 });
 
-// ===== ADMIN LOGOUT =====
-app.post('/api/admin/logout', authMiddleware, async (req, res) => {
-    try {
-        const token = req.cookies?.adminToken;
-        if (token) {
-            await invalidateSession(token);
-            await logAdminAction('admin', 'LOGOUT', {}, req);
-        }
-        res.clearCookie('adminToken');
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Logout failed' });
-    }
-});
-
-// ===== ADMIN PASSCODE CHANGE =====
-app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
-    try {
-        const { oldPasscode, newPasscode } = req.body;
-        if (!oldPasscode || !newPasscode) return res.status(400).json({ error: 'Both passcodes required' });
-        const passwordCheck = Security.isStrongPassword(newPasscode);
-        if (!passwordCheck.valid) return res.status(400).json({ error: passwordCheck.message });
-        const admin = await User.findOne();
-        if (!admin) return res.status(500).json({ error: 'Admin not found' });
-        const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
-        if (!isValid) {
-            await logAdminAction('admin', 'PASSCODE_CHANGE_FAILED', {}, req);
-            return res.status(401).json({ error: 'Current passcode is incorrect' });
-        }
-        admin.passcode = bcrypt.hashSync(newPasscode, 10);
-        await admin.save();
-        await invalidateAllSessions('admin');
-        await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
-        res.clearCookie('adminToken');
-        res.json({ success: true, message: 'Passcode changed. Please login again.' });
-    } catch (error) {
-        console.error('❌ Passcode change error:', error);
-        res.status(500).json({ error: 'Passcode change failed' });
-    }
-});
-
-// ===== ADMIN THEME =====
-app.post('/api/admin/theme', authMiddleware, async (req, res) => {
-    try {
-        const { theme } = req.body;
-        if (!['light', 'dark'].includes(theme)) return res.status(400).json({ error: 'Invalid theme' });
-        const admin = await User.findOne();
-        if (admin) { admin.theme = theme; await admin.save(); }
-        await logAdminAction('admin', 'THEME_CHANGE', { theme }, req);
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update theme' });
-    }
-});
-
-// ===== ADMIN BACKGROUND =====
-app.post('/api/admin/background', authMiddleware, async (req, res) => {
-    try {
-        const { background } = req.body;
-        if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
-            return res.status(400).json({ error: 'Invalid image format' });
-        }
-        const popupSettings = await PopupSettings.findOne();
-        if (popupSettings) { popupSettings.image = background || null; await popupSettings.save(); }
-        await logAdminAction('admin', 'BACKGROUND_CHANGE', { hasImage: !!background }, req);
-        res.json({ success: true });
-    } catch (error) {
-        console.error('❌ Background update error:', error);
-        res.status(500).json({ error: 'Failed to update background' });
-    }
-});
-
-// ===== ADMIN LOGS =====
-app.get('/api/admin/logs', authMiddleware, async (req, res) => {
-    try {
-        const { limit = 50, action, from, to } = req.query;
-        const query = {};
-        if (action) query.action = action;
-        if (from || to) {
-            query.timestamp = {};
-            if (from) query.timestamp.$gte = new Date(from);
-            if (to) query.timestamp.$lte = new Date(to);
-        }
-        const logs = await AdminLog.find(query).sort({ timestamp: -1 }).limit(parseInt(limit));
-        const count = await AdminLog.countDocuments(query);
-        res.json({ logs, count, limit: parseInt(limit) });
-    } catch (error) {
-        console.error('❌ Logs error:', error);
-        res.status(500).json({ error: 'Failed to fetch logs' });
-    }
-});
-
-// ===== ADMIN WHATSAPP =====
-app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
-    try {
-        const { number } = req.body;
-        if (!number) return res.status(400).json({ error: 'WhatsApp number required' });
-        let pricing = await Pricing.findOne();
-        if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = number;
-        await pricing.save();
-        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number }, req);
-        res.json({ success: true, number });
-    } catch (error) {
-        console.error('❌ WhatsApp number save error:', error);
-        res.status(500).json({ error: 'Failed to save WhatsApp number' });
-    }
-});
-
-// ===== LINK CRUD =====
-app.get('/api/links', authMiddleware, async (req, res) => {
+// Secure Admin API - All other admin routes
+app.get(ADMIN_PATH + '/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
         res.json(links);
@@ -752,7 +658,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/links', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
         if (!name || name.length < 1 || name.length > 100) {
@@ -786,7 +692,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-app.put('/api/links/:id', authMiddleware, async (req, res) => {
+app.put(ADMIN_PATH + '/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
@@ -819,7 +725,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
+app.put(ADMIN_PATH + '/api/links/:id/status', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -835,7 +741,7 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
     }
 });
 
-app.delete('/api/links/:id', authMiddleware, async (req, res) => {
+app.delete(ADMIN_PATH + '/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const link = await Link.findOne({ id });
@@ -847,25 +753,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ===== ADMIN PRICING =====
-app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
-    try {
-        const { pricing, paymentSettings } = req.body;
-        let pricingDoc = await Pricing.findOne();
-        if (!pricingDoc) pricingDoc = new Pricing();
-        if (pricing) pricingDoc.pricing = pricing;
-        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
-        pricingDoc.updatedAt = new Date();
-        await pricingDoc.save();
-        await logAdminAction('admin', 'UPDATE_PRICING', { pricing }, req);
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update pricing' });
-    }
-});
-
-// ===== SEARCH LINKS =====
-app.get('/api/search-links', authMiddleware, async (req, res) => {
+app.get(ADMIN_PATH + '/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
         if (!query || query.length < 1) return res.json({ links: [] });
@@ -880,8 +768,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ===== GENERATE DASHBOARD LINK =====
-app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
         if (!linkId) return res.status(400).json({ error: 'Link ID required' });
@@ -900,8 +787,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ===== ADMIN STATS =====
-app.get('/api/all-stats', authMiddleware, async (req, res) => {
+app.get(ADMIN_PATH + '/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
         const stats = await Stats.findOne();
@@ -935,8 +821,126 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ===== RENEWAL REQUESTS =====
-app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/logout', authMiddleware, async (req, res) => {
+    try {
+        const token = req.cookies?.adminToken;
+        if (token) {
+            await invalidateSession(token);
+            await logAdminAction('admin', 'LOGOUT', {}, req);
+        }
+        res.clearCookie('adminToken');
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Logout failed' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/passcode', authMiddleware, async (req, res) => {
+    try {
+        const { oldPasscode, newPasscode } = req.body;
+        if (!oldPasscode || !newPasscode) return res.status(400).json({ error: 'Both passcodes required' });
+        const passwordCheck = Security.isStrongPassword(newPasscode);
+        if (!passwordCheck.valid) return res.status(400).json({ error: passwordCheck.message });
+        const admin = await User.findOne();
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
+        if (!isValid) {
+            await logAdminAction('admin', 'PASSCODE_CHANGE_FAILED', {}, req);
+            return res.status(401).json({ error: 'Current passcode is incorrect' });
+        }
+        admin.passcode = bcrypt.hashSync(newPasscode, 10);
+        await admin.save();
+        await invalidateAllSessions('admin');
+        await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
+        res.clearCookie('adminToken');
+        res.json({ success: true, message: 'Passcode changed. Please login again.' });
+    } catch (error) {
+        console.error('❌ Passcode change error:', error);
+        res.status(500).json({ error: 'Passcode change failed' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/theme', authMiddleware, async (req, res) => {
+    try {
+        const { theme } = req.body;
+        if (!['light', 'dark'].includes(theme)) return res.status(400).json({ error: 'Invalid theme' });
+        const admin = await User.findOne();
+        if (admin) { admin.theme = theme; await admin.save(); }
+        await logAdminAction('admin', 'THEME_CHANGE', { theme }, req);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update theme' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/background', authMiddleware, async (req, res) => {
+    try {
+        const { background } = req.body;
+        if (background && !background.startsWith('data:image') && !background.startsWith('http')) {
+            return res.status(400).json({ error: 'Invalid image format' });
+        }
+        const popupSettings = await PopupSettings.findOne();
+        if (popupSettings) { popupSettings.image = background || null; await popupSettings.save(); }
+        await logAdminAction('admin', 'BACKGROUND_CHANGE', { hasImage: !!background }, req);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Background update error:', error);
+        res.status(500).json({ error: 'Failed to update background' });
+    }
+});
+
+app.get(ADMIN_PATH + '/api/logs', authMiddleware, async (req, res) => {
+    try {
+        const { limit = 50, action, from, to } = req.query;
+        const query = {};
+        if (action) query.action = action;
+        if (from || to) {
+            query.timestamp = {};
+            if (from) query.timestamp.$gte = new Date(from);
+            if (to) query.timestamp.$lte = new Date(to);
+        }
+        const logs = await AdminLog.find(query).sort({ timestamp: -1 }).limit(parseInt(limit));
+        const count = await AdminLog.countDocuments(query);
+        res.json({ logs, count, limit: parseInt(limit) });
+    } catch (error) {
+        console.error('❌ Logs error:', error);
+        res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/whatsapp', authMiddleware, async (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) return res.status(400).json({ error: 'WhatsApp number required' });
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.whatsappNumber = number;
+        await pricing.save();
+        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number }, req);
+        res.json({ success: true, number });
+    } catch (error) {
+        console.error('❌ WhatsApp number save error:', error);
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/pricing', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, paymentSettings } = req.body;
+        let pricingDoc = await Pricing.findOne();
+        if (!pricingDoc) pricingDoc = new Pricing();
+        if (pricing) pricingDoc.pricing = pricing;
+        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
+        pricingDoc.updatedAt = new Date();
+        await pricingDoc.save();
+        await logAdminAction('admin', 'UPDATE_PRICING', { pricing }, req);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update pricing' });
+    }
+});
+
+app.get(ADMIN_PATH + '/api/renewal-requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
         res.json(requests);
@@ -946,7 +950,7 @@ app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
     try {
         const { requestId } = req.params;
         const request = await RenewalRequest.findOne({ id: requestId });
@@ -964,7 +968,7 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
     try {
         const { requestId } = req.params;
         const request = await RenewalRequest.findOne({ id: requestId });
@@ -989,7 +993,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     }
 });
 
-app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+app.post(ADMIN_PATH + '/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
         const { requestId } = req.params;
         const request = await RenewalRequest.findOne({ id: requestId });
@@ -1003,23 +1007,87 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     }
 });
 
-app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+// 2FA
+const speakeasy = require('speakeasy');
+
+app.post(ADMIN_PATH + '/api/2fa/setup', authMiddleware, async (req, res) => {
     try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        if (request) await logAdminAction('admin', 'DELETE_RENEWAL', { requestId, linkId: request.linkId }, req);
-        await RenewalRequest.findOneAndDelete({ id: requestId });
-        res.json({ success: true, message: 'Request removed' });
+        const secret = Security.generate2FASecret();
+        let twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) {
+            twoFactor = new TwoFactorAuth({
+                userId: 'admin',
+                secret: secret.base32,
+                backupCodes: Security.generateBackupCodes(),
+                isEnabled: false
+            });
+        } else {
+            twoFactor.secret = secret.base32;
+            twoFactor.backupCodes = Security.generateBackupCodes();
+            twoFactor.isEnabled = false;
+            twoFactor.verifiedAt = null;
+        }
+        await twoFactor.save();
+        const otpauthUrl = speakeasy.otpauthURL({
+            secret: secret.base32,
+            label: 'FreeFire ID Checker',
+            issuer: 'Admin Panel'
+        });
+        const qrCode = await Security.generateQRCode(otpauthUrl);
+        await logAdminAction('admin', '2FA_SETUP_STARTED', {}, req);
+        res.json({ success: true, secret: secret.base32, otpauthUrl, qrCode, backupCodes: twoFactor.backupCodes });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to remove request' });
+        console.error('❌ 2FA setup error:', error);
+        res.status(500).json({ error: 'Failed to setup 2FA' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/2fa/verify', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ error: 'Token required' });
+        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) return res.status(404).json({ error: '2FA not set up' });
+        const isValid = Security.verify2FAToken(twoFactor.secret, token);
+        if (isValid) {
+            twoFactor.isEnabled = true;
+            twoFactor.verifiedAt = new Date();
+            await twoFactor.save();
+            await logAdminAction('admin', '2FA_VERIFIED', {}, req);
+            res.json({ success: true, message: '2FA enabled successfully' });
+        } else {
+            res.status(400).json({ error: 'Invalid token' });
+        }
+    } catch (error) {
+        console.error('❌ 2FA verify error:', error);
+        res.status(500).json({ error: 'Failed to verify 2FA' });
+    }
+});
+
+app.post(ADMIN_PATH + '/api/2fa/disable', authMiddleware, async (req, res) => {
+    try {
+        const { token } = req.body;
+        const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
+        if (!twoFactor) return res.status(404).json({ error: '2FA not set up' });
+        const isValid = Security.verify2FAToken(twoFactor.secret, token);
+        if (!isValid) return res.status(400).json({ error: 'Invalid token' });
+        twoFactor.isEnabled = false;
+        await twoFactor.save();
+        await logAdminAction('admin', '2FA_DISABLED', {}, req);
+        res.json({ success: true, message: '2FA disabled' });
+    } catch (error) {
+        console.error('❌ 2FA disable error:', error);
+        res.status(500).json({ error: 'Failed to disable 2FA' });
     }
 });
 
 // ==================== SERVE PAGES ====================
+// uid-checker.html - NO CHANGES
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
 
+// video-lock.html - NO CHANGES
 app.get('/v/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
 });
@@ -1032,14 +1100,27 @@ app.get('/user-dashboard/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
 });
 
+// ===== OLD ADMIN PATHS - REDIRECT TO HOME =====
 app.get('/admin/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+    res.redirect('/');
 });
 
 app.get('/admin/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    res.redirect('/');
 });
 
+app.get('/admin/*', (req, res) => {
+    res.redirect('/');
+});
+
+// ===== ANY OTHER ADMIN PATH - REDIRECT =====
+app.get('/admin_*', (req, res) => {
+    if (req.path !== ADMIN_PATH && !req.path.startsWith(ADMIN_PATH + '/')) {
+        res.redirect('/');
+    }
+});
+
+// ===== index.html - Koi Change Nahi =====
 app.get('/manifest.json', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'manifest.json'));
 });
@@ -1049,7 +1130,7 @@ app.get('/sw.js', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.redirect('/admin/login.html');
+    res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // ==================== Session Cleanup ====================
@@ -1067,23 +1148,11 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
     console.log('═══════════════════════════════════════════');
-    console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
-    console.log(`📊 API: http://localhost:${port}/api/links`);
-    console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
-    console.log('═══════════════════════════════════════════');
-    console.log('🔑 ADMIN PASSCODE: 951753');
-    console.log('⏰ Session: 7 DAYS');
-    console.log('🔐 2FA: ' + (ENABLE_2FA ? '✅ Enabled' : '❌ Disabled'));
-    console.log('🛡️ IP Whitelist: ' + IP_WHITELIST);
-    console.log('⏰ Session Timeout: ' + SESSION_TIMEOUT + ' minutes');
-    console.log('🔒 Max Login Attempts: ' + MAX_LOGIN_ATTEMPTS);
-    console.log('📋 Audit Logging: ✅ Enabled');
-    console.log('📊 48hr Unique Visitor Tracking: ✅ Enabled');
-    console.log('📊 Claim Tracking: Only on Main Claim Button');
-    console.log('📱 WhatsApp: Renewal requests via WhatsApp');
-    console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
-    console.log('📹 Video CSP: All media sources allowed');
-    console.log('📦 CDN: cdn.jsdelivr.net allowed');
-    console.log('🗄️ Database: MongoDB Atlas');
+    console.log(`🔧 Admin Panel: https://freefire-id-checker.onrender.com${ADMIN_PATH}`);
+    console.log(`🔑 ADMIN PASSCODE: 951753`);
+    console.log('🛡️ F12 Blocked: ✅ Enabled');
+    console.log('🛡️ Right Click Blocked: ✅ Enabled');
+    console.log('🛡️ Old Admin Paths: ✅ Redirected');
+    console.log('📌 Save this path securely!');
     console.log('═══════════════════════════════════════════');
 });

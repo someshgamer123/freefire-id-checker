@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a1a;
+        }
+        
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        #devtools-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999;
+            background: rgba(10, 10, 26, 0.99);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+        #devtools-blocker.show { display: flex; }
+        #devtools-blocker .icon { font-size: 64px; margin-bottom: 16px; }
+        #devtools-blocker .title { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #fc8181; }
+        #devtools-blocker .sub { font-size: 14px; color: rgba(255,255,255,0.5); max-width: 400px; }
+        #devtools-blocker .btn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #devtools-blocker .btn:hover { transform: scale(1.05); }
+        
+        .login-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 420px;
+            width: 92%;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        .login-box .logo { font-size: 60px; margin-bottom: 10px; }
+        .login-box h2 { color: #fff; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+        .login-box .sub-title { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 25px; }
+        
+        .login-box .passcode-inputs {
+            display: flex; gap: 10px; justify-content: center; margin: 15px 0;
+        }
+        .login-box .passcode-inputs input {
+            width: 50px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
+            border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; transition: 0.3s;
+            background: rgba(255,255,255,0.05); color: #fff; caret-color: #667eea;
+        }
+        .login-box .passcode-inputs input:focus {
+            border-color: #667eea; outline: none; box-shadow: 0 0 30px rgba(102,126,234,0.15);
+            background: rgba(255,255,255,0.1);
+        }
+        .login-box .passcode-inputs input.filled {
+            border-color: #667eea; background: rgba(102,126,234,0.1);
+        }
+        .login-box .passcode-inputs input.error {
+            border-color: #fc8181; animation: shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        
+        .login-box .passcode-hint {
+            display: flex; justify-content: center; gap: 6px; margin: 8px 0;
+        }
+        .login-box .passcode-hint .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .login-box .passcode-hint .dot.filled { background: #667eea; }
+        .login-box .passcode-hint .dot.active { background: #667eea; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .login-box .btn {
+            width: 100%; padding: 15px; font-size: 18px; margin-top: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; border-radius: 12px;
+            cursor: pointer; transition: 0.3s; font-weight: 600;
+        }
+        .login-box .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.3); }
+        .login-box .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .login-box .error { color: #fc8181; margin: 10px 0; font-weight: 600; min-height: 24px; font-size: 14px; }
+        .login-box .error:empty { display: none; }
+        .login-box .rate-limit-msg {
+            background: rgba(255,193,7,0.1);
+            color: #f6ad55;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin: 10px 0;
+            display: none;
+            border: 1px solid rgba(255,193,7,0.2);
+        }
+        .login-box .rate-limit-msg.show { display: block; }
+        .login-box .twofa-input {
+            width: 100%; padding: 12px; margin-top: 10px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            letter-spacing: 3px;
+            display: none;
+        }
+        .login-box .twofa-input:focus { border-color: #667eea; outline: none; }
+        .login-box .twofa-input.show { display: block; }
+        .login-box .twofa-label {
+            font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 4px; display: none;
+        }
+        .login-box .twofa-label.show { display: block; }
+        .login-box .secure-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(72,187,120,0.1);
+            color: #48bb78;
+            margin-bottom: 10px;
+            border: 1px solid rgba(72,187,120,0.1);
+        }
+        .login-box .footer {
+            margin-top: 20px; font-size: 11px; color: rgba(255,255,255,0.2);
+        }
+        
+        @media (max-width: 480px) {
+            .login-box { padding: 30px 20px; }
+            .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
+            .login-box .passcode-inputs { gap: 8px; }
+        }
+        @media (max-width: 380px) {
+            .login-box .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
+            .login-box .passcode-inputs { gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="devtools-blocker">
+        <div class="icon">🚫</div>
+        <div class="title">Developer Tools Disabled</div>
+        <div class="sub">This page has been secured against inspection. Please close Developer Tools to continue.</div>
+        <button class="btn" onclick="location.reload()">🔄 Refresh Page</button>
+    </div>
+
+    <div class="login-box">
+        <div class="logo">🔐</div>
+        <h2>Secure Admin Login</h2>
+        <div class="secure-badge">🔒 Hidden Access</div>
+        <p class="sub-title" id="loginSubtitle">Enter your passcode</p>
+        
+        <div class="rate-limit-msg" id="rateLimitMsg">
+            ⚠️ Too many attempts. Please wait <span id="rateLimitCountdown">30</span> minutes.
+        </div>
+        
+        <div class="passcode-inputs" id="passcodeContainer">
+            <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
+            <input type="password" id="pin2" maxlength="1" inputmode="numeric" aria-label="Pin 2">
+            <input type="password" id="pin3" maxlength="1" inputmode="numeric" aria-label="Pin 3">
+            <input type="password" id="pin4" maxlength="1" inputmode="numeric" aria-label="Pin 4">
+            <input type="password" id="pin5" maxlength="1" inputmode="numeric" aria-label="Pin 5">
+            <input type="password" id="pin6" maxlength="1" inputmode="numeric" aria-label="Pin 6">
+        </div>
+        
+        <div class="passcode-hint" id="passcodeHint">
+            <span class="dot" id="dot1"></span>
+            <span class="dot" id="dot2"></span>
+            <span class="dot" id="dot3"></span>
+            <span class="dot" id="dot4"></span>
+            <span class="dot" id="dot5"></span>
+            <span class="dot" id="dot6"></span>
+        </div>
+        
+        <input type="text" class="twofa-input" id="twoFAToken" placeholder="Enter 2FA token" maxlength="6" inputmode="numeric">
+        <div class="twofa-label" id="twoFALabel">Enter the 6-digit code from your authenticator app</div>
+        
+        <button onclick="login()" class="btn" id="loginBtn">🔑 Login</button>
+        <div id="error" class="error"></div>
+        <div class="footer">🔒 Secure Session • 2FA Enabled</div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ANTI-F12 / DEVTOOLS BLOCKER
+        // ============================================================
+        (function antiDevTools() {
+            var devtoolsOpen = false;
+            var blocker = document.getElementById('devtools-blocker');
+            
+            function checkDevTools() {
+                var element = new Image();
+                Object.defineProperty(element, 'id', {
+                    get: function() {
+                        devtoolsOpen = true;
+                        showBlocker();
+                    }
+                });
+                console.log('%c', element);
+            }
+            
+            function showBlocker() {
+                if (blocker) blocker.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            setTimeout(checkDevTools, 1000);
+            
+            var lastWidth = window.outerWidth;
+            var lastHeight = window.outerHeight;
+            
+            setInterval(function() {
+                var newWidth = window.outerWidth;
+                var newHeight = window.outerHeight;
+                if (newWidth !== lastWidth || newHeight !== lastHeight) {
+                    if (newWidth < window.innerWidth || newHeight < window.innerHeight) {
+                        devtoolsOpen = true;
+                        showBlocker();
+                    }
+                    lastWidth = newWidth;
+                    lastHeight = newHeight;
+                }
+            }, 1000);
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showBlocker();
+                    return false;
+                }
+                if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showBlocker();
+                    return false;
+                }
+                if (e.ctrlKey && e.key === 'u') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showBlocker();
+                    return false;
+                }
+                if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showBlocker();
+                    return false;
+                }
+            });
+            
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            document.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            console.log('🛡️ Anti-DevTools Protection Active');
+        })();
+
+        // ============================================================
+        // LOGIN LOGIC
+        // ============================================================
+        var inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
+        var dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
+        var errorEl = document.getElementById('error');
+        var loginBtn = document.getElementById('loginBtn');
+        var is2FARequired = false;
+        var twoFAToken = document.getElementById('twoFAToken');
+        var twoFALabel = document.getElementById('twoFALabel');
+        var rateLimitMsg = document.getElementById('rateLimitMsg');
+        var rateLimitCountdown = document.getElementById('rateLimitCountdown');
+
+        var loginPath = window.location.pathname;
+
+        window.addEventListener('load', function() { 
+            var pin1 = document.getElementById('pin1');
+            if (pin1) pin1.focus(); 
+        });
+
+        inputs.forEach(function(id, index) {
+            var input = document.getElementById(id);
+            var dot = document.getElementById(dots[index]);
+            
+            if (!input) return;
+            
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+                if (this.value.length === 1) {
+                    this.classList.add('filled');
+                    if (dot) dot.classList.add('filled');
+                    if (dot) dot.classList.remove('active');
+                    if (errorEl) errorEl.textContent = '';
+                    if (index < 5) {
+                        var next = document.getElementById(inputs[index + 1]);
+                        if (next) next.focus();
+                    } else {
+                        setTimeout(function() { login(); }, 300);
+                    }
+                } else {
+                    this.classList.remove('filled');
+                    if (dot) dot.classList.remove('filled');
+                }
+                updateDots();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                    var prev = document.getElementById(inputs[index - 1]);
+                    if (prev) {
+                        prev.focus();
+                        prev.select();
+                    }
+                }
+                if (e.key === 'Enter') login();
+                if (e.key === 'Escape') clearAll(e);
+            });
+
+            input.addEventListener('focus', function() {
+                this.select();
+                dots.forEach(function(d, i) {
+                    var dotEl = document.getElementById(d);
+                    if (!dotEl) return;
+                    if (i === index && !dotEl.classList.contains('filled')) {
+                        dotEl.classList.add('active');
+                    } else if (!dotEl.classList.contains('filled')) {
+                        dotEl.classList.remove('active');
+                    }
+                });
+            });
+
+            input.addEventListener('blur', function() {
+                dots.forEach(function(d) {
+                    var dotEl = document.getElementById(d);
+                    if (!dotEl) return;
+                    if (!dotEl.classList.contains('filled')) {
+                        dotEl.classList.remove('active');
+                    }
+                });
+            });
+
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var paste = (e.clipboardData || window.clipboardData).getData('text');
+                var digits = paste.replace(/\D/g, '').slice(0, 6);
+                if (digits) {
+                    for (var i = 0; i < digits.length && i < 6; i++) {
+                        var inp = document.getElementById(inputs[i]);
+                        if (!inp) continue;
+                        inp.value = digits[i];
+                        inp.classList.add('filled');
+                    }
+                    var nextIndex = Math.min(digits.length, 5);
+                    var next = document.getElementById(inputs[nextIndex]);
+                    if (next) next.focus();
+                    updateDots();
+                    if (digits.length === 6) {
+                        setTimeout(login, 300);
+                    }
+                }
+            });
+        });
+
+        function updateDots() {
+            dots.forEach(function(id, index) {
+                var dot = document.getElementById(id);
+                if (!dot) return;
+                var input = document.getElementById(inputs[index]);
+                if (!input) return;
+                if (input.value.length === 1) {
+                    dot.classList.add('filled');
+                    dot.classList.remove('active');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            });
+        }
+
+        function getPasscode() {
+            var code = '';
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
+                if (!input) return null;
+                var val = input.value;
+                if (val === '') return null;
+                code += val;
+            }
+            return code;
+        }
+
+        function clearAll(e) {
+            if (e) e.preventDefault();
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
+                if (!input) continue;
+                input.value = '';
+                input.classList.remove('filled', 'error');
+                var dot = document.getElementById(dots[i]);
+                if (dot) dot.classList.remove('filled', 'active');
+            }
+            if (errorEl) errorEl.textContent = '';
+            var pin1 = document.getElementById('pin1');
+            if (pin1) pin1.focus();
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '🔑 Login';
+            }
+            var subTitle = document.getElementById('loginSubtitle');
+            if (subTitle) subTitle.textContent = 'Enter your passcode';
+            is2FARequired = false;
+            if (twoFAToken) {
+                twoFAToken.value = '';
+                twoFAToken.classList.remove('show');
+            }
+            if (twoFALabel) twoFALabel.classList.remove('show');
+            if (rateLimitMsg) rateLimitMsg.classList.remove('show');
+        }
+
+        function showError(message) {
+            if (!errorEl) return;
+            errorEl.textContent = '❌ ' + message;
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
+                if (!input) continue;
+                input.classList.add('error');
+                setTimeout(function() { 
+                    if (input) input.classList.remove('error'); 
+                }, 600);
+            }
+            setTimeout(function() { clearAll(null); }, 800);
+        }
+
+        function showRateLimit(seconds) {
+            if (rateLimitMsg) {
+                rateLimitMsg.classList.add('show');
+                if (rateLimitCountdown) {
+                    var mins = Math.ceil(seconds / 60);
+                    rateLimitCountdown.textContent = mins;
+                }
+            }
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Wait ' + Math.ceil(seconds / 60) + ' min';
+            }
+        }
+
+        async function login() {
+            var passcode = getPasscode();
+            if (!errorEl) return;
+            errorEl.textContent = '';
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Verifying...';
+            }
+
+            if (!passcode || passcode.length !== 6) {
+                showError('Please enter complete 6-digit passcode');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Login';
+                }
+                return;
+            }
+
+            try {
+                var requestBody = { passcode: passcode };
+                
+                if (is2FARequired && twoFAToken) {
+                    if (twoFAToken.value && twoFAToken.value.length >= 6) {
+                        requestBody.token = twoFAToken.value;
+                    } else {
+                        showError('Please enter 2FA token');
+                        if (loginBtn) {
+                            loginBtn.disabled = false;
+                            loginBtn.textContent = '🔑 Login';
+                        }
+                        return;
+                    }
+                }
+                
+                var apiUrl = loginPath + '/api/login';
+                
+                var response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.status === 429) {
+                    var text = await response.text();
+                    showRateLimit(30 * 60);
+                    showError(text || 'Too many attempts. Please wait 30 minutes.');
+                    if (loginBtn) {
+                        loginBtn.disabled = true;
+                        loginBtn.textContent = '⏳ Locked';
+                    }
+                    return;
+                }
+
+                var data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    var text = await response.text();
+                    showError(text || 'Server error. Please try again.');
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Login';
+                    }
+                    return;
+                }
+
+                if (data.success) {
+                    window.csrfToken = data.csrfToken;
+                    localStorage.setItem('csrfToken', data.csrfToken);
+                    localStorage.setItem('loginTime', Date.now());
+                    
+                    window.location.href = loginPath + '/index.html';
+                } else if (data.requires2FA) {
+                    is2FARequired = true;
+                    var subTitle = document.getElementById('loginSubtitle');
+                    if (subTitle) subTitle.textContent = 'Enter 2FA token';
+                    if (loginBtn) {
+                        loginBtn.textContent = '🔑 Verify 2FA';
+                        loginBtn.disabled = false;
+                    }
+                    
+                    if (twoFAToken) {
+                        twoFAToken.classList.add('show');
+                        twoFAToken.value = '';
+                        twoFAToken.focus();
+                    }
+                    if (twoFALabel) twoFALabel.classList.add('show');
+                    
+                    if (errorEl) {
+                        errorEl.textContent = '🔐 2FA required. Enter your authenticator code.';
+                        errorEl.style.color = '#667eea';
+                    }
+                } else {
+                    showError(data.error || 'Invalid passcode!');
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Login';
+                    }
+                }
+            } catch (e) {
+                console.error('Login error:', e);
+                showError('Connection error. Please try again.');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Login';
+                }
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') { 
+                clearAll(e); 
+                e.preventDefault(); 
+            }
+            if (e.ctrlKey && e.key === 'Enter') { 
+                login(); 
+                e.preventDefault(); 
+            }
+        });
+
+        document.addEventListener('input', function() {
+            var allFilled = true;
+            for (var i = 0; i < 6; i++) {
+                var input = document.getElementById(inputs[i]);
+                if (!input || input.value === '') { allFilled = false; break; }
+            }
+            if (allFilled && !is2FARequired) {
+                clearTimeout(window._loginTimeout);
+                window._loginTimeout = setTimeout(function() { login(); }, 400);
+            }
+            
+            if (twoFAToken && twoFAToken.value.length >= 6) {
+                clearTimeout(window._loginTimeout);
+                window._loginTimeout = setTimeout(function() { login(); }, 400);
+            }
+        });
+
+        console.log('🔐 Secure Admin Login Panel');
+        console.log('🛡️ Anti-DevTools Active');
+        console.log('🔒 Hidden Path: ' + loginPath);
+    </script>
+</body>
+</html>
