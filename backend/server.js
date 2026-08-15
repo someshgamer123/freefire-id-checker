@@ -103,7 +103,8 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+            scriptSrcElem: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
             scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             styleSrcAttr: ["'unsafe-inline'"],
@@ -281,7 +282,6 @@ async function authMiddleware(req, res, next) {
 // ==================== PUBLIC ROUTES (NO AUTH) ====================
 // ================================================================
 
-// WHATSAPP NUMBER - PUBLIC
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -291,7 +291,6 @@ app.get('/api/whatsapp-number', async (req, res) => {
     }
 });
 
-// WHATSAPP NUMBER UPDATE - PUBLIC (FOR USER DASHBOARD)
 app.post('/api/whatsapp-number', async (req, res) => {
     try {
         const { number } = req.body;
@@ -306,21 +305,13 @@ app.post('/api/whatsapp-number', async (req, res) => {
     }
 });
 
-// DASHBOARD MAP - PUBLIC
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const { dashboardId } = req.params;
-        console.log('🔍 Dashboard map request for:', dashboardId);
-        
-        // Try direct match
         let link = await Link.findOne({ id: dashboardId });
         if (link) return res.json({ linkId: link.id });
-        
-        // Try dashboardId match
         link = await Link.findOne({ dashboardId: dashboardId });
         if (link) return res.json({ linkId: link.id });
-        
-        // Try partial match
         const allLinks = await Link.find({});
         const matched = allLinks.find(l => 
             l.id.includes(dashboardId) || 
@@ -328,7 +319,6 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
             dashboardId.includes(l.id)
         );
         if (matched) return res.json({ linkId: matched.id });
-        
         res.status(404).json({ error: 'No link found' });
     } catch (error) {
         console.error('❌ Dashboard map error:', error);
@@ -336,12 +326,9 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     }
 });
 
-// VISIT STATS - PUBLIC
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
-        console.log('📊 Fetching stats for linkId:', linkId);
-        
         let link = await Link.findOne({ id: linkId });
         if (!link) link = await Link.findOne({ dashboardId: linkId });
         if (!link) {
@@ -356,7 +343,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         if (!link) {
             return res.status(404).json({ error: 'Link not found', message: 'No link found with this ID' });
         }
-        
         const today = new Date().toISOString().split('T')[0];
         res.json({
             linkId: link.id,
@@ -376,7 +362,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// PARENT LINK - PUBLIC
 app.get('/api/parent-link', async (req, res) => {
     try {
         const links = await Link.find({});
@@ -401,7 +386,6 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// PRICING - PUBLIC
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
@@ -415,7 +399,6 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// PUBLIC LINK
 app.get('/api/link/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -433,12 +416,10 @@ app.get('/api/link/:id', async (req, res) => {
         if (link.status !== 'active') {
             return res.status(403).json({ error: 'inactive', message: 'Link inactive', status: 'inactive' });
         }
-        
         const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
         if (!stats) stats = await Stats.create({});
-        
         const uniqueKey = fingerprint + '_' + today;
         const uniqueVisitors = stats.uniqueVisitors || new Map();
         if (!uniqueVisitors.has(uniqueKey) || (Date.now() - uniqueVisitors.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
@@ -450,7 +431,6 @@ app.get('/api/link/:id', async (req, res) => {
             await link.save();
             await stats.save();
         }
-        
         res.json({
             id: link.id,
             video: link.video,
@@ -471,18 +451,15 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
-// TRACK CLAIM - PUBLIC
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
         const link = await Link.findOne({ id: linkId });
         if (!link) return res.status(404).json({ error: 'Link not found' });
-        
         const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
         if (!stats) stats = await Stats.create({});
-        
         const uniqueKey = fingerprint + '_' + today;
         const uniqueClaims = stats.uniqueClaims || new Map();
         if (!uniqueClaims.has(uniqueKey) || (Date.now() - uniqueClaims.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
@@ -501,7 +478,6 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
-// RENEWAL HISTORY - PUBLIC
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -513,17 +489,14 @@ app.get('/api/renewal/history/:linkId', async (req, res) => {
     }
 });
 
-// RENEWAL REQUEST FROM DASHBOARD - PUBLIC
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount } = req.body;
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
-        
         const existing = await RenewalRequest.findOne({ linkId, status: { $in: ['pending', 'paid'] } });
         if (existing) {
             return res.status(400).json({ error: 'You already have a pending renewal request', existingRequest: existing });
         }
-        
         const renewalRequest = new RenewalRequest({
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             linkId, linkName: linkName || 'Unknown', plan, days: days || 0, amount: amount || 0,
@@ -537,7 +510,6 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     }
 });
 
-// RENEWAL STATUS - PUBLIC
 app.get('/api/renewal/status/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -548,7 +520,6 @@ app.get('/api/renewal/status/:linkId', async (req, res) => {
     }
 });
 
-// SETTINGS - PUBLIC
 app.get('/api/settings', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -568,7 +539,6 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
-// POPUP SETTINGS - PUBLIC
 app.get('/api/popup-settings/:linkId?', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -599,29 +569,24 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
-// ADMIN LOGIN
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode, token } = req.body;
         const { ip, userAgent } = getDeviceId(req);
-        
         const attemptCheck = await checkLoginAttempts(ip);
         if (!attemptCheck.allowed) {
             await logAdminAction('admin', 'LOGIN_LOCKED', { ip, remainingMinutes: attemptCheck.remainingMinutes }, req);
             return res.status(429).json({ error: `Too many attempts. Account locked for ${attemptCheck.remainingMinutes} minutes.` });
         }
         if (!passcode) return res.status(400).json({ error: 'Passcode required' });
-        
         const admin = await User.findOne();
         if (!admin) return res.status(500).json({ error: 'Admin not found' });
-        
         const isValid = bcrypt.compareSync(passcode, admin.passcode);
         if (!isValid) {
             await recordLoginAttempt(ip, false);
             await logAdminAction('admin', 'LOGIN_FAILED', { ip }, req);
             return res.status(401).json({ error: 'Invalid passcode' });
         }
-        
         if (ENABLE_2FA) {
             const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
             if (twoFactor && twoFactor.isEnabled) {
@@ -633,13 +598,11 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 }
             }
         }
-        
         await recordLoginAttempt(ip, true);
         const jwtToken = generateToken('admin');
         const csrfToken = generateCSRFToken();
         await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
         await logAdminAction('admin', 'LOGIN', { ip }, req);
-        
         res.cookie('adminToken', jwtToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production' || true,
@@ -654,7 +617,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     }
 });
 
-// ADMIN LOGOUT
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
@@ -669,14 +631,12 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN PASSCODE CHANGE
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
         if (!oldPasscode || !newPasscode) return res.status(400).json({ error: 'Both passcodes required' });
         const passwordCheck = Security.isStrongPassword(newPasscode);
         if (!passwordCheck.valid) return res.status(400).json({ error: passwordCheck.message });
-        
         const admin = await User.findOne();
         if (!admin) return res.status(500).json({ error: 'Admin not found' });
         const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
@@ -696,7 +656,6 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN THEME
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
@@ -710,7 +669,6 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN BACKGROUND
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         const { background } = req.body;
@@ -727,7 +685,6 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN LOGS
 app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     try {
         const { limit = 50, action, from, to } = req.query;
@@ -747,7 +704,6 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN WHATSAPP UPDATE
 app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     try {
         const { number } = req.body;
@@ -764,7 +720,6 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// LINK CRUD - ADMIN
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -783,7 +738,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const urlRegex = /^(https?:\/\/[^\s]+)$/;
         if (video && !urlRegex.test(video)) return res.status(400).json({ error: 'Invalid video URL format' });
         if (claim && claim !== '#' && !urlRegex.test(claim)) return res.status(400).json({ error: 'Invalid claim URL format' });
-        
         const newLink = new Link({
             id: 'link_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex'),
             name: name.substring(0, 100),
@@ -819,7 +773,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         const urlRegex = /^(https?:\/\/[^\s]+)$/;
         if (video && !urlRegex.test(video)) return res.status(400).json({ error: 'Invalid video URL' });
         if (claim && claim !== '#' && !urlRegex.test(claim)) return res.status(400).json({ error: 'Invalid claim URL' });
-        
         const changes = {};
         if (name !== undefined) { link.name = name.substring(0, 100); changes.name = name; }
         if (video !== undefined) { link.video = video; changes.video = video; }
@@ -871,7 +824,6 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN PRICING
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { pricing, paymentSettings } = req.body;
@@ -888,7 +840,6 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// SEARCH LINKS - ADMIN
 app.get('/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
@@ -904,7 +855,6 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
-// GENERATE DASHBOARD LINK - ADMIN
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -924,7 +874,6 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN STATS
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -959,7 +908,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// RENEWAL REQUESTS - ADMIN
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
@@ -1107,6 +1055,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
     console.log('📹 Video CSP: All media sources allowed');
+    console.log('📦 CDN: cdn.jsdelivr.net allowed for html2canvas');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
 });
