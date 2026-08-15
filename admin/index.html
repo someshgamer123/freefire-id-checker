@@ -84,30 +84,6 @@
             border-color: var(--primary);
         }
 
-        .search-bar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .search-bar input {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px 16px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
-        }
-        .search-bar input:focus { border-color: var(--primary); outline: none; }
-        .search-bar .search-results-count {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-left: auto;
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -129,6 +105,7 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
 
+        /* ===== LIVE VISITORS ===== */
         .live-visitors {
             background: var(--card-bg);
             border-radius: var(--radius);
@@ -145,6 +122,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
         .live-visitors .lv-title .dot {
             display: inline-block;
@@ -153,6 +131,20 @@
             border-radius: 50%;
             background: #48bb78;
             animation: pulse 1.5s infinite;
+        }
+        .live-visitors .lv-title .live-badge {
+            font-size: 10px;
+            color: #48bb78;
+            background: rgba(72,187,120,0.1);
+            padding: 2px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .live-visitors .lv-title .refresh-time {
+            font-size: 10px;
+            color: var(--text-light);
+            font-weight: 400;
+            margin-left: auto;
         }
         .live-visitors .lv-grid {
             display: grid;
@@ -165,11 +157,22 @@
             padding: 12px 14px;
             text-align: center;
             border: 1px solid var(--border);
+            transition: 0.3s;
         }
+        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
         .live-visitors .lv-item .lv-number {
             font-size: 24px;
             font-weight: 800;
             color: var(--primary);
+            transition: 0.3s;
+        }
+        .live-visitors .lv-item .lv-number.pulse-update {
+            animation: numberPulse 0.3s ease;
+        }
+        @keyframes numberPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); color: #48bb78; }
+            100% { transform: scale(1); }
         }
         .live-visitors .lv-item .lv-label {
             font-size: 10px;
@@ -178,22 +181,21 @@
             letter-spacing: 0.5px;
             margin-top: 2px;
         }
-        .live-visitors .live-badge {
-            font-size: 10px;
-            color: #48bb78;
-            background: rgba(72,187,120,0.1);
-            padding: 2px 10px;
-            border-radius: 20px;
-            display: inline-block;
+        .live-visitors .lv-item .lv-time {
+            font-size: 9px;
+            color: rgba(255,255,255,0.2);
+            margin-top: 2px;
+        }
+        .live-visitors .lv-item.active-now {
+            border-left: 3px solid #48bb78;
         }
 
+        /* ===== SECTION ===== */
         .section {
             display: none;
             animation: fadeInUp 0.4s ease;
         }
-        .section.active {
-            display: block;
-        }
+        .section.active { display: block; }
 
         .card {
             background: var(--card-bg);
@@ -227,6 +229,7 @@
         .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
         .btn-block { width: 100%; }
 
+        /* ===== LINK ITEMS ===== */
         .link-item {
             background: var(--bg);
             padding: 10px 14px;
@@ -257,10 +260,7 @@
             font-size: 11px;
             color: var(--text-light);
         }
-        .link-item .info .details .visits {
-            color: var(--primary);
-            font-weight: 600;
-        }
+        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
         .link-item .actions {
             display: flex;
             gap: 5px;
@@ -283,6 +283,7 @@
         .status-disabled { background: rgba(252,129,129,0.2); color: #fc8181; }
         .status-suspended { background: rgba(246,173,85,0.2); color: #f6ad55; }
 
+        /* ===== EDIT MODAL ===== */
         .edit-modal {
             display: none;
             position: fixed;
@@ -330,8 +331,7 @@
             font-weight: 600;
         }
         .edit-modal .modal-content .form-group input,
-        .edit-modal .modal-content .form-group select,
-        .edit-modal .modal-content .form-group textarea {
+        .edit-modal .modal-content .form-group select {
             width: 100%;
             padding: 8px 12px;
             border: 2px solid var(--border);
@@ -404,9 +404,25 @@
         .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
         .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
+        /* ===== ANALYTICS ===== */
         .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .analytics-header select { padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
+        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
+        .analytics-container .analytics-header .link-selector .search-input {
+            padding: 8px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            min-width: 150px;
+            flex: 1;
+        }
+        .analytics-container .analytics-header .link-selector .search-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
         .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
         .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
         .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
@@ -429,6 +445,7 @@
         .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
         .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
         .custom-date-input input[type="date"] { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
+        .search-results-count { font-size: 11px; color: var(--text-light); }
 
         .generated-link { background: rgba(102,126,234,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 2px dashed rgba(102,126,234,0.2); }
         .generated-link.show { display: block; }
@@ -448,6 +465,25 @@
         .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
         .popup-preview .preview-label { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 5px; }
 
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+        .search-bar input:focus { border-color: var(--primary); outline: none; }
+
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 12px; }
             .header-actions { justify-content: center; }
@@ -462,6 +498,8 @@
             .card { padding: 14px; }
             .toast { left: 20px; right: 20px; bottom: 20px; }
             .edit-modal .modal-content { padding: 16px; }
+            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
+            .analytics-container .analytics-header .link-selector { flex-direction: column; }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
@@ -474,6 +512,7 @@
 </head>
 <body>
     <div class="admin-container">
+        <!-- HEADER -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <div class="header-actions">
@@ -486,6 +525,7 @@
             </div>
         </header>
 
+        <!-- ===== MENU ===== -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -495,7 +535,7 @@
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- Dashboard -->
+        <!-- ===== SECTION: DASHBOARD ===== -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
@@ -514,20 +554,39 @@
                 </div>
             </div>
 
-            <div class="live-visitors">
-                <div class="lv-title"><span class="dot"></span> Live Visitors <span class="live-badge">🟢 Live</span>
-                    <span style="font-size:10px;color:var(--text-light);font-weight:400;margin-left:auto;">5s refresh</span>
+            <!-- ===== LIVE VISITORS (FIXED) ===== -->
+            <div class="live-visitors" id="liveVisitors">
+                <div class="lv-title">
+                    <span class="dot"></span> Live Visitors
+                    <span class="live-badge">🟢 Live</span>
+                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
                 </div>
                 <div class="lv-grid">
-                    <div class="lv-item"><div class="lv-number" id="liveLifetime">0</div><div class="lv-label">Lifetime</div></div>
-                    <div class="lv-item"><div class="lv-number" id="live48hr">0</div><div class="lv-label">Last 48 Hours</div></div>
-                    <div class="lv-item"><div class="lv-number" id="live60min">0</div><div class="lv-label">Last 60 Min</div></div>
-                    <div class="lv-item" style="border-left:3px solid #48bb78;"><div class="lv-number" id="liveActive">0</div><div class="lv-label">Active Now</div></div>
+                    <div class="lv-item">
+                        <div class="lv-number" id="liveLifetime">0</div>
+                        <div class="lv-label">Lifetime</div>
+                        <div class="lv-time">All time</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number" id="live48hr">0</div>
+                        <div class="lv-label">Last 48 Hours</div>
+                        <div class="lv-time" id="live48hrTime">Loading...</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number" id="live60min">0</div>
+                        <div class="lv-label">Last 60 Minutes</div>
+                        <div class="lv-time" id="live60minTime">Loading...</div>
+                    </div>
+                    <div class="lv-item active-now">
+                        <div class="lv-number" id="liveActive">0</div>
+                        <div class="lv-label">Active Now</div>
+                        <div class="lv-time">🟢 Online</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Links -->
+        <!-- ===== SECTION: LINKS ===== -->
         <div class="section" id="section-links">
             <div class="card">
                 <h3>🔍 Search Links</h3>
@@ -539,13 +598,14 @@
             </div>
         </div>
 
-        <!-- Analytics -->
+        <!-- ===== SECTION: ANALYTICS ===== -->
         <div class="section" id="section-analytics">
             <div class="analytics-container">
                 <div class="analytics-header">
-                    <div>
+                    <div class="link-selector">
                         <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
+                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Search by name or ID..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
                         <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
@@ -581,7 +641,7 @@
             </div>
         </div>
 
-        <!-- Create -->
+        <!-- ===== SECTION: CREATE ===== -->
         <div class="section" id="section-create">
             <div class="card">
                 <h3>➕ Create Link</h3>
@@ -652,7 +712,7 @@
             </div>
         </div>
 
-        <!-- Settings -->
+        <!-- ===== SECTION: SETTINGS ===== -->
         <div class="section" id="section-settings">
             <div class="card">
                 <h3>🖼️ UID Background (9:16)</h3>
@@ -681,7 +741,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- ===== EDIT MODAL ===== -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeEditModal()">✕</button>
@@ -829,14 +889,17 @@
         }
 
         // ============================================================
-        // SECTION: STATS & LIVE VISITORS
+        // SECTION: STATS
         // ============================================================
+        var liveInterval = null;
+
         async function loadStats() {
             try {
                 var response = await secureFetch('/api/all-stats');
                 if (!response) return;
                 if (response.ok) {
                     var data = await response.json();
+                    
                     var totalLinks = document.getElementById('totalLinks');
                     var activeLinks = document.getElementById('activeLinks');
                     var totalVisits = document.getElementById('totalVisits');
@@ -861,54 +924,118 @@
                         if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
                     }
                     
-                    await updateLiveVisitors();
+                    updateLiveVisitors(data);
                 }
             } catch (e) {
                 console.error('Failed to load stats:', e);
             }
         }
 
-        async function updateLiveVisitors() {
-            try {
-                var response = await secureFetch('/api/all-stats');
-                if (!response) return;
-                if (response.ok) {
-                    var data = await response.json();
-                    var stats = data.global || {};
-                    var lifetime = document.getElementById('liveLifetime');
-                    if (lifetime) lifetime.textContent = stats.totalVisitors || 0;
-                    
-                    var dailyVisitors = stats.dailyVisitors || {};
-                    var last48hrs = 0;
-                    var now = new Date();
-                    for (var date in dailyVisitors) {
-                        var d = new Date(date);
-                        if ((now - d) < 48 * 60 * 60 * 1000) {
-                            last48hrs += dailyVisitors[date] || 0;
-                        }
+        // ============================================================
+        // SECTION: LIVE VISITORS (FIXED)
+        // ============================================================
+        var previousLiveData = {};
+
+        function updateLiveVisitors(data) {
+            if (!data) {
+                // Try to fetch fresh data
+                secureFetch('/api/all-stats').then(function(response) {
+                    if (response && response.ok) {
+                        response.json().then(function(d) {
+                            updateLiveVisitors(d);
+                        });
                     }
-                    var live48hr = document.getElementById('live48hr');
-                    if (live48hr) live48hr.textContent = last48hrs;
-                    
-                    var today = new Date().toISOString().split('T')[0];
-                    var todayVisits = dailyVisitors[today] || 0;
-                    var last60min = Math.round(todayVisits / 24);
-                    var live60min = document.getElementById('live60min');
-                    if (live60min) live60min.textContent = last60min;
-                    
-                    var activeNow = Math.max(1, Math.round(last60min / 6));
-                    var liveActive = document.getElementById('liveActive');
-                    if (liveActive) liveActive.textContent = activeNow;
+                });
+                return;
+            }
+
+            var stats = data.global || {};
+            var dailyVisitors = stats.dailyVisitors || {};
+            
+            // Lifetime
+            var lifetime = document.getElementById('liveLifetime');
+            if (lifetime) {
+                var newVal = stats.totalVisitors || 0;
+                if (previousLiveData.lifetime !== newVal) {
+                    lifetime.textContent = newVal;
+                    lifetime.classList.add('pulse-update');
+                    setTimeout(function() { lifetime.classList.remove('pulse-update'); }, 300);
                 }
-            } catch (e) {
-                console.error('Live visitors update error:', e);
+                previousLiveData.lifetime = newVal;
+            }
+            
+            // Last 48 Hours
+            var last48hrs = 0;
+            var now = new Date();
+            for (var date in dailyVisitors) {
+                var d = new Date(date);
+                if ((now - d) < 48 * 60 * 60 * 1000) {
+                    last48hrs += dailyVisitors[date] || 0;
+                }
+            }
+            var live48hr = document.getElementById('live48hr');
+            if (live48hr) {
+                if (previousLiveData.live48hr !== last48hrs) {
+                    live48hr.textContent = last48hrs;
+                    live48hr.classList.add('pulse-update');
+                    setTimeout(function() { live48hr.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.live48hr = last48hrs;
+            }
+            var live48hrTime = document.getElementById('live48hrTime');
+            if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
+            
+            // Last 60 Minutes
+            var today = new Date().toISOString().split('T')[0];
+            var todayVisits = dailyVisitors[today] || 0;
+            var last60min = Math.round(todayVisits / 24);
+            var live60min = document.getElementById('live60min');
+            if (live60min) {
+                if (previousLiveData.live60min !== last60min) {
+                    live60min.textContent = last60min;
+                    live60min.classList.add('pulse-update');
+                    setTimeout(function() { live60min.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.live60min = last60min;
+            }
+            var live60minTime = document.getElementById('live60minTime');
+            if (live60minTime) live60minTime.textContent = 'Last 60 min';
+            
+            // Active Now
+            var activeNow = Math.max(1, Math.round(last60min / 6));
+            var liveActive = document.getElementById('liveActive');
+            if (liveActive) {
+                if (previousLiveData.liveActive !== activeNow) {
+                    liveActive.textContent = activeNow;
+                    liveActive.classList.add('pulse-update');
+                    setTimeout(function() { liveActive.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.liveActive = activeNow;
+            }
+            
+            // Update refresh time
+            var refreshTime = document.getElementById('lastRefreshTime');
+            if (refreshTime) {
+                var nowTime = new Date();
+                refreshTime.textContent = 'Last updated: ' + nowTime.toLocaleTimeString();
             }
         }
 
-        setInterval(updateLiveVisitors, 5000);
+        // Start live refresh (every 5 seconds)
+        function startLiveRefresh() {
+            if (liveInterval) clearInterval(liveInterval);
+            
+            // Initial load
+            loadStats();
+            
+            // Refresh every 5 seconds
+            liveInterval = setInterval(function() {
+                loadStats();
+            }, 5000);
+        }
 
         // ============================================================
-        // SECTION: LINKS
+        // SECTION: LINKS (Compact + Search)
         // ============================================================
         var allLinks = [];
 
@@ -1243,6 +1370,7 @@
             }
         }
 
+        // Popup preview live update
         document.getElementById('popupTitle').addEventListener('input', function() {
             document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
         });
@@ -1326,31 +1454,61 @@
         }
 
         // ============================================================
-        // SECTION: ANALYTICS
+        // SECTION: ANALYTICS (With Search)
         // ============================================================
+        var analyticsLinks = [];
         var currentFilter = 'lifetime';
         var currentLinkId = null;
         var analyticsData = null;
+        var filteredAnalyticsLinks = [];
 
         async function loadAnalyticsLinks() {
             try {
                 var r = await secureFetch('/api/links');
                 if (!r) return;
-                var links = await r.json();
-                var select = document.getElementById('analyticsLinkSelect');
-                select.innerHTML = '<option value="">-- Select --</option>';
-                links.forEach(function(link) {
-                    var opt = document.createElement('option');
-                    opt.value = link.id;
-                    opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
-                    select.appendChild(opt);
-                });
-                if (links.length > 0) {
-                    select.value = links[0].id;
-                    loadAnalytics();
-                }
+                analyticsLinks = await r.json();
+                filteredAnalyticsLinks = analyticsLinks;
+                populateAnalyticsSelect();
             } catch (e) {
                 console.error('Error loading analytics links:', e);
+            }
+        }
+
+        function filterAnalyticsLinks() {
+            var query = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
+            
+            if (query) {
+                filteredAnalyticsLinks = analyticsLinks.filter(function(link) {
+                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
+                });
+            } else {
+                filteredAnalyticsLinks = analyticsLinks;
+            }
+            
+            populateAnalyticsSelect();
+        }
+
+        function populateAnalyticsSelect() {
+            var select = document.getElementById('analyticsLinkSelect');
+            var currentVal = select.value;
+            select.innerHTML = '<option value="">-- Select --</option>';
+            
+            filteredAnalyticsLinks.forEach(function(link) {
+                var opt = document.createElement('option');
+                opt.value = link.id;
+                opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
+                select.appendChild(opt);
+            });
+            
+            if (filteredAnalyticsLinks.length > 0) {
+                // Try to keep selected value if it exists in filtered list
+                var exists = filteredAnalyticsLinks.some(function(l) { return l.id === currentVal; });
+                if (exists) {
+                    select.value = currentVal;
+                } else {
+                    select.value = filteredAnalyticsLinks[0].id;
+                }
+                loadAnalytics();
             }
         }
 
@@ -1702,10 +1860,10 @@
         loadLinks();
         loadStats();
         loadAnalyticsLinks();
-        setInterval(loadStats, 30000);
-        setInterval(updateLiveVisitors, 5000);
+        startLiveRefresh();
         checkAuth();
 
+        // Make functions globally accessible
         window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
@@ -1718,6 +1876,7 @@
         window.downloadAnalyticsImage = downloadAnalyticsImage;
         window.downloadAnalyticsCSV = downloadAnalyticsCSV;
         window.filterLinks = filterLinks;
+        window.filterAnalyticsLinks = filterAnalyticsLinks;
         window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
         window.saveEditLink = saveEditLink;
