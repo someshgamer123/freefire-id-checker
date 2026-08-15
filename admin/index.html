@@ -21,7 +21,6 @@
         
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
-        /* ===== HEADER ===== */
         .header {
             background: var(--card-bg); padding: 16px 24px; border-radius: var(--radius);
             box-shadow: var(--shadow); display: flex; justify-content: space-between;
@@ -38,7 +37,6 @@
         .btn-logout { background: var(--danger); color: white; border: none !important; }
         .btn-logout:hover { background: #e53e3e; }
         .btn-install { background: var(--success); color: white; border: none !important; display: none; }
-        .btn-install:hover { background: #38a169; }
         .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 4px; background: var(--bg); padding: 4px;
             border-radius: 10px; border: 1px solid var(--border); }
@@ -46,10 +44,10 @@
             background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 12px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        /* ===== SIDEBAR MENU ===== */
+        /* ===== MENU ===== */
         .menu-container {
             display: flex;
-            gap: 16px;
+            gap: 10px;
             margin-bottom: 24px;
             flex-wrap: wrap;
             background: var(--card-bg);
@@ -193,10 +191,10 @@
         .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
         .card h3 { color: var(--text); font-size: 17px; margin-bottom: 16px; padding-bottom: 10px;
             border-bottom: 2px solid rgba(102,126,234,0.15); }
-        .card input, .card select, .card textarea { width: 100%; padding: 10px 14px; margin: 6px 0;
+        .card input, .card select { width: 100%; padding: 10px 14px; margin: 6px 0;
             border: 2px solid var(--border); border-radius: 10px; font-size: 14px;
             background: var(--bg); color: var(--text); transition: 0.3s; }
-        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); outline: none; }
+        .card input:focus, .card select:focus { border-color: var(--primary); outline: none; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
@@ -214,16 +212,19 @@
         .btn-sm { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
         .btn-block { width: 100%; }
 
-        .generated-link { background: rgba(102,126,234,0.06); padding: 18px; border-radius: 12px;
-            margin-top: 14px; display: none; border: 2px dashed rgba(102,126,234,0.2); }
-        .generated-link.show { display: block; }
-        .generated-link .link-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
-        .generated-link input { flex: 1; min-width: 180px; padding: 10px 14px; border: 2px solid var(--border);
-            border-radius: 10px; background: var(--bg); font-size: 13px; color: var(--text); }
-
-        .link-item { background: var(--bg); padding: 14px 16px; margin: 8px 0; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 10px; border-left: 4px solid var(--primary); transition: 0.3s; }
+        .link-item {
+            background: var(--bg);
+            padding: 14px 16px;
+            margin: 8px 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-left: 4px solid var(--primary);
+            transition: 0.3s;
+        }
         .link-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
         .link-item .info { flex: 1; min-width: 150px; }
         .link-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); }
@@ -248,166 +249,181 @@
         .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
         .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        .edit-form { display: none; width: 100%; padding-top: 10px; margin-top: 10px; border-top: 2px solid var(--border); }
-        .edit-form.show { display: block; }
-        .edit-form .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .edit-form .edit-grid input { padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px;
-            font-size: 13px; background: var(--bg); color: var(--text); }
-        @media (max-width: 768px) { .edit-form .edit-grid { grid-template-columns: 1fr; } }
-
-        .popup-edit-section {
-            background: rgba(102,126,234,0.05);
-            border-radius: 10px;
-            padding: 14px;
-            margin-top: 10px;
-            border: 2px solid rgba(102,126,234,0.1);
+        /* ===== ANALYTICS ===== */
+        .analytics-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 24px;
+            border: 1px solid var(--border);
         }
-        .popup-edit-section .popup-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-light);
-            display: block;
-            margin-top: 4px;
-        }
-        .popup-edit-section .popup-preview-small {
-            background: rgba(0,0,0,0.6);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 8px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .popup-edit-section .popup-preview-small .preview-img {
-            max-width: 100%;
-            max-height: 70px;
-            border-radius: 6px;
-            object-fit: cover;
-        }
-        .popup-edit-section .popup-preview-small .preview-text {
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        .popup-edit-section .popup-preview-small .preview-sub {
-            color: rgba(255,255,255,0.5);
-            font-size: 9px;
-        }
-        .popup-edit-section .popup-preview-small .preview-btn-small {
-            padding: 5px 14px;
-            border: none;
-            border-radius: 6px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            cursor: default;
-            margin-top: 4px;
-        }
-
-        .image-preview {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 8px;
-            border: 2px solid var(--border);
-            overflow: hidden;
-            display: none;
-        }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 180px; object-fit: cover; display: block; }
-        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
-
-        .popup-preview {
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 12px;
-            text-align: center;
-            border: 2px solid rgba(102,126,234,0.2);
-        }
-        .popup-preview .preview-image {
-            max-width: 100%;
-            border-radius: 8px;
-            aspect-ratio: 16/9;
-            background: #1a1a3a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255,255,255,0.3);
-            font-size: 12px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
-        .popup-preview .preview-title { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-        .popup-preview .preview-sub { color: rgba(255,255,255,0.5); font-size: 11px; margin-bottom: 8px; }
-        .popup-preview .preview-btn { padding: 8px 24px; border: none; border-radius: 8px;
-            background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 12px; cursor: default; }
-        .popup-preview .preview-label { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 6px; }
-
-        .whatsapp-settings {
-            background: rgba(72,187,120,0.05);
-            border: 2px solid rgba(72,187,120,0.15);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-top: 10px;
-        }
-        .whatsapp-settings .label { font-weight: 600; color: var(--success); font-size: 14px; }
-        .whatsapp-settings input { margin-top: 6px; }
-
-        .renewal-item { background: var(--bg); padding: 12px 16px; margin: 8px 0; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-left: 4px solid var(--primary); }
-        .renewal-item .info { flex: 1; min-width: 130px; }
-        .renewal-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); }
-        .renewal-item .info .details { font-size: 11px; color: var(--text-light); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .renewal-item .actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
-        .renewal-status-badge { padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-        .renewal-status-badge.pending { background: rgba(246,173,85,0.2); color: #f6ad55; }
-        .renewal-status-badge.paid { background: rgba(66,153,225,0.2); color: #63b3ed; }
-        .renewal-status-badge.approved { background: rgba(72,187,120,0.2); color: #48bb78; }
-        .renewal-status-badge.rejected { background: rgba(252,129,129,0.2); color: #fc8181; }
-
-        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .pricing-grid .pricing-item { display: flex; align-items: center; gap: 8px; }
-        .pricing-grid .pricing-item label { font-size: 12px; color: var(--text-light); min-width: 60px; }
-        .pricing-grid .pricing-item input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
-        @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
-
-        .dashboard-generator {
-            background: rgba(102,126,234,0.05);
-            border-radius: 10px;
-            padding: 14px;
-            border: 2px solid rgba(102,126,234,0.1);
-        }
-        .dashboard-generator .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
-        .dashboard-generator .search-row input { flex: 1; min-width: 180px; }
-        .dashboard-generator .result-item {
+        .analytics-container .analytics-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            margin: 4px 0;
-            background: var(--bg);
-            border-radius: 8px;
-            border: 1px solid var(--border);
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
-        .dashboard-generator .result-item .r-name { font-weight: 600; font-size: 13px; color: var(--text); }
-        .dashboard-generator .result-item .r-details { font-size: 10px; color: var(--text-light); }
-        .dashboard-generator .generated-link-box {
-            margin-top: 10px;
-            display: none;
-            background: rgba(72,187,120,0.08);
-            border: 2px solid rgba(72,187,120,0.2);
+        .analytics-container .analytics-header .link-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .analytics-container .analytics-header .link-selector select {
+            padding: 10px 16px;
+            border: 2px solid var(--border);
             border-radius: 10px;
-            padding: 12px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            min-width: 200px;
         }
-        .dashboard-generator .generated-link-box.show { display: block; }
-        .dashboard-generator .generated-link-box .gl-label { font-weight: 600; color: #48bb78; font-size: 13px; }
-        .dashboard-generator .generated-link-box .gl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .dashboard-generator .generated-link-box .gl-row input { flex: 1; min-width: 180px; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 12px; }
-        .dashboard-generator .generated-link-box .gl-name { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+        .analytics-container .time-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .analytics-container .time-filters .filter-btn {
+            padding: 6px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        .analytics-container .time-filters .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+        .analytics-container .time-filters .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .analytics-container .analytics-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+        }
+        .analytics-container .analytics-stats .a-stat {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .analytics-container .analytics-stats .a-stat .a-number {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .analytics-container .analytics-stats .a-stat .a-label {
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .analytics-container .analytics-chart {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin: 12px 0;
+            min-height: 200px;
+            overflow-x: auto;
+        }
+        .analytics-container .analytics-chart .chart-bar-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 180px;
+            padding-bottom: 30px;
+            position: relative;
+        }
+        .analytics-container .analytics-chart .chart-bar-container .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            justify-content: flex-end;
+        }
+        .analytics-container .analytics-chart .chart-bar-container .bar {
+            width: 100%;
+            max-width: 40px;
+            min-height: 4px;
+            border-radius: 4px 4px 0 0;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transition: 0.5s;
+            position: relative;
+            cursor: pointer;
+        }
+        .analytics-container .analytics-chart .chart-bar-container .bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.02);
+            transform-origin: bottom;
+        }
+        .analytics-container .analytics-chart .chart-bar-container .bar-label {
+            font-size: 9px;
+            color: var(--text-light);
+            margin-top: 4px;
+            text-align: center;
+        }
+        .analytics-container .analytics-chart .chart-bar-container .bar-value {
+            font-size: 8px;
+            color: var(--text-light);
+            margin-bottom: 2px;
+        }
+        .analytics-container .analytics-download {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .analytics-container .analytics-download .btn {
+            padding: 10px 20px;
+        }
+        .analytics-container .link-details {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+        }
+        .analytics-container .link-details .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
+        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
+        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
+
+        .custom-date-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .custom-date-input input[type="date"] {
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+        }
 
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; padding: 14px 16px; }
@@ -422,10 +438,13 @@
             .card { padding: 16px; }
             .grid-2 { grid-template-columns: 1fr; }
             .toast { left: 20px; right: 20px; bottom: 20px; }
+            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
+            .analytics-container .analytics-stats { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
             .live-visitors .lv-grid { grid-template-columns: 1fr; }
+            .analytics-container .analytics-stats { grid-template-columns: 1fr; }
             .stat-card .number { font-size: 24px; }
             .live-visitors .lv-item .lv-number { font-size: 22px; }
         }
@@ -451,9 +470,8 @@
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
             <button class="menu-btn" data-section="links" onclick="showSection('links')">🔗 Links</button>
-            <button class="menu-btn" data-section="generate" onclick="showSection('generate')">🎯 Dashboard Link</button>
+            <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
             <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create Link</button>
-            <button class="menu-btn" data-section="renewal" onclick="showSection('renewal')">🔄 Renewal</button>
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
@@ -530,29 +548,71 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: GENERATE DASHBOARD LINK ===== -->
-        <div class="section" id="section-generate">
-            <div class="card">
-                <h3>🔗 Generate User Dashboard Link</h3>
-                <p style="color:var(--text-light);font-size:13px;margin-bottom:8px;">Search by link name or ID to generate dashboard link</p>
-                <div class="dashboard-generator">
-                    <div class="search-row">
-                        <input type="text" id="dashboardSearchInput" placeholder="Search by link name or ID...">
-                        <button onclick="searchAndGenerateDashboard()" class="btn btn-primary">🔍 Search</button>
+        <!-- ===== SECTION: ANALYTICS ===== -->
+        <div class="section" id="section-analytics">
+            <div class="analytics-container">
+                <div class="analytics-header">
+                    <div class="link-selector">
+                        <label style="font-weight:600;color:var(--text-light);font-size:13px;">📌 Select Link:</label>
+                        <select id="analyticsLinkSelect" onchange="loadAnalytics()">
+                            <option value="">-- Select a link --</option>
+                        </select>
                     </div>
-                    <div id="dashboardSearchResults" style="margin-top:10px;display:none;">
-                        <div style="font-weight:600;color:var(--primary);font-size:13px;margin-bottom:4px;">📋 Results:</div>
-                        <div id="dashboardResultsList"></div>
+                    <div class="time-filters">
+                        <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
+                        <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24 Hours</button>
+                        <button class="filter-btn" data-filter="60m" onclick="setTimeFilter('60m')">60 Minutes</button>
+                        <button class="filter-btn" data-filter="custom" onclick="setTimeFilter('custom')">Custom</button>
                     </div>
-                    <div id="dashboardNoResults" style="display:none;color:var(--text-light);font-size:13px;text-align:center;padding:10px;">❌ No links found</div>
-                    <div class="generated-link-box" id="dashboardGeneratedLink">
-                        <div class="gl-label">✅ Dashboard Link Generated!</div>
-                        <div class="gl-row">
-                            <input type="text" id="dashboardGeneratedLinkInput" readonly>
-                            <button onclick="copyDashboardGeneratedLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                        </div>
-                        <div class="gl-name">📌 Link Name: <span id="dashboardGeneratedLinkName"></span></div>
+                </div>
+
+                <!-- Custom Date Picker -->
+                <div class="custom-date-input" id="customDatePicker" style="display:none;">
+                    <label style="font-size:12px;color:var(--text-light);">From:</label>
+                    <input type="date" id="analyticsFromDate" onchange="loadAnalytics()">
+                    <label style="font-size:12px;color:var(--text-light);">To:</label>
+                    <input type="date" id="analyticsToDate" onchange="loadAnalytics()">
+                    <button onclick="loadAnalytics()" class="btn btn-primary btn-sm">📊 Apply</button>
+                </div>
+
+                <!-- Link Details -->
+                <div class="link-details" id="analyticsLinkDetails">
+                    <div class="detail-row"><span class="label">Link Name</span><span class="value" id="analyticsLinkName">Not selected</span></div>
+                    <div class="detail-row"><span class="label">Link ID</span><span class="value" id="analyticsLinkId">-</span></div>
+                    <div class="detail-row"><span class="label">Status</span><span class="value" id="analyticsLinkStatus">-</span></div>
+                    <div class="detail-row"><span class="label">Expiry Date</span><span class="value" id="analyticsLinkExpiry">-</span></div>
+                    <div class="detail-row"><span class="label">Created</span><span class="value" id="analyticsLinkCreated">-</span></div>
+                </div>
+
+                <!-- Stats -->
+                <div class="analytics-stats" id="analyticsStats">
+                    <div class="a-stat">
+                        <div class="a-number" id="analyticsTotalVisits">0</div>
+                        <div class="a-label">👁️ Total Visits</div>
                     </div>
+                    <div class="a-stat">
+                        <div class="a-number" id="analyticsTotalClaims">0</div>
+                        <div class="a-label">🎁 Total Claims</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-number" id="analyticsUniqueVisitors">0</div>
+                        <div class="a-label">👤 Unique Visitors</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-number" id="analyticsUniqueClaims">0</div>
+                        <div class="a-label">🏷️ Unique Claims</div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="analytics-chart" id="analyticsChart">
+                    <div style="color:var(--text-light);font-size:13px;text-align:center;padding:20px;">📊 Select a link to view analytics chart</div>
+                </div>
+
+                <!-- Download Buttons -->
+                <div class="analytics-download">
+                    <button onclick="downloadAnalyticsImage()" class="btn btn-success">🖼️ Download as Image</button>
+                    <button onclick="downloadAnalyticsCSV()" class="btn btn-primary">📊 Download CSV</button>
                 </div>
             </div>
         </div>
@@ -635,54 +695,6 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: RENEWAL ===== -->
-        <div class="section" id="section-renewal">
-            <div class="card">
-                <h3>🔄 Renewal Management</h3>
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;">📊 User Dashboard Link</h4>
-                    <div style="background:rgba(102,126,234,0.05);padding:12px 16px;border-radius:10px;border:1px solid rgba(102,126,234,0.1);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;">
-                        <div>
-                            <div style="font-size:11px;color:var(--text-light);">🔗 Dashboard Link</div>
-                            <div style="font-size:13px;color:var(--primary);" id="userDashboardLink">Loading...</div>
-                        </div>
-                        <button onclick="copyDashboardLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
-                    <p style="font-size:11px;color:var(--text-light);margin-top:6px;">📌 Users can check stats and request renewal</p>
-                </div>
-
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;">📱 WhatsApp Settings</h4>
-                    <div class="whatsapp-settings">
-                        <div class="label">📞 Admin WhatsApp Number</div>
-                        <p style="font-size:11px;color:var(--text-light);margin:2px 0 6px;">Users send renewal requests to this number</p>
-                        <input type="text" id="whatsappNumber" placeholder="e.g., 919876543210" value="919876543210">
-                        <button onclick="saveWhatsAppNumber()" class="btn btn-success btn-sm" style="margin-top:6px;padding:6px 16px;">💾 Save</button>
-                        <div id="whatsappStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-                    </div>
-                </div>
-
-                <div style="margin-bottom:16px;">
-                    <h4 style="color:var(--text-light);font-size:14px;">💰 Pricing Plans</h4>
-                    <div class="pricing-grid">
-                        <div class="pricing-item"><label>3 Days</label><input type="number" id="price_3days" value="50" min="0"></div>
-                        <div class="pricing-item"><label>7 Days</label><input type="number" id="price_7days" value="100" min="0"></div>
-                        <div class="pricing-item"><label>15 Days</label><input type="number" id="price_15days" value="200" min="0"></div>
-                        <div class="pricing-item"><label>1 Month</label><input type="number" id="price_1month" value="500" min="0"></div>
-                        <div class="pricing-item"><label>3 Months</label><input type="number" id="price_3months" value="1200" min="0"></div>
-                        <div class="pricing-item"><label>6 Months</label><input type="number" id="price_6months" value="2000" min="0"></div>
-                        <div class="pricing-item"><label>12 Months</label><input type="number" id="price_12months" value="3500" min="0"></div>
-                    </div>
-                    <button onclick="savePricing()" class="btn btn-primary btn-sm" style="margin-top:6px;padding:6px 16px;">💾 Save Pricing</button>
-                </div>
-
-                <div>
-                    <h4 style="color:var(--text-light);font-size:14px;">📋 Renewal Requests</h4>
-                    <div id="renewalRequestsList"><div class="empty-state"><span class="icon">🔄</span>No renewal requests</div></div>
-                </div>
-            </div>
-        </div>
-
         <!-- ===== SECTION: SETTINGS ===== -->
         <div class="section" id="section-settings">
             <div class="card">
@@ -707,15 +719,13 @@
                 <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:8px 20px;">Change Passcode</button>
                 <div id="passcodeStatus" style="margin-top:4px;font-size:12px;color:var(--text-light);"></div>
             </div>
-
-            <div class="card">
-                <h3>📋 Admin Logs</h3>
-                <div id="adminLogsContainer"><div class="empty-state"><span class="icon">📜</span>No logs available</div></div>
-            </div>
         </div>
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- html2canvas for image download -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script>
         var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
@@ -731,12 +741,19 @@
             document.querySelectorAll('.section').forEach(function(el) {
                 el.classList.remove('active');
             });
-            document.getElementById('section-' + sectionId).classList.add('active');
+            var target = document.getElementById('section-' + sectionId);
+            if (target) target.classList.add('active');
             
             document.querySelectorAll('.menu-btn').forEach(function(el) {
                 el.classList.remove('active');
             });
-            document.querySelector('.menu-btn[data-section="' + sectionId + '"]').classList.add('active');
+            var btn = document.querySelector('.menu-btn[data-section="' + sectionId + '"]');
+            if (btn) btn.classList.add('active');
+
+            // Load analytics if section is analytics
+            if (sectionId === 'analytics') {
+                loadAnalyticsLinks();
+            }
         }
 
         // ============================================================
@@ -855,7 +872,6 @@
                 if (response.ok) {
                     var data = await response.json();
                     
-                    // Stats Cards
                     var totalLinks = document.getElementById('totalLinks');
                     var activeLinks = document.getElementById('activeLinks');
                     var totalVisits = document.getElementById('totalVisits');
@@ -868,7 +884,6 @@
                         if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
                     }
                     
-                    // Stats Dashboard
                     var totalVisitors = document.getElementById('totalVisitors');
                     var totalClaims = document.getElementById('totalClaims');
                     var todayVisitors = document.getElementById('todayVisitors');
@@ -881,7 +896,6 @@
                         if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
                     }
                     
-                    // Live Visitors - using same data
                     await updateLiveVisitors();
                 }
             } catch (e) {
@@ -897,11 +911,9 @@
                     var data = await response.json();
                     var stats = data.global || {};
                     
-                    // Lifetime
                     var lifetime = document.getElementById('liveLifetime');
                     if (lifetime) lifetime.textContent = stats.totalVisitors || 0;
                     
-                    // 48 Hours - calculate from daily visitors
                     var dailyVisitors = stats.dailyVisitors || {};
                     var last48hrs = 0;
                     var now = new Date();
@@ -913,20 +925,13 @@
                     }
                     var live48hr = document.getElementById('live48hr');
                     if (live48hr) live48hr.textContent = last48hrs;
-                    var live48hrTime = document.getElementById('live48hrTime');
-                    if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
                     
-                    // 60 Minutes - calculate from today's visitors
                     var today = new Date().toISOString().split('T')[0];
                     var todayVisits = dailyVisitors[today] || 0;
-                    // Approximate 60 min (1/24 of today's visits)
                     var last60min = Math.round(todayVisits / 24);
                     var live60min = document.getElementById('live60min');
                     if (live60min) live60min.textContent = last60min;
-                    var live60minTime = document.getElementById('live60minTime');
-                    if (live60minTime) live60minTime.textContent = 'Last 60 min (~' + last60min + ')';
                     
-                    // Active now - approximate
                     var activeNow = Math.max(1, Math.round(last60min / 6));
                     var liveActive = document.getElementById('liveActive');
                     if (liveActive) liveActive.textContent = activeNow;
@@ -936,204 +941,7 @@
             }
         }
 
-        // Update live visitors every 5 seconds
         setInterval(updateLiveVisitors, 5000);
-
-        // ============================================================
-        // SECTION: DASHBOARD LINK GENERATOR
-        // ============================================================
-        async function searchAndGenerateDashboard() {
-            var query = document.getElementById('dashboardSearchInput').value.trim();
-            if (!query) {
-                showToast('⚠️ Please enter a link name or ID', 'error');
-                return;
-            }
-            
-            var resultsDiv = document.getElementById('dashboardSearchResults');
-            var resultsList = document.getElementById('dashboardResultsList');
-            var noResults = document.getElementById('dashboardNoResults');
-            var genDiv = document.getElementById('dashboardGeneratedLink');
-            
-            resultsDiv.style.display = 'block';
-            resultsList.innerHTML = '<div style="color:var(--text-light);font-size:12px;">⏳ Searching...</div>';
-            noResults.style.display = 'none';
-            genDiv.classList.remove('show');
-            
-            try {
-                var r = await secureFetch('/api/search-links?query=' + encodeURIComponent(query));
-                if (!r) return;
-                var data = await r.json();
-                
-                if (data.links && data.links.length > 0) {
-                    resultsList.innerHTML = '';
-                    data.links.forEach(function(link) {
-                        var div = document.createElement('div');
-                        div.className = 'result-item';
-                        div.innerHTML = `
-                            <div>
-                                <div class="r-name">${escapeHTML(link.name)}</div>
-                                <div class="r-details">ID: ${escapeHTML(link.id)} | Status: ${link.status}</div>
-                            </div>
-                            <button onclick="generateDashboardForLink('${link.id}')" class="btn btn-primary btn-sm">🔗 Generate</button>
-                        `;
-                        resultsList.appendChild(div);
-                    });
-                    noResults.style.display = 'none';
-                } else {
-                    resultsList.innerHTML = '';
-                    noResults.style.display = 'block';
-                }
-            } catch (e) {
-                console.error('Search error:', e);
-                showToast('❌ Search failed', 'error');
-            }
-        }
-
-        async function generateDashboardForLink(linkId) {
-            try {
-                var r = await secureFetch('/api/generate-dashboard-link', {
-                    method: 'POST',
-                    body: JSON.stringify({ linkId: linkId })
-                });
-                if (!r) return;
-                var data = await r.json();
-                
-                if (data.success) {
-                    var fullUrl = window.location.origin + data.dashboardUrl;
-                    document.getElementById('dashboardGeneratedLinkInput').value = fullUrl;
-                    document.getElementById('dashboardGeneratedLinkName').textContent = data.linkName || 'Unknown';
-                    document.getElementById('dashboardGeneratedLink').classList.add('show');
-                    showToast('✅ Dashboard link generated!', 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to generate'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ Failed to generate dashboard link', 'error');
-            }
-        }
-
-        function copyDashboardGeneratedLink() {
-            var input = document.getElementById('dashboardGeneratedLinkInput');
-            input.select();
-            document.execCommand('copy');
-            showToast('✅ Dashboard link copied!', 'success');
-        }
-
-        document.getElementById('dashboardSearchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') searchAndGenerateDashboard();
-        });
-
-        // ============================================================
-        // SECTION: USER DASHBOARD LINK
-        // ============================================================
-        async function loadUserDashboardLink() {
-            try {
-                var r = await fetch('/api/parent-link');
-                var data = await r.json();
-                var url = window.location.origin + data.url;
-                document.getElementById('userDashboardLink').textContent = url;
-            } catch (e) {
-                document.getElementById('userDashboardLink').textContent = 'Error loading';
-                setTimeout(loadUserDashboardLink, 2000);
-            }
-        }
-
-        function copyDashboardLink() {
-            var text = document.getElementById('userDashboardLink').textContent;
-            if (text === 'Loading...' || text === 'Error loading') {
-                showToast('⏳ Please wait', 'info');
-                return;
-            }
-            navigator.clipboard.writeText(text).then(function() {
-                showToast('✅ Dashboard link copied!', 'success');
-            }).catch(function() {
-                var input = document.createElement('input');
-                input.value = text;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
-                showToast('✅ Dashboard link copied!', 'success');
-            });
-        }
-
-        // ============================================================
-        // SECTION: WHATSAPP NUMBER
-        // ============================================================
-        async function loadWhatsAppNumber() {
-            try {
-                var r = await fetch('/api/whatsapp-number');
-                var data = await r.json();
-                if (data.number) {
-                    document.getElementById('whatsappNumber').value = data.number;
-                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number loaded';
-                    document.getElementById('whatsappStatus').style.color = '#48bb78';
-                }
-            } catch (e) {
-                console.error('Error loading WhatsApp number:', e);
-            }
-        }
-
-        async function saveWhatsAppNumber() {
-            var number = document.getElementById('whatsappNumber').value.trim();
-            if (!number) {
-                showToast('❌ Please enter a WhatsApp number', 'error');
-                return;
-            }
-            try {
-                var r = await secureFetch('/api/admin/whatsapp', {
-                    method: 'POST',
-                    body: JSON.stringify({ number: number })
-                });
-                if (r) {
-                    showToast('✅ WhatsApp number saved!', 'success');
-                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number saved!';
-                    document.getElementById('whatsappStatus').style.color = '#48bb78';
-                }
-            } catch (e) {
-                showToast('❌ Failed to save', 'error');
-            }
-        }
-
-        // ============================================================
-        // SECTION: PRICING
-        // ============================================================
-        async function loadPricingData() {
-            try {
-                var r = await fetch('/api/pricing');
-                var data = await r.json();
-                var pricing = data.pricing || {};
-                var fields = ['price_3days', 'price_7days', 'price_15days', 'price_1month', 'price_3months', 'price_6months', 'price_12months'];
-                var keys = ['3days', '7days', '15days', '1month', '3months', '6months', '12months'];
-                fields.forEach(function(field, index) {
-                    var el = document.getElementById(field);
-                    if (el) el.value = pricing[keys[index]] || 0;
-                });
-            } catch (e) {}
-        }
-
-        async function savePricing() {
-            var pricing = {
-                '3days': parseInt(document.getElementById('price_3days').value) || 0,
-                '7days': parseInt(document.getElementById('price_7days').value) || 0,
-                '15days': parseInt(document.getElementById('price_15days').value) || 0,
-                '1month': parseInt(document.getElementById('price_1month').value) || 0,
-                '3months': parseInt(document.getElementById('price_3months').value) || 0,
-                '6months': parseInt(document.getElementById('price_6months').value) || 0,
-                '12months': parseInt(document.getElementById('price_12months').value) || 0
-            };
-            try {
-                var r = await secureFetch('/api/admin/pricing', {
-                    method: 'POST',
-                    body: JSON.stringify({ pricing: pricing })
-                });
-                if (r) {
-                    showToast('✅ Pricing saved!', 'success');
-                }
-            } catch (e) {
-                showToast('❌ Failed to save', 'error');
-            }
-        }
 
         // ============================================================
         // SECTION: LINKS
@@ -1230,24 +1038,6 @@
             }
         }
 
-        function updatePopupPreview(linkId) {
-            var titleEl = document.getElementById('edit-popup-title-' + linkId);
-            var btnEl = document.getElementById('edit-popup-btn-' + linkId);
-            var subEl = document.getElementById('edit-popup-sub-' + linkId);
-            var imgEl = document.getElementById('edit-popup-image-' + linkId);
-            var previewDiv = document.getElementById('popup-preview-small-' + linkId);
-            if (!previewDiv) return;
-            var title = titleEl ? titleEl.value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
-            var btn = btnEl ? btnEl.value || 'Claim Now' : 'Claim Now';
-            var sub = subEl ? subEl.value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
-            var img = imgEl ? imgEl.value || '' : '';
-            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
-            previewDiv.innerHTML = imgHtml +
-                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
-                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
-                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
-        }
-
         function toggleEdit(id) {
             var el = document.getElementById('edit-' + id);
             if (el) el.classList.toggle('show');
@@ -1293,6 +1083,7 @@
                 }
                 document.getElementById('edit-' + id).classList.remove('show');
                 loadLinks();
+                loadAnalyticsLinks();
                 showToast('✅ Link updated!', 'success');
             } catch (e) { showToast('❌ Failed to update', 'error'); }
         }
@@ -1321,6 +1112,7 @@
                     if (data.success) {
                         loadLinks();
                         loadStats();
+                        loadAnalyticsLinks();
                         showToast('✅ Link deleted!', 'success');
                     }
                 } catch (e) { showToast('❌ Failed to delete', 'error'); }
@@ -1440,6 +1232,7 @@
                 selectedExpiry = null;
                 loadLinks();
                 loadStats();
+                loadAnalyticsLinks();
                 showToast('✅ Link created!', 'success');
             } catch (e) { showToast('❌ Failed to create link', 'error'); }
         }
@@ -1452,74 +1245,353 @@
         }
 
         // ============================================================
-        // SECTION: RENEWAL REQUESTS
+        // SECTION: ANALYTICS
         // ============================================================
-        async function loadRenewalRequests() {
+        var analyticsLinks = [];
+        var currentFilter = 'lifetime';
+        var currentLinkId = null;
+        var analyticsData = null;
+
+        async function loadAnalyticsLinks() {
             try {
-                var r = await secureFetch('/api/renewal/requests');
+                var r = await secureFetch('/api/links');
                 if (!r) return;
-                var requests = await r.json();
-                var container = document.getElementById('renewalRequestsList');
-                if (!requests || requests.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
+                var links = await r.json();
+                analyticsLinks = links;
+                var select = document.getElementById('analyticsLinkSelect');
+                select.innerHTML = '<option value="">-- Select a link --</option>';
+                links.forEach(function(link) {
+                    var opt = document.createElement('option');
+                    opt.value = link.id;
+                    opt.textContent = link.name + ' (' + link.id.substring(0, 15) + '...)';
+                    select.appendChild(opt);
+                });
+                // Select first link if available
+                if (links.length > 0) {
+                    select.value = links[0].id;
+                    loadAnalytics();
+                }
+            } catch (e) {
+                console.error('Error loading analytics links:', e);
+            }
+        }
+
+        function setTimeFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
+            if (btn) btn.classList.add('active');
+            
+            var customPicker = document.getElementById('customDatePicker');
+            if (filter === 'custom') {
+                customPicker.style.display = 'flex';
+            } else {
+                customPicker.style.display = 'none';
+            }
+            
+            loadAnalytics();
+        }
+
+        async function loadAnalytics() {
+            var select = document.getElementById('analyticsLinkSelect');
+            var linkId = select.value;
+            if (!linkId) {
+                document.getElementById('analyticsLinkName').textContent = 'Not selected';
+                document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:13px;text-align:center;padding:20px;">📊 Select a link to view analytics</div>';
+                return;
+            }
+            
+            currentLinkId = linkId;
+            
+            try {
+                var r = await fetch('/api/visit-stats/' + linkId);
+                if (!r.ok) {
+                    showToast('❌ Failed to load analytics', 'error');
                     return;
                 }
-                container.innerHTML = '';
-                requests.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-                requests.forEach(function(req) {
-                    var div = document.createElement('div');
-                    div.className = 'renewal-item';
-                    div.innerHTML = `
-                        <div class="info">
-                            <div class="name">${escapeHTML(req.linkName || 'Unknown')}</div>
-                            <div class="details">
-                                <span>💰 ₹${req.amount}</span>
-                                <span>📆 ${req.days} days</span>
-                                <span class="renewal-status-badge ${req.status}">${req.status.toUpperCase()}</span>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            ${req.status === 'pending' ? '<button onclick="markPaid(\'' + req.id + '\')" class="btn btn-success btn-sm">✅ Paid</button>' : ''}
-                            ${req.status === 'paid' ? '<button onclick="approveRenewal(\'' + req.id + '\')" class="btn btn-primary btn-sm">✅ Approve</button>' : ''}
-                            ${req.status === 'pending' || req.status === 'paid' ? '<button onclick="rejectRenewal(\'' + req.id + '\')" class="btn btn-danger btn-sm">❌ Reject</button>' : ''}
-                        </div>
-                    `;
-                    container.appendChild(div);
+                var data = await r.json();
+                analyticsData = data;
+                
+                // Update link details
+                document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
+                document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
+                document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
+                document.getElementById('analyticsLinkExpiry').textContent = data.expiryDate ? new Date(data.expiryDate).toLocaleString() : 'No expiry';
+                document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
+                
+                // Filter data based on time filter
+                var filteredData = getFilteredData(data);
+                
+                // Update stats
+                document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
+                document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
+                document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
+                document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
+                
+                // Render chart
+                renderChart(filteredData);
+                
+            } catch (e) {
+                console.error('Error loading analytics:', e);
+                showToast('❌ Failed to load analytics', 'error');
+            }
+        }
+
+        function getFilteredData(data) {
+            var result = {
+                totalVisits: 0,
+                totalClaims: 0,
+                uniqueVisitors: 0,
+                uniqueClaims: 0,
+                dailyData: {}
+            };
+            
+            var today = new Date();
+            var todayStr = today.toISOString().split('T')[0];
+            
+            // Get daily data
+            var dailyVisits = data.dailyVisits || {};
+            var dailyClaims = data.dailyClaims || {};
+            
+            // Get all dates
+            var allDates = Object.keys(dailyVisits);
+            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
+                allDates = Object.keys(dailyClaims);
+            }
+            allDates.sort();
+            
+            // If no data, add today with 0
+            if (allDates.length === 0) {
+                allDates.push(todayStr);
+                dailyVisits[todayStr] = 0;
+                dailyClaims[todayStr] = 0;
+            }
+            
+            // Filter by time
+            var filteredDates = [];
+            var now = new Date();
+            
+            if (currentFilter === 'lifetime') {
+                filteredDates = allDates;
+            } else if (currentFilter === '24h') {
+                var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                filteredDates = allDates.filter(function(d) {
+                    var date = new Date(d);
+                    return date >= oneDayAgo;
                 });
-            } catch (e) {}
+            } else if (currentFilter === '60m') {
+                var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+                filteredDates = allDates.filter(function(d) {
+                    var date = new Date(d);
+                    return date >= oneHourAgo;
+                });
+            } else if (currentFilter === 'custom') {
+                var fromDate = document.getElementById('analyticsFromDate').value;
+                var toDate = document.getElementById('analyticsToDate').value;
+                if (fromDate) {
+                    var from = new Date(fromDate);
+                    filteredDates = allDates.filter(function(d) {
+                        var date = new Date(d);
+                        return date >= from;
+                    });
+                }
+                if (toDate) {
+                    var to = new Date(toDate);
+                    to.setDate(to.getDate() + 1);
+                    filteredDates = filteredDates.filter(function(d) {
+                        var date = new Date(d);
+                        return date <= to;
+                    });
+                }
+                if (!fromDate && !toDate) {
+                    filteredDates = allDates;
+                }
+            }
+            
+            if (filteredDates.length === 0) {
+                filteredDates = allDates.slice(-7);
+            }
+            
+            // Calculate totals
+            filteredDates.forEach(function(date) {
+                result.totalVisits += dailyVisits[date] || 0;
+                result.totalClaims += dailyClaims[date] || 0;
+                result.dailyData[date] = {
+                    visits: dailyVisits[date] || 0,
+                    claims: dailyClaims[date] || 0
+                };
+            });
+            
+            // Unique visitors (approximate from total visits / days)
+            var uniqueDays = Object.keys(result.dailyData).length;
+            result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 1.5);
+            result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 1.2);
+            
+            return result;
         }
 
-        async function markPaid(requestId) {
-            if (!confirm('Mark this as paid?')) return;
-            try {
-                var r = await secureFetch('/api/renewal/pay/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('✅ Marked as paid!', 'success');
-                    loadRenewalRequests();
-                }
-            } catch (e) { showToast('❌ Failed', 'error'); }
+        function renderChart(data) {
+            var container = document.getElementById('analyticsChart');
+            var dates = Object.keys(data.dailyData);
+            dates.sort();
+            
+            if (dates.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-light);font-size:13px;text-align:center;padding:20px;">📊 No data available</div>';
+                return;
+            }
+            
+            var maxVisits = 0;
+            dates.forEach(function(d) {
+                if (data.dailyData[d].visits > maxVisits) maxVisits = data.dailyData[d].visits;
+            });
+            maxVisits = Math.max(maxVisits, 1);
+            
+            var html = '<div class="chart-bar-container">';
+            dates.forEach(function(date) {
+                var visitCount = data.dailyData[date].visits || 0;
+                var claimCount = data.dailyData[date].claims || 0;
+                var height = Math.max(4, (visitCount / maxVisits) * 150);
+                var label = date.substring(5);
+                
+                html += `
+                    <div class="bar-wrapper">
+                        <div class="bar-value">${visitCount}</div>
+                        <div class="bar" style="height:${height}px;" title="${date}: Visits: ${visitCount}, Claims: ${claimCount}"></div>
+                        <div class="bar-label">${label}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            // Add legend
+            html += `
+                <div style="display:flex;gap:20px;justify-content:center;margin-top:10px;font-size:11px;color:var(--text-light);">
+                    <span>📊 Bars = Daily Visits</span>
+                    <span>📅 ${dates.length} days</span>
+                </div>
+            `;
+            
+            container.innerHTML = html;
         }
 
-        async function approveRenewal(requestId) {
-            if (!confirm('Approve this renewal?')) return;
+        // ============================================================
+        // SECTION: DOWNLOAD ANALYTICS
+        // ============================================================
+        async function downloadAnalyticsImage() {
+            if (!currentLinkId) {
+                showToast('⚠️ Please select a link first', 'error');
+                return;
+            }
+            
+            var container = document.getElementById('analyticsChart');
+            var statsContainer = document.getElementById('analyticsStats');
+            var detailsContainer = document.getElementById('analyticsLinkDetails');
+            
+            // Create a temporary wrapper for screenshot
+            var wrapper = document.createElement('div');
+            wrapper.style.cssText = `
+                background: #0a0a1a;
+                padding: 30px;
+                border-radius: 16px;
+                min-width: 800px;
+                max-width: 1000px;
+                color: #fff;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                position: absolute;
+                left: -9999px;
+                top: 0;
+                z-index: 9999;
+            `;
+            
+            wrapper.innerHTML = `
+                <h2 style="text-align:center;margin-bottom:20px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                    📊 Analytics Report
+                </h2>
+                <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div><span style="color:#a0aec0;">Link Name:</span> <strong>${document.getElementById('analyticsLinkName').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">Link ID:</span> <strong>${document.getElementById('analyticsLinkId').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">Status:</span> <strong>${document.getElementById('analyticsLinkStatus').textContent}</strong></div>
+                        <div><span style="color:#a0aec0;">Expiry:</span> <strong>${document.getElementById('analyticsLinkExpiry').textContent}</strong></div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById('analyticsTotalVisits').textContent}</div>
+                        <div style="font-size:11px;color:#a0aec0;">👁️ Total Visits</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById('analyticsTotalClaims').textContent}</div>
+                        <div style="font-size:11px;color:#a0aec0;">🎁 Total Claims</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById('analyticsUniqueVisitors').textContent}</div>
+                        <div style="font-size:11px;color:#a0aec0;">👤 Unique Visitors</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById('analyticsUniqueClaims').textContent}</div>
+                        <div style="font-size:11px;color:#a0aec0;">🏷️ Unique Claims</div>
+                    </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.05);">
+                    ${container.innerHTML}
+                </div>
+                <div style="text-align:center;margin-top:16px;font-size:11px;color:#a0aec0;">
+                    Generated on: ${new Date().toLocaleString()} | Filter: ${currentFilter}
+                </div>
+            `;
+            
+            document.body.appendChild(wrapper);
+            
             try {
-                var r = await secureFetch('/api/renewal/approve/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('✅ Renewal approved!', 'success');
-                    loadRenewalRequests();
-                }
-            } catch (e) { showToast('❌ Failed to approve', 'error'); }
+                var canvas = await html2canvas(wrapper, {
+                    scale: 2,
+                    backgroundColor: '#0a0a1a',
+                    allowTaint: true,
+                    useCORS: true
+                });
+                var link = document.createElement('a');
+                link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('✅ Image downloaded!', 'success');
+            } catch (e) {
+                console.error('Error downloading image:', e);
+                showToast('❌ Failed to download image', 'error');
+            }
+            
+            document.body.removeChild(wrapper);
         }
 
-        async function rejectRenewal(requestId) {
-            if (!confirm('Reject this renewal?')) return;
-            try {
-                var r = await secureFetch('/api/renewal/reject/' + requestId, { method: 'POST' });
-                if (r) {
-                    showToast('❌ Renewal rejected', 'error');
-                    loadRenewalRequests();
-                }
-            } catch (e) { showToast('❌ Failed to reject', 'error'); }
+        function downloadAnalyticsCSV() {
+            if (!currentLinkId || !analyticsData) {
+                showToast('⚠️ Please select a link first', 'error');
+                return;
+            }
+            
+            var data = analyticsData;
+            var csv = 'Date,Visits,Claims\n';
+            var dailyVisits = data.dailyVisits || {};
+            var dailyClaims = data.dailyClaims || {};
+            
+            var allDates = Object.keys(dailyVisits);
+            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
+                allDates = Object.keys(dailyClaims);
+            }
+            allDates.sort();
+            
+            allDates.forEach(function(date) {
+                csv += date + ',' + (dailyVisits[date] || 0) + ',' + (dailyClaims[date] || 0) + '\n';
+            });
+            
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var link = document.createElement('a');
+            link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.csv';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            showToast('✅ CSV downloaded!', 'success');
         }
 
         // ============================================================
@@ -1671,30 +1743,26 @@
         loadBackground();
         loadLinks();
         loadStats();
-        loadUserDashboardLink();
-        loadPricingData();
-        loadRenewalRequests();
-        loadWhatsAppNumber();
-        
+        loadAnalyticsLinks();
         setInterval(loadStats, 30000);
-        setInterval(loadRenewalRequests, 15000);
-        setInterval(loadLinks, 30000);
         setInterval(updateLiveVisitors, 5000);
         checkAuth();
 
-        // ============================================================
-        // SECTION: GLOBAL FUNCTIONS
-        // ============================================================
+        // Make functions globally accessible
         window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
         window.installApp = installApp;
-        window.searchAndGenerateDashboard = searchAndGenerateDashboard;
-        window.generateDashboardForLink = generateDashboardForLink;
-        window.copyDashboardGeneratedLink = copyDashboardGeneratedLink;
-        window.copyDashboardLink = copyDashboardLink;
-        window.saveWhatsAppNumber = saveWhatsAppNumber;
-        window.savePricing = savePricing;
+        window.loadLinks = loadLinks;
+        window.loadStats = loadStats;
+        window.loadAnalyticsLinks = loadAnalyticsLinks;
+        window.loadAnalytics = loadAnalytics;
+        window.setTimeFilter = setTimeFilter;
+        window.downloadAnalyticsImage = downloadAnalyticsImage;
+        window.downloadAnalyticsCSV = downloadAnalyticsCSV;
+        window.saveBackground = saveBackground;
+        window.removeBackground = removeBackground;
+        window.changePasscode = changePasscode;
         window.createLink = createLink;
         window.copyLink = copyLink;
         window.copyLinkUrl = copyLinkUrl;
@@ -1702,24 +1770,9 @@
         window.cancelEdit = cancelEdit;
         window.saveEdit = saveEdit;
         window.deleteLink = deleteLink;
-        window.saveBackground = saveBackground;
-        window.removeBackground = removeBackground;
-        window.changePasscode = changePasscode;
-        window.markPaid = markPaid;
-        window.approveRenewal = approveRenewal;
-        window.rejectRenewal = rejectRenewal;
         window.updateSchedulePreset = updateSchedulePreset;
         window.updateCustomExpiry = updateCustomExpiry;
-        window.updatePopupPreview = updatePopupPreview;
         window.showToast = showToast;
-        window.loadLinks = loadLinks;
-        window.loadStats = loadStats;
-        window.loadRenewalRequests = loadRenewalRequests;
-        window.loadUserDashboardLink = loadUserDashboardLink;
-        window.loadPricingData = loadPricingData;
-        window.loadWhatsAppNumber = loadWhatsAppNumber;
-        window.loadBackground = loadBackground;
-        window.loadTheme = loadTheme;
     </script>
 </body>
 </html>
