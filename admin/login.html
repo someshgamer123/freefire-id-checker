@@ -104,18 +104,25 @@
             box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
             background: white;
         }
-        .twofa-input.show {
-            display: block;
-        }
+        .twofa-input.show { display: block; }
         .twofa-label {
             font-size: 11px;
             color: #999;
             margin-top: 4px;
             display: none;
         }
-        .twofa-label.show {
-            display: block;
+        .twofa-label.show { display: block; }
+        .rate-limit-msg {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin: 10px 0;
+            display: none;
+            border: 1px solid #ffc107;
         }
+        .rate-limit-msg.show { display: block; }
         @media (max-width: 480px) {
             .login-box { padding: 30px 20px; }
             .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
@@ -133,6 +140,10 @@
         <h2>Admin Login</h2>
         <div class="security-badge" id="securityBadge">🔒 Secure Connection</div>
         <p class="sub-title" id="loginSubtitle">Enter your passcode</p>
+        
+        <div class="rate-limit-msg" id="rateLimitMsg">
+            ⚠️ Too many login attempts. Please wait <span id="rateLimitCountdown">30</span> minutes.
+        </div>
         
         <div class="passcode-inputs" id="passcodeContainer">
             <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
@@ -171,6 +182,8 @@
         var is2FARequired = false;
         var twoFAToken = document.getElementById('twoFAToken');
         var twoFALabel = document.getElementById('twoFALabel');
+        var rateLimitMsg = document.getElementById('rateLimitMsg');
+        var rateLimitCountdown = document.getElementById('rateLimitCountdown');
 
         window.addEventListener('load', function() { 
             var pin1 = document.getElementById('pin1');
@@ -312,6 +325,7 @@
                 twoFAToken.classList.remove('show');
             }
             if (twoFALabel) twoFALabel.classList.remove('show');
+            if (rateLimitMsg) rateLimitMsg.classList.remove('show');
         }
 
         function showError(message) {
@@ -326,6 +340,20 @@
                 }, 600);
             }
             setTimeout(function() { clearAll(null); }, 800);
+        }
+
+        function showRateLimit(seconds) {
+            if (rateLimitMsg) {
+                rateLimitMsg.classList.add('show');
+                if (rateLimitCountdown) {
+                    var mins = Math.ceil(seconds / 60);
+                    rateLimitCountdown.textContent = mins;
+                }
+            }
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Wait ' + Math.ceil(seconds / 60) + ' min';
+            }
         }
 
         async function login() {
@@ -368,18 +396,26 @@
                     body: JSON.stringify(requestBody)
                 });
 
-                // ===== FIX: Handle rate limit response =====
+                // ===== FIXED: Handle rate limit and JSON parsing =====
+                if (response.status === 429) {
+                    // Rate limit error - show message
+                    var text = await response.text();
+                    showRateLimit(30 * 60); // 30 minutes
+                    showError(text || 'Too many attempts. Please wait 30 minutes.');
+                    if (loginBtn) {
+                        loginBtn.disabled = true;
+                        loginBtn.textContent = '⏳ Locked';
+                    }
+                    return;
+                }
+
+                // Parse JSON only if response is OK
                 var data;
                 try {
                     data = await response.json();
                 } catch (e) {
-                    // If response is not JSON (like rate limit text)
                     var text = await response.text();
-                    if (response.status === 429) {
-                        showError('Too many attempts. Please wait 30 minutes and try again.');
-                    } else {
-                        showError(text || 'Server error. Please try again.');
-                    }
+                    showError(text || 'Server error. Please try again.');
                     if (loginBtn) {
                         loginBtn.disabled = false;
                         loginBtn.textContent = '🔑 Login';
