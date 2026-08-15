@@ -159,7 +159,6 @@
             font-size: 13px; background: var(--bg); color: var(--text); }
         @media (max-width: 768px) { .edit-form .edit-grid { grid-template-columns: 1fr; } }
 
-        /* ===== POPUP SETTINGS IN EDIT FORM ===== */
         .popup-edit-section {
             background: rgba(102,126,234,0.05);
             border-radius: 10px;
@@ -209,19 +208,6 @@
             cursor: default;
             margin-top: 4px;
         }
-        .popup-edit-toggle {
-            background: rgba(102,126,234,0.1);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 14px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--primary);
-            transition: 0.3s;
-            margin-top: 6px;
-        }
-        .popup-edit-toggle:hover { background: rgba(102,126,234,0.2); }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
         .empty-state .icon { font-size: 50px; display: block; margin-bottom: 12px; }
@@ -406,7 +392,6 @@
         }
         .user-dashboard-box .btn-sm:hover { background: var(--secondary); transform: translateY(-2px); }
 
-        /* ===== DASHBOARD GENERATOR ===== */
         .dashboard-generator {
             background: rgba(102,126,234,0.05);
             border-radius: 10px;
@@ -499,7 +484,6 @@
             display: block;
         }
 
-        /* ===== WHATSAPP SETTINGS ===== */
         .whatsapp-settings {
             background: rgba(72,187,120,0.05);
             border: 2px solid rgba(72,187,120,0.15);
@@ -846,7 +830,8 @@
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('installBtn').classList.add('show');
+            var installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.classList.add('show');
         });
 
         function installApp() {
@@ -857,7 +842,8 @@
                         showToast('✅ App installed successfully!', 'success');
                     }
                     deferredPrompt = null;
-                    document.getElementById('installBtn').classList.remove('show');
+                    var installBtn = document.getElementById('installBtn');
+                    if (installBtn) installBtn.classList.remove('show');
                 });
             } else {
                 showToast('📲 Use Chrome browser to install', 'info');
@@ -868,8 +854,8 @@
         function toggleRenewal() {
             var content = document.getElementById('renewalContent');
             var arrow = document.getElementById('renewalArrow');
-            content.classList.toggle('open');
-            arrow.classList.toggle('open');
+            if (content) content.classList.toggle('open');
+            if (arrow) arrow.classList.toggle('open');
         }
 
         // ===== USER DASHBOARD LINK =====
@@ -878,15 +864,19 @@
                 var r = await fetch('/api/parent-link');
                 var data = await r.json();
                 var url = window.location.origin + data.url;
-                document.getElementById('userDashboardLink').textContent = url;
+                var linkEl = document.getElementById('userDashboardLink');
+                if (linkEl) linkEl.textContent = url;
             } catch (e) {
-                document.getElementById('userDashboardLink').textContent = 'Error loading';
+                var linkEl = document.getElementById('userDashboardLink');
+                if (linkEl) linkEl.textContent = 'Error loading';
                 setTimeout(loadUserDashboardLink, 2000);
             }
         }
 
         function copyDashboardLink() {
-            var text = document.getElementById('userDashboardLink').textContent;
+            var textEl = document.getElementById('userDashboardLink');
+            if (!textEl) return;
+            var text = textEl.textContent;
             if (text === 'Loading...' || text === 'Error loading') {
                 showToast('⏳ Please wait for link to load', 'info');
                 return;
@@ -910,9 +900,13 @@
                 var r = await fetch('/api/whatsapp-number');
                 var data = await r.json();
                 if (data.number) {
-                    document.getElementById('whatsappNumber').value = data.number;
-                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number loaded';
-                    document.getElementById('whatsappStatus').style.color = '#48bb78';
+                    var input = document.getElementById('whatsappNumber');
+                    var status = document.getElementById('whatsappStatus');
+                    if (input) input.value = data.number;
+                    if (status) {
+                        status.textContent = '✅ WhatsApp number loaded';
+                        status.style.color = '#48bb78';
+                    }
                 }
             } catch (e) {
                 console.error('Error loading WhatsApp number:', e);
@@ -920,7 +914,9 @@
         }
 
         async function saveWhatsAppNumber() {
-            var number = document.getElementById('whatsappNumber').value.trim();
+            var input = document.getElementById('whatsappNumber');
+            if (!input) return;
+            var number = input.value.trim();
             if (!number) {
                 showToast('❌ Please enter a WhatsApp number', 'error');
                 return;
@@ -932,8 +928,11 @@
                 });
                 if (r) {
                     showToast('✅ WhatsApp number saved!', 'success');
-                    document.getElementById('whatsappStatus').textContent = '✅ WhatsApp number saved successfully!';
-                    document.getElementById('whatsappStatus').style.color = '#48bb78';
+                    var status = document.getElementById('whatsappStatus');
+                    if (status) {
+                        status.textContent = '✅ WhatsApp number saved successfully!';
+                        status.style.color = '#48bb78';
+                    }
                 }
             } catch (e) {
                 showToast('❌ Failed to save WhatsApp number', 'error');
@@ -941,10 +940,10 @@
         }
 
         // ===== DASHBOARD LINK GENERATOR =====
-        var dashboardSearchTimeout = null;
-
         async function searchAndGenerateDashboard() {
-            var query = document.getElementById('dashboardSearchInput').value.trim();
+            var input = document.getElementById('dashboardSearchInput');
+            if (!input) return;
+            var query = input.value.trim();
             
             if (!query) {
                 showToast('⚠️ Please enter a link name or ID to search', 'error');
@@ -956,10 +955,10 @@
             var noResults = document.getElementById('dashboardNoResults');
             var generatedDiv = document.getElementById('dashboardGeneratedLink');
             
-            resultsDiv.style.display = 'block';
-            resultsList.innerHTML = '<div style="color:var(--text-light);font-size:13px;">⏳ Searching...</div>';
-            noResults.classList.remove('show');
-            generatedDiv.classList.remove('show');
+            if (resultsDiv) resultsDiv.style.display = 'block';
+            if (resultsList) resultsList.innerHTML = '<div style="color:var(--text-light);font-size:13px;">⏳ Searching...</div>';
+            if (noResults) noResults.classList.remove('show');
+            if (generatedDiv) generatedDiv.classList.remove('show');
             
             try {
                 var r = await secureFetch('/api/search-links?query=' + encodeURIComponent(query));
@@ -968,7 +967,7 @@
                 var data = await r.json();
                 
                 if (data.links && data.links.length > 0) {
-                    resultsList.innerHTML = '';
+                    if (resultsList) resultsList.innerHTML = '';
                     data.links.forEach(function(link) {
                         var div = document.createElement('div');
                         div.className = 'result-item';
@@ -979,12 +978,12 @@
                             </div>
                             <button onclick="generateDashboardForLink('${link.id}')" class="btn btn-primary btn-sm" style="padding:6px 14px;font-size:12px;">🔗 Generate Link</button>
                         `;
-                        resultsList.appendChild(div);
+                        if (resultsList) resultsList.appendChild(div);
                     });
-                    noResults.classList.remove('show');
+                    if (noResults) noResults.classList.remove('show');
                 } else {
-                    resultsList.innerHTML = '';
-                    noResults.classList.add('show');
+                    if (resultsList) resultsList.innerHTML = '';
+                    if (noResults) noResults.classList.add('show');
                 }
                 
             } catch (e) {
@@ -1005,9 +1004,12 @@
                 
                 if (data.success) {
                     var fullUrl = window.location.origin + data.dashboardUrl;
-                    document.getElementById('dashboardGeneratedLinkInput').value = fullUrl;
-                    document.getElementById('dashboardGeneratedLinkName').textContent = data.linkName || 'Unknown';
-                    document.getElementById('dashboardGeneratedLink').classList.add('show');
+                    var linkInput = document.getElementById('dashboardGeneratedLinkInput');
+                    var nameSpan = document.getElementById('dashboardGeneratedLinkName');
+                    var genDiv = document.getElementById('dashboardGeneratedLink');
+                    if (linkInput) linkInput.value = fullUrl;
+                    if (nameSpan) nameSpan.textContent = data.linkName || 'Unknown';
+                    if (genDiv) genDiv.classList.add('show');
                     showToast('✅ Dashboard link generated successfully!', 'success');
                 } else {
                     showToast('❌ ' + (data.error || 'Failed to generate link'), 'error');
@@ -1020,33 +1022,40 @@
 
         function copyDashboardGeneratedLink() {
             var input = document.getElementById('dashboardGeneratedLinkInput');
+            if (!input) return;
             input.select();
             document.execCommand('copy');
             showToast('✅ Dashboard link copied!', 'success');
         }
 
         // Enter key support for search
-        document.getElementById('dashboardSearchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchAndGenerateDashboard();
-            }
-        });
+        var searchInput = document.getElementById('dashboardSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchAndGenerateDashboard();
+                }
+            });
+        }
 
         // ===== SCHEDULE =====
         var selectedExpiry = null;
 
         function updateSchedulePreset() {
-            var preset = document.getElementById('schedulePreset').value;
+            var presetEl = document.getElementById('schedulePreset');
             var customInput = document.getElementById('customExpiry');
             var display = document.getElementById('expiryDisplay');
+            if (!presetEl || !display) return;
+            
+            var preset = presetEl.value;
             if (preset === 'custom') {
-                customInput.style.display = 'block';
-                customInput.value = '';
+                if (customInput) customInput.style.display = 'block';
+                if (customInput) customInput.value = '';
                 display.textContent = '📅 Select custom date';
                 selectedExpiry = null;
                 return;
             }
-            customInput.style.display = 'none';
+            if (customInput) customInput.style.display = 'none';
             if (preset) {
                 var days = parseInt(preset);
                 var date = new Date();
@@ -1060,58 +1069,83 @@
         }
 
         function updateCustomExpiry() {
-            var val = document.getElementById('customExpiry').value;
+            var customInput = document.getElementById('customExpiry');
+            var display = document.getElementById('expiryDisplay');
+            if (!customInput || !display) return;
+            
+            var val = customInput.value;
             if (val) {
                 var date = new Date(val);
                 selectedExpiry = date.toISOString();
-                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
+                display.textContent = '📅 Expires: ' + date.toLocaleString();
             } else {
                 selectedExpiry = null;
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+                display.textContent = '⏰ No expiry set';
             }
         }
 
         // ===== POPUP PREVIEW LIVE UPDATE =====
-        document.getElementById('popupTitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
-        });
-        document.getElementById('popupSubtitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
-        });
-        document.getElementById('popupButtonText').addEventListener('input', function() {
-            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
-        });
-        document.getElementById('popupImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('popupImagePreview');
-            var img = document.getElementById('popupPreviewImg');
-            var previewImage = document.getElementById('popupPreviewImage');
-            if (url) {
-                img.src = url;
-                preview.classList.add('show');
-                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
-            } else {
-                preview.classList.remove('show');
-                previewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
-            }
-        });
+        var popupTitle = document.getElementById('popupTitle');
+        var popupSubtitle = document.getElementById('popupSubtitle');
+        var popupButtonText = document.getElementById('popupButtonText');
+        var popupImageUrl = document.getElementById('popupImageUrl');
+        var popupPreviewTitle = document.getElementById('popupPreviewTitle');
+        var popupPreviewSub = document.getElementById('popupPreviewSub');
+        var popupPreviewBtn = document.getElementById('popupPreviewBtn');
+        var popupPreviewImage = document.getElementById('popupPreviewImage');
+        var popupImagePreview = document.getElementById('popupImagePreview');
+        var popupPreviewImg = document.getElementById('popupPreviewImg');
+
+        if (popupTitle && popupPreviewTitle) {
+            popupTitle.addEventListener('input', function() {
+                popupPreviewTitle.textContent = this.value || '🎁 Claim Your Reward';
+            });
+        }
+        if (popupSubtitle && popupPreviewSub) {
+            popupSubtitle.addEventListener('input', function() {
+                popupPreviewSub.textContent = this.value || 'Tap below to unlock your reward';
+            });
+        }
+        if (popupButtonText && popupPreviewBtn) {
+            popupButtonText.addEventListener('input', function() {
+                popupPreviewBtn.textContent = this.value || 'Claim Now';
+            });
+        }
+        if (popupImageUrl && popupPreviewImage && popupImagePreview && popupPreviewImg) {
+            popupImageUrl.addEventListener('input', function() {
+                var url = this.value.trim();
+                if (url) {
+                    popupPreviewImg.src = url;
+                    popupImagePreview.classList.add('show');
+                    popupPreviewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
+                } else {
+                    popupImagePreview.classList.remove('show');
+                    popupPreviewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
+                }
+            });
+        }
 
         // ===== BACKGROUND IMAGE URL PREVIEW =====
-        document.getElementById('bgImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('bgImagePreview');
-            var img = document.getElementById('bgPreviewImg');
-            if (url) {
-                img.src = url;
-                preview.classList.add('show');
-            } else {
-                preview.classList.remove('show');
-            }
-        });
+        var bgImageUrl = document.getElementById('bgImageUrl');
+        var bgImagePreview = document.getElementById('bgImagePreview');
+        var bgPreviewImg = document.getElementById('bgPreviewImg');
+        if (bgImageUrl && bgImagePreview && bgPreviewImg) {
+            bgImageUrl.addEventListener('input', function() {
+                var url = this.value.trim();
+                if (url) {
+                    bgPreviewImg.src = url;
+                    bgImagePreview.classList.add('show');
+                } else {
+                    bgImagePreview.classList.remove('show');
+                }
+            });
+        }
 
         // ===== SAVE BACKGROUND =====
         async function saveBackground() {
-            var url = document.getElementById('bgImageUrl').value.trim();
+            var input = document.getElementById('bgImageUrl');
+            if (!input) return;
+            var url = input.value.trim();
             if (!url) {
                 showToast('❌ Please enter an image URL', 'error');
                 return;
@@ -1124,8 +1158,11 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    document.getElementById('bgStatus').textContent = '✅ Background saved successfully!';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    var status = document.getElementById('bgStatus');
+                    if (status) {
+                        status.textContent = '✅ Background saved successfully!';
+                        status.style.color = '#48bb78';
+                    }
                     showToast('✅ Background saved!', 'success');
                 }
             } catch (e) {
@@ -1142,10 +1179,15 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    document.getElementById('bgImageUrl').value = '';
-                    document.getElementById('bgImagePreview').classList.remove('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background removed';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    var input = document.getElementById('bgImageUrl');
+                    var preview = document.getElementById('bgImagePreview');
+                    var status = document.getElementById('bgStatus');
+                    if (input) input.value = '';
+                    if (preview) preview.classList.remove('show');
+                    if (status) {
+                        status.textContent = '✅ Background removed';
+                        status.style.color = '#48bb78';
+                    }
                     showToast('✅ Background removed', 'success');
                 }
             } catch (e) {
@@ -1158,22 +1200,31 @@
                 var r = await fetch('/api/settings');
                 var data = await r.json();
                 if (data && data.background) {
-                    document.getElementById('bgImageUrl').value = data.background;
+                    var input = document.getElementById('bgImageUrl');
                     var preview = document.getElementById('bgImagePreview');
                     var img = document.getElementById('bgPreviewImg');
-                    img.src = data.background;
-                    preview.classList.add('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
+                    var status = document.getElementById('bgStatus');
+                    if (input) input.value = data.background;
+                    if (img) img.src = data.background;
+                    if (preview) preview.classList.add('show');
+                    if (status) {
+                        status.textContent = '✅ Background loaded';
+                        status.style.color = '#48bb78';
+                    }
                 }
             } catch (e) {}
         }
 
         // ===== CHANGE PASSCODE =====
         async function changePasscode() {
-            var oldPasscode = document.getElementById('oldPasscode').value;
-            var newPasscode = document.getElementById('newPasscode').value;
+            var oldInput = document.getElementById('oldPasscode');
+            var newInput = document.getElementById('newPasscode');
             var statusEl = document.getElementById('passcodeStatus');
+            
+            if (!oldInput || !newInput || !statusEl) return;
+            
+            var oldPasscode = oldInput.value;
+            var newPasscode = newInput.value;
 
             if (!oldPasscode || !newPasscode) {
                 statusEl.textContent = '❌ Please fill both fields';
@@ -1202,8 +1253,8 @@
                     statusEl.textContent = '✅ Passcode changed! Please login again.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Passcode changed! Please login again.', 'success');
-                    document.getElementById('oldPasscode').value = '';
-                    document.getElementById('newPasscode').value = '';
+                    oldInput.value = '';
+                    newInput.value = '';
                     setTimeout(function() { window.location.href = 'login.html'; }, 2000);
                 } else {
                     statusEl.textContent = '❌ ' + (data.error || 'Failed to change passcode');
@@ -1221,18 +1272,26 @@
             try {
                 var r = await secureFetch('/api/links');
                 if (!r) {
-                    document.getElementById('linksList').innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links. <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
+                    var list = document.getElementById('linksList');
+                    if (list) {
+                        list.innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links. <br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
+                    }
                     return;
                 }
                 var links = await r.json();
                 var c = document.getElementById('linksList');
+                if (!c) return;
                 c.innerHTML = '';
                 var active = links.filter(function(l) { return l.status === 'active'; }).length;
                 var expired = links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date() && l.status === 'disabled'; }).length;
-                document.getElementById('totalLinks').textContent = links.length;
-                document.getElementById('activeLinks').textContent = active;
-                document.getElementById('totalVisits').textContent = links.reduce(function(s, l) { return s + (l.visits || 0); }, 0);
-                document.getElementById('expiredLinks').textContent = expired;
+                var totalEl = document.getElementById('totalLinks');
+                var activeEl = document.getElementById('activeLinks');
+                var visitsEl = document.getElementById('totalVisits');
+                var expiredEl = document.getElementById('expiredLinks');
+                if (totalEl) totalEl.textContent = links.length;
+                if (activeEl) activeEl.textContent = active;
+                if (visitsEl) visitsEl.textContent = links.reduce(function(s, l) { return s + (l.visits || 0); }, 0);
+                if (expiredEl) expiredEl.textContent = expired;
                 if (links.length === 0) {
                     c.innerHTML = '<div class="empty-state"><span class="icon">📭</span>No links yet</div>';
                     return;
@@ -1262,23 +1321,36 @@
                     
                     (function(id) {
                         ['edit-popup-title-' + id, 'edit-popup-btn-' + id, 'edit-popup-sub-' + id, 'edit-popup-image-' + id].forEach(function(fieldId) {
-                            document.getElementById(fieldId).addEventListener('input', function() {
-                                updatePopupPreview(id);
-                            });
+                            var el = document.getElementById(fieldId);
+                            if (el) {
+                                el.addEventListener('input', function() {
+                                    updatePopupPreview(id);
+                                });
+                            }
                         });
                     })(link.id);
                 });
             } catch (e) {
-                document.getElementById('linksList').innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links.<br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
+                var list = document.getElementById('linksList');
+                if (list) {
+                    list.innerHTML = '<div class="empty-state" style="color:var(--danger);"><span class="icon">⚠️</span> Error loading links.<br><button onclick="loadLinks()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Retry</button></div>';
+                }
             }
         }
 
         function updatePopupPreview(linkId) {
-            var title = document.getElementById('edit-popup-title-' + linkId).value || '🎁 Claim Your Reward';
-            var btn = document.getElementById('edit-popup-btn-' + linkId).value || 'Claim Now';
-            var sub = document.getElementById('edit-popup-sub-' + linkId).value || 'Tap below to unlock your reward';
-            var img = document.getElementById('edit-popup-image-' + linkId).value || '';
+            var titleEl = document.getElementById('edit-popup-title-' + linkId);
+            var btnEl = document.getElementById('edit-popup-btn-' + linkId);
+            var subEl = document.getElementById('edit-popup-sub-' + linkId);
+            var imgEl = document.getElementById('edit-popup-image-' + linkId);
             var previewDiv = document.getElementById('popup-preview-small-' + linkId);
+            
+            if (!previewDiv) return;
+            
+            var title = titleEl ? titleEl.value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
+            var btn = btnEl ? btnEl.value || 'Claim Now' : 'Claim Now';
+            var sub = subEl ? subEl.value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
+            var img = imgEl ? imgEl.value || '' : '';
             
             var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:11px;">No image</div>';
             previewDiv.innerHTML = imgHtml +
@@ -1289,48 +1361,76 @@
 
         // ===== CREATE LINK =====
         async function createLink() {
-            var name = document.getElementById('linkName').value.trim();
+            var nameInput = document.getElementById('linkName');
+            if (!nameInput) return;
+            var name = nameInput.value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
             if (name.length > 100) { showToast('❌ Name too long (max 100 chars)', 'error'); return; }
             
+            var popupImageUrl = document.getElementById('popupImageUrl');
+            var popupTitle = document.getElementById('popupTitle');
+            var popupButtonText = document.getElementById('popupButtonText');
+            var popupSubtitle = document.getElementById('popupSubtitle');
+            
             var popupSettings = {
-                image: document.getElementById('popupImageUrl').value.trim() || null,
-                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
-                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
-                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
+                image: popupImageUrl ? popupImageUrl.value.trim() || null : null,
+                title: popupTitle ? popupTitle.value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
+                buttonText: popupButtonText ? popupButtonText.value.trim() || 'Claim Now' : 'Claim Now',
+                subtitle: popupSubtitle ? popupSubtitle.value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
             };
 
             try {
+                var videoInput = document.getElementById('video');
+                var claimInput = document.getElementById('claim');
+                var buttonTextInput = document.getElementById('buttonText');
+                var headlineInput = document.getElementById('headline');
+                
                 var r = await secureFetch('/api/links', {
                     method: 'POST',
                     body: JSON.stringify({
                         name: name,
-                        video: document.getElementById('video').value.trim(),
-                        claim: document.getElementById('claim').value.trim(),
-                        buttonText: document.getElementById('buttonText').value.trim(),
-                        headline: document.getElementById('headline').value.trim(),
+                        video: videoInput ? videoInput.value.trim() : 'https://youtu.be/dQw4w9WgXcQ',
+                        claim: claimInput ? claimInput.value.trim() : '#',
+                        buttonText: buttonTextInput ? buttonTextInput.value.trim() : 'Claim Now',
+                        headline: headlineInput ? headlineInput.value.trim() : '🎬 Watch Video',
                         expiryDate: selectedExpiry,
                         popupSettings: popupSettings
                     })
                 });
                 if (!r) return;
                 var link = await r.json();
-                document.getElementById('generatedLink').classList.add('show');
-                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
-                document.getElementById('linkName').value = '';
-                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
-                document.getElementById('claim').value = '#';
-                document.getElementById('buttonText').value = 'Claim Now';
-                document.getElementById('headline').value = '🎬 Watch Video';
-                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
-                document.getElementById('popupButtonText').value = 'Claim Now';
-                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
-                document.getElementById('popupImageUrl').value = '';
-                document.getElementById('popupImagePreview').classList.remove('show');
-                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Image Preview</span>';
-                document.getElementById('schedulePreset').value = '';
-                document.getElementById('customExpiry').style.display = 'none';
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+                var genLink = document.getElementById('generatedLink');
+                var genInput = document.getElementById('generatedLinkInput');
+                if (genLink) genLink.classList.add('show');
+                if (genInput) genInput.value = window.location.origin + '/uid?link=' + link.id;
+                
+                var fields = ['linkName', 'video', 'claim', 'buttonText', 'headline', 'popupTitle', 'popupButtonText', 'popupSubtitle', 'popupImageUrl'];
+                fields.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (id === 'video') el.value = 'https://youtu.be/dQw4w9WgXcQ';
+                        else if (id === 'claim') el.value = '#';
+                        else if (id === 'buttonText') el.value = 'Claim Now';
+                        else if (id === 'headline') el.value = '🎬 Watch Video';
+                        else if (id === 'popupTitle') el.value = '🎁 Claim Your Reward';
+                        else if (id === 'popupButtonText') el.value = 'Claim Now';
+                        else if (id === 'popupSubtitle') el.value = 'Tap below to unlock your reward';
+                        else if (id === 'popupImageUrl') el.value = '';
+                        else if (id === 'linkName') el.value = '';
+                    }
+                });
+                
+                var preview = document.getElementById('popupImagePreview');
+                var previewImage = document.getElementById('popupPreviewImage');
+                if (preview) preview.classList.remove('show');
+                if (previewImage) previewImage.innerHTML = '<span>🎬 16:9 Image Preview</span>';
+                
+                var schedulePreset = document.getElementById('schedulePreset');
+                var customExpiry = document.getElementById('customExpiry');
+                var expiryDisplay = document.getElementById('expiryDisplay');
+                if (schedulePreset) schedulePreset.value = '';
+                if (customExpiry) customExpiry.style.display = 'none';
+                if (expiryDisplay) expiryDisplay.textContent = '⏰ No expiry set';
                 selectedExpiry = null;
                 loadLinks();
                 showToast('✅ Link created successfully!', 'success');
@@ -1340,6 +1440,7 @@
         // ===== COPY LINK =====
         function copyLink() {
             var i = document.getElementById('generatedLinkInput');
+            if (!i) return;
             i.select();
             document.execCommand('copy');
             showToast('✅ Link copied!', 'success');
@@ -1362,38 +1463,40 @@
 
         // ===== EDIT LINK =====
         function toggleEdit(id) {
-            document.getElementById('edit-' + id).classList.toggle('show');
+            var el = document.getElementById('edit-' + id);
+            if (el) el.classList.toggle('show');
         }
 
         function cancelEdit(id) {
-            document.getElementById('edit-' + id).classList.remove('show');
+            var el = document.getElementById('edit-' + id);
+            if (el) el.classList.remove('show');
         }
 
         async function saveEdit(id) {
             try {
-                var scheduleVal = document.getElementById('edit-schedule-' + id).value;
+                var scheduleEl = document.getElementById('edit-schedule-' + id);
                 var expiryDate = null;
-                if (scheduleVal) {
+                if (scheduleEl && scheduleEl.value) {
                     var date = new Date();
-                    date.setDate(date.getDate() + parseInt(scheduleVal));
+                    date.setDate(date.getDate() + parseInt(scheduleEl.value));
                     expiryDate = date.toISOString();
                 }
                 
                 var popupSettings = {
-                    image: document.getElementById('edit-popup-image-' + id).value.trim() || null,
-                    title: document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward',
-                    buttonText: document.getElementById('edit-popup-btn-' + id).value.trim() || 'Claim Now',
-                    subtitle: document.getElementById('edit-popup-sub-' + id).value.trim() || 'Tap below to unlock your reward'
+                    image: document.getElementById('edit-popup-image-' + id) ? document.getElementById('edit-popup-image-' + id).value.trim() || null : null,
+                    title: document.getElementById('edit-popup-title-' + id) ? document.getElementById('edit-popup-title-' + id).value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
+                    buttonText: document.getElementById('edit-popup-btn-' + id) ? document.getElementById('edit-popup-btn-' + id).value.trim() || 'Claim Now' : 'Claim Now',
+                    subtitle: document.getElementById('edit-popup-sub-' + id) ? document.getElementById('edit-popup-sub-' + id).value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
                 };
                 
                 var r = await secureFetch('/api/links/' + id, {
                     method: 'PUT',
                     body: JSON.stringify({
-                        name: document.getElementById('edit-name-' + id).value,
-                        video: document.getElementById('edit-video-' + id).value,
-                        claim: document.getElementById('edit-claim-' + id).value,
-                        buttonText: document.getElementById('edit-btn-' + id).value,
-                        headline: document.getElementById('edit-headline-' + id).value,
+                        name: document.getElementById('edit-name-' + id) ? document.getElementById('edit-name-' + id).value : '',
+                        video: document.getElementById('edit-video-' + id) ? document.getElementById('edit-video-' + id).value : '',
+                        claim: document.getElementById('edit-claim-' + id) ? document.getElementById('edit-claim-' + id).value : '',
+                        buttonText: document.getElementById('edit-btn-' + id) ? document.getElementById('edit-btn-' + id).value : '',
+                        headline: document.getElementById('edit-headline-' + id) ? document.getElementById('edit-headline-' + id).value : '',
                         expiryDate: expiryDate,
                         popupSettings: popupSettings
                     })
@@ -1404,7 +1507,8 @@
                     showToast('❌ ' + data.error, 'error');
                     return;
                 }
-                document.getElementById('edit-' + id).classList.remove('show');
+                var editEl = document.getElementById('edit-' + id);
+                if (editEl) editEl.classList.remove('show');
                 loadLinks();
                 showToast('✅ Link updated with popup settings!', 'success');
             } catch (e) { showToast('❌ Failed to update', 'error'); }
@@ -1452,7 +1556,8 @@
             });
             if (!r) return;
             document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
-            document.getElementById('theme-' + theme).classList.add('active');
+            var btn = document.getElementById('theme-' + theme);
+            if (btn) btn.classList.add('active');
         }
 
         async function loadTheme() {
@@ -1461,7 +1566,8 @@
                 var data = await r.json();
                 if (data && data.theme) {
                     document.body.className = data.theme;
-                    document.getElementById('theme-' + data.theme).classList.add('active');
+                    var btn = document.getElementById('theme-' + data.theme);
+                    if (btn) btn.classList.add('active');
                 }
             } catch (e) {}
         }
@@ -1484,48 +1590,53 @@
                 var data = await r.json();
                 var pricing = data.pricing || {};
                 var paymentSettings = data.paymentSettings || {};
-                document.getElementById('price_3days').value = pricing['3days'] || 50;
-                document.getElementById('price_7days').value = pricing['7days'] || 100;
-                document.getElementById('price_15days').value = pricing['15days'] || 200;
-                document.getElementById('price_1month').value = pricing['1month'] || 500;
-                document.getElementById('price_3months').value = pricing['3months'] || 1200;
-                document.getElementById('price_6months').value = pricing['6months'] || 2000;
-                document.getElementById('price_12months').value = pricing['12months'] || 3500;
-                document.getElementById('paymentMethod').value = paymentSettings.method || 'UPI';
-                document.getElementById('upiInput').value = paymentSettings.details?.upiId || 'admin@upi';
-                document.getElementById('textInput').value = paymentSettings.details?.text || '';
+                var fields = ['price_3days', 'price_7days', 'price_15days', 'price_1month', 'price_3months', 'price_6months', 'price_12months'];
+                var keys = ['3days', '7days', '15days', '1month', '3months', '6months', '12months'];
+                fields.forEach(function(field, index) {
+                    var el = document.getElementById(field);
+                    if (el) el.value = pricing[keys[index]] || 0;
+                });
+                var methodEl = document.getElementById('paymentMethod');
+                var upiEl = document.getElementById('upiInput');
+                var textEl = document.getElementById('textInput');
+                if (methodEl) methodEl.value = paymentSettings.method || 'UPI';
+                if (upiEl) upiEl.value = paymentSettings.details?.upiId || 'admin@upi';
+                if (textEl) textEl.value = paymentSettings.details?.text || '';
                 togglePaymentFields();
             } catch (e) {}
         }
 
         async function savePricing() {
             var pricing = {
-                '3days': parseInt(document.getElementById('price_3days').value) || 0,
-                '7days': parseInt(document.getElementById('price_7days').value) || 0,
-                '15days': parseInt(document.getElementById('price_15days').value) || 0,
-                '1month': parseInt(document.getElementById('price_1month').value) || 0,
-                '3months': parseInt(document.getElementById('price_3months').value) || 0,
-                '6months': parseInt(document.getElementById('price_6months').value) || 0,
-                '12months': parseInt(document.getElementById('price_12months').value) || 0
+                '3days': parseInt(document.getElementById('price_3days')?.value) || 0,
+                '7days': parseInt(document.getElementById('price_7days')?.value) || 0,
+                '15days': parseInt(document.getElementById('price_15days')?.value) || 0,
+                '1month': parseInt(document.getElementById('price_1month')?.value) || 0,
+                '3months': parseInt(document.getElementById('price_3months')?.value) || 0,
+                '6months': parseInt(document.getElementById('price_6months')?.value) || 0,
+                '12months': parseInt(document.getElementById('price_12months')?.value) || 0
             };
             
-            var method = document.getElementById('paymentMethod').value;
+            var methodEl = document.getElementById('paymentMethod');
+            var method = methodEl ? methodEl.value : 'UPI';
             var details = {};
             if (method === 'UPI') {
-                details = { upiId: document.getElementById('upiInput').value };
+                var upiEl = document.getElementById('upiInput');
+                details = { upiId: upiEl ? upiEl.value : 'admin@upi' };
             } else if (method === 'QR') {
-                var file = document.getElementById('qrInput').files[0];
-                if (file) {
+                var fileInput = document.getElementById('qrInput');
+                if (fileInput && fileInput.files && fileInput.files[0]) {
                     var reader = new FileReader();
                     reader.onload = function(e) {
                         details = { qrCode: e.target.result };
                         savePaymentSettings(method, details, pricing);
                     };
-                    reader.readAsDataURL(file);
+                    reader.readAsDataURL(fileInput.files[0]);
                     return;
                 }
             } else {
-                details = { text: document.getElementById('textInput').value };
+                var textEl = document.getElementById('textInput');
+                details = { text: textEl ? textEl.value : '' };
             }
             savePaymentSettings(method, details, pricing);
         }
@@ -1552,6 +1663,7 @@
                 if (!r) return;
                 var requests = await r.json();
                 var container = document.getElementById('renewalRequestsList');
+                if (!container) return;
                 if (!requests || requests.length === 0) {
                     container.innerHTML = '<div class="empty-state"><span class="icon">🔄</span>No renewal requests</div>';
                     return;
@@ -1627,10 +1739,14 @@
                 if (!response) return;
                 if (response.ok) {
                     var data = await response.json();
-                    document.getElementById('totalVisitors').textContent = data.global?.totalVisitors || 0;
-                    document.getElementById('totalClaims').textContent = data.global?.totalClaims || 0;
-                    document.getElementById('todayVisitors').textContent = data.global?.todayVisitors || 0;
-                    document.getElementById('todayClaims').textContent = data.global?.todayClaims || 0;
+                    var totalVisitors = document.getElementById('totalVisitors');
+                    var totalClaims = document.getElementById('totalClaims');
+                    var todayVisitors = document.getElementById('todayVisitors');
+                    var todayClaims = document.getElementById('todayClaims');
+                    if (totalVisitors) totalVisitors.textContent = data.global?.totalVisitors || 0;
+                    if (totalClaims) totalClaims.textContent = data.global?.totalClaims || 0;
+                    if (todayVisitors) todayVisitors.textContent = data.global?.todayVisitors || 0;
+                    if (todayClaims) todayClaims.textContent = data.global?.todayClaims || 0;
                 }
             } catch (e) {
                 console.error('Failed to load stats:', e);
@@ -1639,28 +1755,43 @@
 
         // ===== PAYMENT FIELDS TOGGLE =====
         function togglePaymentFields() {
-            var method = document.getElementById('paymentMethod').value;
-            document.getElementById('upiField').classList.remove('show');
-            document.getElementById('qrField').classList.remove('show');
-            document.getElementById('textField').classList.remove('show');
+            var methodEl = document.getElementById('paymentMethod');
+            if (!methodEl) {
+                console.warn('⚠️ paymentMethod element not found');
+                return;
+            }
+            
+            var method = methodEl.value;
+            
+            var upiField = document.getElementById('upiField');
+            var qrField = document.getElementById('qrField');
+            var textField = document.getElementById('textField');
+
+            if (upiField) upiField.classList.remove('show');
+            if (qrField) qrField.classList.remove('show');
+            if (textField) textField.classList.remove('show');
 
             if (method === 'UPI') {
-                document.getElementById('upiField').classList.add('show');
+                if (upiField) upiField.classList.add('show');
             } else if (method === 'QR') {
-                document.getElementById('qrField').classList.add('show');
+                if (qrField) qrField.classList.add('show');
             } else {
-                document.getElementById('textField').classList.add('show');
+                if (textField) textField.classList.add('show');
             }
         }
 
         function previewQR(event) {
-            var file = event.target.files[0];
+            if (!event || !event.target) return;
+            
+            var file = event.target.files && event.target.files[0];
             if (file) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     var preview = document.getElementById('qrPreview');
-                    preview.src = e.target.result;
-                    preview.classList.add('show');
+                    if (preview) {
+                        preview.src = e.target.result;
+                        preview.classList.add('show');
+                    }
                 };
                 reader.readAsDataURL(file);
             }
@@ -1701,6 +1832,37 @@
         setInterval(loadLinks, 30000);
         checkAuth();
         togglePaymentFields();
+
+        // Make functions globally accessible
+        window.installApp = installApp;
+        window.setTheme = setTheme;
+        window.logout = logout;
+        window.searchAndGenerateDashboard = searchAndGenerateDashboard;
+        window.generateDashboardForLink = generateDashboardForLink;
+        window.copyDashboardGeneratedLink = copyDashboardGeneratedLink;
+        window.createLink = createLink;
+        window.copyLink = copyLink;
+        window.copyLinkUrl = copyLinkUrl;
+        window.toggleEdit = toggleEdit;
+        window.cancelEdit = cancelEdit;
+        window.saveEdit = saveEdit;
+        window.updateStatus = updateStatus;
+        window.deleteLink = deleteLink;
+        window.saveBackground = saveBackground;
+        window.removeBackground = removeBackground;
+        window.changePasscode = changePasscode;
+        window.saveWhatsAppNumber = saveWhatsAppNumber;
+        window.copyDashboardLink = copyDashboardLink;
+        window.toggleRenewal = toggleRenewal;
+        window.togglePaymentFields = togglePaymentFields;
+        window.previewQR = previewQR;
+        window.savePricing = savePricing;
+        window.markPaid = markPaid;
+        window.approveRenewal = approveRenewal;
+        window.rejectRenewal = rejectRenewal;
+        window.updateSchedulePreset = updateSchedulePreset;
+        window.updateCustomExpiry = updateCustomExpiry;
+        window.showToast = showToast;
     </script>
 </body>
 </html>
