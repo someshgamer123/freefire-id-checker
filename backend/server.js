@@ -23,6 +23,7 @@ const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
 const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
+const AdminSession = require('./models/AdminSession');
 
 // ==================== Security Module ====================
 const Security = require('./config/security');
@@ -41,6 +42,7 @@ const ENABLE_2FA = process.env.ENABLE_2FA !== 'false';
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
+        // Create admin user
         const adminExists = await User.findOne();
         if (!adminExists) {
             const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
@@ -51,12 +53,14 @@ async function initializeDatabase() {
             console.log('✅ Admin user created');
         }
 
+        // Create stats
         const statsExists = await Stats.findOne();
         if (!statsExists) {
             await Stats.create({});
             console.log('✅ Stats initialized');
         }
 
+        // Create popup settings
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
             await PopupSettings.create({
@@ -68,6 +72,7 @@ async function initializeDatabase() {
             console.log('✅ Popup settings initialized');
         }
 
+        // Create pricing
         const pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
@@ -89,8 +94,10 @@ async function initializeDatabase() {
             console.log('✅ Pricing initialized');
         }
 
+        // Clean expired sessions
         await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         console.log('✅ Expired sessions cleaned');
+        
     } catch (error) {
         console.error('❌ Database initialization error:', error);
     }
@@ -98,7 +105,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers (CSP FIXED) ====================
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -134,154 +141,129 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 200,
-    message: 'Too many requests, please try again later.'
-});
-app.use('/api', globalLimiter);
+// ==================== IP-Based Rate Limiting ====================
+const ipRateLimit = new Map();
 
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: MAX_LOGIN_ATTEMPTS,
-    message: 'Too many login attempts, try after 30 minutes.'
-});
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
-app.use(express.static('.'));
-
-// ==================== JWT & Auth ====================
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-const JWT_EXPIRY = '7d';
-
-function generateToken(userId) {
-    return jwt.sign({ id: userId, role: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
-}
-
-function verifyToken(token) {
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (e) {
-        return null;
+function checkIPRateLimit(ip) {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const maxAttempts = 5;
+    
+    // Clean old entries
+    for (const [key, data] of ipRateLimit) {
+        if (now - data.timestamp > windowMs) {
+            ipRateLimit.delete(key);
+        }
     }
+    
+    const key = ip;
+    const record = ipRateLimit.get(key);
+    
+    if (!record) {
+        ipRateLimit.set(key, { attempts: 1, timestamp: now, lockedUntil: null });
+        return { allowed: true, attempts: 1 };
+    }
+    
+    // Check if locked
+    if (record.lockedUntil && record.lockedUntil > now) {
+        const remaining = Math.ceil((record.lockedUntil - now) / 60000);
+        return { allowed: false, locked: true, remainingMinutes: remaining, attempts: record.attempts };
+    }
+    
+    // Reset if lock expired
+    if (record.lockedUntil && record.lockedUntil < now) {
+        record.attempts = 1;
+        record.lockedUntil = null;
+        record.timestamp = now;
+        return { allowed: true, attempts: 1 };
+    }
+    
+    // Check attempts
+    if (record.attempts >= maxAttempts) {
+        record.lockedUntil = now + LOCKOUT_TIME * 60 * 1000;
+        const remaining = Math.ceil((record.lockedUntil - now) / 60000);
+        return { allowed: false, locked: true, remainingMinutes: remaining, attempts: record.attempts };
+    }
+    
+    record.attempts++;
+    record.timestamp = now;
+    return { allowed: true, attempts: record.attempts };
 }
 
-function generateCSRFToken() {
+// ==================== Admin Login Session ====================
+function generateAdminLoginToken() {
     return crypto.randomBytes(32).toString('hex');
 }
 
-function getDeviceId(req) {
-    const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    return { ip, userAgent, fingerprint: crypto.createHash('sha256').update(ip + userAgent).digest('hex') };
-}
-
-// ==================== Logging Function ====================
-async function logAdminAction(userId, action, details = {}, req = null) {
-    try {
-        const ip = req?.ip || req?.connection?.remoteAddress || null;
-        const userAgent = req?.headers?.['user-agent'] || null;
-        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
-    } catch (error) {
-        console.error('❌ Logging error:', error);
-    }
-}
-
-// ==================== Login Attempt Tracking ====================
-async function checkLoginAttempts(ip) {
-    const record = await LoginAttempt.findOne({ ip });
-    if (!record) return { allowed: true, attempts: 0 };
-    if (record.lockedUntil && record.lockedUntil > new Date()) {
-        const remainingMinutes = Math.ceil((record.lockedUntil - new Date()) / (1000 * 60));
-        return { allowed: false, attempts: record.attempts, lockedUntil: record.lockedUntil, remainingMinutes };
-    }
-    if (record.lockedUntil && record.lockedUntil < new Date()) {
-        record.attempts = 0;
-        record.lockedUntil = null;
-        await record.save();
-        return { allowed: true, attempts: 0 };
-    }
-    return { allowed: record.attempts < MAX_LOGIN_ATTEMPTS, attempts: record.attempts };
-}
-
-async function recordLoginAttempt(ip, success) {
-    let record = await LoginAttempt.findOne({ ip });
-    if (!record) record = new LoginAttempt({ ip });
-    if (success) {
-        record.attempts = 0;
-        record.lockedUntil = null;
-    } else {
-        record.attempts = (record.attempts || 0) + 1;
-        record.lastAttempt = new Date();
-        if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
-            record.lockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
-        }
-    }
-    await record.save();
-    return record;
-}
-
-// ==================== Session Management ====================
-async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
-    const session = new Session({
-        token, userId, csrfToken, ip, userAgent,
-        expiresAt: new Date(Date.now() + SESSION_TIMEOUT * 60 * 1000),
-        lastActivity: new Date(),
+async function createAdminSession(ip, userAgent) {
+    const token = generateAdminLoginToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    const session = new AdminSession({
+        token: token,
+        ip: ip,
+        userAgent: userAgent,
+        expiresAt: expiresAt,
         isActive: true
     });
+    
     await session.save();
-    return session;
+    return token;
 }
 
-async function validateSession(token) {
-    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
+async function validateAdminSession(token, ip) {
+    const session = await AdminSession.findOne({
+        token: token,
+        isActive: true,
+        expiresAt: { $gt: new Date() }
+    });
+    
     if (!session) return null;
-    session.lastActivity = new Date();
-    await session.save();
+    
+    // Check if IP matches
+    if (session.ip !== ip) {
+        return null;
+    }
+    
     return session;
 }
 
-async function invalidateSession(token) {
-    await Session.findOneAndUpdate({ token }, { isActive: false });
-}
-
-async function invalidateAllSessions(userId) {
-    await Session.updateMany({ userId, isActive: true }, { isActive: false });
-}
-
-// ==================== Auth Middleware ====================
-async function authMiddleware(req, res, next) {
-    const token = req.cookies?.adminToken;
-    const csrfToken = req.headers['x-csrf-token'];
-    if (!token) return res.status(401).json({ error: 'Authentication required' });
-    const decoded = verifyToken(token);
-    if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-    const session = await validateSession(token);
-    if (!session) {
-        res.clearCookie('adminToken');
-        return res.status(401).json({ error: 'Session expired. Please login again.' });
+// ==================== SECURE LOGIN LINK ====================
+app.get('/api/admin/secure-login', async (req, res) => {
+    try {
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        
+        // Check IP rate limit
+        const rateCheck = checkIPRateLimit(ip);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({
+                error: `Too many attempts. Please wait ${rateCheck.remainingMinutes} minutes.`
+            });
+        }
+        
+        // Generate secure login token
+        const token = await createAdminSession(ip, userAgent);
+        
+        // Create secure login URL
+        const loginUrl = `/admin/login.html?token=${token}`;
+        const fullUrl = req.protocol + '://' + req.get('host') + loginUrl;
+        
+        res.json({
+            success: true,
+            token: token,
+            loginUrl: loginUrl,
+            fullUrl: fullUrl,
+            expiresIn: '24 hours',
+            message: 'This link will expire in 24 hours and is IP-locked'
+        });
+    } catch (error) {
+        console.error('❌ Secure login error:', error);
+        res.status(500).json({ error: 'Failed to generate secure login' });
     }
-    if (csrfToken !== session.csrfToken) {
-        await logAdminAction('admin', 'CSRF_ATTEMPT', { token }, req);
-        return res.status(403).json({ error: 'Invalid CSRF token' });
-    }
-    const { ip } = getDeviceId(req);
-    if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
-        await logAdminAction('admin', 'IP_BLOCKED', { ip }, req);
-        return res.status(403).json({ error: 'Access denied from this IP address' });
-    }
-    req.user = decoded;
-    req.session = session;
-    next();
-}
+});
 
-// ================================================================
-// ==================== PUBLIC ROUTES (NO AUTH) ====================
-// ================================================================
-
+// ==================== WHATSAPP NUMBER API ====================
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -305,6 +287,7 @@ app.post('/api/whatsapp-number', async (req, res) => {
     }
 });
 
+// ==================== DASHBOARD MAP API ====================
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const { dashboardId } = req.params;
@@ -326,6 +309,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     }
 });
 
+// ==================== VISIT STATS ====================
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -362,6 +346,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
+// ==================== PARENT LINK ====================
 app.get('/api/parent-link', async (req, res) => {
     try {
         const links = await Link.find({});
@@ -386,6 +371,7 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
+// ==================== PRICING ====================
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
@@ -399,6 +385,7 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
+// ==================== PUBLIC LINK ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -451,6 +438,7 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
+// ==================== TRACK CLAIM ====================
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -478,6 +466,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
+// ==================== RENEWAL HISTORY ====================
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
@@ -565,44 +554,146 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
-// ================================================================
-// ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
-// ================================================================
+// ==================== ADMIN ROUTES ====================
 
-app.post('/api/admin/login', authLimiter, async (req, res) => {
+// ===== SECURE ADMIN LOGIN (with Token) =====
+app.post('/api/admin/login', async (req, res) => {
     try {
-        const { passcode, token } = req.body;
-        const { ip, userAgent } = getDeviceId(req);
-        const attemptCheck = await checkLoginAttempts(ip);
-        if (!attemptCheck.allowed) {
-            await logAdminAction('admin', 'LOGIN_LOCKED', { ip, remainingMinutes: attemptCheck.remainingMinutes }, req);
-            return res.status(429).json({ error: `Too many attempts. Account locked for ${attemptCheck.remainingMinutes} minutes.` });
+        const { passcode, token, direct } = req.body;
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        
+        // ===== IP-BASED RATE LIMIT =====
+        const rateCheck = checkIPRateLimit(ip);
+        if (!rateCheck.allowed) {
+            await logAdminAction('admin', 'LOGIN_LOCKED', { 
+                ip: ip, 
+                remainingMinutes: rateCheck.remainingMinutes 
+            }, req);
+            return res.status(429).json({ 
+                error: `Too many attempts from this IP. Please wait ${rateCheck.remainingMinutes} minutes.` 
+            });
         }
-        if (!passcode) return res.status(400).json({ error: 'Passcode required' });
+        
+        // ===== CHECK IF ADMIN IS LOGGED IN FROM ANOTHER IP =====
+        // Skip if direct login is enabled (admin's own IP)
+        if (!direct) {
+            // Check if there's an active session from another IP
+            const activeSessions = await AdminSession.find({
+                isActive: true,
+                expiresAt: { $gt: new Date() }
+            });
+            
+            // If admin is already logged in from another IP and this is a new IP
+            if (activeSessions.length > 0) {
+                const existingSession = activeSessions[0];
+                if (existingSession.ip !== ip) {
+                    // Rate limit this IP
+                    const attackerRate = checkIPRateLimit(ip);
+                    if (!attackerRate.allowed) {
+                        return res.status(429).json({
+                            error: `Too many attempts. Please wait ${attackerRate.remainingMinutes} minutes.`
+                        });
+                    }
+                    return res.status(403).json({
+                        error: 'Admin already logged in from another IP',
+                        code: 'ADMIN_LOGGED_IN_ELSEWHERE'
+                    });
+                }
+            }
+        }
+        
+        // ===== VALIDATE TOKEN (if provided) =====
+        if (token) {
+            const session = await validateAdminSession(token, ip);
+            if (!session) {
+                // Invalid token - rate limit this IP
+                const rateLimitCheck = checkIPRateLimit(ip);
+                if (!rateLimitCheck.allowed) {
+                    return res.status(429).json({
+                        error: `Too many attempts. Please wait ${rateLimitCheck.remainingMinutes} minutes.`
+                    });
+                }
+                return res.status(401).json({ error: 'Invalid or expired login link' });
+            }
+        } else {
+            // No token - check if IP is whitelisted (only for direct access)
+            if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
+                // Rate limit this IP
+                const rateLimitCheck = checkIPRateLimit(ip);
+                if (!rateLimitCheck.allowed) {
+                    return res.status(429).json({
+                        error: `Too many attempts. Please wait ${rateLimitCheck.remainingMinutes} minutes.`
+                    });
+                }
+                return res.status(403).json({ 
+                    error: 'Direct access not allowed. Please use secure login link.',
+                    code: 'SECURE_LOGIN_REQUIRED'
+                });
+            }
+        }
+        
+        // ===== VERIFY PASSCODE =====
+        if (!passcode) {
+            return res.status(400).json({ error: 'Passcode required' });
+        }
+        
         const admin = await User.findOne();
-        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        if (!admin) {
+            return res.status(500).json({ error: 'Admin not found' });
+        }
+        
         const isValid = bcrypt.compareSync(passcode, admin.passcode);
+        
         if (!isValid) {
-            await recordLoginAttempt(ip, false);
-            await logAdminAction('admin', 'LOGIN_FAILED', { ip }, req);
+            // Wrong passcode - rate limit this IP
+            const rateLimitCheck = checkIPRateLimit(ip);
+            if (!rateLimitCheck.allowed) {
+                await logAdminAction('admin', 'LOGIN_LOCKED', { ip: ip }, req);
+                return res.status(429).json({
+                    error: `Too many attempts. Please wait ${rateLimitCheck.remainingMinutes} minutes.`
+                });
+            }
+            await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
             return res.status(401).json({ error: 'Invalid passcode' });
         }
+        
+        // ===== 2FA CHECK =====
         if (ENABLE_2FA) {
             const twoFactor = await TwoFactorAuth.findOne({ userId: 'admin' });
             if (twoFactor && twoFactor.isEnabled) {
-                if (!token) return res.status(200).json({ requires2FA: true, message: '2FA token required' });
-                const isValid2FA = Security.verify2FAToken(twoFactor.secret, token);
+                const { token: twoFAToken } = req.body;
+                if (!twoFAToken) {
+                    return res.status(200).json({ 
+                        requires2FA: true,
+                        message: '2FA token required'
+                    });
+                }
+                const isValid2FA = Security.verify2FAToken(twoFactor.secret, twoFAToken);
                 if (!isValid2FA) {
-                    await logAdminAction('admin', '2FA_FAILED', { ip }, req);
+                    await logAdminAction('admin', '2FA_FAILED', { ip: ip }, req);
                     return res.status(401).json({ error: 'Invalid 2FA token' });
                 }
             }
         }
-        await recordLoginAttempt(ip, true);
+        
+        // ===== LOGIN SUCCESS =====
         const jwtToken = generateToken('admin');
         const csrfToken = generateCSRFToken();
+        
+        // Create session
         await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
-        await logAdminAction('admin', 'LOGIN', { ip }, req);
+        
+        // Mark admin session as used
+        if (token) {
+            await AdminSession.findOneAndUpdate(
+                { token: token },
+                { isActive: false }
+            );
+        }
+        
+        await logAdminAction('admin', 'LOGIN', { ip: ip }, req);
+        
         res.cookie('adminToken', jwtToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production' || true,
@@ -610,13 +701,20 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
-        res.json({ success: true, csrfToken, requires2FA: false });
+        
+        res.json({
+            success: true,
+            csrfToken: csrfToken,
+            requires2FA: false
+        });
+        
     } catch (error) {
         console.error('❌ Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
 
+// ==================== ADMIN LOGOUT ====================
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
@@ -631,6 +729,7 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN PASSCODE CHANGE ====================
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -656,6 +755,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN THEME ====================
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
@@ -669,6 +769,7 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN BACKGROUND ====================
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         const { background } = req.body;
@@ -685,6 +786,7 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN LOGS ====================
 app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     try {
         const { limit = 50, action, from, to } = req.query;
@@ -704,6 +806,7 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN WHATSAPP ====================
 app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     try {
         const { number } = req.body;
@@ -720,6 +823,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== LINK CRUD ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -824,6 +928,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN PRICING ====================
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { pricing, paymentSettings } = req.body;
@@ -840,6 +945,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== SEARCH LINKS ====================
 app.get('/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
@@ -855,6 +961,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== GENERATE DASHBOARD LINK ====================
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -874,6 +981,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== ADMIN STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -908,6 +1016,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== RENEWAL REQUESTS ====================
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
@@ -987,6 +1096,94 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
+// ==================== JWT & Auth Functions ====================
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const JWT_EXPIRY = '7d';
+
+function generateToken(userId) {
+    return jwt.sign({ id: userId, role: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+}
+
+function verifyToken(token) {
+    try {
+        return jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+        return null;
+    }
+}
+
+function generateCSRFToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function getDeviceId(req) {
+    const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return { ip, userAgent, fingerprint: crypto.createHash('sha256').update(ip + userAgent).digest('hex') };
+}
+
+async function logAdminAction(userId, action, details = {}, req = null) {
+    try {
+        const ip = req?.ip || req?.connection?.remoteAddress || null;
+        const userAgent = req?.headers?.['user-agent'] || null;
+        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
+    } catch (error) {
+        console.error('❌ Logging error:', error);
+    }
+}
+
+async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
+    const session = new Session({
+        token, userId, csrfToken, ip, userAgent,
+        expiresAt: new Date(Date.now() + SESSION_TIMEOUT * 60 * 1000),
+        lastActivity: new Date(),
+        isActive: true
+    });
+    await session.save();
+    return session;
+}
+
+async function validateSession(token) {
+    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
+    if (!session) return null;
+    session.lastActivity = new Date();
+    await session.save();
+    return session;
+}
+
+async function invalidateSession(token) {
+    await Session.findOneAndUpdate({ token }, { isActive: false });
+}
+
+async function invalidateAllSessions(userId) {
+    await Session.updateMany({ userId, isActive: true }, { isActive: false });
+}
+
+async function authMiddleware(req, res, next) {
+    const token = req.cookies?.adminToken;
+    const csrfToken = req.headers['x-csrf-token'];
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    const decoded = verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
+    const session = await validateSession(token);
+    if (!session) {
+        res.clearCookie('adminToken');
+        return res.status(401).json({ error: 'Session expired. Please login again.' });
+    }
+    if (csrfToken !== session.csrfToken) {
+        await logAdminAction('admin', 'CSRF_ATTEMPT', { token }, req);
+        return res.status(403).json({ error: 'Invalid CSRF token' });
+    }
+    const { ip } = getDeviceId(req);
+    if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
+        await logAdminAction('admin', 'IP_BLOCKED', { ip }, req);
+        return res.status(403).json({ error: 'Access denied from this IP address' });
+    }
+    req.user = decoded;
+    req.session = session;
+    next();
+}
+
 // ==================== SERVE PAGES ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
@@ -1044,6 +1241,8 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
     console.log('🔑 ADMIN PASSCODE: 951753');
+    console.log('🛡️ IP-Based Rate Limiting: ✅ Enabled');
+    console.log('🔐 Secure Login Link: ✅ Enabled');
     console.log('⏰ Session: 7 DAYS');
     console.log('🔐 2FA: ' + (ENABLE_2FA ? '✅ Enabled' : '❌ Disabled'));
     console.log('🛡️ IP Whitelist: ' + IP_WHITELIST);
@@ -1055,7 +1254,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
     console.log('📹 Video CSP: All media sources allowed');
-    console.log('📦 CDN: cdn.jsdelivr.net allowed for html2canvas');
+    console.log('📦 CDN: cdn.jsdelivr.net allowed');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
 });
