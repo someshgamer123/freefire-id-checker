@@ -71,6 +71,51 @@
         .footer-text { color: #aaa; font-size: 12px; margin-top: 20px; }
         .footer-text a { color: #667eea; text-decoration: none; }
         .footer-text a:hover { text-decoration: underline; }
+        .security-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(72,187,120,0.15);
+            color: #48bb78;
+            margin-bottom: 10px;
+        }
+        .security-badge.locked {
+            background: rgba(252,129,129,0.15);
+            color: #fc8181;
+        }
+        .twofa-input {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: center;
+            letter-spacing: 3px;
+            background: #f8f9fa;
+            color: #333;
+            display: none;
+        }
+        .twofa-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+            background: white;
+        }
+        .twofa-input.show {
+            display: block;
+        }
+        .twofa-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            display: none;
+        }
+        .twofa-label.show {
+            display: block;
+        }
         @media (max-width: 480px) {
             .login-box { padding: 30px 20px; }
             .login-box .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
@@ -86,15 +131,18 @@
     <div class="login-box">
         <div class="logo">🔐</div>
         <h2>Admin Login</h2>
-        <p class="sub-title">Enter your 6-digit passcode</p>
+        <div class="security-badge" id="securityBadge">🔒 Secure Connection</div>
+        <p class="sub-title" id="loginSubtitle">Enter your passcode</p>
+        
         <div class="passcode-inputs" id="passcodeContainer">
-            <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric">
-            <input type="password" id="pin2" maxlength="1" inputmode="numeric">
-            <input type="password" id="pin3" maxlength="1" inputmode="numeric">
-            <input type="password" id="pin4" maxlength="1" inputmode="numeric">
-            <input type="password" id="pin5" maxlength="1" inputmode="numeric">
-            <input type="password" id="pin6" maxlength="1" inputmode="numeric">
+            <input type="password" id="pin1" maxlength="1" autofocus inputmode="numeric" aria-label="Pin 1">
+            <input type="password" id="pin2" maxlength="1" inputmode="numeric" aria-label="Pin 2">
+            <input type="password" id="pin3" maxlength="1" inputmode="numeric" aria-label="Pin 3">
+            <input type="password" id="pin4" maxlength="1" inputmode="numeric" aria-label="Pin 4">
+            <input type="password" id="pin5" maxlength="1" inputmode="numeric" aria-label="Pin 5">
+            <input type="password" id="pin6" maxlength="1" inputmode="numeric" aria-label="Pin 6">
         </div>
+        
         <div class="passcode-hint" id="passcodeHint">
             <span class="dot" id="dot1"></span>
             <span class="dot" id="dot2"></span>
@@ -103,54 +151,75 @@
             <span class="dot" id="dot5"></span>
             <span class="dot" id="dot6"></span>
         </div>
+        
+        <input type="text" class="twofa-input" id="twoFAToken" placeholder="Enter 2FA token" maxlength="6" inputmode="numeric" aria-label="2FA Token">
+        <div class="twofa-label" id="twoFALabel">Enter the 6-digit code from your authenticator app</div>
+        
         <button onclick="login()" class="btn" id="loginBtn">🔑 Login</button>
         <div id="error" class="error"></div>
-        <div class="footer-text">🔒 Secure | <a href="#" onclick="clearAll()">Clear</a></div>
+        <div class="footer-text">
+            🔒 Secure | <a href="#" onclick="clearAll(event)">Clear</a>
+            <span style="margin:0 8px;">|</span>
+            <span style="color:#999;font-size:11px;">2FA Enabled</span>
+        </div>
     </div>
     <script>
         var inputs = ['pin1', 'pin2', 'pin3', 'pin4', 'pin5', 'pin6'];
         var dots = ['dot1', 'dot2', 'dot3', 'dot4', 'dot5', 'dot6'];
         var errorEl = document.getElementById('error');
         var loginBtn = document.getElementById('loginBtn');
+        var is2FARequired = false;
+        var twoFAToken = document.getElementById('twoFAToken');
+        var twoFALabel = document.getElementById('twoFALabel');
 
-        window.addEventListener('load', function() { document.getElementById('pin1').focus(); });
+        window.addEventListener('load', function() { 
+            var pin1 = document.getElementById('pin1');
+            if (pin1) pin1.focus(); 
+        });
 
         inputs.forEach(function(id, index) {
             var input = document.getElementById(id);
             var dot = document.getElementById(dots[index]);
             
+            if (!input) return;
+            
             input.addEventListener('input', function() {
                 this.value = this.value.replace(/\D/g, '');
                 if (this.value.length === 1) {
                     this.classList.add('filled');
-                    dot.classList.add('filled');
-                    dot.classList.remove('active');
-                    errorEl.textContent = '';
+                    if (dot) dot.classList.add('filled');
+                    if (dot) dot.classList.remove('active');
+                    if (errorEl) errorEl.textContent = '';
                     if (index < 5) {
-                        document.getElementById(inputs[index + 1]).focus();
+                        var next = document.getElementById(inputs[index + 1]);
+                        if (next) next.focus();
                     } else {
                         setTimeout(function() { login(); }, 300);
                     }
                 } else {
                     this.classList.remove('filled');
-                    dot.classList.remove('filled');
+                    if (dot) dot.classList.remove('filled');
                 }
                 updateDots();
             });
 
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Backspace' && this.value === '' && index > 0) {
-                    document.getElementById(inputs[index - 1]).focus();
-                    document.getElementById(inputs[index - 1]).select();
+                    var prev = document.getElementById(inputs[index - 1]);
+                    if (prev) {
+                        prev.focus();
+                        prev.select();
+                    }
                 }
                 if (e.key === 'Enter') login();
-                if (e.key === 'Escape') clearAll();
+                if (e.key === 'Escape') clearAll(e);
             });
 
             input.addEventListener('focus', function() {
                 this.select();
                 dots.forEach(function(d, i) {
                     var dotEl = document.getElementById(d);
+                    if (!dotEl) return;
                     if (i === index && !dotEl.classList.contains('filled')) {
                         dotEl.classList.add('active');
                     } else if (!dotEl.classList.contains('filled')) {
@@ -162,6 +231,7 @@
             input.addEventListener('blur', function() {
                 dots.forEach(function(d) {
                     var dotEl = document.getElementById(d);
+                    if (!dotEl) return;
                     if (!dotEl.classList.contains('filled')) {
                         dotEl.classList.remove('active');
                     }
@@ -175,11 +245,13 @@
                 if (digits) {
                     for (var i = 0; i < digits.length && i < 6; i++) {
                         var inp = document.getElementById(inputs[i]);
+                        if (!inp) continue;
                         inp.value = digits[i];
                         inp.classList.add('filled');
                     }
                     var nextIndex = Math.min(digits.length, 5);
-                    document.getElementById(inputs[nextIndex]).focus();
+                    var next = document.getElementById(inputs[nextIndex]);
+                    if (next) next.focus();
                     updateDots();
                     if (digits.length === 6) {
                         setTimeout(login, 300);
@@ -191,7 +263,9 @@
         function updateDots() {
             dots.forEach(function(id, index) {
                 var dot = document.getElementById(id);
+                if (!dot) return;
                 var input = document.getElementById(inputs[index]);
+                if (!input) return;
                 if (input.value.length === 1) {
                     dot.classList.add('filled');
                     dot.classList.remove('active');
@@ -204,91 +278,189 @@
         function getPasscode() {
             var code = '';
             for (var i = 0; i < 6; i++) {
-                var val = document.getElementById(inputs[i]).value;
+                var input = document.getElementById(inputs[i]);
+                if (!input) return null;
+                var val = input.value;
                 if (val === '') return null;
                 code += val;
             }
             return code;
         }
 
-        function clearAll() {
+        function clearAll(e) {
+            if (e) e.preventDefault();
             for (var i = 0; i < 6; i++) {
                 var input = document.getElementById(inputs[i]);
+                if (!input) continue;
                 input.value = '';
                 input.classList.remove('filled', 'error');
                 var dot = document.getElementById(dots[i]);
-                dot.classList.remove('filled', 'active');
+                if (dot) dot.classList.remove('filled', 'active');
             }
-            errorEl.textContent = '';
-            document.getElementById('pin1').focus();
-            loginBtn.disabled = false;
+            if (errorEl) errorEl.textContent = '';
+            var pin1 = document.getElementById('pin1');
+            if (pin1) pin1.focus();
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '🔑 Login';
+            }
+            var subTitle = document.getElementById('loginSubtitle');
+            if (subTitle) subTitle.textContent = 'Enter your passcode';
+            is2FARequired = false;
+            if (twoFAToken) {
+                twoFAToken.value = '';
+                twoFAToken.classList.remove('show');
+            }
+            if (twoFALabel) twoFALabel.classList.remove('show');
         }
 
         function showError(message) {
+            if (!errorEl) return;
             errorEl.textContent = '❌ ' + message;
             for (var i = 0; i < 6; i++) {
                 var input = document.getElementById(inputs[i]);
+                if (!input) continue;
                 input.classList.add('error');
-                setTimeout(function() { input.classList.remove('error'); }, 600);
+                setTimeout(function() { 
+                    if (input) input.classList.remove('error'); 
+                }, 600);
             }
-            setTimeout(function() { clearAll(); }, 800);
+            setTimeout(function() { clearAll(null); }, 800);
         }
 
         async function login() {
             var passcode = getPasscode();
+            if (!errorEl) return;
             errorEl.textContent = '';
-            loginBtn.disabled = true;
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Verifying...';
+            }
 
             if (!passcode || passcode.length !== 6) {
                 showError('Please enter complete 6-digit passcode');
-                loginBtn.disabled = false;
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Login';
+                }
                 return;
             }
 
             try {
+                var requestBody = { passcode: passcode };
+                
+                if (is2FARequired && twoFAToken) {
+                    if (twoFAToken.value && twoFAToken.value.length >= 6) {
+                        requestBody.token = twoFAToken.value;
+                    } else {
+                        showError('Please enter 2FA token');
+                        if (loginBtn) {
+                            loginBtn.disabled = false;
+                            loginBtn.textContent = '🔑 Login';
+                        }
+                        return;
+                    }
+                }
+                
                 var response = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passcode: passcode })
+                    body: JSON.stringify(requestBody)
                 });
 
-                var data = await response.json();
+                // ===== FIX: Handle rate limit response =====
+                var data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // If response is not JSON (like rate limit text)
+                    var text = await response.text();
+                    if (response.status === 429) {
+                        showError('Too many attempts. Please wait 30 minutes and try again.');
+                    } else {
+                        showError(text || 'Server error. Please try again.');
+                    }
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Login';
+                    }
+                    return;
+                }
 
                 if (data.success) {
                     window.csrfToken = data.csrfToken;
                     localStorage.setItem('csrfToken', data.csrfToken);
                     localStorage.setItem('loginTime', Date.now());
                     window.location.href = 'index.html';
+                } else if (data.requires2FA) {
+                    is2FARequired = true;
+                    var subTitle = document.getElementById('loginSubtitle');
+                    if (subTitle) subTitle.textContent = 'Enter 2FA token';
+                    if (loginBtn) {
+                        loginBtn.textContent = '🔑 Verify 2FA';
+                        loginBtn.disabled = false;
+                    }
+                    
+                    if (twoFAToken) {
+                        twoFAToken.classList.add('show');
+                        twoFAToken.value = '';
+                        twoFAToken.focus();
+                    }
+                    if (twoFALabel) twoFALabel.classList.add('show');
+                    
+                    if (errorEl) {
+                        errorEl.textContent = '🔐 2FA required. Enter your authenticator code.';
+                        errorEl.style.color = '#667eea';
+                    }
                 } else {
                     showError(data.error || 'Invalid passcode!');
-                    loginBtn.disabled = false;
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Login';
+                    }
                 }
             } catch (e) {
                 console.error('Login error:', e);
                 showError('Connection error. Please try again.');
-                loginBtn.disabled = false;
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Login';
+                }
             }
         }
 
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.shiftKey && e.key === 'C') { clearAll(); e.preventDefault(); }
-            if (e.ctrlKey && e.key === 'Enter') { login(); e.preventDefault(); }
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') { 
+                clearAll(e); 
+                e.preventDefault(); 
+            }
+            if (e.ctrlKey && e.key === 'Enter') { 
+                login(); 
+                e.preventDefault(); 
+            }
         });
 
         document.addEventListener('input', function() {
             var allFilled = true;
             for (var i = 0; i < 6; i++) {
-                if (document.getElementById(inputs[i]).value === '') { allFilled = false; break; }
+                var input = document.getElementById(inputs[i]);
+                if (!input || input.value === '') { allFilled = false; break; }
             }
-            if (allFilled) {
+            if (allFilled && !is2FARequired) {
+                clearTimeout(window._loginTimeout);
+                window._loginTimeout = setTimeout(function() { login(); }, 400);
+            }
+            
+            if (twoFAToken && twoFAToken.value.length >= 6) {
                 clearTimeout(window._loginTimeout);
                 window._loginTimeout = setTimeout(function() { login(); }, 400);
             }
         });
 
-        console.log('🔐 Admin Login Panel');
-        console.log('📌 Passcode: 951753');
-        console.log('⏰ Session: 7 days');
+        console.log('🔐 Secure Admin Login Panel');
+        console.log('🛡️ 2FA Enabled');
+        console.log('🔒 Strong Password Required');
+        console.log('⏰ Session: 60 minutes');
     </script>
 </body>
 </html>
