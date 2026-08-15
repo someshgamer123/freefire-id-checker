@@ -151,16 +151,26 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
+// ==================== Rate Limiting (RELAXED FOR USER DASHBOARD) ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 200,
     message: 'Too many requests, please try again later.',
     standardHeaders: true,
     legacyHeaders: false
 });
 app.use('/api', globalLimiter);
 
+// Public routes - less strict
+const publicLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30,
+    message: 'Too many requests, please slow down.',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Auth routes - strict
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
@@ -315,7 +325,7 @@ async function invalidateAllSessions(userId) {
     );
 }
 
-// ==================== Auth Middleware ====================
+// ==================== Auth Middleware (OPTIONAL for public routes) ====================
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
@@ -351,42 +361,109 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== WHATSAPP NUMBER API ====================
-let whatsappNumber = '919876543210';
+// ==================== PUBLIC ROUTES (No Auth Required) ====================
 
+// WHATSAPP NUMBER API
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
-        const number = pricing?.whatsappNumber || whatsappNumber || '919876543210';
+        const number = pricing?.whatsappNumber || '919876543210';
         res.json({ number: number });
     } catch (error) {
-        res.json({ number: whatsappNumber || '919876543210' });
+        res.json({ number: '919876543210' });
     }
 });
 
-app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
+// DASHBOARD MAP API - FIXED
+app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
-        const { number } = req.body;
-        if (!number) {
-            return res.status(400).json({ error: 'WhatsApp number required' });
-        }
-        let pricing = await Pricing.findOne();
-        if (!pricing) {
-            pricing = new Pricing();
-        }
-        pricing.whatsappNumber = number;
-        whatsappNumber = number;
-        await pricing.save();
+        const { dashboardId } = req.params;
+        console.log('🔍 Dashboard map request for:', dashboardId);
         
-        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number: number }, req);
-        res.json({ success: true, number: number });
+        // Try direct ID match
+        const existingLink = await Link.findOne({ id: dashboardId });
+        if (existingLink) {
+            return res.json({ linkId: existingLink.id });
+        }
+        
+        // Try dashboardId match
+        const link = await Link.findOne({ dashboardId: dashboardId });
+        if (link) {
+            return res.json({ linkId: link.id });
+        }
+        
+        // Try partial match
+        const allLinks = await Link.find({});
+        const matched = allLinks.find(l => 
+            l.id.includes(dashboardId) || 
+            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
+            dashboardId.includes(l.id)
+        );
+        
+        if (matched) {
+            return res.json({ linkId: matched.id });
+        }
+        
+        res.status(404).json({ error: 'No link found' });
     } catch (error) {
-        console.error('❌ WhatsApp number save error:', error);
-        res.status(500).json({ error: 'Failed to save WhatsApp number' });
+        console.error('❌ Dashboard map error:', error);
+        res.status(500).json({ error: 'Failed to map dashboard' });
     }
 });
 
-// ==================== PARENT LINK (User Dashboard) ====================
+// VISIT STATS - PUBLIC
+app.get('/api/visit-stats/:linkId', publicLimiter, async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        console.log('📊 Fetching stats for linkId:', linkId);
+        
+        let link = await Link.findOne({ id: linkId });
+        
+        if (!link) {
+            link = await Link.findOne({ dashboardId: linkId });
+        }
+        
+        if (!link) {
+            const allLinks = await Link.find({});
+            const matched = allLinks.find(l => 
+                l.id.includes(linkId) || 
+                (l.dashboardId && l.dashboardId.includes(linkId)) ||
+                linkId.includes(l.id)
+            );
+            if (matched) {
+                link = matched;
+            }
+        }
+        
+        if (!link) {
+            console.log('⚠️ Link not found with ID:', linkId);
+            return res.status(404).json({ 
+                error: 'Link not found',
+                message: 'No link found with this ID'
+            });
+        }
+        
+        const today = new Date().toISOString().split('T')[0];
+        
+        res.json({
+            linkId: link.id,
+            name: link.name,
+            totalVisits: link.visits || 0,
+            totalClaims: link.claims || 0,
+            todayVisits: link.dailyVisits?.get(today) || 0,
+            todayClaims: link.dailyClaims?.get(today) || 0,
+            dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
+            dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
+            status: link.status,
+            expiryDate: link.expiryDate || null
+        });
+    } catch (error) {
+        console.error('❌ Visit stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// PARENT LINK (User Dashboard) - PUBLIC
 app.get('/api/parent-link', async (req, res) => {
     try {
         const links = await Link.find({});
@@ -415,7 +492,170 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// ==================== SEARCH LINKS ====================
+// PRICING - PUBLIC
+app.get('/api/pricing', async (req, res) => {
+    try {
+        const pricingDoc = await Pricing.findOne();
+        res.json({
+            pricing: pricingDoc?.pricing || {},
+            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
+            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch pricing' });
+    }
+});
+
+// PUBLIC LINK
+app.get('/api/link/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await Link.findOne({ id: id });
+        
+        if (!link) {
+            return res.status(404).json({
+                error: 'not_found',
+                message: 'Link not found'
+            });
+        }
+        
+        if (link.status === 'suspended') {
+            return res.status(403).json({
+                error: 'suspended',
+                message: 'This link has been suspended by the admin',
+                status: 'suspended'
+            });
+        }
+        if (link.status === 'disabled') {
+            return res.status(403).json({
+                error: 'disabled',
+                message: 'This link has been permanently disabled',
+                status: 'disabled'
+            });
+        }
+        if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
+            return res.status(403).json({
+                error: 'expired',
+                message: 'This link has expired',
+                status: 'expired'
+            });
+        }
+        if (link.status !== 'active') {
+            return res.status(403).json({
+                error: 'inactive',
+                message: 'This link is not active',
+                status: 'inactive'
+            });
+        }
+        
+        const { fingerprint } = getDeviceId(req);
+        const today = new Date().toISOString().split('T')[0];
+        let stats = await Stats.findOne();
+        if (!stats) {
+            stats = await Stats.create({});
+        }
+        
+        const uniqueKey = fingerprint + '_' + today;
+        const uniqueVisitors = stats.uniqueVisitors || new Map();
+        
+        if (!uniqueVisitors.has(uniqueKey) || 
+            (Date.now() - uniqueVisitors.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
+            uniqueVisitors.set(uniqueKey, Date.now());
+            stats.totalVisitors = (stats.totalVisitors || 0) + 1;
+            stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
+            link.visits = (link.visits || 0) + 1;
+            link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
+            
+            await link.save();
+            await stats.save();
+            console.log('👤 New unique visitor (48hr):', fingerprint.substring(0, 10));
+        }
+        
+        const popupSettings = link.popupSettings || {
+            image: null,
+            title: '🎁 Claim Your Reward',
+            buttonText: 'Claim Now',
+            subtitle: 'Tap below to unlock your reward'
+        };
+        
+        res.json({
+            id: link.id,
+            video: link.video,
+            claim: link.claim,
+            buttonText: link.buttonText,
+            headline: link.headline,
+            status: link.status,
+            popupSettings: popupSettings
+        });
+    } catch (error) {
+        console.error('❌ Fetch link error:', error);
+        res.status(500).json({ error: 'Failed to fetch link' });
+    }
+});
+
+// TRACK CLAIM - PUBLIC
+app.post('/api/track-claim/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const link = await Link.findOne({ id: linkId });
+        
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+        
+        const { fingerprint } = getDeviceId(req);
+        const today = new Date().toISOString().split('T')[0];
+        let stats = await Stats.findOne();
+        if (!stats) {
+            stats = await Stats.create({});
+        }
+        
+        const uniqueKey = fingerprint + '_' + today;
+        const uniqueClaims = stats.uniqueClaims || new Map();
+        
+        if (!uniqueClaims.has(uniqueKey) || 
+            (Date.now() - uniqueClaims.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
+            uniqueClaims.set(uniqueKey, Date.now());
+            stats.totalClaims = (stats.totalClaims || 0) + 1;
+            stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
+            link.claims = (link.claims || 0) + 1;
+            link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
+            
+            await link.save();
+            await stats.save();
+            console.log('🎁 New unique claim (48hr):', fingerprint.substring(0, 10));
+        }
+        
+        res.json({
+            success: true,
+            claims: stats.totalClaims || 0
+        });
+    } catch (error) {
+        console.error('❌ Track claim error:', error);
+        res.status(500).json({ error: 'Failed to track claim' });
+    }
+});
+
+// RENEWAL HISTORY - PUBLIC
+app.get('/api/renewal/history/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const history = await RenewalRequest.find({ linkId: linkId })
+            .sort({ createdAt: -1 });
+        
+        res.json({
+            history: history,
+            count: history.length
+        });
+    } catch (error) {
+        console.error('❌ Renewal history error:', error);
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+// ==================== ADMIN ROUTES (Auth Required) ====================
+
+// SEARCH LINKS - ADMIN
 app.get('/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
@@ -445,41 +685,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD MAP API ====================
-app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
-    try {
-        const { dashboardId } = req.params;
-        console.log('🔍 Dashboard map request for:', dashboardId);
-        
-        const existingLink = await Link.findOne({ id: dashboardId });
-        if (existingLink) {
-            return res.json({ linkId: existingLink.id });
-        }
-        
-        const link = await Link.findOne({ dashboardId: dashboardId });
-        if (link) {
-            return res.json({ linkId: link.id });
-        }
-        
-        const allLinks = await Link.find({});
-        const matched = allLinks.find(l => 
-            l.id.includes(dashboardId) || 
-            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
-            dashboardId.includes(l.id)
-        );
-        
-        if (matched) {
-            return res.json({ linkId: matched.id });
-        }
-        
-        res.status(404).json({ error: 'No link found' });
-    } catch (error) {
-        console.error('❌ Dashboard map error:', error);
-        res.status(500).json({ error: 'Failed to map dashboard' });
-    }
-});
-
-// ==================== GENERATE DASHBOARD LINK ====================
+// GENERATE DASHBOARD LINK - ADMIN
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -520,7 +726,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ADMIN ROUTES ====================
+// ADMIN LOGIN
 app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode, token } = req.body;
@@ -601,6 +807,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     }
 });
 
+// ADMIN LOGOUT
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
@@ -615,6 +822,7 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
+// ADMIN PASSCODE CHANGE
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -655,6 +863,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
+// ADMIN THEME
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
@@ -675,6 +884,7 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
+// ADMIN BACKGROUND
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         const { background } = req.body;
@@ -696,7 +906,7 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ADMIN LOGS ====================
+// ADMIN LOGS
 app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     try {
         const { limit = 50, action, from, to } = req.query;
@@ -726,7 +936,7 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== RENEWAL REQUESTS ====================
+// RENEWAL REQUESTS - ADMIN
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ 
@@ -739,7 +949,7 @@ app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== LINK ROUTES ====================
+// LINK CRUD - ADMIN
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -875,137 +1085,120 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== PUBLIC LINK ====================
-app.get('/api/link/:id', async (req, res) => {
+// ADMIN PRICING
+app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
-        const { id } = req.params;
-        const link = await Link.findOne({ id: id });
+        const { pricing, paymentSettings } = req.body;
+        let pricingDoc = await Pricing.findOne();
         
-        if (!link) {
-            return res.status(404).json({
-                error: 'not_found',
-                message: 'Link not found'
-            });
+        if (!pricingDoc) {
+            pricingDoc = new Pricing();
         }
         
-        if (link.status === 'suspended') {
-            return res.status(403).json({
-                error: 'suspended',
-                message: 'This link has been suspended by the admin',
-                status: 'suspended'
-            });
-        }
-        if (link.status === 'disabled') {
-            return res.status(403).json({
-                error: 'disabled',
-                message: 'This link has been permanently disabled',
-                status: 'disabled'
-            });
-        }
-        if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
-            return res.status(403).json({
-                error: 'expired',
-                message: 'This link has expired',
-                status: 'expired'
-            });
-        }
-        if (link.status !== 'active') {
-            return res.status(403).json({
-                error: 'inactive',
-                message: 'This link is not active',
-                status: 'inactive'
-            });
-        }
+        if (pricing) pricingDoc.pricing = pricing;
+        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
+        pricingDoc.updatedAt = new Date();
         
-        const { fingerprint } = getDeviceId(req);
-        const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) {
-            stats = await Stats.create({});
+        await pricingDoc.save();
+        await logAdminAction('admin', 'UPDATE_PRICING', { pricing: pricing }, req);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update pricing' });
+    }
+});
+
+// ADMIN WHATSAPP
+app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) {
+            return res.status(400).json({ error: 'WhatsApp number required' });
         }
+        let pricing = await Pricing.findOne();
+        if (!pricing) {
+            pricing = new Pricing();
+        }
+        pricing.whatsappNumber = number;
+        await pricing.save();
         
-        const uniqueKey = fingerprint + '_' + today;
-        const uniqueVisitors = stats.uniqueVisitors || new Map();
+        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number: number }, req);
+        res.json({ success: true, number: number });
+    } catch (error) {
+        console.error('❌ WhatsApp number save error:', error);
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+// ADMIN POPUP SETTINGS
+app.post('/api/admin/popup', authMiddleware, async (req, res) => {
+    try {
+        const { image, title, buttonText, subtitle, linkId } = req.body;
         
-        if (!uniqueVisitors.has(uniqueKey) || 
-            (Date.now() - uniqueVisitors.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
-            uniqueVisitors.set(uniqueKey, Date.now());
-            stats.totalVisitors = (stats.totalVisitors || 0) + 1;
-            stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
-            link.visits = (link.visits || 0) + 1;
-            link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
-            
+        if (linkId) {
+            const link = await Link.findOne({ id: linkId });
+            if (!link) {
+                return res.status(404).json({ error: 'Link not found' });
+            }
+            if (image !== undefined) link.popupSettings.image = image;
+            if (title !== undefined) link.popupSettings.title = title;
+            if (buttonText !== undefined) link.popupSettings.buttonText = buttonText;
+            if (subtitle !== undefined) link.popupSettings.subtitle = subtitle;
             await link.save();
-            await stats.save();
-            console.log('👤 New unique visitor (48hr):', fingerprint.substring(0, 10));
+        } else {
+            const popupSettings = await PopupSettings.findOne();
+            if (popupSettings) {
+                if (image !== undefined) popupSettings.image = image;
+                if (title !== undefined) popupSettings.title = title;
+                if (buttonText !== undefined) popupSettings.buttonText = buttonText;
+                if (subtitle !== undefined) popupSettings.subtitle = subtitle;
+                await popupSettings.save();
+            }
         }
         
-        const popupSettings = link.popupSettings || {
+        await logAdminAction('admin', 'UPDATE_SETTINGS', { 
+            type: 'popup',
+            linkId: linkId || 'global'
+        }, req);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Popup update error:', error);
+        res.status(500).json({ error: 'Failed to update popup settings' });
+    }
+});
+
+app.get('/api/popup-settings/:linkId?', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        
+        if (linkId) {
+            const link = await Link.findOne({ id: linkId });
+            if (!link) {
+                return res.status(404).json({ error: 'Link not found' });
+            }
+            const settings = link.popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            };
+            return res.json(settings);
+        }
+        
+        const popupSettings = await PopupSettings.findOne();
+        res.json(popupSettings || {
             image: null,
             title: '🎁 Claim Your Reward',
             buttonText: 'Claim Now',
             subtitle: 'Tap below to unlock your reward'
-        };
-        
-        res.json({
-            id: link.id,
-            video: link.video,
-            claim: link.claim,
-            buttonText: link.buttonText,
-            headline: link.headline,
-            status: link.status,
-            popupSettings: popupSettings
         });
     } catch (error) {
-        console.error('❌ Fetch link error:', error);
-        res.status(500).json({ error: 'Failed to fetch link' });
+        console.error('❌ Popup settings error:', error);
+        res.status(500).json({ error: 'Failed to fetch popup settings' });
     }
 });
 
-// ==================== TRACK CLAIM ====================
-app.post('/api/track-claim/:linkId', async (req, res) => {
-    try {
-        const { linkId } = req.params;
-        const link = await Link.findOne({ id: linkId });
-        
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-        
-        const { fingerprint } = getDeviceId(req);
-        const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) {
-            stats = await Stats.create({});
-        }
-        
-        const uniqueKey = fingerprint + '_' + today;
-        const uniqueClaims = stats.uniqueClaims || new Map();
-        
-        if (!uniqueClaims.has(uniqueKey) || 
-            (Date.now() - uniqueClaims.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
-            uniqueClaims.set(uniqueKey, Date.now());
-            stats.totalClaims = (stats.totalClaims || 0) + 1;
-            stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
-            link.claims = (link.claims || 0) + 1;
-            link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
-            
-            await link.save();
-            await stats.save();
-            console.log('🎁 New unique claim (48hr):', fingerprint.substring(0, 10));
-        }
-        
-        res.json({
-            success: true,
-            claims: stats.totalClaims || 0
-        });
-    } catch (error) {
-        console.error('❌ Track claim error:', error);
-        res.status(500).json({ error: 'Failed to track claim' });
-    }
-});
-
-// ==================== STATS ====================
+// ADMIN STATS
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -1071,114 +1264,106 @@ app.get('/api/stats/:linkId', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== VISIT STATS ====================
-app.get('/api/visit-stats/:linkId', async (req, res) => {
+// RENEWAL - ADMIN
+app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
     try {
-        const { linkId } = req.params;
-        console.log('📊 Fetching stats for linkId:', linkId);
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
         
-        let link = await Link.findOne({ id: linkId });
-        
-        if (!link) {
-            link = await Link.findOne({ dashboardId: linkId });
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status === 'approved' || request.status === 'rejected') {
+            return res.status(400).json({ error: 'Request already processed' });
         }
         
-        if (!link) {
-            const allLinks = await Link.find({});
-            const matched = allLinks.find(l => 
-                l.id.includes(linkId) || 
-                (l.dashboardId && l.dashboardId.includes(linkId)) ||
-                linkId.includes(l.id)
-            );
-            if (matched) {
-                link = matched;
-            }
-        }
-        
-        if (!link) {
-            console.log('⚠️ Link not found with ID:', linkId);
-            return res.status(404).json({ 
-                error: 'Link not found',
-                message: 'No link found with this ID'
-            });
-        }
-        
-        const today = new Date().toISOString().split('T')[0];
-        
-        res.json({
-            linkId: link.id,
-            name: link.name,
-            totalVisits: link.visits || 0,
-            totalClaims: link.claims || 0,
-            todayVisits: link.dailyVisits?.get(today) || 0,
-            todayClaims: link.dailyClaims?.get(today) || 0,
-            dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
-            dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
-            status: link.status,
-            expiryDate: link.expiryDate || null
-        });
+        request.status = 'paid';
+        request.paidAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'MARK_PAID', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        res.json({ success: true, message: 'Payment marked as paid' });
     } catch (error) {
-        console.error('❌ Visit stats error:', error);
-        res.status(500).json({ error: 'Failed to fetch stats' });
+        res.status(500).json({ error: 'Failed to mark payment' });
     }
 });
 
-// ==================== PRICING ====================
-app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
     try {
-        const { pricing, paymentSettings } = req.body;
-        let pricingDoc = await Pricing.findOne();
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
         
-        if (!pricingDoc) {
-            pricingDoc = new Pricing();
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (request.status !== 'paid') {
+            return res.status(400).json({ error: 'Payment not confirmed yet' });
         }
         
-        if (pricing) pricingDoc.pricing = pricing;
-        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
-        pricingDoc.updatedAt = new Date();
+        const link = await Link.findOne({ id: request.linkId });
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry.toISOString();
+            link.status = 'active';
+            await link.save();
+        }
         
-        await pricingDoc.save();
-        await logAdminAction('admin', 'UPDATE_PRICING', { pricing: pricing }, req);
-        res.json({ success: true });
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'APPROVE_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId,
+            plan: request.plan
+        }, req);
+        res.json({ success: true, message: 'Renewal approved! Link extended.' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update pricing' });
+        res.status(500).json({ error: 'Failed to approve renewal' });
     }
 });
 
-app.get('/api/pricing', async (req, res) => {
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
-        const pricingDoc = await Pricing.findOne();
-        res.json({
-            pricing: pricingDoc?.pricing || {},
-            paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
-            whatsappNumber: pricingDoc?.whatsappNumber || '919876543210'
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch pricing' });
-    }
-});
-
-app.get('/api/settings', async (req, res) => {
-    try {
-        const admin = await User.findOne();
-        const popupSettings = await PopupSettings.findOne();
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
         
-        res.json({
-            theme: admin?.theme || 'light',
-            background: popupSettings?.image || null,
-            popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            }
-        });
+        if (!request) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        request.status = 'rejected';
+        await request.save();
+        await logAdminAction('admin', 'REJECT_RENEWAL', { 
+            requestId: requestId,
+            linkId: request.linkId
+        }, req);
+        res.json({ success: true, message: 'Renewal rejected' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch settings' });
+        res.status(500).json({ error: 'Failed to reject renewal' });
     }
 });
 
-// ==================== RENEWAL ====================
+app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (request) {
+            await logAdminAction('admin', 'DELETE_RENEWAL', { 
+                requestId: requestId,
+                linkId: request.linkId
+            }, req);
+        }
+        await RenewalRequest.findOneAndDelete({ id: requestId });
+        res.json({ success: true, message: 'Request removed' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove request' });
+    }
+});
+
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount } = req.body;
@@ -1227,19 +1412,19 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
     }
 });
 
-app.get('/api/renewal/history/:linkId', async (req, res) => {
+app.get('/api/renewal/status/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
-        const history = await RenewalRequest.find({ linkId: linkId })
+        const request = await RenewalRequest.findOne({ linkId: linkId })
             .sort({ createdAt: -1 });
         
         res.json({
-            history: history,
-            count: history.length
+            hasRequest: !!request,
+            request: request || null,
+            status: request?.status || 'none'
         });
     } catch (error) {
-        console.error('❌ Renewal history error:', error);
-        res.status(500).json({ error: 'Failed to fetch history' });
+        res.status(500).json({ error: 'Failed to fetch status' });
     }
 });
 
@@ -1352,118 +1537,23 @@ app.post('/api/renewal/confirm-payment', async (req, res) => {
     }
 });
 
-app.get('/api/renewal/status/:linkId', async (req, res) => {
+app.get('/api/settings', async (req, res) => {
     try {
-        const { linkId } = req.params;
-        const request = await RenewalRequest.findOne({ linkId: linkId })
-            .sort({ createdAt: -1 });
+        const admin = await User.findOne();
+        const popupSettings = await PopupSettings.findOne();
         
         res.json({
-            hasRequest: !!request,
-            request: request || null,
-            status: request?.status || 'none'
+            theme: admin?.theme || 'light',
+            background: popupSettings?.image || null,
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch status' });
-    }
-});
-
-app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status === 'approved' || request.status === 'rejected') {
-            return res.status(400).json({ error: 'Request already processed' });
-        }
-        
-        request.status = 'paid';
-        request.paidAt = new Date();
-        await request.save();
-        await logAdminAction('admin', 'MARK_PAID', { 
-            requestId: requestId,
-            linkId: request.linkId
-        }, req);
-        res.json({ success: true, message: 'Payment marked as paid' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to mark payment' });
-    }
-});
-
-app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        if (request.status !== 'paid') {
-            return res.status(400).json({ error: 'Payment not confirmed yet' });
-        }
-        
-        const link = await Link.findOne({ id: request.linkId });
-        if (link) {
-            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-            const newExpiry = new Date(currentExpiry);
-            newExpiry.setDate(newExpiry.getDate() + request.days);
-            link.expiryDate = newExpiry.toISOString();
-            link.status = 'active';
-            await link.save();
-        }
-        
-        request.status = 'approved';
-        request.approvedAt = new Date();
-        await request.save();
-        await logAdminAction('admin', 'APPROVE_RENEWAL', { 
-            requestId: requestId,
-            linkId: request.linkId,
-            plan: request.plan
-        }, req);
-        res.json({ success: true, message: 'Renewal approved! Link extended.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to approve renewal' });
-    }
-});
-
-app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        
-        if (!request) {
-            return res.status(404).json({ error: 'Request not found' });
-        }
-        
-        request.status = 'rejected';
-        await request.save();
-        await logAdminAction('admin', 'REJECT_RENEWAL', { 
-            requestId: requestId,
-            linkId: request.linkId
-        }, req);
-        res.json({ success: true, message: 'Renewal rejected' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reject renewal' });
-    }
-});
-
-app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const { requestId } = req.params;
-        const request = await RenewalRequest.findOne({ id: requestId });
-        if (request) {
-            await logAdminAction('admin', 'DELETE_RENEWAL', { 
-                requestId: requestId,
-                linkId: request.linkId
-            }, req);
-        }
-        await RenewalRequest.findOneAndDelete({ id: requestId });
-        res.json({ success: true, message: 'Request removed' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove request' });
+        res.status(500).json({ error: 'Failed to fetch settings' });
     }
 });
 
