@@ -138,11 +138,11 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// Google Strategy
+// Google Strategy (✅ Explicit full URL)
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
+    callbackURL: 'https://freefire-id-checker.onrender.com/auth/google/callback'
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         const email = profile.emails[0].value;
@@ -216,24 +216,22 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ✅ FIX: Trust proxy for Render (Required for express-rate-limit)
+// ✅ Fix: Trust proxy for Render
 app.set('trust proxy', 1);
 
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,  // ✅ Increase from 200 to 500
+    max: 500,  // ✅ Increased to prevent 429
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,   // ✅ Increase from 2 to 20
+    max: 20,   // ✅ Increased to prevent 429
     message: 'Too many login attempts, try after 60 minutes.'
 });
-
-app.use('/api/auth', authLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
