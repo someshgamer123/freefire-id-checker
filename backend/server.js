@@ -1507,6 +1507,14 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== Serve Pages ====================
+app.get('/admin/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+});
+
+app.get('/admin/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+});
+
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -1521,14 +1529,6 @@ app.get('/user-dashboard', (req, res) => {
 
 app.get('/user-dashboard/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
-});
-
-app.get('/admin/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
-});
-
-app.get('/admin/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
 });
 
 app.get('/manifest.json', (req, res) => {
