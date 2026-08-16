@@ -221,16 +221,18 @@ app.set('trust proxy', 1);
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 500,  // ✅ Increase from 200 to 500
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: MAX_LOGIN_ATTEMPTS,
+    max: 20,   // ✅ Increase from 2 to 20
     message: 'Too many login attempts, try after 60 minutes.'
 });
+
+app.use('/api/auth', authLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
