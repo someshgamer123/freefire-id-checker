@@ -825,6 +825,14 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script>
+        // ✅ Check CSRF token on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var csrfToken = localStorage.getItem('csrfToken');
+            if (!csrfToken) {
+                window.location.replace('/admin/login.html');
+            }
+        });
+
         var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
         if (!csrfToken) {
@@ -874,8 +882,16 @@
                     window.location.href = '/admin/login.html';
                     return null;
                 }
+                // ✅ Handle 500 error gracefully
+                if (response.status === 500) {
+                    console.error('❌ Server Error (500) on URL:', url);
+                    showToast('❌ Server error occurred. Please try again.', 'error');
+                    return null;
+                }
                 return response;
             } catch (e) {
+                console.error('❌ Network Error:', e);
+                showToast('❌ Network error. Please check your connection.', 'error');
                 return null;
             }
         }
