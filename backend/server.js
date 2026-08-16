@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const MongoStore = require('connect-mongo');
 
 // ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
@@ -37,6 +38,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'mikunkumar242@gmail.com';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const SESSION_SECRET = process.env.SESSION_SECRET || JWT_SECRET;
 const JWT_EXPIRY = '7d';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 2;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 60;
@@ -104,12 +106,19 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Session & Passport Setup ====================
+// ==================== Session & Passport Setup (Production Ready) ====================
 app.use(session({
-    secret: JWT_SECRET,
+    secret: SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 }
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        touchAfter: 24 * 3600 // lazy session update
+    }),
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', 
+        maxAge: 24 * 60 * 60 * 1000 
+    }
 }));
 
 app.use(passport.initialize());
@@ -178,7 +187,10 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+            scriptSrcElem: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
             connectSrc: ["'self'"],
             frameSrc: ["'self'", "https://www.youtube.com", "https://accounts.google.com"],
@@ -298,7 +310,7 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (FIXED - Admin Protected) ====================
+// ==================== Device Blocking (Admin Protected) ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     
@@ -318,10 +330,9 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     const { deviceName, deviceType, os, browser } = getDeviceDetails(req);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
     
-    // ✅ FIXED: NEVER BLOCK ADMIN DEVICE
+    // ✅ NEVER BLOCK ADMIN DEVICE
     const admin = await User.findOne({ email: ADMIN_EMAIL });
     if (admin && admin.googleId) {
-        // Check if this device belongs to admin (by checking session or cookie)
         const token = req.cookies?.adminToken;
         if (token) {
             const decoded = verifyToken(token);
@@ -355,7 +366,7 @@ async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType, os, browser } = getDeviceDetails(req);
     
-    // ✅ FIXED: NEVER TRACK ADMIN DEVICE ATTEMPTS
+    // ✅ NEVER TRACK ADMIN DEVICE ATTEMPTS
     const admin = await User.findOne({ email: ADMIN_EMAIL });
     if (admin && admin.googleId) {
         const token = req.cookies?.adminToken;
