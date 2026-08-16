@@ -113,7 +113,8 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGODB_URI,
-        touchAfter: 24 * 3600 // lazy session update
+        touchAfter: 24 * 3600, // lazy session update
+        ttl: 14 * 24 * 60 * 60 // 14 days
     }),
     cookie: { 
         secure: process.env.NODE_ENV === 'production', 
