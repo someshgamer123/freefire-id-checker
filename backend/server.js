@@ -215,6 +215,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
+// ✅ FIX: Trust proxy for Render (Required for express-rate-limit)
+app.set('trust proxy', 1);
+
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
