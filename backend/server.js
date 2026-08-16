@@ -1,4 +1,4 @@
-require('dotenv').config(); // ✅ .env backend folder se load hoga
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
@@ -213,6 +213,41 @@ function getDeviceId(req) {
     return { ip, userAgent, fingerprint };
 }
 
+function getDeviceDetails(req) {
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    let deviceName = 'Unknown Device';
+    let deviceType = 'Unknown';
+
+    // Parse device name and type from user agent
+    if (userAgent.includes('Windows')) {
+        deviceName = 'Windows PC';
+        deviceType = 'Desktop';
+    } else if (userAgent.includes('Mac')) {
+        deviceName = 'Mac';
+        deviceType = 'Desktop';
+    } else if (userAgent.includes('Linux')) {
+        deviceName = 'Linux PC';
+        deviceType = 'Desktop';
+    } else if (userAgent.includes('iPhone')) {
+        deviceName = 'iPhone';
+        deviceType = 'Mobile';
+    } else if (userAgent.includes('iPad')) {
+        deviceName = 'iPad';
+        deviceType = 'Tablet';
+    } else if (userAgent.includes('Android')) {
+        deviceName = 'Android';
+        deviceType = 'Mobile';
+    } else if (userAgent.includes('Chrome')) {
+        deviceName = 'Chrome Browser';
+        deviceType = 'Browser';
+    } else if (userAgent.includes('Firefox')) {
+        deviceName = 'Firefox Browser';
+        deviceType = 'Browser';
+    }
+
+    return { deviceName, deviceType };
+}
+
 // ==================== Logging Function ====================
 async function logAdminAction(userId, action, details = {}, req = null) {
     try {
@@ -224,25 +259,43 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking ====================
+// ==================== Device Blocking (FIXED - SEPARATE TRACKING) ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
+    
+    // Check if device is permanently blocked or temporarily blocked
     const blocked = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }],
-        blockedUntil: { $gt: new Date() }
+        $or: [
+            { blockedUntil: { $gt: new Date() } },
+            { isPermanent: true }
+        ]
     });
+    
     return blocked;
 }
 
 async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 60) {
     const { fingerprint, ip } = getDeviceId(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+    
+    // FIXED: Don't block admin's device
+    const admin = await User.findOne();
+    const adminFingerprint = admin?.fingerprint || null;
+    
+    if (fingerprint === adminFingerprint) {
+        console.log('⚠️ Skipping block for admin device');
+        return null;
+    }
     
     await BlockedDevice.findOneAndUpdate(
         { $or: [{ fingerprint }, { ip }] },
         {
             fingerprint,
             ip,
+            deviceName,
+            deviceType,
             reason,
             blockedUntil,
             attempts: 1,
@@ -254,21 +307,39 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
 
 async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
+    
+    // FIXED: Don't track admin's attempts
+    const admin = await User.findOne();
+    const adminFingerprint = admin?.fingerprint || null;
+    
+    if (fingerprint === adminFingerprint) {
+        console.log('⚠️ Skipping attempt tracking for admin device');
+        return;
+    }
+    
     const record = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }]
     });
+    
     if (record) {
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
+        record.deviceName = deviceName;
+        record.deviceType = deviceType;
+        
         if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
             record.blockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
             record.reason = 'Too many failed attempts';
+            record.deviceType = 'attacker';
         }
         await record.save();
     } else {
         await BlockedDevice.create({
             fingerprint,
             ip,
+            deviceName,
+            deviceType,
             attempts: 1,
             reason: 'Login attempt',
             blockedUntil: null,
@@ -341,13 +412,23 @@ async function invalidateAllSessions(userId) {
 
 // ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
+    // Check if device is blocked
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
-        const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
-        return res.status(403).json({
-            error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
-            blockedUntil: blocked.blockedUntil
-        });
+        if (blocked.isPermanent) {
+            return res.status(403).json({
+                error: 'permanently_blocked',
+                message: 'Your device has been permanently blocked by the admin.',
+                permanent: true
+            });
+        } else {
+            const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+            return res.status(403).json({
+                error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
+                blockedUntil: blocked.blockedUntil,
+                remainingMinutes
+            });
+        }
     }
 
     const token = req.cookies?.adminToken;
@@ -739,14 +820,25 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode, otp, step } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
         
+        // Check if device is blocked (temporary or permanent)
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
-            const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
-            return res.status(403).json({
-                error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
-                blockedUntil: blocked.blockedUntil
-            });
+            if (blocked.isPermanent) {
+                return res.status(403).json({
+                    error: 'permanently_blocked',
+                    message: 'Your device has been permanently blocked by the admin.',
+                    permanent: true
+                });
+            } else {
+                const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+                return res.status(403).json({
+                    error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
+                    blockedUntil: blocked.blockedUntil,
+                    remainingMinutes
+                });
+            }
         }
         
         const attemptCheck = await checkLoginAttempts(ip);
@@ -778,9 +870,14 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
                 
-                const deviceRecord = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+                // Block device after 5 failed attempts
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
                 if (deviceRecord && deviceRecord.attempts >= 5) {
                     await blockDevice(req, 'Too many failed passcode attempts', LOCKOUT_TIME);
+                    // Notify admin about this attack attempt
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked for ${LOCKOUT_TIME} minutes`);
                 }
                 
                 return res.status(401).json({ error: 'Invalid passcode' });
@@ -850,15 +947,22 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             const verified = await verifyOTP(fingerprint, otp);
             if (!verified) {
                 await incrementDeviceAttempts(req);
-                const deviceRecord = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
                 if (deviceRecord && deviceRecord.attempts >= 3) {
                     await blockDevice(req, 'Too many failed OTP attempts', LOCKOUT_TIME);
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked for ${LOCKOUT_TIME} minutes`);
                 }
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             
             await recordLoginAttempt(ip, true);
-            await BlockedDevice.findOneAndDelete({ $or: [{ fingerprint }, { ip }] });
+            // Remove temporary block if any
+            await BlockedDevice.findOneAndDelete({ 
+                $or: [{ fingerprint }, { ip }],
+                isPermanent: false 
+            });
             
             const jwtToken = generateToken('admin');
             const csrfToken = generateCSRFToken();
@@ -1287,19 +1391,154 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Check Device Block Status ====================
+// ==================== DEVICE MANAGEMENT ROUTES ====================
+
+// GET: Get all blocked devices
+app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
+    try {
+        const devices = await BlockedDevice.find({
+            $or: [
+                { blockedUntil: { $gt: new Date() } },
+                { isPermanent: true }
+            ]
+        }).sort({ lastAttempt: -1 });
+        
+        res.json({
+            success: true,
+            devices,
+            count: devices.length
+        });
+    } catch (error) {
+        console.error('❌ Blocked devices error:', error);
+        res.status(500).json({ error: 'Failed to fetch blocked devices' });
+    }
+});
+
+// POST: Permanently ban a device
+app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        
+        const device = await BlockedDevice.findById(id);
+        if (!device) {
+            return res.status(404).json({ error: 'Device not found' });
+        }
+        
+        device.isPermanent = true;
+        device.permanentBlockedAt = new Date();
+        device.reason = reason || 'Permanently banned by admin';
+        await device.save();
+        
+        await logAdminAction('admin', 'PERMANENT_BAN_DEVICE', { 
+            deviceId: id, 
+            fingerprint: device.fingerprint,
+            ip: device.ip,
+            deviceName: device.deviceName,
+            reason: device.reason
+        }, req);
+        
+        res.json({
+            success: true,
+            message: 'Device permanently banned!',
+            device
+        });
+    } catch (error) {
+        console.error('❌ Permanent ban error:', error);
+        res.status(500).json({ error: 'Failed to ban device' });
+    }
+});
+
+// POST: Unblock a device (permanent or temporary)
+app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const device = await BlockedDevice.findById(id);
+        if (!device) {
+            return res.status(404).json({ error: 'Device not found' });
+        }
+        
+        device.unblockedAt = new Date();
+        device.isPermanent = false;
+        device.blockedUntil = null;
+        await device.save();
+        
+        await logAdminAction('admin', 'UNBLOCK_DEVICE', { 
+            deviceId: id, 
+            fingerprint: device.fingerprint,
+            ip: device.ip,
+            deviceName: device.deviceName
+        }, req);
+        
+        res.json({
+            success: true,
+            message: 'Device unblocked successfully!',
+            device
+        });
+    } catch (error) {
+        console.error('❌ Unblock error:', error);
+        res.status(500).json({ error: 'Failed to unblock device' });
+    }
+});
+
+// DELETE: Remove a device from blocked list
+app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const device = await BlockedDevice.findById(id);
+        if (device) {
+            await logAdminAction('admin', 'DELETE_DEVICE_RECORD', { 
+                deviceId: id, 
+                fingerprint: device.fingerprint,
+                ip: device.ip,
+                deviceName: device.deviceName
+            }, req);
+        }
+        
+        await BlockedDevice.findByIdAndDelete(id);
+        
+        res.json({
+            success: true,
+            message: 'Device record deleted!'
+        });
+    } catch (error) {
+        console.error('❌ Delete device error:', error);
+        res.status(500).json({ error: 'Failed to delete device' });
+    }
+});
+
+// GET: Check device block status
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
-        const blocked = await BlockedDevice.findOne({ fingerprint });
-        if (blocked && blocked.blockedUntil && blocked.blockedUntil > new Date()) {
-            const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
-            res.json({
-                blocked: true,
-                reason: blocked.reason,
-                remainingMinutes,
-                blockedUntil: blocked.blockedUntil
-            });
+        const blocked = await BlockedDevice.findOne({ 
+            fingerprint,
+            $or: [
+                { blockedUntil: { $gt: new Date() } },
+                { isPermanent: true }
+            ]
+        });
+        
+        if (blocked) {
+            if (blocked.isPermanent) {
+                res.json({
+                    blocked: true,
+                    permanent: true,
+                    reason: blocked.reason,
+                    deviceName: blocked.deviceName
+                });
+            } else {
+                const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+                res.json({
+                    blocked: true,
+                    permanent: false,
+                    reason: blocked.reason,
+                    remainingMinutes,
+                    blockedUntil: blocked.blockedUntil
+                });
+            }
         } else {
             res.json({ blocked: false });
         }
@@ -1314,7 +1553,9 @@ app.use('/admin', async (req, res, next) => {
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
     
     if (isFromVisitorLink && !req.cookies?.adminToken) {
+        const { deviceName } = getDeviceDetails(req);
         await blockDevice(req, 'Unauthorized admin access from visitor link', 60);
+        console.log(`🚨 ATTACK DETECTED: Device ${deviceName} attempted to access admin from visitor link`);
         return res.status(403).send(`
             <html>
                 <body style="background:#0a0a1a;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Arial,sans-serif;flex-direction:column;text-align:center;padding:20px;">
@@ -1333,6 +1574,122 @@ app.use('/admin', async (req, res, next) => {
         `);
     }
     next();
+});
+
+// ==================== Permanent Block Page (Beautiful UI) ====================
+app.get('/blocked', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Device Blocked</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+                body {
+                    background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                }
+                .block-container {
+                    max-width: 500px;
+                    width: 100%;
+                    background: rgba(255,255,255,0.06);
+                    backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px;
+                    text-align: center;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+                    animation: fadeInUp 0.8s ease;
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .block-icon {
+                    font-size: 80px;
+                    margin-bottom: 15px;
+                    animation: float 3s ease-in-out infinite;
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .block-title {
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: #fc8181;
+                    margin-bottom: 8px;
+                }
+                .block-subtitle {
+                    font-size: 16px;
+                    color: rgba(255,255,255,0.6);
+                    margin-bottom: 20px;
+                }
+                .block-details {
+                    background: rgba(252,129,129,0.1);
+                    border: 1px solid rgba(252,129,129,0.2);
+                    border-radius: 12px;
+                    padding: 15px;
+                    margin: 15px 0;
+                }
+                .block-details p {
+                    font-size: 13px;
+                    color: rgba(255,255,255,0.7);
+                    margin: 4px 0;
+                }
+                .block-details .label {
+                    color: rgba(255,255,255,0.4);
+                    font-weight: 600;
+                }
+                .block-details .value {
+                    color: #fc8181;
+                    font-weight: 600;
+                }
+                .block-status {
+                    display: inline-block;
+                    padding: 6px 20px;
+                    border-radius: 20px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    background: rgba(252,129,129,0.2);
+                    color: #fc8181;
+                    border: 1px solid rgba(252,129,129,0.2);
+                    margin-top: 10px;
+                }
+                .block-footer {
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: rgba(255,255,255,0.3);
+                }
+                @media (max-width: 480px) {
+                    .block-container { padding: 30px 20px; }
+                    .block-title { font-size: 24px; }
+                    .block-icon { font-size: 60px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="block-container">
+                <div class="block-icon">🔒</div>
+                <h1 class="block-title">Device Permanently Blocked</h1>
+                <p class="block-subtitle">This device has been permanently banned by the admin.</p>
+                <div class="block-details">
+                    <p><span class="label">📱 Device:</span> <span class="value">${req.query.device || 'Unknown'}</span></p>
+                    <p><span class="label">📅 Blocked Date:</span> <span class="value">${new Date().toLocaleString()}</span></p>
+                    <p><span class="label">🚨 Reason:</span> <span class="value">${req.query.reason || 'Permanent ban by admin'}</span></p>
+                </div>
+                <div class="block-status">⛔ PERMANENTLY BLOCKED</div>
+                <p class="block-footer">If you believe this is a mistake, please contact the administrator.</p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 // ==================== Serve Pages ====================
@@ -1381,8 +1738,10 @@ setInterval(async () => {
         const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
         if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
         
+        // Clean expired temporary blocks (not permanent)
         const blockResult = await BlockedDevice.deleteMany({ 
-            blockedUntil: { $lt: new Date() } 
+            blockedUntil: { $lt: new Date() },
+            isPermanent: false
         });
         if (blockResult.deletedCount > 0) console.log(`🧹 Cleaned ${blockResult.deletedCount} expired device blocks`);
     } catch (error) {
@@ -1415,9 +1774,12 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
     console.log('🚨 NEW SECURITY FEATURES:');
-    console.log('🛡️ Device-based blocking: Individual device blocks');
+    console.log('🛡️ Device-based blocking: Individual device blocks (Admin protected)');
     console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
     console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
     console.log('📱 OTP Methods: Email support (SMS disabled)');
+    console.log('🔧 Device Management: View, Ban, and Unban devices');
+    console.log('📋 Attack Logging: Detects and logs attack attempts');
+    console.log('⛔ Permanent Block: Beautiful UI for permanently blocked devices');
     console.log('═══════════════════════════════════════════');
 });

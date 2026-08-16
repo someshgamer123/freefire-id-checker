@@ -484,7 +484,48 @@
         }
         .search-bar input:focus { border-color: var(--primary); outline: none; }
 
-        /* ===== CONTACT SETTINGS ===== */
+        /* ===== DEVICE MANAGEMENT ===== */
+        .device-card {
+            background: var(--bg);
+            padding: 10px 14px;
+            margin: 6px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-left: 3px solid var(--danger);
+            transition: 0.3s;
+        }
+        .device-card:hover { transform: translateX(4px); box-shadow: var(--shadow); }
+        .device-card .info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .device-card .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .device-card .info .details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        .device-card .actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .device-status { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .device-status.permanent { background: rgba(252,129,129,0.2); color: #fc8181; }
+        .device-status.temporary { background: rgba(246,173,85,0.2); color: #f6ad55; }
+        .device-status.expired { background: rgba(72,187,120,0.2); color: #48bb78; }
+
         .contact-settings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -492,49 +533,9 @@
         }
         @media (max-width: 768px) {
             .contact-settings-grid { grid-template-columns: 1fr; }
-        }
-        .contact-settings-grid .contact-field label {
-            font-size: 10px;
-            color: var(--text-light);
-            display: block;
-            margin-bottom: 3px;
-            font-weight: 600;
-        }
-        .contact-settings-grid .contact-field input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-        }
-        .contact-settings-grid .contact-field input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-        .contact-status {
-            margin-top: 6px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 12px; }
-            .header-actions { justify-content: center; }
-            .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-container .menu-btn { text-align: center; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
-            .link-item { flex-direction: column; align-items: stretch; }
-            .link-item .info { flex-direction: column; align-items: flex-start; }
-            .link-item .actions { justify-content: flex-start; }
-            body { padding: 12px; }
-            .card { padding: 14px; }
-            .toast { left: 20px; right: 20px; bottom: 20px; }
-            .edit-modal .modal-content { padding: 16px; }
-            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
-            .analytics-container .analytics-header .link-selector { flex-direction: column; }
+            .device-card { flex-direction: column; align-items: stretch; }
+            .device-card .info { flex-direction: column; align-items: flex-start; }
+            .device-card .actions { justify-content: flex-start; }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
@@ -773,11 +774,23 @@
                     </div>
                     <div class="contact-field">
                         <label>📞 Phone Number (with country code)</label>
-                        <input type="text" id="adminPhone" placeholder="+916372923348">
+                        <input type="text" id="adminPhone" placeholder="+919876543210">
                     </div>
                 </div>
                 <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:8px 20px;">💾 Save Contact Info</button>
                 <div id="contactStatus" class="contact-status"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔧 Device Management</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked and permanently banned devices</p>
+                <div id="deviceList" style="max-height:400px;overflow-y:auto;">
+                    <div class="empty-state" id="noDevices">
+                        <span class="icon">📱</span>
+                        <p>No blocked devices found</p>
+                    </div>
+                </div>
+                <button onclick="loadBlockedDevices()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Refresh List</button>
             </div>
 
             <div class="card">
@@ -834,6 +847,9 @@
             }
             if (sectionId === 'links') {
                 filterLinks();
+            }
+            if (sectionId === 'settings') {
+                setTimeout(loadBlockedDevices, 500);
             }
         }
 
@@ -1879,6 +1895,133 @@
         }
 
         // ============================================================
+        // SECTION: DEVICE MANAGEMENT
+        // ============================================================
+        async function loadBlockedDevices() {
+            try {
+                var r = await secureFetch('/api/admin/blocked-devices');
+                if (!r) return;
+                var data = await r.json();
+                
+                var container = document.getElementById('deviceList');
+                var noDevices = document.getElementById('noDevices');
+                
+                if (data.devices && data.devices.length > 0) {
+                    noDevices.style.display = 'none';
+                    container.innerHTML = '';
+                    
+                    data.devices.forEach(function(device) {
+                        var isPermanent = device.isPermanent;
+                        var isExpired = device.blockedUntil && new Date(device.blockedUntil) < new Date();
+                        
+                        var div = document.createElement('div');
+                        div.className = 'device-card';
+                        div.style.borderLeftColor = isPermanent ? '#fc8181' : '#f6ad55';
+                        
+                        var remainingTime = '';
+                        if (device.blockedUntil && !isPermanent) {
+                            var mins = Math.ceil((new Date(device.blockedUntil) - new Date()) / (1000 * 60));
+                            remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
+                        }
+                        
+                        div.innerHTML = `
+                            <div class="info">
+                                <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
+                                <span class="details">
+                                    <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
+                                    <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
+                                    <span class="device-status ${isPermanent ? 'permanent' : (isExpired ? 'expired' : 'temporary')}">
+                                        ${isPermanent ? '⛔ PERMANENT' : (isExpired ? '✅ Expired' : '⏳ ' + remainingTime)}
+                                    </span>
+                                    <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
+                                    <span>📝 ${escapeHTML(device.reason || 'No reason')}</span>
+                                </span>
+                            </div>
+                            <div class="actions">
+                                ${!isPermanent ? `
+                                    <button onclick="permanentBanDevice('${device._id}')" class="btn btn-danger btn-sm" title="Permanent Ban">⛔ Ban</button>
+                                ` : ''}
+                                <button onclick="unblockDevice('${device._id}')" class="btn btn-success btn-sm" title="Unblock">🔓 Unblock</button>
+                                <button onclick="deleteDeviceRecord('${device._id}')" class="btn btn-warning btn-sm" title="Delete Record">🗑️ Delete</button>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                    noDevices.style.display = 'block';
+                    container.innerHTML = '<div class="empty-state" id="noDevices"><span class="icon">📱</span><p>No blocked devices found</p></div>';
+                }
+            } catch (e) {
+                console.error('Error loading devices:', e);
+                showToast('❌ Failed to load devices', 'error');
+            }
+        }
+
+        async function permanentBanDevice(deviceId) {
+            if (!confirm('⚠️ Are you sure you want to permanently ban this device? This action cannot be undone!')) return;
+            
+            try {
+                var reason = prompt('Enter reason for permanent ban:', 'Unauthorized access attempts');
+                if (reason === null) return;
+                
+                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/permanent-ban', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: reason || 'Permanent ban by admin' })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    showToast('✅ Device permanently banned!', 'success');
+                    loadBlockedDevices();
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed to ban device'), 'error');
+                }
+            } catch (e) {
+                showToast('❌ Failed to ban device', 'error');
+            }
+        }
+
+        async function unblockDevice(deviceId) {
+            if (!confirm('Are you sure you want to unblock this device?')) return;
+            
+            try {
+                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/unblock', {
+                    method: 'POST'
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    showToast('✅ Device unblocked successfully!', 'success');
+                    loadBlockedDevices();
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed to unblock device'), 'error');
+                }
+            } catch (e) {
+                showToast('❌ Failed to unblock device', 'error');
+            }
+        }
+
+        async function deleteDeviceRecord(deviceId) {
+            if (!confirm('⚠️ Are you sure you want to delete this device record?')) return;
+            
+            try {
+                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId, {
+                    method: 'DELETE'
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    showToast('✅ Device record deleted!', 'success');
+                    loadBlockedDevices();
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed to delete record'), 'error');
+                }
+            } catch (e) {
+                showToast('❌ Failed to delete record', 'error');
+            }
+        }
+
+        // ============================================================
         // SECTION: PASSCODE CHANGE
         // ============================================================
         async function changePasscode() {
@@ -1955,6 +2098,7 @@
         loadContactInfo();
         startLiveRefresh();
         checkAuth();
+        loadBlockedDevices();
 
         // Make functions globally accessible
         window.showSection = showSection;
@@ -1984,6 +2128,10 @@
         window.updateCustomExpiry = updateCustomExpiry;
         window.showToast = showToast;
         window.updateContactInfo = updateContactInfo;
+        window.loadBlockedDevices = loadBlockedDevices;
+        window.permanentBanDevice = permanentBanDevice;
+        window.unblockDevice = unblockDevice;
+        window.deleteDeviceRecord = deleteDeviceRecord;
     </script>
 </body>
 </html>

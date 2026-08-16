@@ -3,11 +3,21 @@ const mongoose = require('mongoose');
 const BlockedDeviceSchema = new mongoose.Schema({
     fingerprint: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     ip: {
         type: String,
         required: true
+    },
+    deviceName: {
+        type: String,
+        default: 'Unknown Device'
+    },
+    deviceType: {
+        type: String,
+        enum: ['attacker', 'admin', 'visitor'],
+        default: 'visitor'
     },
     attempts: {
         type: Number,
@@ -18,6 +28,18 @@ const BlockedDeviceSchema = new mongoose.Schema({
         default: 'Too many failed attempts'
     },
     blockedUntil: {
+        type: Date,
+        default: null
+    },
+    isPermanent: {
+        type: Boolean,
+        default: false
+    },
+    permanentBlockedAt: {
+        type: Date,
+        default: null
+    },
+    unblockedAt: {
         type: Date,
         default: null
     },
@@ -33,6 +55,7 @@ const BlockedDeviceSchema = new mongoose.Schema({
 
 BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
-BlockedDeviceSchema.index({ blockedUntil: 1 });
+BlockedDeviceSchema.index({ deviceType: 1 });
+BlockedDeviceSchema.index({ isPermanent: 1 });
 
 module.exports = mongoose.model('BlockedDevice', BlockedDeviceSchema);
