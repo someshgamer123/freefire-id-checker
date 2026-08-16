@@ -113,8 +113,8 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGODB_URI,
-        touchAfter: 24 * 3600, // lazy session update
-        ttl: 14 * 24 * 60 * 60 // 14 days
+        touchAfter: 24 * 3600,
+        ttl: 14 * 24 * 60 * 60
     }),
     cookie: { 
         secure: process.env.NODE_ENV === 'production', 
@@ -138,7 +138,7 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// Google Strategy (✅ Explicit full URL)
+// Google Strategy
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
@@ -150,7 +150,6 @@ passport.use(new GoogleStrategy({
         const googleId = profile.id;
         const picture = profile.photos[0].value;
 
-        // ✅ ONLY PRIMARY EMAIL CAN LOGIN
         if (email !== ADMIN_EMAIL) {
             return done(null, false, { message: 'Unauthorized email. Only primary admin email can login.' });
         }
@@ -168,7 +167,6 @@ passport.use(new GoogleStrategy({
             });
             await user.save();
         } else {
-            // Update Google info
             user.googleId = googleId;
             user.name = name;
             user.picture = picture;
@@ -216,20 +214,19 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ✅ Fix: Trust proxy for Render
 app.set('trust proxy', 1);
 
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,  // ✅ Increased to prevent 429
+    max: 500,
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,   // ✅ Increased to prevent 429
+    max: 20,
     message: 'Too many login attempts, try after 60 minutes.'
 });
 
@@ -518,13 +515,11 @@ app.get('/auth/google/callback',
             const user = req.user;
             const { ip, userAgent, fingerprint } = getDeviceId(req);
             
-            // Clear any device blocks for this device
             await BlockedDevice.findOneAndDelete({ 
                 $or: [{ fingerprint }, { ip }],
                 isPermanent: false 
             });
             
-            // Generate JWT token
             const jwtToken = generateToken(user._id.toString());
             const csrfToken = generateCSRFToken();
             
@@ -1200,7 +1195,6 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
 // GET: Get all blocked devices + recent login attempts
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
-        // Get all blocked or attempted devices
         const devices = await BlockedDevice.find({
             $or: [
                 { blockedUntil: { $gt: new Date() } },
@@ -1209,7 +1203,6 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
             ]
         }).sort({ lastAttempt: -1 });
         
-        // Get recent login attempts (last 24 hours)
         const recentAttempts = await BlockedDevice.find({
             lastAttempt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
             attempts: { $gt: 0 }
@@ -1507,6 +1500,7 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== Serve Pages ====================
+// ✅ FIXED ORDER: INDEX first, then LOGIN
 app.get('/admin/index.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
 });
@@ -1549,7 +1543,6 @@ setInterval(async () => {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
         
-        // Clean expired temporary blocks (not permanent)
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() },
             isPermanent: false

@@ -111,21 +111,19 @@
             window.location.href = '/auth/google';
         }
 
-        // ✅ Event listener
         document.getElementById('googleLoginBtn').addEventListener('click', loginWithGoogle);
 
-        // Check if already logged in
+        // ✅ FIXED: Use replace() to avoid back/forward loop
         async function checkLoginStatus() {
             try {
                 var r = await fetch('/api/auth/google/status');
                 var data = await r.json();
                 if (data.authenticated) {
-                    window.location.href = '/admin/index.html'; // ✅ Redirect to admin panel
+                    window.location.replace('/admin/index.html');
                 }
             } catch (e) {}
         }
 
-        // Check URL for error parameter
         var urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('error') === 'unauthorized') {
             showError('Unauthorized email. Only primary admin email can login.');
