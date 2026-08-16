@@ -1,39 +1,26 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-    email: {
+    passcode: {
         type: String,
         required: true,
-        unique: true
-    },
-    googleId: {
-        type: String,
-        default: null
-    },
-    name: {
-        type: String,
-        default: ''
-    },
-    picture: {
-        type: String,
-        default: ''
     },
     theme: {
         type: String,
         default: 'light',
         enum: ['light', 'dark']
     },
-    isPrimary: {
-        type: Boolean,
-        default: false
+    email: {
+        type: String,
+        default: ''
     },
-    primarySince: {
-        type: Date,
+    phone: {
+        type: String,
+        default: ''
+    },
+    fingerprint: {
+        type: String,
         default: null
-    },
-    lastLogin: {
-        type: Date,
-        default: Date.now
     },
     createdAt: {
         type: Date,

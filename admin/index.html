@@ -484,6 +484,45 @@
         }
         .search-bar input:focus { border-color: var(--primary); outline: none; }
 
+        /* ===== DEVICE MANAGEMENT ===== */
+        .device-item {
+            background: var(--bg);
+            padding: 10px 14px;
+            margin: 6px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-left: 3px solid var(--danger);
+            transition: 0.3s;
+        }
+        .device-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
+        .device-item .info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .device-item .info .details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: var(--text-light);
+        }
+        .device-item .actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .device-item .actions .btn { font-size: 10px; padding: 4px 10px; }
+
         /* ===== CONTACT SETTINGS ===== */
         .contact-settings-grid {
             display: grid;
@@ -589,7 +628,7 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS ===== -->
+            <!-- ===== LIVE VISITORS (FIXED) ===== -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors
@@ -765,7 +804,7 @@
 
             <div class="card">
                 <h3>📱 Contact & OTP Settings</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info</p>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
                 <div class="contact-settings-grid">
                     <div class="contact-field">
                         <label>📧 Email Address</label>
@@ -791,22 +830,16 @@
                 <div id="passcodeStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
             </div>
 
-            <!-- ===== DEVICE MANAGEMENT ===== -->
             <div class="card">
-                <h3>📱 Device Management</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">View blocked devices and recent login attempts</p>
-                <div style="margin-bottom:15px;">
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
-                        <button onclick="loadBlockedDevices()" class="btn btn-primary btn-sm">🔄 Refresh</button>
-                        <button onclick="loadRecentAttempts()" class="btn btn-warning btn-sm">📋 Recent Attempts</button>
-                    </div>
-                </div>
+                <h3>🔧 Device Management</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked and banned devices</p>
                 <div id="deviceList" style="max-height:400px;overflow-y:auto;">
                     <div class="empty-state" id="noDevices">
                         <span class="icon">📱</span>
-                        <p>No devices found</p>
+                        <p>No blocked devices found</p>
                     </div>
                 </div>
+                <button onclick="loadBlockedDevices()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Refresh List</button>
             </div>
         </div>
     </div>
@@ -825,18 +858,10 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script>
-        // ✅ Check CSRF token on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            var csrfToken = localStorage.getItem('csrfToken');
-            if (!csrfToken) {
-                window.location.replace('/admin/login.html');
-            }
-        });
-
         var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
 
         if (!csrfToken) {
-            window.location.href = '/admin/login.html';
+            window.location.href = 'login.html';
         }
 
         // ============================================================
@@ -861,6 +886,9 @@
             if (sectionId === 'links') {
                 filterLinks();
             }
+            if (sectionId === 'settings') {
+                setTimeout(loadBlockedDevices, 500);
+            }
         }
 
         // ============================================================
@@ -878,20 +906,14 @@
                     }
                 });
                 if (response.status === 401 || response.status === 403) {
+                    showToast('❌ Session expired. Please login again.', 'error');
                     localStorage.removeItem('csrfToken');
-                    window.location.href = '/admin/login.html';
-                    return null;
-                }
-                // ✅ Handle 500 error gracefully
-                if (response.status === 500) {
-                    console.error('❌ Server Error (500) on URL:', url);
-                    showToast('❌ Server error occurred. Please try again.', 'error');
+                    setTimeout(function() { window.location.href = 'login.html'; }, 1500);
                     return null;
                 }
                 return response;
             } catch (e) {
-                console.error('❌ Network Error:', e);
-                showToast('❌ Network error. Please check your connection.', 'error');
+                showToast('❌ Network error', 'error');
                 return null;
             }
         }
@@ -968,7 +990,7 @@
                     await fetch('/api/admin/logout', { method: 'POST' });
                 } catch (e) {}
                 localStorage.removeItem('csrfToken');
-                window.location.href = '/admin/login.html';
+                window.location.href = 'login.html';
             }
         }
 
@@ -1016,12 +1038,13 @@
         }
 
         // ============================================================
-        // SECTION: LIVE VISITORS
+        // SECTION: LIVE VISITORS (FIXED)
         // ============================================================
         var previousLiveData = {};
 
         function updateLiveVisitors(data) {
             if (!data) {
+                // Try to fetch fresh data
                 secureFetch('/api/all-stats').then(function(response) {
                     if (response && response.ok) {
                         response.json().then(function(d) {
@@ -1035,6 +1058,7 @@
             var stats = data.global || {};
             var dailyVisitors = stats.dailyVisitors || {};
             
+            // Lifetime
             var lifetime = document.getElementById('liveLifetime');
             if (lifetime) {
                 var newVal = stats.totalVisitors || 0;
@@ -1046,6 +1070,7 @@
                 previousLiveData.lifetime = newVal;
             }
             
+            // Last 48 Hours
             var last48hrs = 0;
             var now = new Date();
             for (var date in dailyVisitors) {
@@ -1066,6 +1091,7 @@
             var live48hrTime = document.getElementById('live48hrTime');
             if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
+            // Last 60 Minutes
             var today = new Date().toISOString().split('T')[0];
             var todayVisits = dailyVisitors[today] || 0;
             var last60min = Math.round(todayVisits / 24);
@@ -1081,6 +1107,7 @@
             var live60minTime = document.getElementById('live60minTime');
             if (live60minTime) live60minTime.textContent = 'Last 60 min';
             
+            // Active Now
             var activeNow = Math.max(1, Math.round(last60min / 6));
             var liveActive = document.getElementById('liveActive');
             if (liveActive) {
@@ -1092,6 +1119,7 @@
                 previousLiveData.liveActive = activeNow;
             }
             
+            // Update refresh time
             var refreshTime = document.getElementById('lastRefreshTime');
             if (refreshTime) {
                 var nowTime = new Date();
@@ -1099,16 +1127,21 @@
             }
         }
 
+        // Start live refresh (every 5 seconds)
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
+            
+            // Initial load
             loadStats();
+            
+            // Refresh every 5 seconds
             liveInterval = setInterval(function() {
                 loadStats();
             }, 5000);
         }
 
         // ============================================================
-        // SECTION: LINKS
+        // SECTION: LINKS (Compact + Search)
         // ============================================================
         var allLinks = [];
 
@@ -1443,6 +1476,7 @@
             }
         }
 
+        // Popup preview live update
         document.getElementById('popupTitle').addEventListener('input', function() {
             document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
         });
@@ -1526,7 +1560,7 @@
         }
 
         // ============================================================
-        // SECTION: ANALYTICS
+        // SECTION: ANALYTICS (With Search)
         // ============================================================
         var analyticsLinks = [];
         var currentFilter = 'lifetime';
@@ -1573,6 +1607,7 @@
             });
             
             if (filteredAnalyticsLinks.length > 0) {
+                // Try to keep selected value if it exists in filtered list
                 var exists = filteredAnalyticsLinks.some(function(l) { return l.id === currentVal; });
                 if (exists) {
                     select.value = currentVal;
@@ -1858,7 +1893,7 @@
         }
 
         // ============================================================
-        // SECTION: CONTACT SETTINGS
+        // SECTION: CONTACT SETTINGS (EMAIL & PHONE)
         // ============================================================
         async function updateContactInfo() {
             var email = document.getElementById('adminEmail').value.trim();
@@ -1873,7 +1908,7 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    statusEl.textContent = '✅ Contact info updated!';
+                    statusEl.textContent = '✅ Contact info updated! OTP will be sent to these.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Contact info updated!', 'success');
                 } else {
@@ -1929,12 +1964,12 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    statusEl.textContent = '✅ Passcode changed! Please login again.';
+                    statusEl.textContent = '✅ Passcode changed! Please login again with OTP.';
                     statusEl.style.color = '#48bb78';
                     showToast('✅ Passcode changed!', 'success');
                     document.getElementById('oldPasscode').value = '';
                     document.getElementById('newPasscode').value = '';
-                    setTimeout(function() { window.location.href = '/admin/login.html'; }, 2000);
+                    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
                 } else {
                     statusEl.textContent = '❌ ' + (data.error || 'Failed');
                     statusEl.style.color = '#fc8181';
@@ -1966,7 +2001,7 @@
                         var isExpired = device.blockedUntil && new Date(device.blockedUntil) < new Date();
                         
                         var div = document.createElement('div');
-                        div.className = 'link-item';
+                        div.className = 'device-item';
                         div.style.borderLeftColor = isPermanent ? '#fc8181' : '#f6ad55';
                         
                         var remainingTime = '';
@@ -1975,21 +2010,16 @@
                             remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
                         }
                         
-                        var statusText = isPermanent ? '⛔ PERMANENT' : 
-                                         (isExpired ? '✅ Expired' : '⏳ ' + remainingTime);
-                        var statusClass = isPermanent ? 'status-disabled' : 'status-suspended';
-                        
                         div.innerHTML = `
                             <div class="info">
                                 <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
                                 <span class="details">
                                     <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
-                                    <span>🖥️ ${escapeHTML(device.os || 'Unknown')}</span>
-                                    <span>🌐 ${escapeHTML(device.browser || 'Unknown')}</span>
                                     <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
-                                    <span class="status-badge ${statusClass}">${statusText}</span>
+                                    <span class="status-badge ${isPermanent ? 'status-disabled' : 'status-suspended'}">
+                                        ${isPermanent ? '⛔ PERMANENT' : (isExpired ? '✅ Expired' : '⏳ ' + remainingTime)}
+                                    </span>
                                     <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
-                                    <span>${device.attempts > 0 ? '⚠️ ' + device.attempts + ' attempts' : ''}</span>
                                 </span>
                             </div>
                             <div class="actions">
@@ -2009,53 +2039,6 @@
             } catch (e) {
                 console.error('Error loading devices:', e);
                 showToast('❌ Failed to load devices', 'error');
-            }
-        }
-
-        async function loadRecentAttempts() {
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices');
-                if (!r) return;
-                var data = await r.json();
-                
-                var container = document.getElementById('deviceList');
-                var noDevices = document.getElementById('noDevices');
-                
-                if (data.recentAttempts && data.recentAttempts.length > 0) {
-                    noDevices.style.display = 'none';
-                    container.innerHTML = '<h4 style="color:var(--text-light);margin-bottom:10px;">📋 Recent Login Attempts (Last 24h)</h4>';
-                    
-                    data.recentAttempts.forEach(function(device) {
-                        var div = document.createElement('div');
-                        div.className = 'link-item';
-                        div.style.borderLeftColor = '#667eea';
-                        
-                        div.innerHTML = `
-                            <div class="info">
-                                <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
-                                <span class="details">
-                                    <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
-                                    <span>🖥️ ${escapeHTML(device.os || 'Unknown')}</span>
-                                    <span>🌐 ${escapeHTML(device.browser || 'Unknown')}</span>
-                                    <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
-                                    <span>⚠️ ${device.attempts || 0} attempts</span>
-                                    <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
-                                </span>
-                            </div>
-                            <div class="actions">
-                                <button onclick="permanentBanDevice('${device._id}')" class="btn btn-danger btn-sm" title="Permanent Ban">⛔ Ban</button>
-                                <button onclick="deleteDeviceRecord('${device._id}')" class="btn btn-warning btn-sm" title="Delete Record">🗑️ Delete</button>
-                            </div>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else {
-                    noDevices.style.display = 'block';
-                    container.innerHTML = '<div class="empty-state" id="noDevices"><span class="icon">📋</span><p>No recent login attempts</p></div>';
-                }
-            } catch (e) {
-                console.error('Error loading attempts:', e);
-                showToast('❌ Failed to load attempts', 'error');
             }
         }
 
@@ -2123,11 +2106,6 @@
             }
         }
 
-        // Load devices when settings section is shown
-        document.querySelector('.menu-btn[data-section="settings"]').addEventListener('click', function() {
-            setTimeout(loadBlockedDevices, 500);
-        });
-
         // ============================================================
         // SECTION: CHECK AUTH
         // ============================================================
@@ -2136,12 +2114,12 @@
                 var response = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
                 if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('csrfToken');
-                    window.location.href = '/admin/login.html';
+                    window.location.href = 'login.html';
                     return false;
                 }
                 return true;
             } catch (e) {
-                window.location.href = '/admin/login.html';
+                window.location.href = 'login.html';
                 return false;
             }
         }
@@ -2155,6 +2133,7 @@
         loadStats();
         loadAnalyticsLinks();
         loadContactInfo();
+        loadBlockedDevices();
         startLiveRefresh();
         checkAuth();
 
@@ -2187,7 +2166,6 @@
         window.showToast = showToast;
         window.updateContactInfo = updateContactInfo;
         window.loadBlockedDevices = loadBlockedDevices;
-        window.loadRecentAttempts = loadRecentAttempts;
         window.permanentBanDevice = permanentBanDevice;
         window.unblockDevice = unblockDevice;
         window.deleteDeviceRecord = deleteDeviceRecord;

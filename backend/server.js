@@ -8,11 +8,9 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const session = require('express-session');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const MongoStore = require('connect-mongo');
+const nodemailer = require('nodemailer');
 
 // ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
@@ -25,7 +23,9 @@ const Pricing = require('./models/Pricing');
 const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
 const LoginAttempt = require('./models/LoginAttempt');
+const TwoFactorAuth = require('./models/TwoFactorAuth');
 const BlockedDevice = require('./models/BlockedDevice');
+const OTPVerification = require('./models/OTPVerification');
 
 // ==================== Security Module ====================
 const Security = require('./config/security');
@@ -34,29 +34,54 @@ const Security = require('./config/security');
 connectDB();
 
 // ==================== Environment Variables ====================
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'mikunkumar242@gmail.com';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
-const SESSION_SECRET = process.env.SESSION_SECRET || JWT_SECRET;
-const JWT_EXPIRY = '7d';
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 2;
-const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 60;
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
+const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
+const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
+
+// Email Config
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASS = process.env.EMAIL_PASS || '';
+
+// ==================== Email Transporter ====================
+let transporter = null;
+if (EMAIL_USER && EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
+        }
+    });
+}
 
 // ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
         const adminExists = await User.findOne();
         if (!adminExists) {
+            const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
             await User.create({
-                email: ADMIN_EMAIL,
+                passcode: hashedPasscode,
                 theme: 'light',
-                isPrimary: true,
-                primarySince: new Date()
+                email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || ''
             });
-            console.log('✅ Admin user created with email:', ADMIN_EMAIL);
+            console.log('✅ Admin user created');
+
+            if (ENABLE_2FA) {
+                const secret = Security.generate2FASecret();
+                await TwoFactorAuth.create({
+                    userId: 'admin',
+                    secret: secret.base32,
+                    backupCodes: Security.generateBackupCodes(),
+                    isEnabled: true,
+                    verifiedAt: new Date()
+                });
+                console.log('✅ 2FA enabled for admin');
+            }
         }
 
         const statsExists = await Stats.findOne();
@@ -106,81 +131,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Session & Passport Setup (Production Ready) ====================
-app.use(session({
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI,
-        touchAfter: 24 * 3600,
-        ttl: 14 * 24 * 60 * 60
-    }),
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
-        maxAge: 24 * 60 * 60 * 1000 
-    }
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser((user, done) => {
-    done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-    try {
-        const user = await User.findById(id);
-        done(null, user);
-    } catch (error) {
-        done(error, null);
-    }
-});
-
-// Google Strategy
-passport.use(new GoogleStrategy({
-    clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://freefire-id-checker.onrender.com/auth/google/callback'
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        const email = profile.emails[0].value;
-        const name = profile.displayName;
-        const googleId = profile.id;
-        const picture = profile.photos[0].value;
-
-        if (email !== ADMIN_EMAIL) {
-            return done(null, false, { message: 'Unauthorized email. Only primary admin email can login.' });
-        }
-
-        let user = await User.findOne({ email });
-        if (!user) {
-            user = new User({
-                email,
-                name,
-                googleId,
-                picture,
-                theme: 'light',
-                isPrimary: true,
-                primarySince: new Date()
-            });
-            await user.save();
-        } else {
-            user.googleId = googleId;
-            user.name = name;
-            user.picture = picture;
-            user.lastLogin = new Date();
-            await user.save();
-        }
-
-        return done(null, user);
-    } catch (error) {
-        return done(error, null);
-    }
-}));
-
-// ==================== Security Headers & Middleware ====================
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -192,8 +143,10 @@ app.use(helmet({
             styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
             connectSrc: ["'self'"],
-            frameSrc: ["'self'", "https://www.youtube.com", "https://accounts.google.com"],
-            objectSrc: ["'none'"]
+            frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
+            mediaSrc: ["'self'", "https:", "http:", "https://*.image2url.com", "https://*.terabox.com", "*"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: []
         }
     },
     hsts: {
@@ -214,20 +167,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-app.set('trust proxy', 1);
-
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,
+    max: 200,
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,
-    message: 'Too many login attempts, try after 60 minutes.'
+    max: MAX_LOGIN_ATTEMPTS,
+    message: 'Too many login attempts, try after 30 minutes.'
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -235,7 +186,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
-// ==================== JWT & Auth Functions ====================
+// ==================== JWT & Auth ====================
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const JWT_EXPIRY = '7d';
+
 function generateToken(userId) {
     return jwt.sign({ id: userId, role: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
@@ -263,41 +217,35 @@ function getDeviceDetails(req) {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     let deviceName = 'Unknown Device';
     let deviceType = 'Unknown';
-    let os = 'Unknown';
-    let browser = 'Unknown';
 
+    // Parse device name and type from user agent
     if (userAgent.includes('Windows')) {
         deviceName = 'Windows PC';
         deviceType = 'Desktop';
-        os = 'Windows';
     } else if (userAgent.includes('Mac')) {
         deviceName = 'Mac';
         deviceType = 'Desktop';
-        os = 'macOS';
     } else if (userAgent.includes('Linux')) {
         deviceName = 'Linux PC';
         deviceType = 'Desktop';
-        os = 'Linux';
     } else if (userAgent.includes('iPhone')) {
         deviceName = 'iPhone';
         deviceType = 'Mobile';
-        os = 'iOS';
     } else if (userAgent.includes('iPad')) {
         deviceName = 'iPad';
         deviceType = 'Tablet';
-        os = 'iPadOS';
     } else if (userAgent.includes('Android')) {
         deviceName = 'Android';
         deviceType = 'Mobile';
-        os = 'Android';
+    } else if (userAgent.includes('Chrome')) {
+        deviceName = 'Chrome Browser';
+        deviceType = 'Browser';
+    } else if (userAgent.includes('Firefox')) {
+        deviceName = 'Firefox Browser';
+        deviceType = 'Browser';
     }
 
-    if (userAgent.includes('Chrome')) browser = 'Chrome';
-    else if (userAgent.includes('Firefox')) browser = 'Firefox';
-    else if (userAgent.includes('Safari')) browser = 'Safari';
-    else if (userAgent.includes('Edge')) browser = 'Edge';
-
-    return { deviceName, deviceType, os, browser };
+    return { deviceName, deviceType };
 }
 
 // ==================== Logging Function ====================
@@ -311,10 +259,11 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (Admin Protected) ====================
+// ==================== Device Blocking (FIXED - SEPARATE TRACKING) ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     
+    // Check if device is permanently blocked or temporarily blocked
     const blocked = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }],
         $or: [
@@ -328,20 +277,16 @@ async function isDeviceBlocked(req) {
 
 async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 60) {
     const { fingerprint, ip } = getDeviceId(req);
-    const { deviceName, deviceType, os, browser } = getDeviceDetails(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
     
-    // ✅ NEVER BLOCK ADMIN DEVICE
-    const admin = await User.findOne({ email: ADMIN_EMAIL });
-    if (admin && admin.googleId) {
-        const token = req.cookies?.adminToken;
-        if (token) {
-            const decoded = verifyToken(token);
-            if (decoded && decoded.id === admin._id.toString()) {
-                console.log('⚠️ Skipping block for admin device');
-                return null;
-            }
-        }
+    // FIXED: Don't block admin's device
+    const admin = await User.findOne();
+    const adminFingerprint = admin?.fingerprint || null;
+    
+    if (fingerprint === adminFingerprint) {
+        console.log('⚠️ Skipping block for admin device');
+        return null;
     }
     
     await BlockedDevice.findOneAndUpdate(
@@ -351,13 +296,10 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             ip,
             deviceName,
             deviceType,
-            os,
-            browser,
             reason,
             blockedUntil,
             attempts: 1,
-            lastAttempt: new Date(),
-            lastEmail: null
+            lastAttempt: new Date()
         },
         { upsert: true }
     );
@@ -365,19 +307,15 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
 
 async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
-    const { deviceName, deviceType, os, browser } = getDeviceDetails(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
     
-    // ✅ NEVER TRACK ADMIN DEVICE ATTEMPTS
-    const admin = await User.findOne({ email: ADMIN_EMAIL });
-    if (admin && admin.googleId) {
-        const token = req.cookies?.adminToken;
-        if (token) {
-            const decoded = verifyToken(token);
-            if (decoded && decoded.id === admin._id.toString()) {
-                console.log('⚠️ Skipping attempt tracking for admin device');
-                return;
-            }
-        }
+    // FIXED: Don't track admin's attempts
+    const admin = await User.findOne();
+    const adminFingerprint = admin?.fingerprint || null;
+    
+    if (fingerprint === adminFingerprint) {
+        console.log('⚠️ Skipping attempt tracking for admin device');
+        return;
     }
     
     const record = await BlockedDevice.findOne({
@@ -389,32 +327,59 @@ async function incrementDeviceAttempts(req) {
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
         record.deviceType = deviceType;
-        record.os = os;
-        record.browser = browser;
         
         if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
             record.blockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
-            record.reason = 'Too many failed login attempts';
-            await record.save();
-            console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked for ${LOCKOUT_TIME} minutes`);
-        } else {
-            await record.save();
+            record.reason = 'Too many failed attempts';
+            record.deviceType = 'attacker';
         }
+        await record.save();
     } else {
         await BlockedDevice.create({
             fingerprint,
             ip,
             deviceName,
             deviceType,
-            os,
-            browser,
             attempts: 1,
             reason: 'Login attempt',
             blockedUntil: null,
-            lastAttempt: new Date(),
-            lastEmail: null
+            lastAttempt: new Date()
         });
     }
+}
+
+// ==================== Login Attempt Tracking ====================
+async function checkLoginAttempts(ip) {
+    const record = await LoginAttempt.findOne({ ip });
+    if (!record) return { allowed: true, attempts: 0 };
+    if (record.lockedUntil && record.lockedUntil > new Date()) {
+        const remainingMinutes = Math.ceil((record.lockedUntil - new Date()) / (1000 * 60));
+        return { allowed: false, attempts: record.attempts, lockedUntil: record.lockedUntil, remainingMinutes };
+    }
+    if (record.lockedUntil && record.lockedUntil < new Date()) {
+        record.attempts = 0;
+        record.lockedUntil = null;
+        await record.save();
+        return { allowed: true, attempts: 0 };
+    }
+    return { allowed: record.attempts < MAX_LOGIN_ATTEMPTS, attempts: record.attempts };
+}
+
+async function recordLoginAttempt(ip, success) {
+    let record = await LoginAttempt.findOne({ ip });
+    if (!record) record = new LoginAttempt({ ip });
+    if (success) {
+        record.attempts = 0;
+        record.lockedUntil = null;
+    } else {
+        record.attempts = (record.attempts || 0) + 1;
+        record.lastAttempt = new Date();
+        if (record.attempts >= MAX_LOGIN_ATTEMPTS) {
+            record.lockedUntil = new Date(Date.now() + LOCKOUT_TIME * 60 * 1000);
+        }
+    }
+    await record.save();
+    return record;
 }
 
 // ==================== Session Management ====================
@@ -498,64 +463,67 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ================================================================
-// ==================== GOOGLE AUTH ROUTES ====================
-// ================================================================
+// ==================== OTP Verification Functions ====================
+function generateOTP() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-// Google Auth Start
-app.get('/auth/google', 
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-// Google Auth Callback
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login.html?error=unauthorized' }),
-    async (req, res) => {
-        try {
-            const user = req.user;
-            const { ip, userAgent, fingerprint } = getDeviceId(req);
-            
-            await BlockedDevice.findOneAndDelete({ 
-                $or: [{ fingerprint }, { ip }],
-                isPermanent: false 
-            });
-            
-            const jwtToken = generateToken(user._id.toString());
-            const csrfToken = generateCSRFToken();
-            
-            await createSession(jwtToken, user._id.toString(), csrfToken, ip, userAgent);
-            await logAdminAction(user._id.toString(), 'LOGIN', { method: 'Google Auth' }, req);
-            
-            res.cookie('adminToken', jwtToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production' || true,
-                sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-                path: '/'
-            });
-            
-            res.redirect('/admin/index.html');
-        } catch (error) {
-            console.error('❌ Auth callback error:', error);
-            res.redirect('/login.html?error=server_error');
-        }
+async function sendOTPEmail(email, otp) {
+    if (!transporter) return false;
+    try {
+        const mailOptions = {
+            from: EMAIL_USER,
+            to: email,
+            subject: 'Admin Login OTP Verification',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <h2 style="color: #667eea; text-align: center;">🔐 Admin Login OTP</h2>
+                    <p style="font-size: 16px; color: #333; text-align: center;">Your One-Time Password (OTP) for admin login is:</p>
+                    <div style="background: #667eea; color: white; font-size: 32px; font-weight: 800; text-align: center; padding: 20px; border-radius: 10px; margin: 20px 0; letter-spacing: 5px;">
+                        ${otp}
+                    </div>
+                    <p style="font-size: 14px; color: #666; text-align: center;">This OTP is valid for 5 minutes. Do not share this with anyone.</p>
+                    <p style="font-size: 12px; color: #999; text-align: center; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
+                </div>
+            `
+        };
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('❌ Email send error:', error);
+        return false;
     }
-);
+}
 
-// Check Google Auth Status
-app.get('/api/auth/google/status', (req, res) => {
-    const token = req.cookies?.adminToken;
-    if (token) {
-        const decoded = verifyToken(token);
-        if (decoded) {
-            return res.json({ authenticated: true, user: decoded });
-        }
+async function saveOTP(deviceId, otp, method, contact) {
+    await OTPVerification.findOneAndDelete({ deviceId });
+    await OTPVerification.create({
+        deviceId,
+        otp,
+        method,
+        contact,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+    });
+}
+
+async function verifyOTP(deviceId, otp) {
+    const record = await OTPVerification.findOne({
+        deviceId,
+        otp,
+        expiresAt: { $gt: new Date() },
+        verified: false
+    });
+    if (record) {
+        record.verified = true;
+        record.verifiedAt = new Date();
+        await record.save();
+        return true;
     }
-    res.json({ authenticated: false });
-});
+    return false;
+}
 
 // ================================================================
-// ==================== PUBLIC ROUTES ====================
+// ==================== PUBLIC ROUTES (NO AUTH) ====================
 // ================================================================
 
 app.get('/api/whatsapp-number', async (req, res) => {
@@ -564,6 +532,20 @@ app.get('/api/whatsapp-number', async (req, res) => {
         res.json({ number: pricing?.whatsappNumber || '919876543210' });
     } catch (error) {
         res.json({ number: '919876543210' });
+    }
+});
+
+app.post('/api/whatsapp-number', async (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) return res.status(400).json({ error: 'Number required' });
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.whatsappNumber = number;
+        await pricing.save();
+        res.json({ success: true, number });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
     }
 });
 
@@ -796,8 +778,7 @@ app.get('/api/settings', async (req, res) => {
                 subtitle: 'Tap below to unlock your reward'
             },
             adminEmail: admin?.email || '',
-            adminName: admin?.name || '',
-            adminPicture: admin?.picture || ''
+            adminPhone: admin?.phone || ''
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch settings' });
@@ -834,13 +815,188 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
+// ==================== ADMIN LOGIN (WITH OTP VERIFICATION) ====================
+app.post('/api/admin/login', authLimiter, async (req, res) => {
+    try {
+        const { passcode, otp, step } = req.body;
+        const { ip, userAgent, fingerprint } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
+        
+        // Check if device is blocked (temporary or permanent)
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            if (blocked.isPermanent) {
+                return res.status(403).json({
+                    error: 'permanently_blocked',
+                    message: 'Your device has been permanently blocked by the admin.',
+                    permanent: true
+                });
+            } else {
+                const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
+                return res.status(403).json({
+                    error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
+                    blockedUntil: blocked.blockedUntil,
+                    remainingMinutes
+                });
+            }
+        }
+        
+        const attemptCheck = await checkLoginAttempts(ip);
+        if (!attemptCheck.allowed) {
+            await logAdminAction('admin', 'LOGIN_LOCKED', { 
+                ip: ip, 
+                remainingMinutes: attemptCheck.remainingMinutes 
+            }, req);
+            return res.status(429).json({ 
+                error: `Too many attempts. Account locked for ${attemptCheck.remainingMinutes} minutes.` 
+            });
+        }
+        
+        // STEP 1: Verify passcode first
+        if (!step || step === 'passcode') {
+            if (!passcode) {
+                return res.status(400).json({ error: 'Passcode required' });
+            }
+            
+            const admin = await User.findOne();
+            if (!admin) {
+                return res.status(500).json({ error: 'Admin not found' });
+            }
+            
+            const isValid = bcrypt.compareSync(passcode, admin.passcode);
+            
+            if (!isValid) {
+                await recordLoginAttempt(ip, false);
+                await incrementDeviceAttempts(req);
+                await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
+                
+                // Block device after 5 failed attempts
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
+                if (deviceRecord && deviceRecord.attempts >= 5) {
+                    await blockDevice(req, 'Too many failed passcode attempts', LOCKOUT_TIME);
+                    // Notify admin about this attack attempt
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked for ${LOCKOUT_TIME} minutes`);
+                }
+                
+                return res.status(401).json({ error: 'Invalid passcode' });
+            }
+            
+            // ✅ Check if email is configured
+            if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
+                // OTP enabled
+                const otpCode = generateOTP();
+                const adminEmail = admin.email || '';
+                
+                let sent = false;
+                let method = 'email';
+                let contact = adminEmail;
+                
+                if (adminEmail && transporter) {
+                    sent = await sendOTPEmail(adminEmail, otpCode);
+                    method = 'email';
+                    contact = adminEmail;
+                }
+                
+                if (!sent) {
+                    return res.status(500).json({ 
+                        error: 'Unable to send OTP. Please configure email settings.' 
+                    });
+                }
+                
+                await saveOTP(fingerprint, otpCode, method, contact);
+                
+                return res.json({
+                    success: false,
+                    step: 'otp',
+                    message: `OTP sent to your email`,
+                    method: method,
+                    contact: contact.replace(/(.{3})(.*)(.{2})/, '$1****$3')
+                });
+            } else {
+                // ✅ DIRECT LOGIN - NO OTP REQUIRED
+                console.log('⚠️ OTP disabled or email not configured - Direct login allowed');
+                const jwtToken = generateToken('admin');
+                const csrfToken = generateCSRFToken();
+                await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+                await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
+                
+                res.cookie('adminToken', jwtToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' || true,
+                    sameSite: 'lax',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                    path: '/'
+                });
+                
+                return res.json({
+                    success: true,
+                    csrfToken: csrfToken,
+                    step: 'complete'
+                });
+            }
+        }
+        
+        // STEP 2: Verify OTP
+        if (step === 'otp') {
+            if (!otp || otp.length !== 6) {
+                return res.status(400).json({ error: 'Valid 6-digit OTP required' });
+            }
+            
+            const verified = await verifyOTP(fingerprint, otp);
+            if (!verified) {
+                await incrementDeviceAttempts(req);
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
+                if (deviceRecord && deviceRecord.attempts >= 3) {
+                    await blockDevice(req, 'Too many failed OTP attempts', LOCKOUT_TIME);
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked for ${LOCKOUT_TIME} minutes`);
+                }
+                return res.status(401).json({ error: 'Invalid or expired OTP' });
+            }
+            
+            await recordLoginAttempt(ip, true);
+            // Remove temporary block if any
+            await BlockedDevice.findOneAndDelete({ 
+                $or: [{ fingerprint }, { ip }],
+                isPermanent: false 
+            });
+            
+            const jwtToken = generateToken('admin');
+            const csrfToken = generateCSRFToken();
+            await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+            await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
+            
+            res.cookie('adminToken', jwtToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production' || true,
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                path: '/'
+            });
+            
+            return res.json({
+                success: true,
+                csrfToken: csrfToken,
+                step: 'complete'
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
 // ADMIN LOGOUT
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
         if (token) {
             await invalidateSession(token);
-            await logAdminAction(req.user.id, 'LOGOUT', {}, req);
+            await logAdminAction('admin', 'LOGOUT', {}, req);
         }
         res.clearCookie('adminToken');
         res.json({ success: true });
@@ -849,14 +1005,40 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
+// ADMIN PASSCODE CHANGE
+app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
+    try {
+        const { oldPasscode, newPasscode } = req.body;
+        if (!oldPasscode || !newPasscode) return res.status(400).json({ error: 'Both passcodes required' });
+        const passwordCheck = Security.isStrongPassword(newPasscode);
+        if (!passwordCheck.valid) return res.status(400).json({ error: passwordCheck.message });
+        const admin = await User.findOne();
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        const isValid = bcrypt.compareSync(oldPasscode, admin.passcode);
+        if (!isValid) {
+            await logAdminAction('admin', 'PASSCODE_CHANGE_FAILED', {}, req);
+            return res.status(401).json({ error: 'Current passcode is incorrect' });
+        }
+        admin.passcode = bcrypt.hashSync(newPasscode, 10);
+        await admin.save();
+        await invalidateAllSessions('admin');
+        await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
+        res.clearCookie('adminToken');
+        res.json({ success: true, message: 'Passcode changed. Please login again.' });
+    } catch (error) {
+        console.error('❌ Passcode change error:', error);
+        res.status(500).json({ error: 'Passcode change failed' });
+    }
+});
+
 // ADMIN THEME
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
         if (!['light', 'dark'].includes(theme)) return res.status(400).json({ error: 'Invalid theme' });
-        const admin = await User.findOne({ email: ADMIN_EMAIL });
+        const admin = await User.findOne();
         if (admin) { admin.theme = theme; await admin.save(); }
-        await logAdminAction(req.user.id, 'THEME_CHANGE', { theme }, req);
+        await logAdminAction('admin', 'THEME_CHANGE', { theme }, req);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update theme' });
@@ -872,7 +1054,7 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
         }
         const popupSettings = await PopupSettings.findOne();
         if (popupSettings) { popupSettings.image = background || null; await popupSettings.save(); }
-        await logAdminAction(req.user.id, 'BACKGROUND_CHANGE', { hasImage: !!background }, req);
+        await logAdminAction('admin', 'BACKGROUND_CHANGE', { hasImage: !!background }, req);
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Background update error:', error);
@@ -909,7 +1091,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
         if (!pricing) pricing = new Pricing();
         pricing.whatsappNumber = number;
         await pricing.save();
-        await logAdminAction(req.user.id, 'UPDATE_WHATSAPP', { number }, req);
+        await logAdminAction('admin', 'UPDATE_WHATSAPP', { number }, req);
         res.json({ success: true, number });
     } catch (error) {
         console.error('❌ WhatsApp number save error:', error);
@@ -953,7 +1135,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             }
         });
         await newLink.save();
-        await logAdminAction(req.user.id, 'CREATE_LINK', { linkId: newLink.id, name: newLink.name }, req);
+        await logAdminAction('admin', 'CREATE_LINK', { linkId: newLink.id, name: newLink.name }, req);
         res.json(newLink);
     } catch (error) {
         console.error('❌ Create link error:', error);
@@ -986,7 +1168,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             changes.popupSettings = popupSettings;
         }
         await link.save();
-        await logAdminAction(req.user.id, 'UPDATE_LINK', { linkId: link.id, changes }, req);
+        await logAdminAction('admin', 'UPDATE_LINK', { linkId: link.id, changes }, req);
         res.json(link);
     } catch (error) {
         console.error('❌ Update link error:', error);
@@ -1003,7 +1185,7 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         link.status = status;
         await link.save();
-        await logAdminAction(req.user.id, 'UPDATE_STATUS', { linkId: link.id, name: link.name, newStatus: status }, req);
+        await logAdminAction('admin', 'UPDATE_STATUS', { linkId: link.id, name: link.name, newStatus: status }, req);
         res.json(link);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status' });
@@ -1014,7 +1196,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const link = await Link.findOne({ id });
-        if (link) await logAdminAction(req.user.id, 'DELETE_LINK', { linkId: link.id, name: link.name }, req);
+        if (link) await logAdminAction('admin', 'DELETE_LINK', { linkId: link.id, name: link.name }, req);
         await Link.findOneAndDelete({ id });
         res.json({ success: true });
     } catch (error) {
@@ -1032,7 +1214,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
         if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
         pricingDoc.updatedAt = new Date();
         await pricingDoc.save();
-        await logAdminAction(req.user.id, 'UPDATE_PRICING', { pricing }, req);
+        await logAdminAction('admin', 'UPDATE_PRICING', { pricing }, req);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update pricing' });
@@ -1067,7 +1249,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
         await link.save();
         const dashboardUrl = '/user-dashboard/' + dashboardId;
         const fullUrl = req.protocol + '://' + req.get('host') + dashboardUrl;
-        await logAdminAction(req.user.id, 'CREATE_DASHBOARD_LINK', { linkId, dashboardId }, req);
+        await logAdminAction('admin', 'CREATE_DASHBOARD_LINK', { linkId, dashboardId }, req);
         res.json({ success: true, dashboardId, dashboardUrl, fullUrl, linkName: link.name, linkId: link.id });
     } catch (error) {
         console.error('❌ Generate dashboard link error:', error);
@@ -1132,7 +1314,7 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
         request.status = 'paid';
         request.paidAt = new Date();
         await request.save();
-        await logAdminAction(req.user.id, 'MARK_PAID', { requestId, linkId: request.linkId }, req);
+        await logAdminAction('admin', 'MARK_PAID', { requestId, linkId: request.linkId }, req);
         res.json({ success: true, message: 'Payment marked as paid' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to mark payment' });
@@ -1157,7 +1339,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         request.status = 'approved';
         request.approvedAt = new Date();
         await request.save();
-        await logAdminAction(req.user.id, 'APPROVE_RENEWAL', { requestId, linkId: request.linkId, plan: request.plan }, req);
+        await logAdminAction('admin', 'APPROVE_RENEWAL', { requestId, linkId: request.linkId, plan: request.plan }, req);
         res.json({ success: true, message: 'Renewal approved! Link extended.' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to approve renewal' });
@@ -1171,7 +1353,7 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
         if (!request) return res.status(404).json({ error: 'Request not found' });
         request.status = 'rejected';
         await request.save();
-        await logAdminAction(req.user.id, 'REJECT_RENEWAL', { requestId, linkId: request.linkId }, req);
+        await logAdminAction('admin', 'REJECT_RENEWAL', { requestId, linkId: request.linkId }, req);
         res.json({ success: true, message: 'Renewal rejected' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to reject renewal' });
@@ -1182,7 +1364,7 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     try {
         const { requestId } = req.params;
         const request = await RenewalRequest.findOne({ id: requestId });
-        if (request) await logAdminAction(req.user.id, 'DELETE_RENEWAL', { requestId, linkId: request.linkId }, req);
+        if (request) await logAdminAction('admin', 'DELETE_RENEWAL', { requestId, linkId: request.linkId }, req);
         await RenewalRequest.findOneAndDelete({ id: requestId });
         res.json({ success: true, message: 'Request removed' });
     } catch (error) {
@@ -1190,29 +1372,41 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
+// ==================== Update Admin Contact Info (Email & Phone) ====================
+app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        const admin = await User.findOne();
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        
+        if (email !== undefined) admin.email = email;
+        if (phone !== undefined) admin.phone = phone;
+        
+        await admin.save();
+        await logAdminAction('admin', 'UPDATE_CONTACT', { email, phone }, req);
+        res.json({ success: true, email: admin.email, phone: admin.phone });
+    } catch (error) {
+        console.error('❌ Update contact error:', error);
+        res.status(500).json({ error: 'Failed to update contact info' });
+    }
+});
+
 // ==================== DEVICE MANAGEMENT ROUTES ====================
 
-// GET: Get all blocked devices + recent login attempts
+// GET: Get all blocked devices
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
             $or: [
                 { blockedUntil: { $gt: new Date() } },
-                { isPermanent: true },
-                { attempts: { $gt: 0 } }
+                { isPermanent: true }
             ]
         }).sort({ lastAttempt: -1 });
-        
-        const recentAttempts = await BlockedDevice.find({
-            lastAttempt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-            attempts: { $gt: 0 }
-        }).sort({ lastAttempt: -1 }).limit(20);
         
         res.json({
             success: true,
             devices,
-            recentAttempts,
-            total: devices.length
+            count: devices.length
         });
     } catch (error) {
         console.error('❌ Blocked devices error:', error);
@@ -1234,10 +1428,9 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
         device.isPermanent = true;
         device.permanentBlockedAt = new Date();
         device.reason = reason || 'Permanently banned by admin';
-        device.blockedUntil = null;
         await device.save();
         
-        await logAdminAction(req.user.id, 'PERMANENT_BAN_DEVICE', { 
+        await logAdminAction('admin', 'PERMANENT_BAN_DEVICE', { 
             deviceId: id, 
             fingerprint: device.fingerprint,
             ip: device.ip,
@@ -1271,7 +1464,7 @@ app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, r
         device.blockedUntil = null;
         await device.save();
         
-        await logAdminAction(req.user.id, 'UNBLOCK_DEVICE', { 
+        await logAdminAction('admin', 'UNBLOCK_DEVICE', { 
             deviceId: id, 
             fingerprint: device.fingerprint,
             ip: device.ip,
@@ -1296,7 +1489,7 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
         
         const device = await BlockedDevice.findById(id);
         if (device) {
-            await logAdminAction(req.user.id, 'DELETE_DEVICE_RECORD', { 
+            await logAdminAction('admin', 'DELETE_DEVICE_RECORD', { 
                 deviceId: id, 
                 fingerprint: device.fingerprint,
                 ip: device.ip,
@@ -1500,15 +1693,6 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== Serve Pages ====================
-// ✅ FIXED ORDER: INDEX first, then LOGIN
-app.get('/admin/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-});
-
-app.get('/admin/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
-});
-
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -1523,6 +1707,14 @@ app.get('/user-dashboard', (req, res) => {
 
 app.get('/user-dashboard/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
+});
+
+app.get('/admin/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+});
+
+app.get('/admin/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
 });
 
 app.get('/manifest.json', (req, res) => {
@@ -1543,6 +1735,10 @@ setInterval(async () => {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
         
+        const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+        if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
+        
+        // Clean expired temporary blocks (not permanent)
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() },
             isPermanent: false
@@ -1562,14 +1758,15 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
-    console.log('👤 Admin Email: ' + ADMIN_EMAIL);
-    console.log('🔐 Auth Method: Google OAuth 2.0');
+    console.log('🔑 ADMIN PASSCODE: 951753');
     console.log('⏰ Session: 7 DAYS');
+    console.log('🔐 2FA: ' + (ENABLE_2FA ? '✅ Enabled' : '❌ Disabled'));
     console.log('🛡️ IP Whitelist: ' + IP_WHITELIST);
     console.log('⏰ Session Timeout: ' + SESSION_TIMEOUT + ' minutes');
     console.log('🔒 Max Login Attempts: ' + MAX_LOGIN_ATTEMPTS);
-    console.log('📋 Attack Logging: ✅ Enabled');
+    console.log('📋 Audit Logging: ✅ Enabled');
     console.log('📊 48hr Unique Visitor Tracking: ✅ Enabled');
+    console.log('📊 Claim Tracking: Only on Main Claim Button');
     console.log('📱 WhatsApp: Renewal requests via WhatsApp');
     console.log('🔍 Dashboard Map: dashboard_xxx → link_xxx mapping');
     console.log('📹 Video CSP: All media sources allowed');
@@ -1577,11 +1774,12 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
     console.log('🚨 NEW SECURITY FEATURES:');
-    console.log('🔐 Google OAuth 2.0 Login (Primary: ' + ADMIN_EMAIL + ')');
-    console.log('🛡️ Device-based blocking: Admin protected');
-    console.log('⛔ Permanent Block: Beautiful UI for permanently blocked devices');
-    console.log('📱 Device Management: View, Ban, and Unban devices with details');
+    console.log('🛡️ Device-based blocking: Individual device blocks (Admin protected)');
+    console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
+    console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
+    console.log('📱 OTP Methods: Email support (SMS disabled)');
+    console.log('🔧 Device Management: View, Ban, and Unban devices');
     console.log('📋 Attack Logging: Detects and logs attack attempts');
-    console.log('⏰ 24-hour auto-block on repeated attempts');
+    console.log('⛔ Permanent Block: Beautiful UI for permanently blocked devices');
     console.log('═══════════════════════════════════════════');
 });

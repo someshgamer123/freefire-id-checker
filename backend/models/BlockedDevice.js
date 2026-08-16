@@ -16,15 +16,8 @@ const BlockedDeviceSchema = new mongoose.Schema({
     },
     deviceType: {
         type: String,
-        default: 'Unknown'
-    },
-    os: {
-        type: String,
-        default: 'Unknown'
-    },
-    browser: {
-        type: String,
-        default: 'Unknown'
+        enum: ['attacker', 'admin', 'visitor'],
+        default: 'visitor'
     },
     attempts: {
         type: Number,
@@ -54,10 +47,6 @@ const BlockedDeviceSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    lastEmail: {
-        type: String,
-        default: null
-    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -66,7 +55,7 @@ const BlockedDeviceSchema = new mongoose.Schema({
 
 BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
+BlockedDeviceSchema.index({ deviceType: 1 });
 BlockedDeviceSchema.index({ isPermanent: 1 });
-BlockedDeviceSchema.index({ lastAttempt: -1 });
 
 module.exports = mongoose.model('BlockedDevice', BlockedDeviceSchema);

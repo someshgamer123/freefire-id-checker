@@ -24,7 +24,6 @@ const LoginAttemptSchema = new mongoose.Schema({
     }
 });
 
-// ✅ Only these indexes - NO DUPLICATES
 LoginAttemptSchema.index({ ip: 1 });
 LoginAttemptSchema.index({ lockedUntil: 1 });
 
