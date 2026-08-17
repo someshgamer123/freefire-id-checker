@@ -167,7 +167,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
+// ==================== Rate Limiting (FIXED: Device-based, not IP-based) ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -175,10 +175,25 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-const authLimiter = rateLimit({
+// ✅ FIXED: Device-based Rate Limiter (Fingerprint se track karega, IP se nahi)
+const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
-    message: 'Too many login attempts, try after 30 minutes.'
+    keyGenerator: (req) => {
+        // Fingerprint generate karein from IP + User-Agent
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+    },
+    message: 'Too many login attempts from this device. Please try again after 30 minutes.',
+    skip: async (req) => {
+        // ✅ Admin device ko skip karein (kabhi block nahi hoga)
+        const admin = await User.findOne();
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+        return fingerprint === admin?.fingerprint;
+    }
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -816,7 +831,7 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 // ================================================================
 
 // ==================== ADMIN LOGIN (WITH OTP VERIFICATION) ====================
-app.post('/api/admin/login', authLimiter, async (req, res) => {
+app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
         const { passcode, otp, step } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
@@ -841,17 +856,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             }
         }
         
-        const attemptCheck = await checkLoginAttempts(ip);
-        if (!attemptCheck.allowed) {
-            await logAdminAction('admin', 'LOGIN_LOCKED', { 
-                ip: ip, 
-                remainingMinutes: attemptCheck.remainingMinutes 
-            }, req);
-            return res.status(429).json({ 
-                error: `Too many attempts. Account locked for ${attemptCheck.remainingMinutes} minutes.` 
-            });
-        }
-        
         // STEP 1: Verify passcode first
         if (!step || step === 'passcode') {
             if (!passcode) {
@@ -866,9 +870,8 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             const isValid = bcrypt.compareSync(passcode, admin.passcode);
             
             if (!isValid) {
-                await recordLoginAttempt(ip, false);
                 await incrementDeviceAttempts(req);
-                await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip }, req);
+                await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip, deviceName: deviceName }, req);
                 
                 // Block device after 5 failed attempts
                 const deviceRecord = await BlockedDevice.findOne({ 
@@ -957,7 +960,6 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             
-            await recordLoginAttempt(ip, true);
             // Remove temporary block if any
             await BlockedDevice.findOneAndDelete({ 
                 $or: [{ fingerprint }, { ip }],
@@ -1263,26 +1265,92 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const links = await Link.find();
         const stats = await Stats.findOne();
         const today = new Date().toISOString().split('T')[0];
-        const linkStats = links.map(link => ({
-            id: link.id,
-            name: link.name,
-            visits: link.visits || 0,
-            claims: link.claims || 0,
-            dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
-            dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
-            todayVisits: link.dailyVisits?.get(today) || 0,
-            todayClaims: link.dailyClaims?.get(today) || 0,
-            status: link.status,
-            expiryDate: link.expiryDate || null
-        }));
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        
+        const linkStats = links.map(link => {
+            const dailyVisitsMap = link.dailyVisits || new Map();
+            const dailyClaimsMap = link.dailyClaims || new Map();
+            
+            // Calculate 24h visits and claims
+            let visits24h = 0;
+            let claims24h = 0;
+            for (const [date, count] of dailyVisitsMap) {
+                const d = new Date(date);
+                if (d >= oneDayAgo) visits24h += count;
+            }
+            for (const [date, count] of dailyClaimsMap) {
+                const d = new Date(date);
+                if (d >= oneDayAgo) claims24h += count;
+            }
+            
+            // Calculate 60m visits and claims
+            let visits60m = 0;
+            let claims60m = 0;
+            for (const [date, count] of dailyVisitsMap) {
+                const d = new Date(date);
+                if (d >= oneHourAgo) visits60m += count;
+            }
+            for (const [date, count] of dailyClaimsMap) {
+                const d = new Date(date);
+                if (d >= oneHourAgo) claims60m += count;
+            }
+            
+            return {
+                id: link.id,
+                name: link.name,
+                visits: link.visits || 0,
+                claims: link.claims || 0,
+                visits24h,
+                claims24h,
+                visits60m,
+                claims60m,
+                dailyVisits: Object.fromEntries(dailyVisitsMap),
+                dailyClaims: Object.fromEntries(dailyClaimsMap),
+                todayVisits: dailyVisitsMap.get(today) || 0,
+                todayClaims: dailyClaimsMap.get(today) || 0,
+                status: link.status,
+                expiryDate: link.expiryDate || null
+            };
+        });
+        
+        // Global stats with 24h and 60m calculations
+        const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
+        const dailyClaimsGlobal = stats?.dailyClaims || new Map();
+        
+        let globalVisits24h = 0;
+        let globalClaims24h = 0;
+        let globalVisits60m = 0;
+        let globalClaims60m = 0;
+        
+        for (const [date, count] of dailyVisitorsGlobal) {
+            const d = new Date(date);
+            if (d >= oneDayAgo) globalVisits24h += count;
+            if (d >= oneHourAgo) globalVisits60m += count;
+        }
+        for (const [date, count] of dailyClaimsGlobal) {
+            const d = new Date(date);
+            if (d >= oneDayAgo) globalClaims24h += count;
+            if (d >= oneHourAgo) globalClaims60m += count;
+        }
+        
+        // Active Now (Real-time calculation based on 60m)
+        const activeNow = Math.max(1, Math.round(globalVisits60m / 12)); // Average of last 5 minutes
+        
         res.json({
             global: {
                 totalVisitors: stats?.totalVisitors || 0,
                 totalClaims: stats?.totalClaims || 0,
-                todayVisitors: stats?.dailyVisitors?.get(today) || 0,
-                todayClaims: stats?.dailyClaims?.get(today) || 0,
-                dailyVisitors: Object.fromEntries(stats?.dailyVisitors || new Map()),
-                dailyClaims: Object.fromEntries(stats?.dailyClaims || new Map())
+                todayVisitors: dailyVisitorsGlobal.get(today) || 0,
+                todayClaims: dailyClaimsGlobal.get(today) || 0,
+                visits24h: globalVisits24h,
+                claims24h: globalClaims24h,
+                visits60m: globalVisits60m,
+                claims60m: globalClaims60m,
+                activeNow: activeNow,
+                dailyVisitors: Object.fromEntries(dailyVisitorsGlobal),
+                dailyClaims: Object.fromEntries(dailyClaimsGlobal)
             },
             links: linkStats
         });
@@ -1393,7 +1461,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 
 // ==================== DEVICE MANAGEMENT ROUTES ====================
 
-// GET: Get all blocked devices
+// GET: Get all blocked devices with login history
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1527,7 +1595,8 @@ app.get('/api/admin/block-status', async (req, res) => {
                     blocked: true,
                     permanent: true,
                     reason: blocked.reason,
-                    deviceName: blocked.deviceName
+                    deviceName: blocked.deviceName,
+                    blockedAt: blocked.permanentBlockedAt
                 });
             } else {
                 const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
@@ -1781,5 +1850,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔧 Device Management: View, Ban, and Unban devices');
     console.log('📋 Attack Logging: Detects and logs attack attempts');
     console.log('⛔ Permanent Block: Beautiful UI for permanently blocked devices');
+    console.log('📊 FIXED RATE LIMITER: Device-based, not IP-based');
     console.log('═══════════════════════════════════════════');
 });

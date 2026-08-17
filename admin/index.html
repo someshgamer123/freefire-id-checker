@@ -832,7 +832,7 @@
 
             <div class="card">
                 <h3>🔧 Device Management</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked and banned devices</p>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked and banned devices with login history</p>
                 <div id="deviceList" style="max-height:400px;overflow-y:auto;">
                     <div class="empty-state" id="noDevices">
                         <span class="icon">📱</span>
@@ -1056,7 +1056,6 @@
             }
 
             var stats = data.global || {};
-            var dailyVisitors = stats.dailyVisitors || {};
             
             // Lifetime
             var lifetime = document.getElementById('liveLifetime');
@@ -1070,53 +1069,44 @@
                 previousLiveData.lifetime = newVal;
             }
             
-            // Last 48 Hours
-            var last48hrs = 0;
-            var now = new Date();
-            for (var date in dailyVisitors) {
-                var d = new Date(date);
-                if ((now - d) < 48 * 60 * 60 * 1000) {
-                    last48hrs += dailyVisitors[date] || 0;
-                }
-            }
+            // Last 48 Hours (using visits24h from API)
             var live48hr = document.getElementById('live48hr');
             if (live48hr) {
-                if (previousLiveData.live48hr !== last48hrs) {
-                    live48hr.textContent = last48hrs;
+                var newVal24h = stats.visits24h || 0;
+                if (previousLiveData.live48hr !== newVal24h) {
+                    live48hr.textContent = newVal24h;
                     live48hr.classList.add('pulse-update');
                     setTimeout(function() { live48hr.classList.remove('pulse-update'); }, 300);
                 }
-                previousLiveData.live48hr = last48hrs;
+                previousLiveData.live48hr = newVal24h;
             }
             var live48hrTime = document.getElementById('live48hrTime');
             if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
-            // Last 60 Minutes
-            var today = new Date().toISOString().split('T')[0];
-            var todayVisits = dailyVisitors[today] || 0;
-            var last60min = Math.round(todayVisits / 24);
+            // Last 60 Minutes (using visits60m from API)
             var live60min = document.getElementById('live60min');
             if (live60min) {
-                if (previousLiveData.live60min !== last60min) {
-                    live60min.textContent = last60min;
+                var newVal60m = stats.visits60m || 0;
+                if (previousLiveData.live60min !== newVal60m) {
+                    live60min.textContent = newVal60m;
                     live60min.classList.add('pulse-update');
                     setTimeout(function() { live60min.classList.remove('pulse-update'); }, 300);
                 }
-                previousLiveData.live60min = last60min;
+                previousLiveData.live60min = newVal60m;
             }
             var live60minTime = document.getElementById('live60minTime');
             if (live60minTime) live60minTime.textContent = 'Last 60 min';
             
-            // Active Now
-            var activeNow = Math.max(1, Math.round(last60min / 6));
+            // Active Now (Real-time from API)
             var liveActive = document.getElementById('liveActive');
             if (liveActive) {
-                if (previousLiveData.liveActive !== activeNow) {
-                    liveActive.textContent = activeNow;
+                var newValActive = stats.activeNow || 0;
+                if (previousLiveData.liveActive !== newValActive) {
+                    liveActive.textContent = newValActive;
                     liveActive.classList.add('pulse-update');
                     setTimeout(function() { liveActive.classList.remove('pulse-update'); }, 300);
                 }
-                previousLiveData.liveActive = activeNow;
+                previousLiveData.liveActive = newValActive;
             }
             
             // Update refresh time
@@ -1693,14 +1683,21 @@
             
             var now = new Date();
             var filteredDates = [];
+            
             if (currentFilter === 'lifetime') {
                 filteredDates = allDates;
             } else if (currentFilter === '24h') {
                 var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
+                filteredDates = allDates.filter(function(d) { 
+                    var date = new Date(d);
+                    return date >= oneDayAgo;
+                });
             } else if (currentFilter === '60m') {
                 var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneHourAgo; });
+                filteredDates = allDates.filter(function(d) { 
+                    var date = new Date(d);
+                    return date >= oneHourAgo;
+                });
             } else if (currentFilter === 'custom') {
                 var fromDate = document.getElementById('analyticsFromDate').value;
                 var toDate = document.getElementById('analyticsToDate').value;
@@ -1715,6 +1712,7 @@
                 }
                 if (!fromDate && !toDate) filteredDates = allDates;
             }
+            
             if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
             
             filteredDates.forEach(function(date) {
@@ -2010,16 +2008,18 @@
                             remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
                         }
                         
+                        var statusText = isPermanent ? '⛔ PERMANENTLY BANNED' : (isExpired ? '✅ EXPIRED' : '⏳ ' + remainingTime);
+                        
                         div.innerHTML = `
                             <div class="info">
                                 <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
                                 <span class="details">
                                     <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
                                     <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
-                                    <span class="status-badge ${isPermanent ? 'status-disabled' : 'status-suspended'}">
-                                        ${isPermanent ? '⛔ PERMANENT' : (isExpired ? '✅ Expired' : '⏳ ' + remainingTime)}
-                                    </span>
                                     <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
+                                    <span class="status-badge ${isPermanent ? 'status-disabled' : 'status-suspended'}">
+                                        ${statusText}
+                                    </span>
                                 </span>
                             </div>
                             <div class="actions">
