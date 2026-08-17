@@ -6,171 +6,149 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
-        /* ===== MODERN LOGIN UI ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-        :root {
-            --primary: #6C5CE7;
-            --secondary: #00D2D3;
-            --accent: #A29BFE;
-            --success: #00B894;
-            --danger: #FF7675;
-            --warning: #FDCB6E;
-            --bg: #0F0F1A;
-            --card-bg: rgba(255,255,255,0.03);
-            --text: #FFFFFF;
-            --text-light: #B8B8D2;
-            --border: rgba(255,255,255,0.06);
-            --shadow: 0 8px 32px rgba(0,0,0,0.4);
-            --radius: 16px;
-            --glow: 0 0 40px rgba(108,92,231,0.15);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body {
-            background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 50%, #16213E 100%);
+            background: #0f1117;
             min-height: 100vh;
             display: flex; justify-content: center; align-items: center; padding: 20px;
         }
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         .login-box {
-            background: rgba(255,255,255,0.03);
+            background: rgba(26, 28, 35, 0.8);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 40px; border-radius: var(--radius);
-            box-shadow: var(--shadow), var(--glow);
+            padding: 40px; border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             max-width: 420px; width: 100%;
             text-align: center; animation: fadeInUp 0.6s ease;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .login-box .logo { font-size: 64px; margin-bottom: 12px; display: block; }
-        .login-box h2 { 
-            color: var(--text); margin-bottom: 6px; font-size: 24px; font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .login-box .sub-title { color: var(--text-light); margin-bottom: 24px; font-size: 14px; }
-        
-        .security-badge {
-            display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600;
-            background: rgba(0,184,148,0.15); color: var(--success); margin-bottom: 12px;
-            border: 1px solid rgba(0,184,148,0.1);
-        }
+        .login-box .logo { font-size: 60px; margin-bottom: 10px; }
+        .login-box h2 { color: #e2e8f0; margin-bottom: 6px; font-size: 24px; font-weight: 700; }
+        .login-box .sub-title { color: #94a3b8; margin-bottom: 25px; font-size: 14px; }
         
         .passcode-inputs {
-            display: flex; gap: 10px; justify-content: center; margin: 16px 0;
+            display: flex; gap: 10px; justify-content: center; margin: 15px 0;
         }
         .passcode-inputs input {
-            width: 50px; height: 58px; text-align: center; font-size: 22px; font-weight: 700;
-            border: 1px solid var(--border); border-radius: 12px; transition: 0.3s;
-            background: rgba(255,255,255,0.03); color: var(--text);
-            caret-color: var(--primary);
+            width: 50px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
+            border: 1px solid #2d3138; border-radius: 12px; transition: 0.3s;
+            background: rgba(15,17,23,0.8); color: #e2e8f0; caret-color: #6366f1;
         }
         .passcode-inputs input:focus {
-            border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
-            background: rgba(255,255,255,0.06);
+            border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+            background: rgba(15,17,23,1);
         }
         .passcode-inputs input.filled {
-            border-color: var(--primary); background: rgba(108,92,231,0.08);
+            border-color: #6366f1; background: rgba(99,102,241,0.05);
         }
         .passcode-inputs input.error {
-            border-color: var(--danger); background: rgba(255,118,117,0.08);
+            border-color: #ef4444; background: rgba(239,68,68,0.05);
             animation: shake 0.5s ease;
         }
         
-        .otp-input-wrapper { display: none; margin: 16px 0; }
-        .otp-input-wrapper.show { display: block; animation: fadeInUp 0.4s ease; }
+        .otp-input-wrapper {
+            display: none; margin: 15px 0;
+        }
+        .otp-input-wrapper.show {
+            display: block; animation: fadeInUp 0.4s ease;
+        }
         .otp-input-wrapper input {
-            width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px;
-            font-size: 20px; text-align: center; letter-spacing: 8px;
-            background: rgba(255,255,255,0.03); color: var(--text); transition: 0.3s;
+            width: 100%; padding: 14px;
+            border: 1px solid #2d3138; border-radius: 12px; font-size: 20px;
+            text-align: center; letter-spacing: 8px;
+            background: rgba(15,17,23,0.8); color: #e2e8f0; transition: 0.3s;
         }
         .otp-input-wrapper input:focus {
-            border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
-            background: rgba(255,255,255,0.06);
+            border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+            background: rgba(15,17,23,1);
         }
-        .otp-input-wrapper .otp-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; display: block; }
-        .otp-input-wrapper .otp-method-info { font-size: 12px; color: var(--text-light); margin-top: 6px; }
+        .otp-input-wrapper input.error {
+            border-color: #ef4444; background: rgba(239,68,68,0.05);
+        }
+        .otp-input-wrapper .otp-label { font-size: 13px; color: #94a3b8; margin-bottom: 8px; display: block; }
+        .otp-input-wrapper .otp-method-info { font-size: 12px; color: #4a4e57; margin-top: 6px; }
         
         .btn {
-            width: 100%; padding: 14px; font-size: 16px; margin-top: 16px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white; border: none; border-radius: 12px;
-            cursor: pointer; transition: 0.3s; font-weight: 600;
+            width: 100%; padding: 15px; font-size: 18px; margin-top: 15px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none;
+            border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: 600;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(108,92,231,0.3); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(99,102,241,0.2); }
         .btn:active { transform: scale(0.97); }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .btn-secondary {
-            background: rgba(255,255,255,0.05);
-            color: var(--text); border: 1px solid var(--border);
-        }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-secondary { background: #2d3138; color: #e2e8f0; }
+        .btn-secondary:hover { background: #3b3f48; }
         
-        .error { color: var(--danger); margin: 10px 0; font-weight: 500; min-height: 24px; font-size: 14px; }
+        .error { color: #ef4444; margin: 10px 0; font-weight: 600; min-height: 24px; font-size: 14px; }
         .error:empty { display: none; }
-        .error.success { color: var(--success); }
+        .error.success { color: #22c55e; }
         
         .passcode-hint {
-            color: var(--text-light); font-size: 13px; margin: 8px 0;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
+            color: #4a4e57; font-size: 13px; margin: 8px 0; display: flex;
+            align-items: center; justify-content: center; gap: 6px;
         }
         .passcode-hint .dot {
             display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); transition: 0.3s;
+            background: #2d3138; transition: 0.3s;
         }
-        .passcode-hint .dot.filled { background: var(--primary); }
-        .passcode-hint .dot.active { background: var(--primary); animation: pulse 1s infinite; }
+        .passcode-hint .dot.filled { background: #6366f1; }
+        .passcode-hint .dot.active { background: #6366f1; animation: pulse 1s infinite; }
         
-        .footer-text { color: var(--text-light); font-size: 12px; margin-top: 20px; }
-        .footer-text a { color: var(--primary); text-decoration: none; }
+        .footer-text { color: #4a4e57; font-size: 12px; margin-top: 20px; }
+        .footer-text a { color: #6366f1; text-decoration: none; }
         .footer-text a:hover { text-decoration: underline; }
         
+        .security-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px;
+            font-weight: 600; background: rgba(34,197,94,0.1); color: #22c55e; margin-bottom: 10px;
+        }
+        .security-badge.locked { background: rgba(239,68,68,0.1); color: #ef4444; }
+        
         .rate-limit-msg {
-            background: rgba(253,203,110,0.1);
-            color: var(--warning); padding: 10px 14px; border-radius: 10px;
-            font-size: 13px; margin: 10px 0; display: none;
-            border: 1px solid rgba(253,203,110,0.2);
+            background: rgba(245,158,11,0.1); color: #f59e0b; padding: 10px 14px;
+            border-radius: 10px; font-size: 13px; margin: 10px 0; display: none;
+            border: 1px solid rgba(245,158,11,0.15);
         }
         .rate-limit-msg.show { display: block; }
         
         .blocked-msg {
-            background: rgba(255,118,117,0.1);
-            color: var(--danger); padding: 16px 20px; border-radius: 12px;
-            font-size: 14px; margin: 10px 0; display: none; font-weight: 500;
-            border: 1px solid rgba(255,118,117,0.2);
+            background: rgba(239,68,68,0.1); color: #ef4444; padding: 15px 20px;
+            border-radius: 12px; font-size: 14px; margin: 10px 0; display: none;
+            font-weight: 600; border: 1px solid rgba(239,68,68,0.15);
         }
         .blocked-msg.show { display: block; }
-        .blocked-msg .block-time { font-size: 20px; font-weight: 700; display: block; margin: 6px 0; }
+        .blocked-msg .block-time { font-size: 20px; font-weight: 800; display: block; margin: 6px 0; }
         
-        .resend-btn {
-            background: none; border: none; color: var(--primary); font-weight: 600;
-            cursor: pointer; font-size: 13px; margin-top: 6px; text-decoration: underline;
-        }
-        .resend-btn:hover { color: var(--secondary); }
+        .resend-btn { background: none; border: none; color: #6366f1; font-weight: 600; cursor: pointer; font-size: 13px; margin-top: 6px; text-decoration: underline; }
+        .resend-btn:hover { color: #8b5cf6; }
         .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         @media (max-width: 480px) {
-            .login-box { padding: 28px 20px; }
-            .passcode-inputs input { width: 42px; height: 50px; font-size: 18px; }
-            .passcode-inputs { gap: 6px; }
+            .login-box { padding: 30px 20px; }
+            .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
+            .passcode-inputs { gap: 8px; }
             .otp-input-wrapper input { font-size: 18px; padding: 12px; letter-spacing: 6px; }
         }
         @media (max-width: 380px) {
-            .passcode-inputs input { width: 36px; height: 44px; font-size: 16px; }
-            .passcode-inputs { gap: 4px; }
+            .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
+            .passcode-inputs { gap: 5px; }
         }
     </style>
 </head>
 <body>
     <div class="login-box">
-        <span class="logo">🔐</span>
+        <div class="logo">🔐</div>
         <h2>Admin Login</h2>
         <div class="security-badge" id="securityBadge">🔒 Secure Connection</div>
         <p class="sub-title" id="loginSubtitle">Enter your passcode</p>
@@ -224,7 +202,7 @@
         <div class="footer-text">
             🔒 Secure | <a href="#" onclick="clearAll(event)">Clear</a>
             <span style="margin:0 8px;">|</span>
-            <span style="color:var(--text-light);font-size:11px;">2-Step Verification</span>
+            <span style="color:#4a4e57;font-size:11px;">2-Step Verification</span>
         </div>
     </div>
     
@@ -246,7 +224,7 @@
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
 
-        var currentStep = 'passcode';
+        var currentStep = 'passcode'; // 'passcode' or 'otp'
         var otpSent = false;
         var resendCooldown = 0;
 
@@ -406,6 +384,7 @@
                 loginBtn.textContent = '🔑 Continue';
             }
             
+            // Reset OTP step
             stepOTP.style.display = 'none';
             stepPasscode.style.display = 'block';
             currentStep = 'passcode';
@@ -489,8 +468,10 @@
                 var data = await response.json();
 
                 if (data.success && data.step === 'complete') {
+                    // Direct login (no OTP needed)
                     handleLoginSuccess(data);
                 } else if (data.step === 'otp') {
+                    // OTP required
                     showOTPStep(data.method, data.contact);
                     if (loginBtn) {
                         loginBtn.disabled = false;
@@ -697,6 +678,7 @@
         console.log('🔐 Secure Admin Login Panel');
         console.log('🛡️ 2-Step Verification Enabled');
         console.log('📱 OTP via Email/SMS');
+        console.log('🔒 Strong Password Required');
         console.log('⏰ Session: 7 days');
     </script>
 </body>

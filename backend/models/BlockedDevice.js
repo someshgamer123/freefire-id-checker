@@ -31,10 +31,6 @@ const BlockedDeviceSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    blockLevel: {
-        type: Number,
-        default: 0 // 0 = Not blocked, 1 = 48h, 2 = 7 days, 3 = Permanent
-    },
     isPermanent: {
         type: Boolean,
         default: false
@@ -51,6 +47,13 @@ const BlockedDeviceSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    loginHistory: [{
+        ip: String,
+        deviceName: String,
+        timestamp: Date,
+        success: Boolean,
+        reason: String
+    }],
     createdAt: {
         type: Date,
         default: Date.now

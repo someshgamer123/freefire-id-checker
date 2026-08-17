@@ -29,6 +29,22 @@ const StatsSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // Real-time tracking
+    minuteVisitors: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    minuteClaims: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    activeSessions: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     lastUpdated: {
         type: Date,
         default: Date.now

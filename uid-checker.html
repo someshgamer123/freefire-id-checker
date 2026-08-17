@@ -4,83 +4,70 @@
     <title>UID Checker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* ===== MODERN UID CHECKER UI ===== */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        :root {
-            --primary: #6C5CE7;
-            --secondary: #00D2D3;
-            --accent: #A29BFE;
-            --success: #00B894;
-            --danger: #FF7675;
-            --warning: #FDCB6E;
-            --bg: #0F0F1A;
-            --card-bg: rgba(255,255,255,0.03);
-            --text: #FFFFFF;
-            --text-light: #B8B8D2;
-            --border: rgba(255,255,255,0.06);
-            --shadow: 0 8px 32px rgba(0,0,0,0.4);
-            --radius: 16px;
-            --glow: 0 0 40px rgba(108,92,231,0.15);
-        }
         
         body {
             min-height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-            padding: 20px; background: var(--bg); position: relative; overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #0f1117;
+            position: relative;
+            overflow: hidden;
         }
         
         .bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            overflow: hidden; background: linear-gradient(135deg, #0F0F1A, #1A1A2E, #16213E);
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
         }
         .bg-container img {
-            width: 100%; height: 100%; object-fit: cover; filter: blur(8px) brightness(0.4);
-            transform: scale(1.1);
+            width: 100%; height: 100%; object-fit: cover; filter: blur(12px) brightness(0.3); transform: scale(1.1);
         }
         .bg-container .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15,15,26,0.6);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,17,23,0.6);
         }
         
         .container {
             position: relative; z-index: 1;
-            background: rgba(255,255,255,0.03);
+            background: rgba(26, 28, 35, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 40px 35px; border-radius: var(--radius);
-            border: 1px solid var(--border); box-shadow: var(--shadow), var(--glow);
-            max-width: 420px; width: 100%; text-align: center;
+            padding: 40px 35px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
             animation: fadeInUp 0.8s ease;
         }
         
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
-        .logo { font-size: 56px; margin-bottom: 12px; display: block; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .logo { font-size: 50px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         
-        .container h2 { 
-            color: var(--text); font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .container .sub-title { color: var(--text-light); font-size: 13px; font-weight: 300; margin-bottom: 25px; }
+        .container h2 { color: #e2e8f0; font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .container .sub-title { color: #94a3b8; font-size: 13px; font-weight: 400; margin-bottom: 25px; }
         
         .uid-input-wrapper { position: relative; margin-bottom: 15px; }
         .uid-input-wrapper input {
             width: 100%; padding: 16px 20px; padding-right: 50px;
-            border: 1px solid var(--border); border-radius: 12px; font-size: 18px; font-weight: 500;
-            text-align: center; letter-spacing: 3px; background: rgba(255,255,255,0.03); color: var(--text);
+            border: 1px solid #2d3138; border-radius: 12px; font-size: 18px; font-weight: 500;
+            text-align: center; letter-spacing: 3px; background: rgba(15,17,23,0.8); color: #e2e8f0;
             transition: all 0.3s ease; outline: none;
         }
-        .uid-input-wrapper input::placeholder { color: rgba(255,255,255,0.3); letter-spacing: 1px; font-weight: 300; }
-        .uid-input-wrapper input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,92,231,0.1); background: rgba(255,255,255,0.06); }
+        .uid-input-wrapper input::placeholder { color: #4a4e57; letter-spacing: 1px; font-weight: 400; }
+        .uid-input-wrapper input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); background: rgba(15,17,23,1); }
         .uid-input-wrapper input.error-input {
-            border-color: var(--danger); box-shadow: 0 0 0 3px rgba(255,118,117,0.1);
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
             animation: shakeInput 0.5s ease;
         }
         @keyframes shakeInput {
@@ -92,18 +79,17 @@
         }
         .uid-input-wrapper .clear-btn {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; display: none; transition: 0.3s;
+            background: none; border: none; color: #4a4e57; font-size: 20px; cursor: pointer; display: none; transition: 0.3s;
         }
         .uid-input-wrapper .clear-btn.show { display: block; }
-        .uid-input-wrapper .clear-btn:hover { color: var(--text); }
+        .uid-input-wrapper .clear-btn:hover { color: #e2e8f0; }
         
         .btn {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: #fff; border: none; padding: 16px; border-radius: 12px;
-            font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 16px;
+            border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
             transition: all 0.3s ease; letter-spacing: 0.5px; position: relative; overflow: hidden;
         }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(108,92,231,0.3); }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(99,102,241,0.3); }
         .btn:active { transform: scale(0.97); }
         .btn .ripple {
             position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0);
@@ -114,22 +100,22 @@
         .loading-container { display: none; margin: 30px 0 20px; padding: 20px; }
         .loading-container.show { display: block; animation: fadeIn 0.4s ease; }
         .spinner {
-            width: 60px; height: 60px; border: 2px solid rgba(255,255,255,0.05); border-top: 2px solid var(--primary);
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #6366f1;
             border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading-container p { color: var(--text-light); margin-top: 15px; font-size: 14px; font-weight: 300; }
+        .loading-container p { color: #94a3b8; margin-top: 15px; font-size: 14px; font-weight: 400; }
         
         .success-popup {
             display: none; margin: 20px 0; padding: 25px;
-            background: rgba(0,184,148,0.08); border: 1px solid rgba(0,184,148,0.15); border-radius: 12px;
+            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 16px;
             animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         .success-popup.show { display: block; }
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .success-popup .icon { font-size: 50px; display: block; margin-bottom: 8px; }
-        .success-popup .label { color: var(--success); font-size: 18px; font-weight: 700; }
-        .success-popup .sub-label { color: var(--text-light); font-size: 13px; font-weight: 300; }
+        .success-popup .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+        .success-popup .label { color: #22c55e; font-size: 18px; font-weight: 700; }
+        .success-popup .sub-label { color: #94a3b8; font-size: 13px; font-weight: 400; }
         
         .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.5s ease; }
         .buttons-container.show { display: flex; flex-direction: column; }
@@ -138,91 +124,115 @@
             transition: all 0.3s ease; width: 100%; color: #fff; letter-spacing: 0.5px; position: relative; overflow: hidden;
         }
         .action-btn:active { transform: scale(0.97); }
-        .action-btn.btn-1 { background: linear-gradient(135deg, var(--success), #00B894); }
-        .action-btn.btn-1:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,184,148,0.3); }
-        .action-btn.btn-2 { background: linear-gradient(135deg, #0984E3, #00D2D3); }
-        .action-btn.btn-2:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(9,132,227,0.3); }
+        .action-btn.btn-1 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .action-btn.btn-1:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(34,197,94,0.3); }
+        .action-btn.btn-2 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .action-btn.btn-2:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(59,130,246,0.3); }
         .action-btn.tap-effect { animation: tapPulse 0.3s ease; }
         @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         .custom-alert-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15,15,26,0.8); backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px); z-index: 9999;
-            display: none; justify-content: center; align-items: center;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15,17,23,0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
             animation: fadeInOverlay 0.3s ease;
         }
         .custom-alert-overlay.show { display: flex; }
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
         
         .custom-alert-box {
-            background: rgba(255,255,255,0.03); backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px); border-radius: var(--radius);
-            padding: 34px 30px 30px; max-width: 380px; width: 92%; text-align: center;
-            border: 1px solid rgba(255,118,117,0.15); box-shadow: var(--shadow);
-            animation: alertPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden;
+            background: rgba(26, 28, 35, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 34px 30px 30px;
+            max-width: 380px;
+            width: 92%;
+            text-align: center;
+            border: 1px solid rgba(239,68,68,0.2);
+            box-shadow: 0 0 80px rgba(239,68,68,0.05);
+            animation: alertPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
         }
+        .custom-alert-box::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.05), rgba(239,68,68,0.1));
+            z-index: -1;
+            animation: alertBorderPulse 2s ease-in-out infinite;
+        }
+        @keyframes alertBorderPulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.5; } }
+        
         @keyframes alertPopIn {
             from { opacity: 0; transform: scale(0.85) translateY(30px) rotate(-2deg); }
             to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
         }
-        .custom-alert-box .alert-icon { font-size: 64px; display: block; margin-bottom: 8px; animation: alertShake 0.6s ease; }
+        
+        .custom-alert-box .alert-icon { font-size: 56px; display: block; margin-bottom: 8px; animation: alertShake 0.6s ease; }
         @keyframes alertShake {
             0%, 100% { transform: rotate(0deg) scale(1); }
-            15% { transform: rotate(-20deg) scale(1.1); }
-            30% { transform: rotate(20deg) scale(1.1); }
-            45% { transform: rotate(-12deg) scale(1.05); }
-            60% { transform: rotate(12deg) scale(1.05); }
+            15% { transform: rotate(-15deg) scale(1.1); }
+            30% { transform: rotate(15deg) scale(1.1); }
+            45% { transform: rotate(-10deg) scale(1.05); }
+            60% { transform: rotate(10deg) scale(1.05); }
             80% { transform: rotate(-5deg) scale(1); }
         }
-        .custom-alert-box .alert-title { font-size: 24px; font-weight: 700; color: var(--danger); margin-bottom: 6px; }
-        .custom-alert-box .alert-message { font-size: 14px; color: var(--text-light); margin-bottom: 22px; line-height: 1.7; }
-        .custom-alert-box .alert-message strong { color: var(--danger); font-weight: 600; }
-        .custom-alert-box .alert-message .rule {
-            display: inline-block; background: rgba(255,118,117,0.08); padding: 2px 12px; border-radius: 6px;
-            margin: 0 2px; font-weight: 600; color: var(--danger);
-        }
-        .custom-alert-box .alert-btn {
-            padding: 13px 44px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
-            cursor: pointer; background: linear-gradient(135deg, var(--danger), #E17055); color: #fff;
-            transition: all 0.3s ease; box-shadow: 0 0 30px rgba(255,118,117,0.2); position: relative; overflow: hidden;
-        }
-        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 40px rgba(255,118,117,0.3); }
+        
+        .custom-alert-box .alert-title { font-size: 24px; font-weight: 800; color: #ef4444; margin-bottom: 6px; }
+        .custom-alert-box .alert-message { font-size: 14px; color: #94a3b8; margin-bottom: 22px; line-height: 1.7; }
+        .custom-alert-box .alert-message strong { color: #ef4444; font-weight: 700; }
+        .custom-alert-box .alert-message .rule { display: inline-block; background: rgba(239,68,68,0.05); padding: 2px 12px; border-radius: 6px; margin: 0 2px; font-weight: 600; color: #ef4444; }
+        
+        .custom-alert-box .alert-btn { padding: 13px 44px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; transition: all 0.3s ease; box-shadow: 0 0 40px rgba(239,68,68,0.15); position: relative; overflow: hidden; }
+        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 60px rgba(239,68,68,0.25); }
         .custom-alert-box .alert-btn:active { transform: scale(0.96); }
+        .custom-alert-box .alert-btn .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none; }
         
         .error-page { display: none; padding: 20px 0; animation: fadeInUp 0.6s ease; }
         .error-page.show { display: block; }
-        .error-page .error-icon { font-size: 70px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
-        .error-page .error-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-        .error-page .error-sub { font-size: 14px; color: var(--text-light); margin-bottom: 20px; }
-        .error-page .error-status {
-            display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 600;
-            text-transform: uppercase; margin-bottom: 15px;
-        }
-        .error-page .error-status.suspended { background: rgba(253,203,110,0.1); color: var(--warning); border: 1px solid rgba(253,203,110,0.1); }
-        .error-page .error-status.disabled { background: rgba(255,118,117,0.1); color: var(--danger); border: 1px solid rgba(255,118,117,0.1); }
-        .error-page .error-status.expired { background: rgba(255,118,117,0.1); color: var(--danger); border: 1px solid rgba(255,118,117,0.1); }
-        .error-page .error-status.not_found { background: rgba(255,255,255,0.05); color: var(--text-light); border: 1px solid rgba(255,255,255,0.05); }
-        .error-page .btn-back {
-            padding: 12px 40px; border: none; border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff;
-            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(108,92,231,0.3); }
+        .error-page .error-icon { font-size: 60px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        .error-page .error-title { font-size: 24px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px; }
+        .error-page .error-sub { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+        .error-page .error-status { display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 15px; }
+        .error-page .error-status.suspended { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.15); }
+        .error-page .error-status.disabled { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+        .error-page .error-status.expired { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+        .error-page .error-status.not_found { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+        .error-page .btn-back { padding: 12px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.3); }
         
         @media (max-width: 480px) {
-            .container { padding: 28px 20px; border-radius: var(--radius); }
+            .container { padding: 28px 20px; border-radius: 20px; }
             .container h2 { font-size: 19px; }
             .uid-input-wrapper input { font-size: 16px; padding: 14px 16px; padding-right: 45px; }
             .btn { font-size: 16px; padding: 14px; }
             .action-btn { font-size: 15px; padding: 14px; }
             .logo { font-size: 40px; }
-            .success-popup .icon { font-size: 40px; }
-            .error-page .error-icon { font-size: 50px; }
-            .custom-alert-box { padding: 26px 20px 24px; }
+            .success-popup .icon { font-size: 35px; }
+            .error-page .error-icon { font-size: 45px; }
+            .error-page .error-title { font-size: 20px; }
+            .custom-alert-box { padding: 24px 18px 22px; }
             .custom-alert-box .alert-title { font-size: 20px; }
-            .custom-alert-box .alert-icon { font-size: 50px; }
+            .custom-alert-box .alert-icon { font-size: 45px; }
+            .custom-alert-box .alert-btn { padding: 11px 32px; font-size: 14px; }
+            .custom-alert-box .alert-message { font-size: 13px; }
+        }
+        @media (max-width: 380px) {
+            .custom-alert-box { padding: 18px 14px; }
+            .custom-alert-box .alert-title { font-size: 17px; }
+            .custom-alert-box .alert-icon { font-size: 35px; }
+            .custom-alert-box .alert-btn { padding: 10px 24px; font-size: 13px; }
+            .custom-alert-box .alert-message { font-size: 12px; }
         }
     </style>
 </head>
@@ -233,7 +243,7 @@
     </div>
     
     <div class="container">
-        <span class="logo">🎮</span>
+        <div class="logo">🎮</div>
         <h2>Enter Your UID</h2>
         <p class="sub-title">Enter your Free Fire UID to continue</p>
         
@@ -278,7 +288,7 @@
             <div class="alert-message">
                 Please enter a valid <strong>8-12 digit</strong> UID.<br>
                 Only <span class="rule">numbers</span> are allowed.<br>
-                <span style="font-size:12px;color:var(--text-light);">Example: 1234567890</span>
+                <span style="font-size:12px;color:#4a4e57;">Example: 1234567890</span>
             </div>
             <button class="alert-btn" id="alertBtn" onclick="closeAlert()">OK, Got it! ✅</button>
         </div>
@@ -301,7 +311,7 @@
                     document.getElementById('bgImage').src = data.background;
                 } else {
                     document.getElementById('bgImage').style.display = 'none';
-                    document.querySelector('.bg-container').style.background = 'linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 50%, #16213E 100%)';
+                    document.querySelector('.bg-container').style.background = 'linear-gradient(135deg, #0f1117 0%, #1a1c23 50%, #0f1117 100%)';
                 }
             } catch (e) {}
         }
@@ -454,6 +464,7 @@
                 headline = '';
             }
             
+            // FIXED: Properly encode all parameters
             const videoEncoded = encodeURIComponent(videoUrl);
             const claimEncoded = encodeURIComponent(claimUrl);
             const btnEncoded = encodeURIComponent(buttonText);

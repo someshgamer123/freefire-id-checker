@@ -36,7 +36,7 @@ connectDB();
 // ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
-const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 30;
+const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48; // 48 hours
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
@@ -65,7 +65,7 @@ async function initializeDatabase() {
             const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
             await User.create({
                 passcode: hashedPasscode,
-                theme: 'dark',
+                theme: 'light',
                 email: process.env.ADMIN_EMAIL || '',
                 phone: process.env.ADMIN_PHONE || ''
             });
@@ -175,7 +175,7 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// ✅ Device-based Rate Limiter (Fingerprint se track karega, IP se nahi)
+// ✅ Device-based Rate Limiter
 const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
@@ -184,7 +184,7 @@ const deviceAuthLimiter = rateLimit({
         const userAgent = req.headers['user-agent'] || 'unknown';
         return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     },
-    message: 'Too many login attempts from this device. Please try again after 30 minutes.',
+    message: 'Too many login attempts from this device.',
     skip: async (req) => {
         const admin = await User.findOne();
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
@@ -271,7 +271,7 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (NEW LOGIC: 48h → 7d → Permanent) ====================
+// ==================== Device Blocking (Updated: 48hr → 7 days → Permanent) ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     
@@ -289,6 +289,8 @@ async function isDeviceBlocked(req) {
 async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 48 * 60) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
+    const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+    
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
     
@@ -297,54 +299,65 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
         return null;
     }
     
-    // Find existing record
+    // Check existing record
     let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
     
-    if (!record) {
-        record = new BlockedDevice({
+    if (record) {
+        // Increment attempts
+        record.attempts = (record.attempts || 0) + 1;
+        record.lastAttempt = new Date();
+        record.deviceName = deviceName;
+        record.deviceType = deviceType;
+        
+        // Add to login history
+        record.loginHistory.push({
+            ip,
+            deviceName,
+            timestamp: new Date(),
+            success: false,
+            reason: reason
+        });
+        
+        // Progressive blocking: 48hr → 7 days → Permanent
+        if (record.attempts >= 5 && record.attempts < 10) {
+            record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
+            record.reason = 'Too many failed attempts - Blocked for 48 hours';
+            console.log(`🚨 Device ${deviceName} blocked for 48 hours (${record.attempts} attempts)`);
+        } else if (record.attempts >= 10 && record.attempts < 20) {
+            record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            record.reason = 'Repeated attempts - Blocked for 7 days';
+            console.log(`🚨 Device ${deviceName} blocked for 7 days (${record.attempts} attempts)`);
+        } else if (record.attempts >= 20) {
+            record.isPermanent = true;
+            record.permanentBlockedAt = new Date();
+            record.reason = 'Permanent ban due to repeated malicious attempts';
+            console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+        }
+        
+        await record.save();
+        return record;
+    } else {
+        // First time - create record
+        const newRecord = new BlockedDevice({
             fingerprint,
             ip,
             deviceName,
             deviceType,
             attempts: 1,
-            reason,
+            reason: 'Login attempt',
             blockedUntil: null,
-            isPermanent: false,
-            blockLevel: 0
+            lastAttempt: new Date(),
+            loginHistory: [{
+                ip,
+                deviceName,
+                timestamp: new Date(),
+                success: false,
+                reason: reason
+            }]
         });
+        await newRecord.save();
+        return newRecord;
     }
-    
-    // Increment attempts
-    record.attempts = (record.attempts || 0) + 1;
-    record.deviceName = deviceName;
-    record.deviceType = deviceType;
-    record.lastAttempt = new Date();
-    record.reason = reason;
-    
-    // ⚡ NEW LOGIC: 5 attempts → 48h, then 7d, then Permanent
-    if (record.attempts >= 5 && record.attempts < 10) {
-        // Level 1: 48 hours block
-        record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
-        record.blockLevel = 1;
-        record.reason = 'Too many failed attempts (48h block)';
-        console.log(`🚨 DEVICE BLOCKED (48h): ${deviceName} (${fingerprint})`);
-    } else if (record.attempts >= 10 && record.attempts < 15) {
-        // Level 2: 7 days block
-        record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        record.blockLevel = 2;
-        record.reason = 'Repeated failed attempts (7 days block)';
-        console.log(`🚨 DEVICE BLOCKED (7d): ${deviceName} (${fingerprint})`);
-    } else if (record.attempts >= 15) {
-        // Level 3: Permanent block
-        record.isPermanent = true;
-        record.permanentBlockedAt = new Date();
-        record.blockLevel = 3;
-        record.reason = 'Multiple failed attempts - Permanently banned';
-        console.log(`🚨 DEVICE PERMANENTLY BANNED: ${deviceName} (${fingerprint})`);
-    }
-    
-    await record.save();
-    return record;
 }
 
 async function incrementDeviceAttempts(req) {
@@ -353,36 +366,66 @@ async function incrementDeviceAttempts(req) {
     
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
+    
     if (fingerprint === adminFingerprint) {
         console.log('⚠️ Skipping attempt tracking for admin device');
         return;
     }
     
-    let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+    const record = await BlockedDevice.findOne({
+        $or: [{ fingerprint }, { ip }]
+    });
     
-    if (!record) {
-        record = new BlockedDevice({
+    if (record) {
+        record.attempts = (record.attempts || 0) + 1;
+        record.lastAttempt = new Date();
+        record.deviceName = deviceName;
+        record.deviceType = deviceType;
+        
+        record.loginHistory.push({
+            ip,
+            deviceName,
+            timestamp: new Date(),
+            success: false,
+            reason: 'Failed login attempt'
+        });
+        
+        // Progressive blocking logic
+        if (record.attempts >= 5 && record.attempts < 10) {
+            record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
+            record.reason = 'Too many failed attempts - Blocked for 48 hours';
+            record.deviceType = 'attacker';
+            console.log(`🚨 Device ${deviceName} blocked for 48 hours`);
+        } else if (record.attempts >= 10 && record.attempts < 20) {
+            record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            record.reason = 'Repeated attempts - Blocked for 7 days';
+            console.log(`🚨 Device ${deviceName} blocked for 7 days`);
+        } else if (record.attempts >= 20) {
+            record.isPermanent = true;
+            record.permanentBlockedAt = new Date();
+            record.reason = 'Permanent ban due to repeated malicious attempts';
+            console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED`);
+        }
+        
+        await record.save();
+    } else {
+        await BlockedDevice.create({
             fingerprint,
             ip,
             deviceName,
             deviceType,
-            attempts: 0,
+            attempts: 1,
             reason: 'Login attempt',
             blockedUntil: null,
-            isPermanent: false,
-            blockLevel: 0
+            lastAttempt: new Date(),
+            loginHistory: [{
+                ip,
+                deviceName,
+                timestamp: new Date(),
+                success: false,
+                reason: 'Failed login attempt'
+            }]
         });
-    }
-    
-    record.attempts = (record.attempts || 0) + 1;
-    record.deviceName = deviceName;
-    record.deviceType = deviceType;
-    record.lastAttempt = new Date();
-    await record.save();
-    
-    // ⚡ Check if we need to block based on new logic
-    if (record.attempts >= 5) {
-        await blockDevice(req, 'Too many failed attempts');
     }
 }
 
@@ -393,6 +436,12 @@ async function checkLoginAttempts(ip) {
     if (record.lockedUntil && record.lockedUntil > new Date()) {
         const remainingMinutes = Math.ceil((record.lockedUntil - new Date()) / (1000 * 60));
         return { allowed: false, attempts: record.attempts, lockedUntil: record.lockedUntil, remainingMinutes };
+    }
+    if (record.lockedUntil && record.lockedUntil < new Date()) {
+        record.attempts = 0;
+        record.lockedUntil = null;
+        await record.save();
+        return { allowed: true, attempts: 0 };
     }
     return { allowed: record.attempts < MAX_LOGIN_ATTEMPTS, attempts: record.attempts };
 }
@@ -450,28 +499,14 @@ async function authMiddleware(req, res, next) {
             return res.status(403).json({
                 error: 'permanently_blocked',
                 message: 'Your device has been permanently blocked by the admin.',
-                permanent: true,
-                blockLevel: blocked.blockLevel,
-                attempts: blocked.attempts
+                permanent: true
             });
         } else {
             const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
-            const remainingHours = Math.floor(remainingMinutes / 60);
-            const remainingDays = Math.floor(remainingHours / 24);
-            let timeString = '';
-            if (remainingDays > 0) {
-                timeString = remainingDays + ' days';
-            } else if (remainingHours > 0) {
-                timeString = remainingHours + ' hours';
-            } else {
-                timeString = remainingMinutes + ' minutes';
-            }
             return res.status(403).json({
-                error: `Device blocked. Please try again after ${timeString}.`,
+                error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
                 blockedUntil: blocked.blockedUntil,
-                remainingMinutes,
-                blockLevel: blocked.blockLevel,
-                attempts: blocked.attempts
+                remainingMinutes
             });
         }
     }
@@ -499,7 +534,7 @@ async function authMiddleware(req, res, next) {
     const { ip } = getDeviceId(req);
     if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
         await logAdminAction('admin', 'IP_BLOCKED', { ip }, req);
-        await blockDevice(req, 'IP not whitelisted');
+        await blockDevice(req, 'IP not whitelisted', 48 * 60);
         return res.status(403).json({ error: 'Access denied from this IP address' });
     }
     
@@ -814,7 +849,7 @@ app.get('/api/settings', async (req, res) => {
         const admin = await User.findOne();
         const popupSettings = await PopupSettings.findOne();
         res.json({
-            theme: admin?.theme || 'dark',
+            theme: admin?.theme || 'light',
             background: popupSettings?.image || null,
             popupSettings: popupSettings || {
                 image: null,
@@ -867,34 +902,21 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
+        // Check if device is blocked (temporary or permanent)
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             if (blocked.isPermanent) {
                 return res.status(403).json({
                     error: 'permanently_blocked',
                     message: 'Your device has been permanently blocked by the admin.',
-                    permanent: true,
-                    blockLevel: blocked.blockLevel,
-                    attempts: blocked.attempts
+                    permanent: true
                 });
             } else {
                 const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
-                const remainingHours = Math.floor(remainingMinutes / 60);
-                const remainingDays = Math.floor(remainingHours / 24);
-                let timeString = '';
-                if (remainingDays > 0) {
-                    timeString = remainingDays + ' days';
-                } else if (remainingHours > 0) {
-                    timeString = remainingHours + ' hours';
-                } else {
-                    timeString = remainingMinutes + ' minutes';
-                }
                 return res.status(403).json({
-                    error: `Device blocked. Please try again after ${timeString}.`,
+                    error: `Device blocked. Please try again after ${remainingMinutes} minutes.`,
                     blockedUntil: blocked.blockedUntil,
-                    remainingMinutes,
-                    blockLevel: blocked.blockLevel,
-                    attempts: blocked.attempts
+                    remainingMinutes
                 });
             }
         }
@@ -915,6 +937,15 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             if (!isValid) {
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip, deviceName: deviceName }, req);
+                
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
+                if (deviceRecord && deviceRecord.attempts >= 5) {
+                    await blockDevice(req, 'Too many failed passcode attempts', 48 * 60);
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked`);
+                }
+                
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
             
@@ -982,6 +1013,13 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             const verified = await verifyOTP(fingerprint, otp);
             if (!verified) {
                 await incrementDeviceAttempts(req);
+                const deviceRecord = await BlockedDevice.findOne({ 
+                    $or: [{ fingerprint }, { ip }] 
+                });
+                if (deviceRecord && deviceRecord.attempts >= 3) {
+                    await blockDevice(req, 'Too many failed OTP attempts', 48 * 60);
+                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked`);
+                }
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             
@@ -1062,7 +1100,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
-        if (!['dark', 'light'].includes(theme)) return res.status(400).json({ error: 'Invalid theme' });
+        if (!['light', 'dark'].includes(theme)) return res.status(400).json({ error: 'Invalid theme' });
         const admin = await User.findOne();
         if (admin) { admin.theme = theme; await admin.save(); }
         await logAdminAction('admin', 'THEME_CHANGE', { theme }, req);
@@ -1293,6 +1331,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
         
         const linkStats = links.map(link => {
             const dailyVisitsMap = link.dailyVisits || new Map();
@@ -1338,32 +1377,38 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
+        // Global stats
         const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
         const dailyClaimsGlobal = stats?.dailyClaims || new Map();
+        const minuteVisitors = stats?.minuteVisitors || new Map();
+        const minuteClaims = stats?.minuteClaims || new Map();
+        const activeSessions = stats?.activeSessions || new Map();
         
         let globalVisits24h = 0;
         let globalClaims24h = 0;
         let globalVisits60m = 0;
         let globalClaims60m = 0;
-        let globalVisits7d = 0;
-        let globalClaims7d = 0;
-        
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        let globalVisits1m = 0;
+        let globalClaims1m = 0;
         
         for (const [date, count] of dailyVisitorsGlobal) {
             const d = new Date(date);
             if (d >= oneDayAgo) globalVisits24h += count;
             if (d >= oneHourAgo) globalVisits60m += count;
-            if (d >= sevenDaysAgo) globalVisits7d += count;
         }
         for (const [date, count] of dailyClaimsGlobal) {
             const d = new Date(date);
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
-            if (d >= sevenDaysAgo) globalClaims7d += count;
         }
         
-        const activeNow = Math.max(1, Math.round(globalVisits60m / 12));
+        // Minute tracking
+        const minuteKey = now.toISOString().substring(0, 16);
+        globalVisits1m = minuteVisitors.get(minuteKey) || 0;
+        globalClaims1m = minuteClaims.get(minuteKey) || 0;
+        
+        // Active Now - Track active sessions in last 5 minutes
+        const activeNow = activeSessions.size > 0 ? activeSessions.size : Math.max(1, Math.round(globalVisits60m / 12));
         
         res.json({
             global: {
@@ -1375,8 +1420,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 claims24h: globalClaims24h,
                 visits60m: globalVisits60m,
                 claims60m: globalClaims60m,
-                visits7d: globalVisits7d,
-                claims7d: globalClaims7d,
+                visits1m: globalVisits1m,
+                claims1m: globalClaims1m,
                 activeNow: activeNow,
                 dailyVisitors: Object.fromEntries(dailyVisitorsGlobal),
                 dailyClaims: Object.fromEntries(dailyClaimsGlobal)
@@ -1389,7 +1434,108 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
+// RENEWAL REQUESTS
+app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
+    try {
+        const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) {
+        console.error('❌ Renewal requests error:', error);
+        res.status(500).json({ error: 'Failed to fetch renewal requests' });
+    }
+});
+
+app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        if (request.status === 'approved' || request.status === 'rejected') {
+            return res.status(400).json({ error: 'Request already processed' });
+        }
+        request.status = 'paid';
+        request.paidAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'MARK_PAID', { requestId, linkId: request.linkId }, req);
+        res.json({ success: true, message: 'Payment marked as paid' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark payment' });
+    }
+});
+
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        if (request.status !== 'paid') return res.status(400).json({ error: 'Payment not confirmed yet' });
+        const link = await Link.findOne({ id: request.linkId });
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry.toISOString();
+            link.status = 'active';
+            await link.save();
+        }
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        await logAdminAction('admin', 'APPROVE_RENEWAL', { requestId, linkId: request.linkId, plan: request.plan }, req);
+        res.json({ success: true, message: 'Renewal approved! Link extended.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to approve renewal' });
+    }
+});
+
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        request.status = 'rejected';
+        await request.save();
+        await logAdminAction('admin', 'REJECT_RENEWAL', { requestId, linkId: request.linkId }, req);
+        res.json({ success: true, message: 'Renewal rejected' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject renewal' });
+    }
+});
+
+app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const request = await RenewalRequest.findOne({ id: requestId });
+        if (request) await logAdminAction('admin', 'DELETE_RENEWAL', { requestId, linkId: request.linkId }, req);
+        await RenewalRequest.findOneAndDelete({ id: requestId });
+        res.json({ success: true, message: 'Request removed' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove request' });
+    }
+});
+
+// ==================== Update Admin Contact Info (Email & Phone) ====================
+app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        const admin = await User.findOne();
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
+        
+        if (email !== undefined) admin.email = email;
+        if (phone !== undefined) admin.phone = phone;
+        
+        await admin.save();
+        await logAdminAction('admin', 'UPDATE_CONTACT', { email, phone }, req);
+        res.json({ success: true, email: admin.email, phone: admin.phone });
+    } catch (error) {
+        console.error('❌ Update contact error:', error);
+        res.status(500).json({ error: 'Failed to update contact info' });
+    }
+});
+
 // ==================== DEVICE MANAGEMENT ROUTES ====================
+
+// GET: Get all blocked devices with login history
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1410,6 +1556,7 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     }
 });
 
+// POST: Permanently ban a device
 app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1423,7 +1570,6 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
         device.isPermanent = true;
         device.permanentBlockedAt = new Date();
         device.reason = reason || 'Permanently banned by admin';
-        device.blockLevel = 3;
         await device.save();
         
         await logAdminAction('admin', 'PERMANENT_BAN_DEVICE', { 
@@ -1445,6 +1591,7 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
     }
 });
 
+// POST: Unblock a device (permanent or temporary)
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1457,8 +1604,6 @@ app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, r
         device.unblockedAt = new Date();
         device.isPermanent = false;
         device.blockedUntil = null;
-        device.blockLevel = 0;
-        device.attempts = 0;
         await device.save();
         
         await logAdminAction('admin', 'UNBLOCK_DEVICE', { 
@@ -1479,6 +1624,7 @@ app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, r
     }
 });
 
+// DELETE: Remove a device from blocked list
 app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1505,6 +1651,7 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     }
 });
 
+// GET: Check device block status
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
@@ -1524,8 +1671,8 @@ app.get('/api/admin/block-status', async (req, res) => {
                     reason: blocked.reason,
                     deviceName: blocked.deviceName,
                     blockedAt: blocked.permanentBlockedAt,
-                    blockLevel: blocked.blockLevel,
-                    attempts: blocked.attempts
+                    totalAttempts: blocked.attempts,
+                    loginHistory: blocked.loginHistory
                 });
             } else {
                 const remainingMinutes = Math.ceil((blocked.blockedUntil - new Date()) / (1000 * 60));
@@ -1535,8 +1682,8 @@ app.get('/api/admin/block-status', async (req, res) => {
                     reason: blocked.reason,
                     remainingMinutes,
                     blockedUntil: blocked.blockedUntil,
-                    blockLevel: blocked.blockLevel,
-                    attempts: blocked.attempts
+                    totalAttempts: blocked.attempts,
+                    loginHistory: blocked.loginHistory
                 });
             }
         } else {
@@ -1547,25 +1694,6 @@ app.get('/api/admin/block-status', async (req, res) => {
     }
 });
 
-// ==================== Update Admin Contact Info ====================
-app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
-    try {
-        const { email, phone } = req.body;
-        const admin = await User.findOne();
-        if (!admin) return res.status(500).json({ error: 'Admin not found' });
-        
-        if (email !== undefined) admin.email = email;
-        if (phone !== undefined) admin.phone = phone;
-        
-        await admin.save();
-        await logAdminAction('admin', 'UPDATE_CONTACT', { email, phone }, req);
-        res.json({ success: true, email: admin.email, phone: admin.phone });
-    } catch (error) {
-        console.error('❌ Update contact error:', error);
-        res.status(500).json({ error: 'Failed to update contact info' });
-    }
-});
-
 // ==================== Admin Panel Protection Middleware ====================
 app.use('/admin', async (req, res, next) => {
     const referer = req.headers.referer || '';
@@ -1573,7 +1701,7 @@ app.use('/admin', async (req, res, next) => {
     
     if (isFromVisitorLink && !req.cookies?.adminToken) {
         const { deviceName } = getDeviceDetails(req);
-        await blockDevice(req, 'Unauthorized admin access from visitor link');
+        await blockDevice(req, 'Unauthorized admin access from visitor link', 48 * 60);
         console.log(`🚨 ATTACK DETECTED: Device ${deviceName} attempted to access admin from visitor link`);
         return res.status(403).send(`
             <html>
@@ -1593,6 +1721,122 @@ app.use('/admin', async (req, res, next) => {
         `);
     }
     next();
+});
+
+// ==================== Permanent Block Page (Beautiful UI) ====================
+app.get('/blocked', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Device Blocked</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+                body {
+                    background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                }
+                .block-container {
+                    max-width: 500px;
+                    width: 100%;
+                    background: rgba(255,255,255,0.06);
+                    backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px;
+                    text-align: center;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+                    animation: fadeInUp 0.8s ease;
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .block-icon {
+                    font-size: 80px;
+                    margin-bottom: 15px;
+                    animation: float 3s ease-in-out infinite;
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .block-title {
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: #fc8181;
+                    margin-bottom: 8px;
+                }
+                .block-subtitle {
+                    font-size: 16px;
+                    color: rgba(255,255,255,0.6);
+                    margin-bottom: 20px;
+                }
+                .block-details {
+                    background: rgba(252,129,129,0.1);
+                    border: 1px solid rgba(252,129,129,0.2);
+                    border-radius: 12px;
+                    padding: 15px;
+                    margin: 15px 0;
+                }
+                .block-details p {
+                    font-size: 13px;
+                    color: rgba(255,255,255,0.7);
+                    margin: 4px 0;
+                }
+                .block-details .label {
+                    color: rgba(255,255,255,0.4);
+                    font-weight: 600;
+                }
+                .block-details .value {
+                    color: #fc8181;
+                    font-weight: 600;
+                }
+                .block-status {
+                    display: inline-block;
+                    padding: 6px 20px;
+                    border-radius: 20px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    background: rgba(252,129,129,0.2);
+                    color: #fc8181;
+                    border: 1px solid rgba(252,129,129,0.2);
+                    margin-top: 10px;
+                }
+                .block-footer {
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: rgba(255,255,255,0.3);
+                }
+                @media (max-width: 480px) {
+                    .block-container { padding: 30px 20px; }
+                    .block-title { font-size: 24px; }
+                    .block-icon { font-size: 60px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="block-container">
+                <div class="block-icon">🔒</div>
+                <h1 class="block-title">Device Permanently Blocked</h1>
+                <p class="block-subtitle">This device has been permanently banned by the admin.</p>
+                <div class="block-details">
+                    <p><span class="label">📱 Device:</span> <span class="value">${req.query.device || 'Unknown'}</span></p>
+                    <p><span class="label">📅 Blocked Date:</span> <span class="value">${new Date().toLocaleString()}</span></p>
+                    <p><span class="label">🚨 Reason:</span> <span class="value">${req.query.reason || 'Permanent ban by admin'}</span></p>
+                </div>
+                <div class="block-status">⛔ PERMANENTLY BLOCKED</div>
+                <p class="block-footer">If you believe this is a mistake, please contact the administrator.</p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 // ==================== Serve Pages ====================
@@ -1641,6 +1885,7 @@ setInterval(async () => {
         const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
         if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
         
+        // Clean expired temporary blocks (not permanent)
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() },
             isPermanent: false
@@ -1676,15 +1921,13 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
     console.log('🚨 NEW SECURITY FEATURES:');
-    console.log('🛡️ Device Blocking: 5 attempts → 48h → 7d → Permanent');
+    console.log('🛡️ Device-based blocking: Individual device blocks (Admin protected)');
     console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
     console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
     console.log('📱 OTP Methods: Email support (SMS disabled)');
-    console.log('🔧 Device Management: View, Ban, and Unban devices with history');
+    console.log('🔧 Device Management: View, Ban, and Unban devices');
     console.log('📋 Attack Logging: Detects and logs attack attempts');
-    console.log('⛔ Permanent Block: Beautiful UI for permanently blocked devices');
-    console.log('📊 FIXED ANALYTICS: 24h, 60m, 7d graphs');
-    console.log('🟢 FIXED LIVE VISITORS: Active Now and 60m counts fixed');
-    console.log('🆕 USER SELECTOR: Select user to view live counts');
+    console.log('⛔ Progressive Blocking: 48hr → 7 days → Permanent');
+    console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
     console.log('═══════════════════════════════════════════');
 });
