@@ -29,7 +29,7 @@ const StatsSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
-    // Real-time tracking
+    // Real-time tracking (Minute-wise)
     minuteVisitors: {
         type: Map,
         of: Number,

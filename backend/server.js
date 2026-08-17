@@ -142,7 +142,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'"],
             styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
             frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
             mediaSrc: ["'self'", "https:", "http:", "https://*.image2url.com", "https://*.terabox.com", "*"],
             objectSrc: ["'none'"],
@@ -299,17 +299,14 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
         return null;
     }
     
-    // Check existing record
     let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
     
     if (record) {
-        // Increment attempts
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
         record.deviceType = deviceType;
         
-        // Add to login history
         record.loginHistory.push({
             ip,
             deviceName,
@@ -337,7 +334,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
         await record.save();
         return record;
     } else {
-        // First time - create record
         const newRecord = new BlockedDevice({
             fingerprint,
             ip,
@@ -1388,8 +1384,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         let globalClaims24h = 0;
         let globalVisits60m = 0;
         let globalClaims60m = 0;
-        let globalVisits1m = 0;
-        let globalClaims1m = 0;
         
         for (const [date, count] of dailyVisitorsGlobal) {
             const d = new Date(date);
@@ -1402,13 +1396,20 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneHourAgo) globalClaims60m += count;
         }
         
-        // Minute tracking
+        // ✅ FIXED: 1 Minute and Active Now calculation
         const minuteKey = now.toISOString().substring(0, 16);
-        globalVisits1m = minuteVisitors.get(minuteKey) || 0;
-        globalClaims1m = minuteClaims.get(minuteKey) || 0;
+        let globalVisits1m = minuteVisitors.get(minuteKey) || 0;
+        let globalClaims1m = minuteClaims.get(minuteKey) || 0;
         
-        // Active Now - Track active sessions in last 5 minutes
-        const activeNow = activeSessions.size > 0 ? activeSessions.size : Math.max(1, Math.round(globalVisits60m / 12));
+        // Active Now: Calculate average of last 5 minutes
+        let activeNow = 0;
+        for (let i = 0; i < 5; i++) {
+            const pastMinute = new Date(now.getTime() - i * 60 * 1000);
+            const key = pastMinute.toISOString().substring(0, 16);
+            activeNow += minuteVisitors.get(key) || 0;
+        }
+        activeNow = Math.round(activeNow / 5);
+        if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 12));
         
         res.json({
             global: {
@@ -1705,16 +1706,16 @@ app.use('/admin', async (req, res, next) => {
         console.log(`🚨 ATTACK DETECTED: Device ${deviceName} attempted to access admin from visitor link`);
         return res.status(403).send(`
             <html>
-                <body style="background:#0a0a1a;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Arial,sans-serif;flex-direction:column;text-align:center;padding:20px;">
+                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;flex-direction:column;text-align:center;padding:20px;">
                     <div style="font-size:80px;">🚫</div>
-                    <h1 style="color:#fc8181;">Access Denied!</h1>
-                    <p style="color:rgba(255,255,255,0.6);max-width:400px;">
+                    <h1 style="color:#ef4444;">Access Denied!</h1>
+                    <p style="color:#94a3b8;max-width:400px;">
                         Your device has been blocked for attempting unauthorized access to the admin panel.
                         Please contact the administrator if this is a mistake.
                     </p>
-                    <div style="margin-top:20px;padding:15px;background:rgba(252,129,129,0.1);border-radius:10px;border:1px solid rgba(252,129,129,0.2);">
-                        <p style="font-size:13px;color:#fc8181;">🚨 Block Reason: Unauthorized admin access attempt</p>
-                        <p style="font-size:12px;color:rgba(255,255,255,0.3);">Block duration: 48 hours</p>
+                    <div style="margin-top:20px;padding:15px;background:rgba(239,68,68,0.05);border-radius:10px;border:1px solid rgba(239,68,68,0.15);">
+                        <p style="font-size:13px;color:#ef4444;">🚨 Block Reason: Unauthorized admin access attempt</p>
+                        <p style="font-size:12px;color:#4a4e57;">Block duration: 48 hours</p>
                     </div>
                 </body>
             </html>
@@ -1732,9 +1733,10 @@ app.get('/blocked', (req, res) => {
             <title>Device Blocked</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
                 body {
-                    background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
+                    background: #0f1117;
                     min-height: 100vh;
                     display: flex;
                     justify-content: center;
@@ -1744,76 +1746,39 @@ app.get('/blocked', (req, res) => {
                 .block-container {
                     max-width: 500px;
                     width: 100%;
-                    background: rgba(255,255,255,0.06);
+                    background: rgba(26, 28, 35, 0.7);
                     backdrop-filter: blur(20px);
                     border-radius: 24px;
                     padding: 40px;
                     text-align: center;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
                     animation: fadeInUp 0.8s ease;
                 }
                 @keyframes fadeInUp {
                     from { opacity: 0; transform: translateY(30px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-                .block-icon {
-                    font-size: 80px;
-                    margin-bottom: 15px;
-                    animation: float 3s ease-in-out infinite;
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-10px); }
-                }
-                .block-title {
-                    font-size: 32px;
-                    font-weight: 800;
-                    color: #fc8181;
-                    margin-bottom: 8px;
-                }
-                .block-subtitle {
-                    font-size: 16px;
-                    color: rgba(255,255,255,0.6);
-                    margin-bottom: 20px;
-                }
+                .block-icon { font-size: 80px; margin-bottom: 15px; animation: float 3s ease-in-out infinite; }
+                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                .block-title { font-size: 32px; font-weight: 800; color: #ef4444; margin-bottom: 8px; }
+                .block-subtitle { font-size: 16px; color: #94a3b8; margin-bottom: 20px; }
                 .block-details {
-                    background: rgba(252,129,129,0.1);
-                    border: 1px solid rgba(252,129,129,0.2);
+                    background: rgba(239,68,68,0.05);
+                    border: 1px solid rgba(239,68,68,0.15);
                     border-radius: 12px;
                     padding: 15px;
                     margin: 15px 0;
                 }
-                .block-details p {
-                    font-size: 13px;
-                    color: rgba(255,255,255,0.7);
-                    margin: 4px 0;
-                }
-                .block-details .label {
-                    color: rgba(255,255,255,0.4);
-                    font-weight: 600;
-                }
-                .block-details .value {
-                    color: #fc8181;
-                    font-weight: 600;
-                }
+                .block-details p { font-size: 13px; color: #94a3b8; margin: 4px 0; }
+                .block-details .label { color: #4a4e57; font-weight: 600; }
+                .block-details .value { color: #ef4444; font-weight: 600; }
                 .block-status {
-                    display: inline-block;
-                    padding: 6px 20px;
-                    border-radius: 20px;
-                    font-size: 13px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    background: rgba(252,129,129,0.2);
-                    color: #fc8181;
-                    border: 1px solid rgba(252,129,129,0.2);
-                    margin-top: 10px;
+                    display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px;
+                    font-weight: 700; text-transform: uppercase; background: rgba(239,68,68,0.1);
+                    color: #ef4444; border: 1px solid rgba(239,68,68,0.15); margin-top: 10px;
                 }
-                .block-footer {
-                    margin-top: 20px;
-                    font-size: 12px;
-                    color: rgba(255,255,255,0.3);
-                }
+                .block-footer { margin-top: 20px; font-size: 12px; color: #4a4e57; }
                 @media (max-width: 480px) {
                     .block-container { padding: 30px 20px; }
                     .block-title { font-size: 24px; }
