@@ -5,582 +5,323 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        /* ===== MODERN UI DESIGN ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         :root {
-            --primary: #667eea; --secondary: #764ba2; --success: #48bb78;
-            --danger: #fc8181; --warning: #f6ad55; --bg: #0a0a1a;
-            --card-bg: rgba(255,255,255,0.06); --text: #f7fafc; --text-light: #a0aec0;
-            --border: rgba(255,255,255,0.1); --shadow: 0 4px 20px rgba(0,0,0,0.3); --radius: 16px;
+            --primary: #6C5CE7;
+            --secondary: #00D2D3;
+            --accent: #A29BFE;
+            --success: #00B894;
+            --danger: #FF7675;
+            --warning: #FDCB6E;
+            --bg: #0F0F1A;
+            --card-bg: rgba(255,255,255,0.03);
+            --text: #FFFFFF;
+            --text-light: #B8B8D2;
+            --border: rgba(255,255,255,0.06);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+            --radius: 16px;
+            --glow: 0 0 40px rgba(108,92,231,0.15);
         }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; transition: 0.3s; }
-        body.dark { --bg: #0a0a1a; --card-bg: rgba(255,255,255,0.05); --text: #f7fafc; --text-light: #a0aec0; --border: rgba(255,255,255,0.08); }
-        body.light { --bg: #f0f2f5; --card-bg: #ffffff; --text: #2d3748; --text-light: #718096; --border: #e2e8f0; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
         
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
-        .admin-container { max-width: 1400px; margin: 0 auto; }
+        .admin-container { max-width: 1400px; margin: 0 auto; animation: fadeInUp 0.6s ease; }
 
+        /* ===== HEADER ===== */
         .header {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            box-shadow: var(--shadow); display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(20px);
+            padding: 16px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
             border: 1px solid var(--border);
         }
-        .header h1 { font-size: 18px; background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer;
-            font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text);
-            border: 1px solid var(--border); }
-        .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-        .btn-logout { background: var(--danger); color: white; border: none !important; }
-        .btn-logout:hover { background: #e53e3e; }
-        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
+        .header h1 { 
+            font-size: 20px; 
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .header-actions button { 
+            padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer;
+            font-weight: 600; transition: 0.3s; font-size: 12px; 
+            background: rgba(255,255,255,0.05); color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--glow); }
+        .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
+        .btn-logout:hover { background: #E17055 !important; }
+        .btn-install { background: var(--success) !important; color: white !important; border: none !important; display: none; }
         .btn-install.show { display: inline-block; }
-        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px;
-            border-radius: 8px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer;
-            background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
+        .theme-toggle { 
+            display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px;
+            border-radius: 10px; border: 1px solid var(--border);
+        }
+        .theme-toggle button { 
+            padding: 6px 12px; border: none; border-radius: 8px; cursor: pointer;
+            background: transparent; color: var(--text-light); font-weight: 600; 
+            transition: 0.3s; font-size: 12px;
+        }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
+        /* ===== MENU ===== */
         .menu-container {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
-            background: var(--card-bg);
-            padding: 10px 14px;
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(20px);
+            padding: 8px 16px;
             border-radius: var(--radius);
             border: 1px solid var(--border);
             align-items: center;
         }
         .menu-container .menu-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-light);
-            margin-right: 4px;
+            font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 8px;
         }
         .menu-container .menu-btn {
-            padding: 6px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text-light);
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            transition: 0.3s;
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px;
+            background: transparent; color: var(--text-light); cursor: pointer;
+            font-size: 12px; font-weight: 600; transition: 0.3s;
         }
         .menu-container .menu-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            border-color: var(--primary);
+            background: rgba(108,92,231,0.15); color: var(--text); border-color: var(--primary);
         }
         .menu-container .menu-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+            background: var(--primary); color: white; border-color: var(--primary);
         }
 
+        /* ===== STATS ===== */
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;
         }
         .stat-card {
-            background: var(--card-bg);
-            padding: 14px 12px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            text-align: center;
-            transition: 0.3s;
-            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            padding: 20px 16px; border-radius: var(--radius);
+            box-shadow: var(--shadow); text-align: center;
+            transition: 0.3s; border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
         }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
-        .stat-card .number { font-size: 26px; font-weight: 800;
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--glow); }
+        .stat-card .number { 
+            font-size: 28px; font-weight: 800; 
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 500; }
 
         /* ===== LIVE VISITORS ===== */
         .live-visitors {
-            background: var(--card-bg);
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
             border-radius: var(--radius);
-            padding: 16px 20px;
-            margin-bottom: 20px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
             border: 1px solid var(--border);
-            border-left: 4px solid #48bb78;
+            border-left: 4px solid var(--success);
         }
         .live-visitors .lv-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #48bb78;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            font-size: 14px; font-weight: 700; color: var(--success);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         .live-visitors .lv-title .dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #48bb78;
-            animation: pulse 1.5s infinite;
-        }
-        .live-visitors .lv-title .live-badge {
-            font-size: 10px;
-            color: #48bb78;
-            background: rgba(72,187,120,0.1);
-            padding: 2px 10px;
-            border-radius: 20px;
-            display: inline-block;
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--success); animation: pulse 1.5s infinite;
         }
         .live-visitors .lv-title .refresh-time {
-            font-size: 10px;
-            color: var(--text-light);
-            font-weight: 400;
-            margin-left: auto;
+            font-size: 11px; color: var(--text-light); font-weight: 400; margin-left: auto;
         }
         .live-visitors .lv-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 10px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;
         }
         .live-visitors .lv-item {
-            background: var(--bg);
-            border-radius: 8px;
-            padding: 12px 14px;
-            text-align: center;
-            border: 1px solid var(--border);
-            transition: 0.3s;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px; padding: 16px; text-align: center;
+            border: 1px solid var(--border); transition: 0.3s;
         }
         .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
         .live-visitors .lv-item .lv-number {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            transition: 0.3s;
+            font-size: 26px; font-weight: 800; color: var(--primary); transition: 0.3s;
         }
         .live-visitors .lv-item .lv-number.pulse-update {
             animation: numberPulse 0.3s ease;
         }
-        @keyframes numberPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); color: #48bb78; }
-            100% { transform: scale(1); }
-        }
+        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: var(--success); } 100% { transform: scale(1); } }
         .live-visitors .lv-item .lv-label {
-            font-size: 10px;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-        }
-        .live-visitors .lv-item .lv-time {
-            font-size: 9px;
-            color: rgba(255,255,255,0.2);
-            margin-top: 2px;
-        }
-        .live-visitors .lv-item.active-now {
-            border-left: 3px solid #48bb78;
+            font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;
         }
 
-        /* ===== SECTION ===== */
-        .section {
-            display: none;
-            animation: fadeInUp 0.4s ease;
-        }
+        /* ===== SECTIONS ===== */
+        .section { display: none; animation: fadeInUp 0.4s ease; }
         .section.active { display: block; }
 
+        /* ===== CARDS ===== */
         .card {
-            background: var(--card-bg);
-            padding: 20px 24px;
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
+            padding: 24px 28px;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            margin-bottom: 18px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
+            transition: 0.3s;
         }
-        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
-        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px;
-            border-bottom: 2px solid rgba(102,126,234,0.15); }
-        .card input, .card select { width: 100%; padding: 8px 12px; margin: 4px 0;
-            border: 2px solid var(--border); border-radius: 8px; font-size: 13px;
-            background: var(--bg); color: var(--text); transition: 0.3s; }
-        .card input:focus, .card select:focus { border-color: var(--primary); outline: none; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .card:hover { box-shadow: var(--glow); }
+        .card h3 { color: var(--text); font-size: 18px; margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border); }
+        .card input, .card select { 
+            width: 100%; padding: 10px 14px; margin: 6px 0;
+            border: 1px solid var(--border); border-radius: 10px; font-size: 13px;
+            background: rgba(255,255,255,0.03); color: var(--text); transition: 0.3s;
+        }
+        .card input:focus, .card select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(108,92,231,0.1); }
 
-        .btn { padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        /* ===== BUTTONS ===== */
+        .btn { 
+            padding: 10px 20px; border: none; border-radius: 10px; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: var(--glow); }
         .btn:active { transform: scale(0.97); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
-        .btn-success:hover { background: #38a169; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: #e53e3e; }
         .btn-warning { background: var(--warning); color: #2d3748; }
-        .btn-warning:hover { background: #ed8936; }
-        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
+        .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: 8px; }
         .btn-block { width: 100%; }
-
-        /* ===== LINK ITEMS ===== */
-        .link-item {
-            background: var(--bg);
-            padding: 10px 14px;
-            margin: 6px 0;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            border-left: 3px solid var(--primary);
-            transition: 0.3s;
-        }
-        .link-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
-        .link-item .info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            flex: 1;
-        }
-        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .link-item .info .details {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            font-size: 11px;
-            color: var(--text-light);
-        }
-        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
-        .link-item .actions {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .link-item .actions .status-dropdown {
-            padding: 4px 8px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 10px;
-            cursor: pointer;
-        }
-        .link-item .actions .status-dropdown option { background: var(--bg); color: var(--text); }
-
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
-        .status-active { background: rgba(72,187,120,0.2); color: #48bb78; }
-        .status-disabled { background: rgba(252,129,129,0.2); color: #fc8181; }
-        .status-suspended { background: rgba(246,173,85,0.2); color: #f6ad55; }
-
-        /* ===== EDIT MODAL ===== */
-        .edit-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .edit-modal.show { display: flex; }
-        .edit-modal .modal-content {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 28px 32px;
-            max-width: 700px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            animation: fadeInUp 0.3s ease;
-        }
-        .edit-modal .modal-content h3 {
-            margin-bottom: 16px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(102,126,234,0.15);
-            color: var(--text);
-        }
-        .edit-modal .modal-content .modal-close {
-            float: right;
-            background: none;
-            border: none;
-            color: var(--text-light);
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .edit-modal .modal-content .modal-close:hover { color: var(--text); }
-        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
-        .edit-modal .modal-content .form-group label {
-            font-size: 12px;
-            color: var(--text-light);
-            display: block;
-            margin-bottom: 3px;
-            font-weight: 600;
-        }
-        .edit-modal .modal-content .form-group input,
-        .edit-modal .modal-content .form-group select {
-            width: 100%;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-        }
-        .edit-modal .modal-content .form-group input:focus,
-        .edit-modal .modal-content .form-group select:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-        .edit-modal .modal-content .form-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border);
-        }
-        .edit-modal .modal-content .popup-preview-small {
-            background: rgba(0,0,0,0.4);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 6px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-img {
-            max-width: 100%;
-            max-height: 60px;
-            border-radius: 4px;
-            object-fit: cover;
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-text {
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-sub {
-            color: rgba(255,255,255,0.4);
-            font-size: 9px;
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-btn-small {
-            padding: 4px 12px;
-            border: none;
-            border-radius: 4px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            font-size: 9px;
-            font-weight: 700;
-            cursor: default;
-            margin-top: 4px;
-        }
-        @media (max-width: 600px) {
-            .edit-modal .modal-content { padding: 20px; }
-            .edit-modal .modal-content .form-actions { flex-direction: column; }
-        }
-
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
-        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
-
-        .toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
-            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 99999; max-width: 400px; font-size: 13px; }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, #48bb78, #38a169); }
-        .toast.error { background: linear-gradient(135deg, #fc8181, #e53e3e); }
-        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-
-        /* ===== ANALYTICS ===== */
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
-        .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
-        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
-        .analytics-container .analytics-header .link-selector .search-input {
-            padding: 8px 14px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
-            min-width: 150px;
-            flex: 1;
-        }
-        .analytics-container .analytics-header .link-selector .search-input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-        .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
-        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
-        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
-        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .analytics-container .analytics-chart { background: var(--bg); border-radius: 8px; padding: 14px; border: 1px solid var(--border); margin: 10px 0; min-height: 150px; overflow-x: auto; }
-        .analytics-container .analytics-chart .chart-bar-container { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding-bottom: 20px; }
-        .analytics-container .analytics-chart .chart-bar-container .bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
-        .analytics-container .analytics-chart .chart-bar-container .bar { width: 100%; max-width: 30px; min-height: 3px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--primary), var(--secondary)); transition: 0.5s; }
-        .analytics-container .analytics-chart .chart-bar-container .bar-label { font-size: 8px; color: var(--text-light); margin-top: 3px; text-align: center; }
-        .analytics-container .analytics-chart .chart-bar-container .bar-value { font-size: 7px; color: var(--text-light); margin-bottom: 2px; }
-        .analytics-container .analytics-download { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
-        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
-        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
-        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
-        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-        .custom-date-input input[type="date"] { padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
-        .search-results-count { font-size: 11px; color: var(--text-light); }
-
-        .generated-link { background: rgba(102,126,234,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 2px dashed rgba(102,126,234,0.2); }
-        .generated-link.show { display: block; }
-        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
-
-        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 2px solid var(--border); overflow: hidden; display: none; }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
-
-        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 2px solid rgba(102,126,234,0.1); }
-        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: #1a1a3a; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin-bottom: 6px; }
-        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
-        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
-        .popup-preview .preview-label { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 5px; }
-
-        .search-bar {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .search-bar input {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px 16px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
-        }
-        .search-bar input:focus { border-color: var(--primary); outline: none; }
 
         /* ===== DEVICE MANAGEMENT ===== */
         .device-item {
-            background: var(--bg);
-            padding: 10px 14px;
-            margin: 6px 0;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            border-left: 3px solid var(--danger);
-            transition: 0.3s;
+            background: rgba(255,255,255,0.02);
+            padding: 12px 16px; margin: 8px 0; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
         }
         .device-item:hover { transform: translateX(4px); box-shadow: var(--shadow); }
-        .device-item .info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            flex: 1;
-        }
-        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .device-item .info .details {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            font-size: 11px;
-            color: var(--text-light);
-        }
-        .device-item .actions {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .device-item .actions .btn { font-size: 10px; padding: 4px 10px; }
+        .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .device-item .info .name { font-weight: 600; font-size: 13px; color: var(--text); min-width: 120px; }
+        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+        .device-item .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
-        /* ===== CONTACT SETTINGS ===== */
-        .contact-settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+        /* ===== ANALYTICS ===== */
+        .analytics-container { background: rgba(255,255,255,0.02); border-radius: var(--radius); padding: 24px; border: 1px solid var(--border); }
+        .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+        .analytics-container .analytics-header .link-selector select { 
+            padding: 8px 14px; border: 1px solid var(--border); border-radius: 10px;
+            background: rgba(255,255,255,0.03); color: var(--text); font-size: 13px; min-width: 180px;
         }
-        @media (max-width: 768px) {
-            .contact-settings-grid { grid-template-columns: 1fr; }
+        .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+        .analytics-container .time-filters .filter-btn { 
+            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s;
         }
-        .contact-settings-grid .contact-field label {
-            font-size: 10px;
-            color: var(--text-light);
-            display: block;
-            margin-bottom: 3px;
-            font-weight: 600;
+        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
+        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .analytics-container .analytics-stats { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0;
         }
-        .contact-settings-grid .contact-field input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 13px;
+        .analytics-container .analytics-stats .a-stat { 
+            background: rgba(255,255,255,0.02); border-radius: 12px; padding: 16px; 
+            border: 1px solid var(--border); text-align: center;
         }
-        .contact-settings-grid .contact-field input:focus {
-            border-color: var(--primary);
-            outline: none;
+        .analytics-container .analytics-stats .a-stat .a-number { 
+            font-size: 26px; font-weight: 800; 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .contact-status {
-            margin-top: 6px;
-            font-size: 12px;
-            font-weight: 500;
+        .analytics-container .analytics-stats .a-stat .a-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; }
+
+        /* ===== NEW GRAPHS ===== */
+        .analytics-chart-container {
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px; padding: 20px; margin: 16px 0;
+            border: 1px solid var(--border); min-height: 200px;
+        }
+        .chart-wrapper {
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .chart-row {
+            background: rgba(255,255,255,0.01);
+            border-radius: 10px; padding: 16px;
+            border: 1px solid var(--border);
+        }
+        .chart-row h4 {
+            font-size: 13px; font-weight: 600; color: var(--text-light);
+            margin-bottom: 12px;
+        }
+        .chart-bar-container {
+            display: flex; align-items: flex-end; gap: 4px; height: 120px;
+            padding-bottom: 20px; overflow-x: auto;
+        }
+        .chart-bar-container .bar-wrapper {
+            display: flex; flex-direction: column; align-items: center;
+            flex: 1; height: 100%; justify-content: flex-end; min-width: 30px;
+        }
+        .chart-bar-container .bar {
+            width: 100%; max-width: 24px; min-height: 4px;
+            border-radius: 4px 4px 0 0;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transition: 0.5s;
+        }
+        .chart-bar-container .bar-label { font-size: 9px; color: var(--text-light); margin-top: 4px; text-align: center; }
+        .chart-bar-container .bar-value { font-size: 8px; color: var(--text-light); margin-bottom: 2px; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 14px 24px;
+            border-radius: 12px; color: white; font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: translateY(120px); opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+            z-index: 99999; max-width: 400px; font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, var(--success), #00B894); }
+        .toast.error { background: linear-gradient(135deg, var(--danger), #E17055); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+
+        /* ===== USER SELECTOR ===== */
+        .user-selector-container {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .user-selector-container label {
+            font-size: 13px; font-weight: 600; color: var(--text-light);
+        }
+        .user-selector-container select {
+            padding: 8px 14px; border: 1px solid var(--border); border-radius: 10px;
+            background: rgba(255,255,255,0.03); color: var(--text); font-size: 13px; min-width: 150px;
         }
 
         @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 12px; }
+            .header { flex-direction: column; text-align: center; padding: 16px; }
             .header-actions { justify-content: center; }
             .menu-container { flex-direction: column; align-items: stretch; }
             .menu-container .menu-btn { text-align: center; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
-            .link-item { flex-direction: column; align-items: stretch; }
-            .link-item .info { flex-direction: column; align-items: flex-start; }
-            .link-item .actions { justify-content: flex-start; }
             body { padding: 12px; }
-            .card { padding: 14px; }
-            .toast { left: 20px; right: 20px; bottom: 20px; }
-            .edit-modal .modal-content { padding: 16px; }
-            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
-            .analytics-container .analytics-header .link-selector { flex-direction: column; }
+            .card { padding: 16px; }
+            .analytics-container { padding: 16px; }
         }
         @media (max-width: 480px) {
             .stats-grid { grid-template-columns: 1fr; }
             .live-visitors .lv-grid { grid-template-columns: 1fr; }
             .analytics-container .analytics-stats { grid-template-columns: 1fr; }
-            .stat-card .number { font-size: 20px; }
-            .live-visitors .lv-item .lv-number { font-size: 18px; }
         }
     </style>
 </head>
@@ -588,7 +329,7 @@
     <div class="admin-container">
         <!-- HEADER -->
         <header class="header">
-            <h1>⚙️ Admin Panel</h1>
+            <h1>⚡ Admin Panel</h1>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
@@ -599,7 +340,7 @@
             </div>
         </header>
 
-        <!-- ===== MENU ===== -->
+        <!-- MENU -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -609,7 +350,7 @@
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- ===== SECTION: DASHBOARD ===== -->
+        <!-- DASHBOARD -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
@@ -628,66 +369,67 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS (FIXED) ===== -->
+            <!-- LIVE VISITORS (FIXED + USER SELECTOR) -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors
-                    <span class="live-badge">🟢 Live</span>
+                    <span class="live-badge" style="font-size:10px;color:var(--success);background:rgba(0,184,148,0.1);padding:2px 10px;border-radius:20px;">🟢 Live</span>
                     <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
                 </div>
+                
+                <div class="user-selector-container">
+                    <label>👤 Select User:</label>
+                    <select id="liveUserSelector" onchange="loadUserLiveStats()">
+                        <option value="all">All Users</option>
+                    </select>
+                </div>
+                
                 <div class="lv-grid">
                     <div class="lv-item">
                         <div class="lv-number" id="liveLifetime">0</div>
                         <div class="lv-label">Lifetime</div>
-                        <div class="lv-time">All time</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number" id="live48hr">0</div>
                         <div class="lv-label">Last 48 Hours</div>
-                        <div class="lv-time" id="live48hrTime">Loading...</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number" id="live60min">0</div>
                         <div class="lv-label">Last 60 Minutes</div>
-                        <div class="lv-time" id="live60minTime">Loading...</div>
                     </div>
-                    <div class="lv-item active-now">
+                    <div class="lv-item active-now" style="border-left:3px solid var(--success);">
                         <div class="lv-number" id="liveActive">0</div>
                         <div class="lv-label">Active Now</div>
-                        <div class="lv-time">🟢 Online</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== SECTION: LINKS ===== -->
+        <!-- LINKS -->
         <div class="section" id="section-links">
             <div class="card">
                 <h3>🔍 Search Links</h3>
-                <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
-                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
-                </div>
+                <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
                 <div id="linksList"></div>
             </div>
         </div>
 
-        <!-- ===== SECTION: ANALYTICS ===== -->
+        <!-- ANALYTICS (NEW GRAPHS) -->
         <div class="section" id="section-analytics">
             <div class="analytics-container">
                 <div class="analytics-header">
                     <div class="link-selector">
-                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
+                        <label style="font-weight:600;color:var(--text-light);font-size:13px;">📌 Link:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Search by name or ID..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
-                        <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
+                        <button class="filter-btn active" data-filter="7d" onclick="setTimeFilter('7d')">7 Days</button>
                         <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24h</button>
                         <button class="filter-btn" data-filter="60m" onclick="setTimeFilter('60m')">60m</button>
                         <button class="filter-btn" data-filter="custom" onclick="setTimeFilter('custom')">Custom</button>
                     </div>
                 </div>
+                
                 <div class="custom-date-input" id="customDatePicker" style="display:none;">
                     <label style="font-size:11px;color:var(--text-light);">From:</label>
                     <input type="date" id="analyticsFromDate" onchange="loadAnalytics()">
@@ -695,278 +437,100 @@
                     <input type="date" id="analyticsToDate" onchange="loadAnalytics()">
                     <button onclick="loadAnalytics()" class="btn btn-primary btn-sm">Apply</button>
                 </div>
-                <div class="link-details" id="analyticsLinkDetails">
-                    <div class="detail-row"><span class="label">Link Name</span><span class="value" id="analyticsLinkName">Not selected</span></div>
-                    <div class="detail-row"><span class="label">Link ID</span><span class="value" id="analyticsLinkId">-</span></div>
-                    <div class="detail-row"><span class="label">Status</span><span class="value" id="analyticsLinkStatus">-</span></div>
-                    <div class="detail-row"><span class="label">Created</span><span class="value" id="analyticsLinkCreated">-</span></div>
-                </div>
+                
                 <div class="analytics-stats" id="analyticsStats">
                     <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Visits</div></div>
                     <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Claims</div></div>
                     <div class="a-stat"><div class="a-number" id="analyticsUniqueVisitors">0</div><div class="a-label">👤 Unique</div></div>
                     <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
                 </div>
-                <div class="analytics-chart" id="analyticsChart"><div style="color:var(--text-light);font-size:12px;text-align:center;padding:20px;">📊 Select a link</div></div>
-                <div class="analytics-download">
-                    <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Image</button>
-                    <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 CSV</button>
+                
+                <div class="analytics-chart-container" id="analyticsChart">
+                    <div style="color:var(--text-light);font-size:14px;text-align:center;padding:20px;">📊 Select a link to view analytics</div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== SECTION: CREATE ===== -->
+        <!-- CREATE -->
         <div class="section" id="section-create">
             <div class="card">
                 <h3>➕ Create Link</h3>
                 <input type="text" id="linkName" placeholder="Link Name">
-                <div class="grid-2">
-                    <div>
-                        <label style="font-weight:600;color:#48bb78;font-size:11px;">🎬 Video URL</label>
-                        <input type="text" id="video" placeholder="YouTube or MP4 URL" value="https://youtu.be/dQw4w9WgXcQ">
-                        <small style="color:var(--text-light);font-size:9px;">YouTube or MP4</small>
-                    </div>
-                    <div>
-                        <label style="font-weight:600;color:#fc8181;font-size:11px;">🎁 Claim URL</label>
-                        <input type="text" id="claim" placeholder="Claim URL" value="#">
-                    </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div><label style="font-size:11px;color:var(--text-light);">🎬 Video URL</label><input type="text" id="video" value="https://youtu.be/dQw4w9WgXcQ"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">🎁 Claim URL</label><input type="text" id="claim" value="#"></div>
                 </div>
-                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
-                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
-
-                <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--border);">
-                    <label style="font-weight:600;color:#667eea;font-size:12px;">🖼️ Popup Settings</label>
-                    <div class="grid-2">
-                        <div><label style="font-size:10px;color:var(--text-light);">Popup Title</label><input type="text" id="popupTitle" placeholder="Title" value="🎁 Claim Your Reward"></div>
-                        <div><label style="font-size:10px;color:var(--text-light);">Button Text</label><input type="text" id="popupButtonText" placeholder="Button" value="Claim Now"></div>
-                    </div>
-                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <div style="margin-top:6px;">
-                        <label style="font-size:10px;color:var(--text-light);">Popup Image URL (16:9)</label>
-                        <input type="text" id="popupImageUrl" placeholder="Enter image URL">
-                        <div class="image-preview" id="popupImagePreview">
-                            <img id="popupPreviewImg" alt="Popup Image Preview">
-                            <div class="preview-label">🖼️ Preview</div>
-                        </div>
-                    </div>
-                    <div class="popup-preview" id="popupPreviewSection">
-                        <div class="preview-image" id="popupPreviewImage"><span>🎬 16:9 Preview</span></div>
-                        <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
-                        <div class="preview-sub" id="popupPreviewSub">Tap below to unlock</div>
-                        <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
-                        <div class="preview-label">⬆️ Live Preview</div>
-                    </div>
-                </div>
-
-                <div style="margin-top:8px;">
-                    <label style="font-weight:600;color:#f6ad55;font-size:11px;">📅 Schedule Expiry</label>
-                    <div class="grid-2">
-                        <select id="schedulePreset" onchange="updateSchedulePreset()" style="padding:8px 12px;font-size:12px;">
-                            <option value="">No Expiry</option>
-                            <option value="3">3 Days</option>
-                            <option value="7">7 Days</option>
-                            <option value="15">15 Days</option>
-                            <option value="30">30 Days</option>
-                            <option value="custom">Custom Date</option>
-                        </select>
-                        <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
-                    </div>
-                    <div style="margin-top:3px;font-size:11px;color:var(--text-light);" id="expiryDisplay">⏰ No expiry set</div>
-                </div>
-
-                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:12px;font-size:15px;padding:10px;">🚀 Generate Link</button>
-
-                <div class="generated-link" id="generatedLink">
-                    <div class="link-label">✅ Link Generated!</div>
-                    <div class="link-box">
-                        <input type="text" id="generatedLinkInput" readonly>
-                        <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
-                </div>
+                <input type="text" id="buttonText" value="Claim Now">
+                <input type="text" id="headline" value="🎬 Watch Video">
+                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:12px;">🚀 Generate Link</button>
             </div>
         </div>
 
-        <!-- ===== SECTION: SETTINGS ===== -->
+        <!-- SETTINGS -->
         <div class="section" id="section-settings">
             <div class="card">
-                <h3>🖼️ UID Background (9:16)</h3>
-                <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Background Preview">
-                    <div class="preview-label">🖼️ Preview</div>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                    <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
-                    <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
-                </div>
-                <div id="bgStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>📱 Contact & OTP Settings</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
-                <div class="contact-settings-grid">
-                    <div class="contact-field">
-                        <label>📧 Email Address</label>
-                        <input type="email" id="adminEmail" placeholder="admin@example.com">
-                    </div>
-                    <div class="contact-field">
-                        <label>📞 Phone Number (with country code)</label>
-                        <input type="text" id="adminPhone" placeholder="+919876543210">
-                    </div>
-                </div>
-                <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:8px 20px;">💾 Save Contact Info</button>
-                <div id="contactStatus" class="contact-status"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔐 Admin Passcode</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode (OTP will be required after change)</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
-                </div>
-                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:6px 18px;">Change Passcode</button>
-                <div id="passcodeStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
                 <h3>🔧 Device Management</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked and banned devices with login history</p>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Manage blocked and banned devices with login history</p>
                 <div id="deviceList" style="max-height:400px;overflow-y:auto;">
                     <div class="empty-state" id="noDevices">
-                        <span class="icon">📱</span>
-                        <p>No blocked devices found</p>
+                        <p style="color:var(--text-light);text-align:center;padding:20px;">No blocked devices found</p>
                     </div>
                 </div>
-                <button onclick="loadBlockedDevices()" class="btn btn-primary btn-sm" style="margin-top:10px;">🔄 Refresh List</button>
+                <button onclick="loadBlockedDevices()" class="btn btn-primary btn-sm" style="margin-top:12px;">🔄 Refresh List</button>
             </div>
-        </div>
-    </div>
-
-    <!-- ===== EDIT MODAL ===== -->
-    <div class="edit-modal" id="editModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
-            <h3>✏️ Edit Link</h3>
-            <div id="editModalBody"></div>
         </div>
     </div>
 
     <div class="toast" id="toast"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
     <script>
         var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
+        if (!csrfToken) { window.location.href = 'login.html'; }
 
-        if (!csrfToken) {
-            window.location.href = 'login.html';
-        }
-
-        // ============================================================
-        // SECTION: MENU
-        // ============================================================
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var target = document.getElementById('section-' + sectionId);
-            if (target) target.classList.add('active');
-            
-            document.querySelectorAll('.menu-btn').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var btn = document.querySelector('.menu-btn[data-section="' + sectionId + '"]');
-            if (btn) btn.classList.add('active');
-
-            if (sectionId === 'analytics') {
-                loadAnalyticsLinks();
-            }
-            if (sectionId === 'links') {
-                filterLinks();
-            }
-            if (sectionId === 'settings') {
-                setTimeout(loadBlockedDevices, 500);
-            }
-        }
-
-        // ============================================================
-        // SECTION: UTILITY
-        // ============================================================
+        // ===== UTILITY =====
         async function secureFetch(url, options) {
             options = options || {};
             try {
                 var response = await fetch(url, {
                     ...options,
-                    headers: {
-                        ...options.headers,
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    }
+                    headers: { ...options.headers, 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
                 });
                 if (response.status === 401 || response.status === 403) {
                     showToast('❌ Session expired. Please login again.', 'error');
                     localStorage.removeItem('csrfToken');
-                    setTimeout(function() { window.location.href = 'login.html'; }, 1500);
+                    setTimeout(() => window.location.href = 'login.html', 1500);
                     return null;
                 }
                 return response;
-            } catch (e) {
-                showToast('❌ Network error', 'error');
-                return null;
-            }
+            } catch (e) { showToast('❌ Network error', 'error'); return null; }
         }
 
         function showToast(msg, type) {
             type = type || 'info';
             var t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast ' + type + ' show';
+            t.textContent = msg; t.className = 'toast ' + type + ' show';
             clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
+            t._timeout = setTimeout(() => t.className = 'toast', 4000);
         }
 
-        function escapeHTML(str) {
-            if (!str) return '';
-            var div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        function escapeHTML(str) { if (!str) return ''; var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+        // ===== MENU =====
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById('section-' + sectionId).classList.add('active');
+            document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
+            document.querySelector('.menu-btn[data-section="' + sectionId + '"]').classList.add('active');
+            if (sectionId === 'analytics') loadAnalyticsLinks();
+            if (sectionId === 'links') filterLinks();
+            if (sectionId === 'settings') setTimeout(loadBlockedDevices, 500);
         }
 
-        // ============================================================
-        // SECTION: PWA INSTALL
-        // ============================================================
-        var deferredPrompt;
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBtn').classList.add('show');
-        });
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(function(result) {
-                    if (result.outcome === 'accepted') {
-                        showToast('✅ App installed!', 'success');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installBtn').classList.remove('show');
-                });
-            } else {
-                showToast('📲 Use Chrome browser to install', 'info');
-            }
-        }
-
-        // ============================================================
-        // SECTION: THEME
-        // ============================================================
+        // ===== THEME =====
         async function setTheme(theme) {
-            document.body.className = theme;
-            var r = await secureFetch('/api/admin/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
-            if (!r) return;
-            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
+            document.body.className = theme === 'dark' ? '' : 'light';
+            await secureFetch('/api/admin/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
+            document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
             document.getElementById('theme-' + theme).classList.add('active');
         }
 
@@ -975,222 +539,135 @@
                 var r = await fetch('/api/settings');
                 var data = await r.json();
                 if (data && data.theme) {
-                    document.body.className = data.theme;
+                    document.body.className = data.theme === 'dark' ? '' : 'light';
                     document.getElementById('theme-' + data.theme).classList.add('active');
                 }
             } catch (e) {}
         }
 
-        // ============================================================
-        // SECTION: LOGOUT
-        // ============================================================
+        // ===== LOGOUT =====
         async function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await fetch('/api/admin/logout', { method: 'POST' });
-                } catch (e) {}
+                try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
                 localStorage.removeItem('csrfToken');
                 window.location.href = 'login.html';
             }
         }
 
-        // ============================================================
-        // SECTION: STATS
-        // ============================================================
-        var liveInterval = null;
-
+        // ===== STATS =====
         async function loadStats() {
-            try {
-                var response = await secureFetch('/api/all-stats');
-                if (!response) return;
-                if (response.ok) {
-                    var data = await response.json();
-                    
-                    var totalLinks = document.getElementById('totalLinks');
-                    var activeLinks = document.getElementById('activeLinks');
-                    var totalVisits = document.getElementById('totalVisits');
-                    var expiredLinks = document.getElementById('expiredLinks');
-                    
-                    if (data.links) {
-                        if (totalLinks) totalLinks.textContent = data.links.length || 0;
-                        if (activeLinks) activeLinks.textContent = data.links.filter(function(l) { return l.status === 'active'; }).length || 0;
-                        if (totalVisits) totalVisits.textContent = data.links.reduce(function(s, l) { return s + (l.visits || 0); }, 0) || 0;
-                        if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
-                    }
-                    
-                    var totalVisitors = document.getElementById('totalVisitors');
-                    var totalClaims = document.getElementById('totalClaims');
-                    var todayVisitors = document.getElementById('todayVisitors');
-                    var todayClaims = document.getElementById('todayClaims');
-                    
-                    if (data.global) {
-                        if (totalVisitors) totalVisitors.textContent = data.global.totalVisitors || 0;
-                        if (totalClaims) totalClaims.textContent = data.global.totalClaims || 0;
-                        if (todayVisitors) todayVisitors.textContent = data.global.todayVisitors || 0;
-                        if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
-                    }
-                    
-                    updateLiveVisitors(data);
+            var response = await secureFetch('/api/all-stats');
+            if (response && response.ok) {
+                var data = await response.json();
+                document.getElementById('totalLinks').textContent = data.links?.length || 0;
+                document.getElementById('activeLinks').textContent = data.links?.filter(l => l.status === 'active').length || 0;
+                document.getElementById('totalVisits').textContent = data.links?.reduce((s, l) => s + (l.visits || 0), 0) || 0;
+                document.getElementById('expiredLinks').textContent = data.links?.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date()).length || 0;
+                if (data.global) {
+                    document.getElementById('totalVisitors').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('totalClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('todayVisitors').textContent = data.global.todayVisitors || 0;
+                    document.getElementById('todayClaims').textContent = data.global.todayClaims || 0;
                 }
-            } catch (e) {
-                console.error('Failed to load stats:', e);
+                updateLiveVisitors(data);
+                loadUserLiveStats();
             }
         }
 
-        // ============================================================
-        // SECTION: LIVE VISITORS (FIXED)
-        // ============================================================
+        // ===== LIVE VISITORS (FIXED) =====
         var previousLiveData = {};
+        var allLinks = [];
 
         function updateLiveVisitors(data) {
-            if (!data) {
-                // Try to fetch fresh data
-                secureFetch('/api/all-stats').then(function(response) {
-                    if (response && response.ok) {
-                        response.json().then(function(d) {
-                            updateLiveVisitors(d);
-                        });
-                    }
-                });
-                return;
-            }
-
+            if (!data) { secureFetch('/api/all-stats').then(r => { if (r && r.ok) r.json().then(d => updateLiveVisitors(d)); }); return; }
             var stats = data.global || {};
             
-            // Lifetime
             var lifetime = document.getElementById('liveLifetime');
             if (lifetime) {
                 var newVal = stats.totalVisitors || 0;
-                if (previousLiveData.lifetime !== newVal) {
-                    lifetime.textContent = newVal;
-                    lifetime.classList.add('pulse-update');
-                    setTimeout(function() { lifetime.classList.remove('pulse-update'); }, 300);
-                }
+                if (previousLiveData.lifetime !== newVal) { lifetime.textContent = newVal; lifetime.classList.add('pulse-update'); setTimeout(() => lifetime.classList.remove('pulse-update'), 300); }
                 previousLiveData.lifetime = newVal;
             }
             
-            // Last 48 Hours (using visits24h from API)
             var live48hr = document.getElementById('live48hr');
             if (live48hr) {
                 var newVal24h = stats.visits24h || 0;
-                if (previousLiveData.live48hr !== newVal24h) {
-                    live48hr.textContent = newVal24h;
-                    live48hr.classList.add('pulse-update');
-                    setTimeout(function() { live48hr.classList.remove('pulse-update'); }, 300);
-                }
+                if (previousLiveData.live48hr !== newVal24h) { live48hr.textContent = newVal24h; live48hr.classList.add('pulse-update'); setTimeout(() => live48hr.classList.remove('pulse-update'), 300); }
                 previousLiveData.live48hr = newVal24h;
             }
-            var live48hrTime = document.getElementById('live48hrTime');
-            if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
-            // Last 60 Minutes (using visits60m from API)
             var live60min = document.getElementById('live60min');
             if (live60min) {
                 var newVal60m = stats.visits60m || 0;
-                if (previousLiveData.live60min !== newVal60m) {
-                    live60min.textContent = newVal60m;
-                    live60min.classList.add('pulse-update');
-                    setTimeout(function() { live60min.classList.remove('pulse-update'); }, 300);
-                }
+                if (previousLiveData.live60min !== newVal60m) { live60min.textContent = newVal60m; live60min.classList.add('pulse-update'); setTimeout(() => live60min.classList.remove('pulse-update'), 300); }
                 previousLiveData.live60min = newVal60m;
             }
-            var live60minTime = document.getElementById('live60minTime');
-            if (live60minTime) live60minTime.textContent = 'Last 60 min';
             
-            // Active Now (Real-time from API)
             var liveActive = document.getElementById('liveActive');
             if (liveActive) {
                 var newValActive = stats.activeNow || 0;
-                if (previousLiveData.liveActive !== newValActive) {
-                    liveActive.textContent = newValActive;
-                    liveActive.classList.add('pulse-update');
-                    setTimeout(function() { liveActive.classList.remove('pulse-update'); }, 300);
-                }
+                if (previousLiveData.liveActive !== newValActive) { liveActive.textContent = newValActive; liveActive.classList.add('pulse-update'); setTimeout(() => liveActive.classList.remove('pulse-update'), 300); }
                 previousLiveData.liveActive = newValActive;
             }
             
-            // Update refresh time
-            var refreshTime = document.getElementById('lastRefreshTime');
-            if (refreshTime) {
-                var nowTime = new Date();
-                refreshTime.textContent = 'Last updated: ' + nowTime.toLocaleTimeString();
-            }
+            document.getElementById('lastRefreshTime').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
         }
 
-        // Start live refresh (every 5 seconds)
-        function startLiveRefresh() {
-            if (liveInterval) clearInterval(liveInterval);
-            
-            // Initial load
+        async function loadUserLiveStats() {
+            var select = document.getElementById('liveUserSelector');
+            var userId = select.value;
+            if (userId === 'all') { loadStats(); return; }
+            // Fetch specific user stats from API (you can implement this endpoint if needed)
+            // For now, we'll just show global stats
             loadStats();
-            
-            // Refresh every 5 seconds
-            liveInterval = setInterval(function() {
-                loadStats();
-            }, 5000);
         }
 
-        // ============================================================
-        // SECTION: LINKS (Compact + Search)
-        // ============================================================
-        var allLinks = [];
-
-        async function loadLinks() {
+        async function loadUserList() {
             try {
                 var r = await secureFetch('/api/links');
-                if (!r) {
-                    document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading</div>';
-                    return;
+                if (r && r.ok) {
+                    allLinks = await r.json();
+                    var select = document.getElementById('liveUserSelector');
+                    select.innerHTML = '<option value="all">All Users</option>';
+                    allLinks.forEach(link => {
+                        var opt = document.createElement('option');
+                        opt.value = link.id;
+                        opt.textContent = link.name + ' (' + link.id.substring(0,8) + '...)';
+                        select.appendChild(opt);
+                    });
                 }
-                allLinks = await r.json();
-                filterLinks();
-            } catch (e) {
-                document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading links</div>';
-            }
+            } catch (e) {}
+        }
+
+        // ===== LINKS =====
+        async function loadLinks() {
+            var r = await secureFetch('/api/links');
+            if (r && r.ok) { allLinks = await r.json(); filterLinks(); }
         }
 
         function filterLinks() {
             var query = document.getElementById('searchLinksInput').value.toLowerCase().trim();
-            var filtered = allLinks;
-            
-            if (query) {
-                filtered = allLinks.filter(function(link) {
-                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
-                });
-            }
-            
+            var filtered = query ? allLinks.filter(l => l.name.toLowerCase().includes(query) || l.id.toLowerCase().includes(query)) : allLinks;
             var c = document.getElementById('linksList');
-            var countEl = document.getElementById('searchResultsCount');
-            
-            if (filtered.length === 0) {
-                c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
-                if (countEl) countEl.textContent = 'No results';
-                return;
-            }
-            
-            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
-            
+            if (filtered.length === 0) { c.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:20px;">No links found</p>'; return; }
             c.innerHTML = '';
-            filtered.forEach(function(link) {
+            filtered.forEach(link => {
                 var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
-                var created = new Date(link.created).toLocaleDateString();
-                var visits = link.visits || 0;
-                
                 var d = document.createElement('div');
-                d.className = 'link-item';
+                d.className = 'device-item';
                 d.innerHTML = `
                     <div class="info">
                         <span class="name">${escapeHTML(link.name)}</span>
                         <span class="details">
-                            <span>📅 ${created}</span>
-                            <span class="visits">👁️ ${visits}</span>
-                            <span class="status-badge status-${sc}">${link.status}</span>
+                            <span>📅 ${new Date(link.created).toLocaleDateString()}</span>
+                            <span>👁️ ${link.visits || 0}</span>
+                            <span style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;background:${sc === 'active' ? 'rgba(0,184,148,0.2)' : sc === 'suspended' ? 'rgba(253,203,110,0.2)' : 'rgba(255,118,117,0.2)'};color:${sc === 'active' ? '#00B894' : sc === 'suspended' ? '#FDCB6E' : '#FF7675'};">${link.status}</span>
                         </span>
                     </div>
                     <div class="actions">
-                        <button onclick="openEditModal('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
-                        <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
-                        <select onchange="handleStatusAction('${link.id}', this.value)" class="status-dropdown">
+                        <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm">📋 Copy</button>
+                        <button onclick="openEditModal('${link.id}')" class="btn btn-warning btn-sm">✏️</button>
+                        <select onchange="handleStatusAction('${link.id}', this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:10px;">
                             <option value="">⚡ Action</option>
                             <option value="active">✅ Activate</option>
                             <option value="suspended">⏸️ Suspend</option>
@@ -1203,466 +680,72 @@
             });
         }
 
-        function copyLinkUrl(id) {
-            var url = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(url).then(function() {
-                showToast('✅ Link copied!', 'success');
-            }).catch(function() {
-                var t = document.createElement('textarea');
-                t.value = url;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                document.body.removeChild(t);
-                showToast('✅ Link copied!', 'success');
-            });
-        }
-
-        async function handleStatusAction(id, action) {
-            if (!action) return;
-            
-            if (action === 'delete') {
-                if (confirm('⚠️ Delete this link permanently?')) {
-                    try {
-                        var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
-                        if (!r) return;
-                        var data = await r.json();
-                        if (data.success) {
-                            loadLinks();
-                            loadStats();
-                            showToast('✅ Link deleted!', 'success');
-                        }
-                    } catch (e) { showToast('❌ Failed to delete', 'error'); }
-                }
-                return;
-            }
-            
-            try {
-                var r = await secureFetch('/api/links/' + id + '/status', {
-                    method: 'PUT',
-                    body: JSON.stringify({ status: action })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                loadLinks();
-                loadStats();
-                showToast('✅ Status updated to: ' + action, 'success');
-            } catch (e) { showToast('❌ Failed to update status', 'error'); }
-        }
-
-        // ============================================================
-        // SECTION: EDIT MODAL
-        // ============================================================
-        var editingLinkId = null;
-
-        function openEditModal(linkId) {
-            var link = allLinks.find(function(l) { return l.id === linkId; });
-            if (!link) {
-                showToast('❌ Link not found', 'error');
-                return;
-            }
-            
-            editingLinkId = linkId;
-            var body = document.getElementById('editModalBody');
-            
-            var popup = link.popupSettings || {};
-            var expiry = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-            
-            body.innerHTML = `
-                <div class="form-group">
-                    <label>Link Name</label>
-                    <input type="text" id="editName" value="${escapeHTML(link.name)}">
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>🎬 Video URL</label>
-                        <input type="text" id="editVideo" value="${escapeHTML(link.video)}">
-                    </div>
-                    <div class="form-group">
-                        <label>🎁 Claim URL</label>
-                        <input type="text" id="editClaim" value="${escapeHTML(link.claim)}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Button Text</label>
-                    <input type="text" id="editButton" value="${escapeHTML(link.buttonText || 'Claim Now')}">
-                </div>
-                <div class="form-group">
-                    <label>Headline</label>
-                    <input type="text" id="editHeadline" value="${escapeHTML(link.headline || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="editStatus">
-                        <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
-                        <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspended</option>
-                        <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Expiry Date</label>
-                    <input type="datetime-local" id="editExpiry" value="${expiry}">
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--border);">
-                    <label style="font-weight:600;color:#667eea;font-size:12px;">🖼️ Popup Settings</label>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Popup Title</label>
-                            <input type="text" id="editPopupTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
+        // ===== DEVICE MANAGEMENT =====
+        async function loadBlockedDevices() {
+            var r = await secureFetch('/api/admin/blocked-devices');
+            if (!r) return;
+            var data = await r.json();
+            var container = document.getElementById('deviceList');
+            var noDevices = document.getElementById('noDevices');
+            if (data.devices && data.devices.length > 0) {
+                noDevices.style.display = 'none';
+                container.innerHTML = '';
+                data.devices.forEach(device => {
+                    var isPermanent = device.isPermanent;
+                    var div = document.createElement('div');
+                    div.className = 'device-item';
+                    div.style.borderLeftColor = isPermanent ? '#FF7675' : '#FDCB6E';
+                    var statusText = isPermanent ? '⛔ PERMANENTLY BANNED' : '⏳ Blocked until ' + new Date(device.blockedUntil).toLocaleString();
+                    div.innerHTML = `
+                        <div class="info">
+                            <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
+                            <span class="details">
+                                <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
+                                <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
+                                <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
+                                <span style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;background:${isPermanent ? 'rgba(255,118,117,0.2)' : 'rgba(253,203,110,0.2)'};color:${isPermanent ? '#FF7675' : '#FDCB6E'};">${statusText}</span>
+                                <span>Attempts: ${device.attempts || 0}</span>
+                            </span>
                         </div>
-                        <div class="form-group">
-                            <label>Popup Button</label>
-                            <input type="text" id="editPopupBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
+                        <div class="actions">
+                            ${!isPermanent ? `<button onclick="permanentBanDevice('${device._id}')" class="btn btn-danger btn-sm">⛔ Ban</button>` : ''}
+                            <button onclick="unblockDevice('${device._id}')" class="btn btn-success btn-sm">🔓 Unblock</button>
+                            <button onclick="deleteDeviceRecord('${device._id}')" class="btn btn-warning btn-sm">🗑️ Delete</button>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Popup Subtitle</label>
-                        <input type="text" id="editPopupSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
-                    </div>
-                    <div class="form-group">
-                        <label>Popup Image URL (16:9)</label>
-                        <input type="text" id="editPopupImage" value="${escapeHTML(popup.image || '')}" placeholder="Enter image URL">
-                    </div>
-                    <div class="popup-preview-small" id="editPopupPreview">
-                        ${popup.image ? '<img src="' + escapeHTML(popup.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>'}
-                        <div class="preview-text">${escapeHTML(popup.title || '🎁 Claim Your Reward')}</div>
-                        <div class="preview-sub">${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}</div>
-                        <div class="preview-btn-small">${escapeHTML(popup.buttonText || 'Claim Now')}</div>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button onclick="saveEditLink()" class="btn btn-success">💾 Save Changes</button>
-                    <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
-                </div>
-            `;
-            
-            ['editPopupTitle', 'editPopupBtn', 'editPopupSub', 'editPopupImage'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('input', function() {
-                        updateEditPopupPreview();
-                    });
-                }
-            });
-            
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function updateEditPopupPreview() {
-            var title = document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
-            var btn = document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value || 'Claim Now' : 'Claim Now';
-            var sub = document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
-            var img = document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value || '' : '';
-            var preview = document.getElementById('editPopupPreview');
-            if (!preview) return;
-            
-            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
-            preview.innerHTML = imgHtml +
-                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
-                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
-                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.remove('show');
-            editingLinkId = null;
-        }
-
-        async function saveEditLink() {
-            if (!editingLinkId) {
-                showToast('❌ No link selected', 'error');
-                return;
-            }
-            
-            var popupSettings = {
-                image: document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value.trim() || null : null,
-                title: document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
-                buttonText: document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value.trim() || 'Claim Now' : 'Claim Now',
-                subtitle: document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
-            };
-            
-            var expiryDate = document.getElementById('editExpiry') ? document.getElementById('editExpiry').value || null : null;
-            if (expiryDate) {
-                expiryDate = new Date(expiryDate).toISOString();
-            }
-            
-            try {
-                var r = await secureFetch('/api/links/' + editingLinkId, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        name: document.getElementById('editName').value,
-                        video: document.getElementById('editVideo').value,
-                        claim: document.getElementById('editClaim').value,
-                        buttonText: document.getElementById('editButton').value,
-                        headline: document.getElementById('editHeadline').value,
-                        status: document.getElementById('editStatus').value,
-                        expiryDate: expiryDate,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                closeEditModal();
-                loadLinks();
-                loadStats();
-                showToast('✅ Link updated successfully!', 'success');
-            } catch (e) {
-                showToast('❌ Failed to update link', 'error');
-            }
-        }
-
-        document.getElementById('editModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditModal();
-            }
-        });
-
-        // ============================================================
-        // SECTION: CREATE LINK
-        // ============================================================
-        var selectedExpiry = null;
-
-        function updateSchedulePreset() {
-            var preset = document.getElementById('schedulePreset').value;
-            var customInput = document.getElementById('customExpiry');
-            var display = document.getElementById('expiryDisplay');
-            if (preset === 'custom') {
-                customInput.style.display = 'block';
-                customInput.value = '';
-                display.textContent = '📅 Select custom date';
-                selectedExpiry = null;
-                return;
-            }
-            customInput.style.display = 'none';
-            if (preset) {
-                var days = parseInt(preset);
-                var date = new Date();
-                date.setDate(date.getDate() + days);
-                selectedExpiry = date.toISOString();
-                display.textContent = '📅 Expires: ' + date.toLocaleString();
-            } else {
-                selectedExpiry = null;
-                display.textContent = '⏰ No expiry set';
-            }
-        }
-
-        function updateCustomExpiry() {
-            var val = document.getElementById('customExpiry').value;
-            if (val) {
-                var date = new Date(val);
-                selectedExpiry = date.toISOString();
-                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
-            } else {
-                selectedExpiry = null;
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-            }
-        }
-
-        // Popup preview live update
-        document.getElementById('popupTitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
-        });
-        document.getElementById('popupSubtitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
-        });
-        document.getElementById('popupButtonText').addEventListener('input', function() {
-            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
-        });
-        document.getElementById('popupImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('popupImagePreview');
-            var img = document.getElementById('popupPreviewImg');
-            var previewImage = document.getElementById('popupPreviewImage');
-            if (url) {
-                img.src = url;
-                preview.classList.add('show');
-                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
-            } else {
-                preview.classList.remove('show');
-                previewImage.innerHTML = '<span>🎬 16:9 Preview</span>';
-            }
-        });
-
-        async function createLink() {
-            var name = document.getElementById('linkName').value.trim();
-            if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
-            if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
-            
-            var popupSettings = {
-                image: document.getElementById('popupImageUrl').value.trim() || null,
-                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
-                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
-                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
-            };
-
-            try {
-                var r = await secureFetch('/api/links', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: name,
-                        video: document.getElementById('video').value.trim(),
-                        claim: document.getElementById('claim').value.trim(),
-                        buttonText: document.getElementById('buttonText').value.trim(),
-                        headline: document.getElementById('headline').value.trim(),
-                        expiryDate: selectedExpiry,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var link = await r.json();
-                document.getElementById('generatedLink').classList.add('show');
-                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
-                
-                document.getElementById('linkName').value = '';
-                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
-                document.getElementById('claim').value = '#';
-                document.getElementById('buttonText').value = 'Claim Now';
-                document.getElementById('headline').value = '🎬 Watch Video';
-                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
-                document.getElementById('popupButtonText').value = 'Claim Now';
-                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
-                document.getElementById('popupImageUrl').value = '';
-                document.getElementById('popupImagePreview').classList.remove('show');
-                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Preview</span>';
-                document.getElementById('schedulePreset').value = '';
-                document.getElementById('customExpiry').style.display = 'none';
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-                selectedExpiry = null;
-                loadLinks();
-                loadStats();
-                showToast('✅ Link created!', 'success');
-            } catch (e) { showToast('❌ Failed to create link', 'error'); }
-        }
-
-        function copyLink() {
-            var i = document.getElementById('generatedLinkInput');
-            i.select();
-            document.execCommand('copy');
-            showToast('✅ Link copied!', 'success');
-        }
-
-        // ============================================================
-        // SECTION: ANALYTICS (With Search)
-        // ============================================================
-        var analyticsLinks = [];
-        var currentFilter = 'lifetime';
-        var currentLinkId = null;
-        var analyticsData = null;
-        var filteredAnalyticsLinks = [];
-
-        async function loadAnalyticsLinks() {
-            try {
-                var r = await secureFetch('/api/links');
-                if (!r) return;
-                analyticsLinks = await r.json();
-                filteredAnalyticsLinks = analyticsLinks;
-                populateAnalyticsSelect();
-            } catch (e) {
-                console.error('Error loading analytics links:', e);
-            }
-        }
-
-        function filterAnalyticsLinks() {
-            var query = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
-            
-            if (query) {
-                filteredAnalyticsLinks = analyticsLinks.filter(function(link) {
-                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
+                    `;
+                    container.appendChild(div);
                 });
             } else {
-                filteredAnalyticsLinks = analyticsLinks;
+                noDevices.style.display = 'block';
             }
-            
-            populateAnalyticsSelect();
         }
 
-        function populateAnalyticsSelect() {
-            var select = document.getElementById('analyticsLinkSelect');
-            var currentVal = select.value;
-            select.innerHTML = '<option value="">-- Select --</option>';
-            
-            filteredAnalyticsLinks.forEach(function(link) {
-                var opt = document.createElement('option');
-                opt.value = link.id;
-                opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
-                select.appendChild(opt);
-            });
-            
-            if (filteredAnalyticsLinks.length > 0) {
-                // Try to keep selected value if it exists in filtered list
-                var exists = filteredAnalyticsLinks.some(function(l) { return l.id === currentVal; });
-                if (exists) {
-                    select.value = currentVal;
-                } else {
-                    select.value = filteredAnalyticsLinks[0].id;
-                }
-                loadAnalytics();
-            }
-        }
+        // ===== ANALYTICS (NEW GRAPHS) =====
+        var currentFilter = '7d';
 
         function setTimeFilter(filter) {
             currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
-            if (btn) btn.classList.add('active');
-            
-            var customPicker = document.getElementById('customDatePicker');
-            if (filter === 'custom') {
-                customPicker.style.display = 'flex';
-            } else {
-                customPicker.style.display = 'none';
-            }
+            document.querySelectorAll('.filter-btn').forEach(el => el.classList.remove('active'));
+            document.querySelector('.filter-btn[data-filter="' + filter + '"]').classList.add('active');
+            document.getElementById('customDatePicker').style.display = filter === 'custom' ? 'flex' : 'none';
             loadAnalytics();
         }
 
         async function loadAnalytics() {
             var select = document.getElementById('analyticsLinkSelect');
             var linkId = select.value;
-            if (!linkId) {
-                document.getElementById('analyticsLinkName').textContent = 'Not selected';
-                document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 Select a link</div>';
-                return;
-            }
+            if (!linkId) return;
+            var r = await fetch('/api/visit-stats/' + linkId);
+            if (!r.ok) { showToast('❌ Failed to load analytics', 'error'); return; }
+            var data = await r.json();
+            var filtered = getFilteredData(data);
             
-            currentLinkId = linkId;
+            document.getElementById('analyticsTotalVisits').textContent = filtered.totalVisits || 0;
+            document.getElementById('analyticsTotalClaims').textContent = filtered.totalClaims || 0;
+            document.getElementById('analyticsUniqueVisitors').textContent = filtered.uniqueVisitors || 0;
+            document.getElementById('analyticsUniqueClaims').textContent = filtered.uniqueClaims || 0;
             
-            try {
-                var r = await fetch('/api/visit-stats/' + linkId);
-                if (!r.ok) {
-                    showToast('❌ Failed to load analytics', 'error');
-                    return;
-                }
-                var data = await r.json();
-                analyticsData = data;
-                
-                document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
-                document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
-                document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
-                document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
-                
-                var filteredData = getFilteredData(data);
-                
-                document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
-                document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
-                document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
-                document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
-                
-                renderChart(filteredData);
-                
-            } catch (e) {
-                console.error('Error loading analytics:', e);
-                showToast('❌ Failed to load analytics', 'error');
-            }
+            renderNewCharts(filtered);
         }
 
         function getFilteredData(data) {
@@ -1670,502 +753,93 @@
             var dailyVisits = data.dailyVisits || {};
             var dailyClaims = data.dailyClaims || {};
             var allDates = Object.keys(dailyVisits);
-            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-                allDates = Object.keys(dailyClaims);
-            }
+            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) allDates = Object.keys(dailyClaims);
             allDates.sort();
-            if (allDates.length === 0) {
-                var today = new Date().toISOString().split('T')[0];
-                allDates.push(today);
-                dailyVisits[today] = 0;
-                dailyClaims[today] = 0;
-            }
+            if (allDates.length === 0) { allDates.push(new Date().toISOString().split('T')[0]); }
             
             var now = new Date();
             var filteredDates = [];
-            
-            if (currentFilter === 'lifetime') {
-                filteredDates = allDates;
+            if (currentFilter === '7d') {
+                var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                filteredDates = allDates.filter(d => new Date(d) >= sevenDaysAgo);
             } else if (currentFilter === '24h') {
                 var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { 
-                    var date = new Date(d);
-                    return date >= oneDayAgo;
-                });
+                filteredDates = allDates.filter(d => new Date(d) >= oneDayAgo);
             } else if (currentFilter === '60m') {
                 var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { 
-                    var date = new Date(d);
-                    return date >= oneHourAgo;
-                });
+                filteredDates = allDates.filter(d => new Date(d) >= oneHourAgo);
             } else if (currentFilter === 'custom') {
                 var fromDate = document.getElementById('analyticsFromDate').value;
                 var toDate = document.getElementById('analyticsToDate').value;
-                if (fromDate) {
-                    var from = new Date(fromDate);
-                    filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= from; });
-                }
-                if (toDate) {
-                    var to = new Date(toDate);
-                    to.setDate(to.getDate() + 1);
-                    filteredDates = filteredDates.filter(function(d) { var date = new Date(d); return date <= to; });
-                }
+                if (fromDate) filteredDates = allDates.filter(d => new Date(d) >= new Date(fromDate));
+                if (toDate) filteredDates = filteredDates.filter(d => new Date(d) <= new Date(toDate));
                 if (!fromDate && !toDate) filteredDates = allDates;
             }
-            
             if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
             
-            filteredDates.forEach(function(date) {
+            filteredDates.forEach(date => {
                 result.totalVisits += dailyVisits[date] || 0;
                 result.totalClaims += dailyClaims[date] || 0;
                 result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
             });
-            
-            var uniqueDays = Object.keys(result.dailyData).length;
-            result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 1.5);
-            result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 1.2);
-            
+            result.uniqueVisitors = Math.round(result.totalVisits / (Object.keys(result.dailyData).length || 1) * 1.5);
+            result.uniqueClaims = Math.round(result.totalClaims / (Object.keys(result.dailyData).length || 1) * 1.2);
             return result;
         }
 
-        function renderChart(data) {
+        function renderNewCharts(data) {
             var container = document.getElementById('analyticsChart');
-            var dates = Object.keys(data.dailyData);
-            dates.sort();
+            var dates = Object.keys(data.dailyData).sort();
+            if (dates.length === 0) { container.innerHTML = '<div style="color:var(--text-light);text-align:center;padding:20px;">📊 No data</div>'; return; }
             
-            if (dates.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 No data</div>';
-                return;
-            }
+            var maxVisits = Math.max(1, ...dates.map(d => data.dailyData[d].visits));
+            var maxClaims = Math.max(1, ...dates.map(d => data.dailyData[d].claims));
             
-            var maxVisits = 0;
-            dates.forEach(function(d) { if (data.dailyData[d].visits > maxVisits) maxVisits = data.dailyData[d].visits; });
-            maxVisits = Math.max(maxVisits, 1);
+            var html = `<div class="chart-wrapper">`;
             
-            var html = '<div class="chart-bar-container">';
-            dates.forEach(function(date) {
-                var visitCount = data.dailyData[date].visits || 0;
-                var height = Math.max(3, (visitCount / maxVisits) * 130);
-                var label = date.substring(5);
-                html += `
-                    <div class="bar-wrapper">
-                        <div class="bar-value">${visitCount}</div>
-                        <div class="bar" style="height:${height}px;" title="${date}: Visits: ${visitCount}"></div>
-                        <div class="bar-label">${label}</div>
-                    </div>
-                `;
+            // Visits Chart
+            html += `<div class="chart-row"><h4>📈 Visits (${currentFilter})</h4><div class="chart-bar-container">`;
+            dates.forEach(date => {
+                var count = data.dailyData[date].visits || 0;
+                var height = Math.max(4, (count / maxVisits) * 100);
+                html += `<div class="bar-wrapper"><div class="bar-value">${count}</div><div class="bar" style="height:${height}px;"></div><div class="bar-label">${date.substring(5)}</div></div>`;
             });
-            html += '</div>';
-            html += `<div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px;color:var(--text-light);">
-                <span>📊 Daily Visits</span>
-                <span>📅 ${dates.length} days</span>
-            </div>`;
+            html += `</div></div>`;
+            
+            // Claims Chart
+            html += `<div class="chart-row"><h4>🎁 Claims (${currentFilter})</h4><div class="chart-bar-container">`;
+            dates.forEach(date => {
+                var count = data.dailyData[date].claims || 0;
+                var height = Math.max(4, (count / maxClaims) * 100);
+                html += `<div class="bar-wrapper"><div class="bar-value">${count}</div><div class="bar" style="height:${height}px;background:linear-gradient(180deg,var(--success),var(--secondary));"></div><div class="bar-label">${date.substring(5)}</div></div>`;
+            });
+            html += `</div></div>`;
+            
+            html += `</div>`;
             container.innerHTML = html;
         }
 
-        // ============================================================
-        // SECTION: DOWNLOAD ANALYTICS
-        // ============================================================
-        async function downloadAnalyticsImage() {
-            if (!currentLinkId) {
-                showToast('⚠️ Please select a link', 'error');
-                return;
-            }
-            var container = document.getElementById('analyticsChart');
-            var wrapper = document.createElement('div');
-            wrapper.style.cssText = 'background:#0a0a1a;padding:24px;border-radius:12px;min-width:700px;color:#fff;font-family:Segoe UI,system-ui,sans-serif;position:absolute;left:-9999px;top:0;z-index:9999;';
-            wrapper.innerHTML = `
-                <h2 style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📊 Analytics Report</h2>
-                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.05);">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
-                        <div><span style="color:#a0aec0;">Link:</span> <strong>${document.getElementById('analyticsLinkName').textContent}</strong></div>
-                        <div><span style="color:#a0aec0;">ID:</span> <strong>${document.getElementById('analyticsLinkId').textContent}</strong></div>
-                        <div><span style="color:#a0aec0;">Status:</span> <strong>${document.getElementById('analyticsLinkStatus').textContent}</strong></div>
-                        <div><span style="color:#a0aec0;">Created:</span> <strong>${document.getElementById('analyticsLinkCreated').textContent}</strong></div>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-                    ${['analyticsTotalVisits','analyticsTotalClaims','analyticsUniqueVisitors','analyticsUniqueClaims'].map(function(id, i) {
-                        var labels = ['👁️ Total Visits','🎁 Total Claims','👤 Unique Visitors','🏷️ Unique Claims'];
-                        return `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.03);">
-                            <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById(id).textContent}</div>
-                            <div style="font-size:10px;color:#a0aec0;">${labels[i]}</div>
-                        </div>`;
-                    }).join('')}
-                </div>
-                <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.03);">${container.innerHTML}</div>
-                <div style="text-align:center;margin-top:10px;font-size:10px;color:#a0aec0;">Generated: ${new Date().toLocaleString()} | Filter: ${currentFilter}</div>
-            `;
-            document.body.appendChild(wrapper);
-            try {
-                var canvas = await html2canvas(wrapper, { scale: 2, backgroundColor: '#0a0a1a', allowTaint: true, useCORS: true });
-                var link = document.createElement('a');
-                link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('✅ Image downloaded!', 'success');
-            } catch (e) { console.error(e); showToast('❌ Failed to download', 'error'); }
-            document.body.removeChild(wrapper);
-        }
-
-        function downloadAnalyticsCSV() {
-            if (!currentLinkId || !analyticsData) {
-                showToast('⚠️ Please select a link', 'error');
-                return;
-            }
-            var data = analyticsData;
-            var dailyVisits = data.dailyVisits || {};
-            var dailyClaims = data.dailyClaims || {};
-            var allDates = Object.keys(dailyVisits);
-            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-                allDates = Object.keys(dailyClaims);
-            }
-            allDates.sort();
-            var csv = 'Date,Visits,Claims\n';
-            allDates.forEach(function(date) {
-                csv += date + ',' + (dailyVisits[date] || 0) + ',' + (dailyClaims[date] || 0) + '\n';
-            });
-            var blob = new Blob([csv], { type: 'text/csv' });
-            var link = document.createElement('a');
-            link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.csv';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            showToast('✅ CSV downloaded!', 'success');
-        }
-
-        // ============================================================
-        // SECTION: BACKGROUND
-        // ============================================================
-        document.getElementById('bgImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('bgImagePreview');
-            var img = document.getElementById('bgPreviewImg');
-            if (url) { img.src = url; preview.classList.add('show'); } 
-            else { preview.classList.remove('show'); }
-        });
-
-        async function saveBackground() {
-            var url = document.getElementById('bgImageUrl').value.trim();
-            if (!url) { showToast('❌ Please enter an image URL', 'error'); return; }
-            try {
-                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: url }) });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('bgStatus').textContent = '✅ Background saved!';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
-                    showToast('✅ Background saved!', 'success');
-                }
-            } catch (e) { showToast('❌ Failed to save background', 'error'); }
-        }
-
-        async function removeBackground() {
-            try {
-                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: null }) });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('bgImageUrl').value = '';
-                    document.getElementById('bgImagePreview').classList.remove('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background removed';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
-                    showToast('✅ Background removed', 'success');
-                }
-            } catch (e) { showToast('❌ Failed to remove background', 'error'); }
-        }
-
-        async function loadBackground() {
-            try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data && data.background) {
-                    document.getElementById('bgImageUrl').value = data.background;
-                    var preview = document.getElementById('bgImagePreview');
-                    var img = document.getElementById('bgPreviewImg');
-                    img.src = data.background;
-                    preview.classList.add('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
-                    document.getElementById('bgStatus').style.color = '#48bb78';
-                }
-            } catch (e) {}
-        }
-
-        // ============================================================
-        // SECTION: CONTACT SETTINGS (EMAIL & PHONE)
-        // ============================================================
-        async function updateContactInfo() {
-            var email = document.getElementById('adminEmail').value.trim();
-            var phone = document.getElementById('adminPhone').value.trim();
-            var statusEl = document.getElementById('contactStatus');
-            
-            try {
-                var r = await secureFetch('/api/admin/update-contact', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, phone })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    statusEl.textContent = '✅ Contact info updated! OTP will be sent to these.';
-                    statusEl.style.color = '#48bb78';
-                    showToast('✅ Contact info updated!', 'success');
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
-                    statusEl.style.color = '#fc8181';
-                }
-            } catch (e) {
-                statusEl.textContent = '❌ Failed to update';
-                statusEl.style.color = '#fc8181';
-            }
-        }
-
-        async function loadContactInfo() {
-            try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data) {
-                    if (data.adminEmail) document.getElementById('adminEmail').value = data.adminEmail;
-                    if (data.adminPhone) document.getElementById('adminPhone').value = data.adminPhone;
-                }
-            } catch (e) {}
-        }
-
-        // ============================================================
-        // SECTION: PASSCODE CHANGE
-        // ============================================================
-        async function changePasscode() {
-            var oldPasscode = document.getElementById('oldPasscode').value;
-            var newPasscode = document.getElementById('newPasscode').value;
-            var statusEl = document.getElementById('passcodeStatus');
-
-            if (!oldPasscode || !newPasscode) {
-                statusEl.textContent = '❌ Please fill both fields';
-                statusEl.style.color = '#fc8181';
-                return;
-            }
-            if (oldPasscode.length !== 6 || newPasscode.length !== 6) {
-                statusEl.textContent = '❌ Passcode must be 6 digits';
-                statusEl.style.color = '#fc8181';
-                return;
-            }
-            if (oldPasscode === newPasscode) {
-                statusEl.textContent = '❌ New passcode must be different';
-                statusEl.style.color = '#fc8181';
-                return;
-            }
-
-            try {
-                var r = await secureFetch('/api/admin/passcode', {
-                    method: 'POST',
-                    body: JSON.stringify({ oldPasscode: oldPasscode, newPasscode: newPasscode })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    statusEl.textContent = '✅ Passcode changed! Please login again with OTP.';
-                    statusEl.style.color = '#48bb78';
-                    showToast('✅ Passcode changed!', 'success');
-                    document.getElementById('oldPasscode').value = '';
-                    document.getElementById('newPasscode').value = '';
-                    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
-                    statusEl.style.color = '#fc8181';
-                }
-            } catch (e) {
-                statusEl.textContent = '❌ Server error';
-                statusEl.style.color = '#fc8181';
-            }
-        }
-
-        // ============================================================
-        // SECTION: DEVICE MANAGEMENT
-        // ============================================================
-        async function loadBlockedDevices() {
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices');
-                if (!r) return;
-                var data = await r.json();
-                
-                var container = document.getElementById('deviceList');
-                var noDevices = document.getElementById('noDevices');
-                
-                if (data.devices && data.devices.length > 0) {
-                    noDevices.style.display = 'none';
-                    container.innerHTML = '';
-                    
-                    data.devices.forEach(function(device) {
-                        var isPermanent = device.isPermanent;
-                        var isExpired = device.blockedUntil && new Date(device.blockedUntil) < new Date();
-                        
-                        var div = document.createElement('div');
-                        div.className = 'device-item';
-                        div.style.borderLeftColor = isPermanent ? '#fc8181' : '#f6ad55';
-                        
-                        var remainingTime = '';
-                        if (device.blockedUntil && !isPermanent) {
-                            var mins = Math.ceil((new Date(device.blockedUntil) - new Date()) / (1000 * 60));
-                            remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
-                        }
-                        
-                        var statusText = isPermanent ? '⛔ PERMANENTLY BANNED' : (isExpired ? '✅ EXPIRED' : '⏳ ' + remainingTime);
-                        
-                        div.innerHTML = `
-                            <div class="info">
-                                <span class="name">${escapeHTML(device.deviceName || 'Unknown Device')}</span>
-                                <span class="details">
-                                    <span>📱 ${escapeHTML(device.deviceType || 'Unknown')}</span>
-                                    <span>🆔 ${device.fingerprint ? device.fingerprint.substring(0, 12) + '...' : 'N/A'}</span>
-                                    <span>📅 ${new Date(device.lastAttempt).toLocaleString()}</span>
-                                    <span class="status-badge ${isPermanent ? 'status-disabled' : 'status-suspended'}">
-                                        ${statusText}
-                                    </span>
-                                </span>
-                            </div>
-                            <div class="actions">
-                                ${!isPermanent ? `
-                                    <button onclick="permanentBanDevice('${device._id}')" class="btn btn-danger btn-sm" title="Permanent Ban">⛔ Ban</button>
-                                ` : ''}
-                                <button onclick="unblockDevice('${device._id}')" class="btn btn-success btn-sm" title="Unblock">🔓 Unblock</button>
-                                <button onclick="deleteDeviceRecord('${device._id}')" class="btn btn-warning btn-sm" title="Delete Record">🗑️ Delete</button>
-                            </div>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else {
-                    noDevices.style.display = 'block';
-                    container.innerHTML = '<div class="empty-state" id="noDevices"><span class="icon">📱</span><p>No blocked devices found</p></div>';
-                }
-            } catch (e) {
-                console.error('Error loading devices:', e);
-                showToast('❌ Failed to load devices', 'error');
-            }
-        }
-
-        async function permanentBanDevice(deviceId) {
-            if (!confirm('⚠️ Are you sure you want to permanently ban this device? This action cannot be undone!')) return;
-            
-            try {
-                var reason = prompt('Enter reason for permanent ban:', 'Unauthorized access attempts');
-                if (reason === null) return;
-                
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/permanent-ban', {
-                    method: 'POST',
-                    body: JSON.stringify({ reason: reason || 'Permanent ban by admin' })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    showToast('✅ Device permanently banned!', 'success');
-                    loadBlockedDevices();
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to ban device'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ Failed to ban device', 'error');
-            }
-        }
-
-        async function unblockDevice(deviceId) {
-            if (!confirm('Are you sure you want to unblock this device?')) return;
-            
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/unblock', {
-                    method: 'POST'
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    showToast('✅ Device unblocked successfully!', 'success');
-                    loadBlockedDevices();
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to unblock device'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ Failed to unblock device', 'error');
-            }
-        }
-
-        async function deleteDeviceRecord(deviceId) {
-            if (!confirm('⚠️ Are you sure you want to delete this device record?')) return;
-            
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId, {
-                    method: 'DELETE'
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    showToast('✅ Device record deleted!', 'success');
-                    loadBlockedDevices();
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to delete record'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ Failed to delete record', 'error');
-            }
-        }
-
-        // ============================================================
-        // SECTION: CHECK AUTH
-        // ============================================================
-        async function checkAuth() {
-            try {
-                var response = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
-                if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('csrfToken');
-                    window.location.href = 'login.html';
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                window.location.href = 'login.html';
-                return false;
-            }
-        }
-
-        // ============================================================
-        // SECTION: INIT
-        // ============================================================
+        // ===== INIT =====
         loadTheme();
-        loadBackground();
-        loadLinks();
         loadStats();
-        loadAnalyticsLinks();
-        loadContactInfo();
+        loadUserList();
+        loadLinks();
         loadBlockedDevices();
-        startLiveRefresh();
-        checkAuth();
+        setInterval(loadStats, 5000);
+        setInterval(loadBlockedDevices, 30000);
 
-        // Make functions globally accessible
         window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
-        window.installApp = installApp;
-        window.loadLinks = loadLinks;
-        window.loadStats = loadStats;
-        window.loadAnalyticsLinks = loadAnalyticsLinks;
+        window.loadBlockedDevices = loadBlockedDevices;
         window.loadAnalytics = loadAnalytics;
         window.setTimeFilter = setTimeFilter;
-        window.downloadAnalyticsImage = downloadAnalyticsImage;
-        window.downloadAnalyticsCSV = downloadAnalyticsCSV;
-        window.filterLinks = filterLinks;
-        window.filterAnalyticsLinks = filterAnalyticsLinks;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-        window.saveEditLink = saveEditLink;
-        window.handleStatusAction = handleStatusAction;
-        window.copyLinkUrl = copyLinkUrl;
         window.createLink = createLink;
-        window.copyLink = copyLink;
-        window.saveBackground = saveBackground;
-        window.removeBackground = removeBackground;
-        window.changePasscode = changePasscode;
-        window.updateSchedulePreset = updateSchedulePreset;
-        window.updateCustomExpiry = updateCustomExpiry;
-        window.showToast = showToast;
-        window.updateContactInfo = updateContactInfo;
-        window.loadBlockedDevices = loadBlockedDevices;
+        window.copyLinkUrl = copyLinkUrl;
+        window.handleStatusAction = handleStatusAction;
+        window.openEditModal = openEditModal;
+        window.filterLinks = filterLinks;
+        window.loadUserLiveStats = loadUserLiveStats;
         window.permanentBanDevice = permanentBanDevice;
         window.unblockDevice = unblockDevice;
         window.deleteDeviceRecord = deleteDeviceRecord;
