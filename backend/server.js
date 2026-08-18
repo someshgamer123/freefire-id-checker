@@ -27,6 +27,10 @@ const TwoFactorAuth = require('./models/TwoFactorAuth');
 const BlockedDevice = require('./models/BlockedDevice');
 const OTPVerification = require('./models/OTPVerification');
 
+// ==================== NEW: Short Link Models ====================
+const ShortLink = require('./models/ShortLink');
+const ShortLinkClick = require('./models/ShortLinkClick');
+
 // ==================== Security Module ====================
 const Security = require('./config/security');
 
@@ -1828,6 +1832,221 @@ app.get('/blocked', (req, res) => {
     `);
 });
 
+// ==================== SHORT LINK ROUTES ====================
+// GET: Redirect short link to original URL (Public)
+app.get('/s/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+        const link = await ShortLink.findOne({ code, status: 'active' });
+        
+        if (!link) {
+            return res.status(404).send(`
+                <html>
+                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;text-align:center;padding:20px;">
+                    <div style="font-size:60px;">🔗</div>
+                    <h1 style="color:#ef4444;">Link Not Found</h1>
+                    <p style="color:#94a3b8;">The short link you are looking for does not exist or has been disabled.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Track click
+        link.visits = (link.visits || 0) + 1;
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        if (!link.lastClicked || link.lastClicked < oneDayAgo) {
+            link.clicks24h = 1;
+        } else {
+            link.clicks24h = (link.clicks24h || 0) + 1;
+        }
+        link.lastClicked = now;
+        await link.save();
+        
+        // Save click details
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        let deviceName = 'Unknown Device';
+        let deviceType = 'Browser';
+        if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
+        else if (userAgent.includes('Mac')) { deviceName = 'Mac'; deviceType = 'Desktop'; }
+        else if (userAgent.includes('iPhone')) { deviceName = 'iPhone'; deviceType = 'Mobile'; }
+        else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; }
+        else if (userAgent.includes('Chrome')) { deviceName = 'Chrome Browser'; deviceType = 'Browser'; }
+        else if (userAgent.includes('Firefox')) { deviceName = 'Firefox Browser'; deviceType = 'Browser'; }
+        
+        await ShortLinkClick.create({
+            shortLinkId: link._id,
+            ip,
+            userAgent,
+            deviceName,
+            deviceType,
+            referer: req.headers.referer || null
+        });
+        
+        res.redirect(link.originalUrl);
+    } catch (error) {
+        console.error('❌ Short link redirect error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+// GET: Get all short links (Admin)
+app.get('/api/short-links', authMiddleware, async (req, res) => {
+    try {
+        const links = await ShortLink.find().sort({ createdAt: -1 });
+        res.json({ success: true, links, count: links.length });
+    } catch (error) {
+        console.error('❌ Short links fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch short links' });
+    }
+});
+
+// GET: Get short link analytics (Admin)
+app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await ShortLink.findById(id);
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        
+        const clicks = await ShortLinkClick.find({ shortLinkId: id }).sort({ timestamp: -1 }).limit(100);
+        
+        // Calculate 24h clicks
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const clicks24h = clicks.filter(c => c.timestamp >= oneDayAgo).length;
+        
+        res.json({
+            success: true,
+            link,
+            clicks,
+            totalClicks: link.visits || 0,
+            clicks24h,
+            uniqueDevices: [...new Set(clicks.map(c => c.deviceName))].length
+        });
+    } catch (error) {
+        console.error('❌ Short link analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+});
+
+// POST: Create a new short link (Admin)
+app.post('/api/short-links', authMiddleware, async (req, res) => {
+    try {
+        const { originalUrl, title } = req.body;
+        
+        if (!originalUrl) {
+            return res.status(400).json({ error: 'Original URL is required' });
+        }
+        
+        // Validate URL
+        try {
+            new URL(originalUrl);
+        } catch (e) {
+            return res.status(400).json({ error: 'Invalid URL format' });
+        }
+        
+        // Generate unique short code
+        let code = '';
+        let isUnique = false;
+        while (!isUnique) {
+            code = Math.random().toString(36).substring(2, 8);
+            const existing = await ShortLink.findOne({ code });
+            if (!existing) isUnique = true;
+        }
+        
+        const link = new ShortLink({
+            code,
+            originalUrl,
+            title: title || 'Untitled Link',
+            createdBy: 'admin'
+        });
+        
+        await link.save();
+        
+        await logAdminAction('admin', 'CREATE_SHORT_LINK', { code, originalUrl }, req);
+        
+        res.json({
+            success: true,
+            link,
+            shortUrl: `${req.protocol}://${req.get('host')}/s/${code}`
+        });
+    } catch (error) {
+        console.error('❌ Short link create error:', error);
+        res.status(500).json({ error: 'Failed to create short link' });
+    }
+});
+
+// PUT: Update a short link (Admin)
+app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, status } = req.body;
+        
+        const link = await ShortLink.findById(id);
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        
+        if (title !== undefined) link.title = title;
+        if (status !== undefined && ['active', 'disabled'].includes(status)) {
+            link.status = status;
+        }
+        
+        await link.save();
+        await logAdminAction('admin', 'UPDATE_SHORT_LINK', { id, title, status }, req);
+        
+        res.json({ success: true, link });
+    } catch (error) {
+        console.error('❌ Short link update error:', error);
+        res.status(500).json({ error: 'Failed to update short link' });
+    }
+});
+
+// DELETE: Delete a short link (Admin)
+app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const link = await ShortLink.findById(id);
+        if (link) {
+            await logAdminAction('admin', 'DELETE_SHORT_LINK', { id, code: link.code, title: link.title }, req);
+            // Delete associated clicks
+            await ShortLinkClick.deleteMany({ shortLinkId: id });
+        }
+        await ShortLink.findByIdAndDelete(id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Short link delete error:', error);
+        res.status(500).json({ error: 'Failed to delete short link' });
+    }
+});
+
+// GET: Short Link Dashboard Stats (Admin)
+app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
+    try {
+        const totalLinks = await ShortLink.countDocuments();
+        const activeLinks = await ShortLink.countDocuments({ status: 'active' });
+        const totalClicks = await ShortLink.aggregate([{ $group: { _id: null, total: { $sum: '$visits' } } }]);
+        const totalClicksCount = totalClicks.length > 0 ? totalClicks[0].total : 0;
+        
+        // 24h clicks
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const clicks24h = await ShortLinkClick.countDocuments({ timestamp: { $gte: oneDayAgo } });
+        
+        res.json({
+            success: true,
+            stats: {
+                totalLinks,
+                activeLinks,
+                totalClicks: totalClicksCount,
+                clicks24h
+            }
+        });
+    } catch (error) {
+        console.error('❌ Short link stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
 // ==================== Serve Pages ====================
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
@@ -1917,5 +2136,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📋 Attack Logging: Detects and logs attack attempts');
     console.log('⛔ Progressive Blocking: 48hr → 7 days → Permanent');
     console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
+    console.log('═══════════════════════════════════════════');
+    console.log('🔗 NEW FEATURE: URL Shortener added with separate dashboard');
     console.log('═══════════════════════════════════════════');
 });

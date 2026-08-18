@@ -338,6 +338,7 @@
             <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
             <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
+            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
         </div>
 
         <!-- ===== SECTION: DASHBOARD ===== -->
@@ -623,6 +624,45 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== SECTION: URL SHORTENER (NEW) ===== -->
+        <div class="section" id="section-shortener">
+            <!-- Mini Dashboard Stats -->
+            <div class="card">
+                <h3>📊 URL Shortener Dashboard</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                    <div class="stat-card"><div class="number" id="shortTotalLinks">0</div><div class="label">🔗 Total Links</div></div>
+                    <div class="stat-card"><div class="number" id="shortActiveLinks">0</div><div class="label">✅ Active</div></div>
+                    <div class="stat-card"><div class="number" id="shortTotalClicks">0</div><div class="label">👁️ Total Clicks</div></div>
+                    <div class="stat-card"><div class="number" id="shortClicks24h">0</div><div class="label">📅 24h Clicks</div></div>
+                </div>
+            </div>
+
+            <!-- Create Short Link -->
+            <div class="card">
+                <h3>➕ Create Short Link</h3>
+                <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
+                <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
+                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:12px;">🚀 Generate Short Link</button>
+                <div class="generated-link" id="shortGeneratedLink">
+                    <div class="link-label">✅ Short Link Generated!</div>
+                    <div class="link-box">
+                        <input type="text" id="shortGeneratedLinkInput" readonly>
+                        <button onclick="copyShortLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Short Links -->
+            <div class="card">
+                <h3>🔍 Manage Short Links</h3>
+                <div class="search-bar">
+                    <input type="text" id="searchShortLinksInput" placeholder="Search by title or code..." oninput="filterShortLinks()">
+                    <span class="search-results-count" id="shortSearchResultsCount">Showing all links</span>
+                </div>
+                <div id="shortLinksList"></div>
+            </div>
+        </div>
     </div>
 
     <!-- ===== EDIT MODAL ===== -->
@@ -667,6 +707,10 @@
             }
             if (sectionId === 'settings') {
                 setTimeout(loadBlockedDevices, 500);
+            }
+            if (sectionId === 'shortener') {
+                loadShortLinks();
+                loadShortLinkStats();
             }
         }
 
@@ -2159,6 +2203,275 @@
         }
 
         // ============================================================
+        // SECTION: URL SHORTENER
+        // ============================================================
+        var allShortLinks = [];
+
+        async function loadShortLinkStats() {
+            try {
+                var r = await secureFetch('/api/short-links/stats');
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    document.getElementById('shortTotalLinks').textContent = data.stats.totalLinks || 0;
+                    document.getElementById('shortActiveLinks').textContent = data.stats.activeLinks || 0;
+                    document.getElementById('shortTotalClicks').textContent = data.stats.totalClicks || 0;
+                    document.getElementById('shortClicks24h').textContent = data.stats.clicks24h || 0;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadShortLinks() {
+            try {
+                var r = await secureFetch('/api/short-links');
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    allShortLinks = data.links;
+                    filterShortLinks();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function filterShortLinks() {
+            var query = document.getElementById('searchShortLinksInput').value.toLowerCase().trim();
+            var filtered = allShortLinks;
+            
+            if (query) {
+                filtered = allShortLinks.filter(function(link) {
+                    return link.title.toLowerCase().includes(query) || link.code.toLowerCase().includes(query);
+                });
+            }
+            
+            var c = document.getElementById('shortLinksList');
+            var countEl = document.getElementById('shortSearchResultsCount');
+            
+            if (filtered.length === 0) {
+                c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
+                if (countEl) countEl.textContent = 'No results';
+                return;
+            }
+            
+            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allShortLinks.length + ' links';
+            
+            c.innerHTML = '';
+            filtered.forEach(function(link) {
+                var sc = link.status === 'active' ? 'active' : 'disabled';
+                var created = new Date(link.createdAt).toLocaleDateString();
+                var shortUrl = window.location.origin + '/s/' + link.code;
+                
+                var d = document.createElement('div');
+                d.className = 'link-item';
+                d.innerHTML = `
+                    <div class="info">
+                        <span class="name">${escapeHTML(link.title || 'Untitled')}</span>
+                        <span class="details">
+                            <span>📅 ${created}</span>
+                            <span>🔗 ${escapeHTML(shortUrl)}</span>
+                            <span class="visits">👁️ ${link.visits || 0}</span>
+                            <span class="status-badge status-${sc}">${link.status}</span>
+                        </span>
+                    </div>
+                    <div class="actions">
+                        <button onclick="openShortLinkEdit('${link._id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
+                        <button onclick="copyShortLinkUrl('${link.code}')" class="btn btn-success btn-sm" title="Copy">📋</button>
+                        <button onclick="viewShortLinkAnalytics('${link._id}')" class="btn btn-primary btn-sm" title="Analytics">📊</button>
+                        <select onchange="handleShortLinkAction('${link._id}', this.value)" class="status-dropdown">
+                            <option value="">⚡ Action</option>
+                            <option value="active">✅ Activate</option>
+                            <option value="disabled">⛔ Disable</option>
+                            <option value="delete">🗑️ Delete</option>
+                        </select>
+                    </div>
+                `;
+                c.appendChild(d);
+            });
+        }
+
+        async function createShortLink() {
+            var url = document.getElementById('shortOriginalUrl').value.trim();
+            if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
+            
+            // Validate URL
+            try {
+                new URL(url);
+            } catch (e) {
+                showToast('❌ Invalid URL format', 'error');
+                return;
+            }
+            
+            var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
+            
+            try {
+                var r = await secureFetch('/api/short-links', {
+                    method: 'POST',
+                    body: JSON.stringify({ originalUrl: url, title: title })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    document.getElementById('shortGeneratedLink').classList.add('show');
+                    document.getElementById('shortGeneratedLinkInput').value = data.shortUrl;
+                    document.getElementById('shortOriginalUrl').value = '';
+                    document.getElementById('shortTitle').value = '';
+                    loadShortLinks();
+                    loadShortLinkStats();
+                    showToast('✅ Short link created!', 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed'), 'error');
+                }
+            } catch (e) { showToast('❌ Network error', 'error'); }
+        }
+
+        function copyShortLink() {
+            var i = document.getElementById('shortGeneratedLinkInput');
+            i.select();
+            document.execCommand('copy');
+            showToast('✅ Link copied!', 'success');
+        }
+
+        function copyShortLinkUrl(code) {
+            var url = window.location.origin + '/s/' + code;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('✅ Link copied!', 'success');
+            }).catch(function() {
+                var t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('✅ Link copied!', 'success');
+            });
+        }
+
+        async function handleShortLinkAction(id, action) {
+            if (!action) return;
+            
+            if (action === 'delete') {
+                if (!confirm('⚠️ Delete this short link permanently?')) return;
+                try {
+                    var r = await secureFetch('/api/short-links/' + id, { method: 'DELETE' });
+                    if (!r) return;
+                    var data = await r.json();
+                    if (data.success) {
+                        loadShortLinks();
+                        loadShortLinkStats();
+                        showToast('✅ Link deleted!', 'success');
+                    }
+                } catch (e) { showToast('❌ Failed to delete', 'error'); }
+                return;
+            }
+            
+            try {
+                var r = await secureFetch('/api/short-links/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: action })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    loadShortLinks();
+                    showToast('✅ Status updated to: ' + action, 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed'), 'error');
+                }
+            } catch (e) { showToast('❌ Failed to update status', 'error'); }
+        }
+
+        async function viewShortLinkAnalytics(id) {
+            try {
+                var r = await secureFetch('/api/short-links/' + id + '/analytics');
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    var link = data.link;
+                    var clicks = data.clicks;
+                    var totalClicks = data.totalClicks;
+                    var clicks24h = data.clicks24h;
+                    var uniqueDevices = data.uniqueDevices;
+                    
+                    var body = document.getElementById('editModalBody');
+                    body.innerHTML = `
+                        <h3>📊 Analytics: ${escapeHTML(link.title || 'Untitled')}</h3>
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); margin: 10px 0;">
+                            <div class="stat-card"><div class="number">${totalClicks}</div><div class="label">Total Clicks</div></div>
+                            <div class="stat-card"><div class="number">${clicks24h}</div><div class="label">24h Clicks</div></div>
+                            <div class="stat-card"><div class="number">${uniqueDevices}</div><div class="label">Unique Devices</div></div>
+                        </div>
+                        <div style="max-height:300px;overflow-y:auto;margin-top:10px;">
+                            ${clicks.length > 0 ? clicks.map(function(c) {
+                                return `
+                                    <div class="link-item" style="border-left-color:#6366f1;">
+                                        <div class="info">
+                                            <span class="name">${escapeHTML(c.deviceName || 'Unknown')}</span>
+                                            <span class="details">
+                                                <span>📱 ${escapeHTML(c.deviceType || 'Unknown')}</span>
+                                                <span>📅 ${new Date(c.timestamp).toLocaleString()}</span>
+                                                <span>🆔 ${c.ip ? c.ip.substring(0,12) + '...' : 'N/A'}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('') : '<div class="empty-state"><span class="icon">📊</span><p>No clicks yet</p></div>'}
+                        </div>
+                        <div class="form-actions" style="margin-top:15px;">
+                            <button onclick="closeEditModal()" class="btn btn-primary">Close</button>
+                        </div>
+                    `;
+                    document.getElementById('editModal').classList.add('show');
+                }
+            } catch (e) { showToast('❌ Failed to load analytics', 'error'); }
+        }
+
+        function openShortLinkEdit(id) {
+            var link = allShortLinks.find(function(l) { return l._id === id; });
+            if (!link) { showToast('❌ Link not found', 'error'); return; }
+            
+            var body = document.getElementById('editModalBody');
+            body.innerHTML = `
+                <h3>✏️ Edit Short Link</h3>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="shortEditTitle" value="${escapeHTML(link.title || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="shortEditStatus">
+                        <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
+                    </select>
+                </div>
+                <div class="form-actions" style="margin-top:15px;">
+                    <button onclick="saveShortLinkEdit('${link._id}')" class="btn btn-success">💾 Save Changes</button>
+                    <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
+                </div>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        async function saveShortLinkEdit(id) {
+            var title = document.getElementById('shortEditTitle').value.trim() || 'Untitled Link';
+            var status = document.getElementById('shortEditStatus').value;
+            
+            try {
+                var r = await secureFetch('/api/short-links/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify({ title: title, status: status })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    closeEditModal();
+                    loadShortLinks();
+                    showToast('✅ Link updated!', 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed'), 'error');
+                }
+            } catch (e) { showToast('❌ Failed to update', 'error'); }
+        }
+
+        // ============================================================
         // SECTION: CHECK AUTH
         // ============================================================
         async function checkAuth() {
@@ -2186,6 +2499,8 @@
         loadAnalyticsLinks();
         loadContactInfo();
         loadBlockedDevices();
+        loadShortLinks();
+        loadShortLinkStats();
         startLiveRefresh();
         checkAuth();
 
@@ -2227,6 +2542,16 @@
         window.switchDashboardData = switchDashboardData;
         window.switchAnalyticsGraph = switchAnalyticsGraph;
         window.switchAnalyticsData = switchAnalyticsData;
+        window.loadShortLinks = loadShortLinks;
+        window.loadShortLinkStats = loadShortLinkStats;
+        window.createShortLink = createShortLink;
+        window.copyShortLink = copyShortLink;
+        window.copyShortLinkUrl = copyShortLinkUrl;
+        window.handleShortLinkAction = handleShortLinkAction;
+        window.viewShortLinkAnalytics = viewShortLinkAnalytics;
+        window.openShortLinkEdit = openShortLinkEdit;
+        window.saveShortLinkEdit = saveShortLinkEdit;
+        window.filterShortLinks = filterShortLinks;
     </script>
 </body>
 </html>
