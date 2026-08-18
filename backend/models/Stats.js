@@ -21,6 +21,17 @@ const StatsSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // Hourly (For detailed 24h graph - 24 slots)
+    hourlyVisitors: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    hourlyClaims: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     // Unique (Fingerprint based)
     uniqueVisitors: {
         type: Map,

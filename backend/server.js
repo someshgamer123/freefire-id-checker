@@ -131,7 +131,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers (FIXED CSP) ====================
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -1371,6 +1371,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         // Global stats
         const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
         const dailyClaimsGlobal = stats?.dailyClaims || new Map();
+        const hourlyVisitors = stats?.hourlyVisitors || new Map();
+        const hourlyClaims = stats?.hourlyClaims || new Map();
         const minuteVisitors = stats?.minuteVisitors || new Map();
         const minuteClaims = stats?.minuteClaims || new Map();
         
@@ -1392,7 +1394,17 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneHourAgo) globalClaims60m += count;
         }
         
-        // ✅ FIXED: 1 Minute and Active Now calculation
+        // ✅ FIXED: Hourly data for 24h graph
+        const hourKey = now.toISOString().substring(0, 13); // YYYY-MM-DDTHH
+        let hourlyVisitsData = {};
+        let hourlyClaimsData = {};
+        for (let i = 0; i < 24; i++) {
+            const pastHour = new Date(now.getTime() - i * 60 * 60 * 1000);
+            const key = pastHour.toISOString().substring(0, 13);
+            hourlyVisitsData[key] = hourlyVisitors.get(key) || 0;
+            hourlyClaimsData[key] = hourlyClaims.get(key) || 0;
+        }
+        
         const minuteKey = now.toISOString().substring(0, 16);
         globalVisits1m = minuteVisitors.get(minuteKey) || 0;
         globalClaims1m = minuteClaims.get(minuteKey) || 0;
@@ -1420,7 +1432,9 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 claims1m: globalClaims1m,
                 activeNow: activeNow,
                 dailyVisitors: Object.fromEntries(dailyVisitorsGlobal),
-                dailyClaims: Object.fromEntries(dailyClaimsGlobal)
+                dailyClaims: Object.fromEntries(dailyClaimsGlobal),
+                hourlyVisitors: hourlyVisitsData,
+                hourlyClaims: hourlyClaimsData
             },
             links: linkStats
         });
@@ -1734,7 +1748,7 @@ app.use('/admin', async (req, res, next) => {
     next();
 });
 
-// ==================== Permanent Block Page (Beautiful UI) ====================
+// ==================== Permanent Block Page ====================
 app.get('/blocked', (req, res) => {
     res.send(`
         <!DOCTYPE html>
