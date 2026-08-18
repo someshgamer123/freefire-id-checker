@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const StatsSchema = new mongoose.Schema({
+    // Total (Lifetime)
     totalVisitors: {
         type: Number,
         default: 0
@@ -9,6 +10,7 @@ const StatsSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Daily (For 24h, 48h, 7 days)
     dailyVisitors: {
         type: Map,
         of: Number,
@@ -19,6 +21,7 @@ const StatsSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // Unique (Fingerprint based)
     uniqueVisitors: {
         type: Map,
         of: Number,
@@ -29,7 +32,7 @@ const StatsSchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
-    // Real-time tracking (Minute-wise)
+    // Real-time tracking (Minute-wise for 60m, Active Now)
     minuteVisitors: {
         type: Map,
         of: Number,

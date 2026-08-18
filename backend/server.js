@@ -1373,7 +1373,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const dailyClaimsGlobal = stats?.dailyClaims || new Map();
         const minuteVisitors = stats?.minuteVisitors || new Map();
         const minuteClaims = stats?.minuteClaims || new Map();
-        const activeSessions = stats?.activeSessions || new Map();
         
         let globalVisits24h = 0;
         let globalClaims24h = 0;
