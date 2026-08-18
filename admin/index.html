@@ -359,7 +359,7 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS (FIXED) ===== -->
+            <!-- ===== LIVE VISITORS ===== -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors
@@ -824,7 +824,6 @@
 
         function updateLiveVisitors(data) {
             if (!data) {
-                // Try to fetch fresh data
                 secureFetch('/api/all-stats').then(function(response) {
                     if (response && response.ok) {
                         response.json().then(function(d) {
@@ -2009,12 +2008,18 @@
             var noDevices = document.getElementById('noDevices');
             
             if (!items || items.length === 0) {
-                noDevices.style.display = 'block';
-                container.innerHTML = '<div class="empty-state"><span class="icon">📱</span><p>No ' + type + ' devices found</p></div>';
+                if (noDevices) {
+                    noDevices.style.display = 'block';
+                    container.innerHTML = '<div class="empty-state"><span class="icon">📱</span><p>No ' + type + ' devices found</p></div>';
+                } else {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">📱</span><p>No ' + type + ' devices found</p></div>';
+                }
                 return;
             }
             
-            noDevices.style.display = 'none';
+            if (noDevices) {
+                noDevices.style.display = 'none';
+            }
             container.innerHTML = '';
             
             items.forEach(function(item) {
@@ -2080,7 +2085,6 @@
         async function permanentBanBySession(token) {
             if (!confirm('⚠️ Permanently ban this device? This action cannot be undone!')) return;
             try {
-                // Fetch device details from session and ban
                 var r = await secureFetch('/api/admin/block-status');
                 if (!r) return;
                 var data = await r.json();

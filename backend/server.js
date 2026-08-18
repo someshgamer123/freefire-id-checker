@@ -131,7 +131,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers ====================
+// ==================== Security Headers (FIXED CSP) ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -139,10 +139,10 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
             scriptSrcElem: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
             styleSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
+            connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
             frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "https://*.terabox.com", "*"],
             mediaSrc: ["'self'", "https:", "http:", "https://*.image2url.com", "https://*.terabox.com", "*"],
             objectSrc: ["'none'"],
@@ -270,7 +270,7 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (Updated: 48hr → 7 days → Permanent) ====================
+// ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     
