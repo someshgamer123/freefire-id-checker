@@ -36,7 +36,7 @@ connectDB();
 // ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
-const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48; // 48 hours
+const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
@@ -175,7 +175,6 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// ✅ Device-based Rate Limiter
 const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
@@ -315,7 +314,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             reason: reason
         });
         
-        // Progressive blocking: 48hr → 7 days → Permanent
         if (record.attempts >= 5 && record.attempts < 10) {
             record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 48 hours';
@@ -386,7 +384,6 @@ async function incrementDeviceAttempts(req) {
             reason: 'Failed login attempt'
         });
         
-        // Progressive blocking logic
         if (record.attempts >= 5 && record.attempts < 10) {
             record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 48 hours';
@@ -898,7 +895,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
-        // Check if device is blocked (temporary or permanent)
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             if (blocked.isPermanent) {
@@ -1327,7 +1323,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
         
         const linkStats = links.map(link => {
             const dailyVisitsMap = link.dailyVisits || new Map();
@@ -1384,6 +1379,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         let globalClaims24h = 0;
         let globalVisits60m = 0;
         let globalClaims60m = 0;
+        let globalVisits1m = 0;
+        let globalClaims1m = 0;
         
         for (const [date, count] of dailyVisitorsGlobal) {
             const d = new Date(date);
@@ -1398,10 +1395,9 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         
         // ✅ FIXED: 1 Minute and Active Now calculation
         const minuteKey = now.toISOString().substring(0, 16);
-        let globalVisits1m = minuteVisitors.get(minuteKey) || 0;
-        let globalClaims1m = minuteClaims.get(minuteKey) || 0;
+        globalVisits1m = minuteVisitors.get(minuteKey) || 0;
+        globalClaims1m = minuteClaims.get(minuteKey) || 0;
         
-        // Active Now: Calculate average of last 5 minutes
         let activeNow = 0;
         for (let i = 0; i < 5; i++) {
             const pastMinute = new Date(now.getTime() - i * 60 * 1000);
@@ -1554,6 +1550,21 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ Blocked devices error:', error);
         res.status(500).json({ error: 'Failed to fetch blocked devices' });
+    }
+});
+
+// GET: Get all active login sessions
+app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
+    try {
+        const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
+        res.json({
+            success: true,
+            sessions,
+            count: sessions.length
+        });
+    } catch (error) {
+        console.error('❌ Active sessions error:', error);
+        res.status(500).json({ error: 'Failed to fetch active sessions' });
     }
 });
 
@@ -1850,7 +1861,6 @@ setInterval(async () => {
         const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
         if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
         
-        // Clean expired temporary blocks (not permanent)
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() },
             isPermanent: false
