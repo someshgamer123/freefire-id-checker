@@ -1759,7 +1759,7 @@ app.get('/blocked', (req, res) => {
     `);
 });
 
-// ==================== SHORT LINK ROUTES (FIXED) ====================
+// ==================== SHORT LINK ROUTES ====================
 
 // GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
@@ -1841,24 +1841,16 @@ app.get('/s/:code', async (req, res) => {
         
         // ✅ FIXED: Deep Link App Open Mode
         if (link.appOpen) {
-            // Use Universal Link / Deep Link scheme
             const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
-            const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.yourapp.package';
-            const appStoreUrl = 'https://apps.apple.com/app/your-app-id';
-            
-            // Detect mobile vs desktop
             const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
             
             if (isMobile) {
-                // Mobile - Try to open app, fallback to store
                 res.send(`
                     <html>
                     <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <script>
-                            // Try to open app
                             window.location.href = '${appScheme}';
-                            // Fallback to web after 1 second
                             setTimeout(function() {
                                 window.location.href = '${link.originalUrl}';
                             }, 1000);
@@ -1874,11 +1866,9 @@ app.get('/s/:code', async (req, res) => {
                     </html>
                 `);
             } else {
-                // Desktop - Just redirect normally
                 res.redirect(link.originalUrl);
             }
         } else {
-            // Normal redirect
             res.redirect(link.originalUrl);
         }
     } catch (error) {
@@ -2026,9 +2016,68 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== SERVE STATIC FILES (MOVED TO LAST) ====================
-// ✅ IMPORTANT: express.static must be LAST to prevent direct file access
-app.use(express.static('.'));
+// ==================== SERVE PAGES (NO express.static) ====================
+// ✅ CRITICAL FIX: We do NOT use express.static() to prevent direct file access
+
+app.get('/admin/secret-gateway', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
+});
+
+app.get('/admin/login.html', (req, res) => {
+    const referer = req.headers.referer || '';
+    const isFromGateway = referer.includes('/admin/secret-gateway');
+    const token = req.cookies?.adminToken;
+    const rememberToken = req.cookies?.rememberToken;
+    
+    if (token || rememberToken || isFromGateway) {
+        res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+    } else {
+        res.redirect('/admin/secret-gateway');
+    }
+});
+
+app.get('/admin/index.html', (req, res) => {
+    const token = req.cookies?.adminToken;
+    const rememberToken = req.cookies?.rememberToken;
+    if (token) {
+        const decoded = verifyToken(token);
+        if (decoded) {
+            return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+        }
+    }
+    if (rememberToken) {
+        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    }
+    res.redirect('/admin/secret-gateway');
+});
+
+app.get('/uid', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
+});
+
+app.get('/v/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
+});
+
+app.get('/user-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
+});
+
+app.get('/user-dashboard/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
+});
+
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'sw.js'));
+});
+
+app.get('/', (req, res) => {
+    res.redirect('/admin/secret-gateway');
+});
 
 // ==================== Session Cleanup ====================
 setInterval(async () => {
