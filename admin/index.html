@@ -608,6 +608,17 @@
             </div>
 
             <div class="card">
+                <h3>🔐 Secret Gateway Key</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key for the fake 404 gateway</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="oldSecretKey" placeholder="Current Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
+                    <input type="text" id="newSecretKey" placeholder="New Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
+                </div>
+                <button onclick="changeSecretKey()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:6px 18px;">Change Secret Key</button>
+                <div id="secretKeyStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
+            </div>
+
+            <div class="card">
                 <h3>🔧 Device Management</h3>
                 <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked devices and active login sessions</p>
                 
@@ -644,7 +655,7 @@
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
                 
-                <!-- ✅ NEW: App Open Mode Toggle -->
+                <!-- App Open Mode Toggle -->
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
                     <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
@@ -659,7 +670,7 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
                 </div>
                 
-                <!-- ✅ NEW: Schedule Expiry -->
+                <!-- Schedule Expiry -->
                 <div style="margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
                     <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
@@ -2035,6 +2046,53 @@
         }
 
         // ============================================================
+        // SECTION: SECRET KEY CHANGE (NEW)
+        // ============================================================
+        async function changeSecretKey() {
+            var oldKey = document.getElementById('oldSecretKey').value.trim();
+            var newKey = document.getElementById('newSecretKey').value.trim();
+            var statusEl = document.getElementById('secretKeyStatus');
+
+            if (!oldKey || !newKey) {
+                statusEl.textContent = '❌ Please fill both fields';
+                statusEl.style.color = '#ef4444';
+                return;
+            }
+            if (oldKey.length < 4 || newKey.length < 4) {
+                statusEl.textContent = '❌ Secret key must be at least 4 characters';
+                statusEl.style.color = '#ef4444';
+                return;
+            }
+            if (oldKey === newKey) {
+                statusEl.textContent = '❌ New key must be different from old key';
+                statusEl.style.color = '#ef4444';
+                return;
+            }
+
+            try {
+                var r = await secureFetch('/api/admin/secret-key', {
+                    method: 'POST',
+                    body: JSON.stringify({ oldKey: oldKey, newKey: newKey })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    statusEl.textContent = '✅ Secret key changed successfully!';
+                    statusEl.style.color = '#22c55e';
+                    showToast('✅ Secret key changed!', 'success');
+                    document.getElementById('oldSecretKey').value = '';
+                    document.getElementById('newSecretKey').value = '';
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
+                    statusEl.style.color = '#ef4444';
+                }
+            } catch (e) {
+                statusEl.textContent = '❌ Server error';
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        // ============================================================
         // SECTION: DEVICE MANAGEMENT
         // ============================================================
         var currentDeviceMode = 'blocked';
@@ -2573,6 +2631,7 @@
         window.saveBackground = saveBackground;
         window.removeBackground = removeBackground;
         window.changePasscode = changePasscode;
+        window.changeSecretKey = changeSecretKey;
         window.updateSchedulePreset = updateSchedulePreset;
         window.updateCustomExpiry = updateCustomExpiry;
         window.showToast = showToast;
