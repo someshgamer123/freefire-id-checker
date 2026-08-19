@@ -36,7 +36,7 @@ const Security = require('./config/security');
 connectDB();
 
 // ==================== Environment Variables ====================
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '@somu93370899#Secure';
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
@@ -172,7 +172,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting (FIXED) ====================
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -1376,7 +1376,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
         }
-        // ✅ FIXED: 24h Hourly data extract
+        // ✅ FIXED: 24h Hourly data extract (EXACT LAST 24 HOURS)
         const hourKeys = Array.from(hourlyVisitors.keys()).sort();
         const last24Hours = hourKeys.slice(-24);
         let hourlyVisitsData = {};
@@ -1765,7 +1765,6 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== SHORT LINK ROUTES ====================
-// GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -1995,10 +1994,13 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 });
 
 // ==================== Serve Pages ====================
+
+// ✅ Step 1: Serve Secret Gateway FIRST (before login.html)
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
+// ✅ Step 2: Serve Login Page (but only if accessed via secret gateway)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
@@ -2011,6 +2013,7 @@ app.get('/admin/login.html', (req, res) => {
     }
 });
 
+// ✅ Step 3: Serve Admin Dashboard (with auth check)
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
@@ -2022,6 +2025,7 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
+// ✅ Step 4: All other pages
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
@@ -2087,14 +2091,12 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔐 SECRET GATEWAY (FIXED):');
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
-    console.log('🔑 Secret Key: @somu93370899 (to reveal the login screen)');
+    console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
     console.log('💾 Save Login: Remember Me (7 days auto-login)');
     console.log('═══════════════════════════════════════════');
-    console.log('✅ FIXED: Rate Limiter error (X-Forwarded-For)');
-    console.log('✅ FIXED: 24h Graph Data (No more flat lines)');
-    console.log('✅ FIXED: Analytics 60m filter (Now shows correct data)');
-    console.log('✅ FIXED: Live Visitors Claims added');
-    console.log('✅ FIXED: Detailed Analysis Graph (Trading View style)');
-    console.log('✅ FIXED: Graph buttons color change on click');
+    console.log('✅ FIXED: 60m & Active Now Claims removed from dashboard');
+    console.log('✅ FIXED: 24h Graph now shows exact last 24 hours data');
+    console.log('✅ FIXED: Select User option removed from dashboard');
+    console.log('✅ FIXED: Secret Gateway & Key Change option restored');
     console.log('═══════════════════════════════════════════');
 });

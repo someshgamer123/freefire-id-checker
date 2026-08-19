@@ -82,17 +82,6 @@
         }
         .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
         
-        .live-selector {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-            margin: 10px 0; padding: 10px; background: var(--bg); border-radius: var(--radius);
-            border: 1px solid var(--border);
-        }
-        .live-selector label { font-size: 12px; font-weight: 500; color: var(--text-light); }
-        .live-selector select {
-            padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
-            background: var(--card-bg); color: var(--text); font-size: 13px;
-        }
-
         .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
         .live-visitors .lv-item {
             background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
@@ -360,19 +349,12 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS (With Claims) ===== -->
+            <!-- ===== LIVE VISITORS (NO SELECT USER, NO 60m, NO CLAIMS) ===== -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors
                     <span class="live-badge">🟢 Live</span>
                     <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
-                </div>
-                
-                <div class="live-selector">
-                    <label>👤 Select User:</label>
-                    <select id="liveUserSelect" onchange="loadLiveUserStats()">
-                        <option value="all">All Users</option>
-                    </select>
                 </div>
                 
                 <div class="lv-grid">
@@ -386,31 +368,10 @@
                         <div class="lv-label">Last 48 Hours</div>
                         <div class="lv-time" id="live48hrTime">Loading...</div>
                     </div>
-                    <div class="lv-item">
-                        <div class="lv-number" id="live60min">0</div>
-                        <div class="lv-label">Last 60 Minutes</div>
-                        <div class="lv-time" id="live60minTime">Loading...</div>
-                    </div>
                     <div class="lv-item active-now">
                         <div class="lv-number" id="liveActive">0</div>
                         <div class="lv-label">Active Now</div>
                         <div class="lv-time">🟢 Online</div>
-                    </div>
-                    <!-- ✅ NEW: Claims Data -->
-                    <div class="lv-item" style="border-left-color:#f59e0b;">
-                        <div class="lv-number" style="color:#f59e0b;" id="liveClaimsLifetime">0</div>
-                        <div class="lv-label">Claims Lifetime</div>
-                        <div class="lv-time">All time</div>
-                    </div>
-                    <div class="lv-item" style="border-left-color:#f59e0b;">
-                        <div class="lv-number" style="color:#f59e0b;" id="liveClaims24h">0</div>
-                        <div class="lv-label">Claims 24h</div>
-                        <div class="lv-time">Last 24 hours</div>
-                    </div>
-                    <div class="lv-item" style="border-left-color:#f59e0b;">
-                        <div class="lv-number" style="color:#f59e0b;" id="liveClaimsActive">0</div>
-                        <div class="lv-label">Claims Active</div>
-                        <div class="lv-time">Active Now</div>
                     </div>
                 </div>
             </div>
@@ -900,7 +861,7 @@
         }
 
         // ============================================================
-        // SECTION: LIVE VISITORS (WITH CLAIMS)
+        // SECTION: LIVE VISITORS (NO SELECT USER)
         // ============================================================
         var previousLiveData = {};
 
@@ -918,7 +879,7 @@
 
             var stats = data.global || {};
             
-            // Lifetime Visits
+            // Lifetime
             var lifetime = document.getElementById('liveLifetime');
             if (lifetime) {
                 var newVal = stats.totalVisitors || 0;
@@ -944,21 +905,7 @@
             var live48hrTime = document.getElementById('live48hrTime');
             if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
-            // 60m Visits (Removed from dashboard but kept for analytics)
-            var live60min = document.getElementById('live60min');
-            if (live60min) {
-                var newVal60m = stats.visits60m || 0;
-                if (previousLiveData.live60min !== newVal60m) {
-                    live60min.textContent = newVal60m;
-                    live60min.classList.add('pulse-update');
-                    setTimeout(function() { live60min.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.live60min = newVal60m;
-            }
-            var live60minTime = document.getElementById('live60minTime');
-            if (live60minTime) live60minTime.textContent = 'Last 60 min';
-            
-            // Active Now Visits
+            // Active Now (Real-time from API)
             var liveActive = document.getElementById('liveActive');
             if (liveActive) {
                 var newValActive = stats.activeNow || 0;
@@ -968,40 +915,6 @@
                     setTimeout(function() { liveActive.classList.remove('pulse-update'); }, 300);
                 }
                 previousLiveData.liveActive = newValActive;
-            }
-            
-            // ✅ NEW: Claims Data
-            var claimsLifetime = document.getElementById('liveClaimsLifetime');
-            if (claimsLifetime) {
-                var newValClaims = stats.totalClaims || 0;
-                if (previousLiveData.claimsLifetime !== newValClaims) {
-                    claimsLifetime.textContent = newValClaims;
-                    claimsLifetime.classList.add('pulse-update');
-                    setTimeout(function() { claimsLifetime.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.claimsLifetime = newValClaims;
-            }
-            
-            var claims24h = document.getElementById('liveClaims24h');
-            if (claims24h) {
-                var newValClaims24h = stats.claims24h || 0;
-                if (previousLiveData.claims24h !== newValClaims24h) {
-                    claims24h.textContent = newValClaims24h;
-                    claims24h.classList.add('pulse-update');
-                    setTimeout(function() { claims24h.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.claims24h = newValClaims24h;
-            }
-            
-            var claimsActive = document.getElementById('liveClaimsActive');
-            if (claimsActive) {
-                var newValClaimsActive = stats.claims1m || 0;
-                if (previousLiveData.claimsActive !== newValClaimsActive) {
-                    claimsActive.textContent = newValClaimsActive;
-                    claimsActive.classList.add('pulse-update');
-                    setTimeout(function() { claimsActive.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.claimsActive = newValClaimsActive;
             }
             
             // Update refresh time
@@ -1017,30 +930,6 @@
             if (liveInterval) clearInterval(liveInterval);
             loadStats();
             liveInterval = setInterval(function() { loadStats(); }, 5000);
-        }
-
-        // ============================================================
-        // SECTION: LIVE USER STATS
-        // ============================================================
-        async function loadLiveUserStats() {
-            var userId = document.getElementById('liveUserSelect').value;
-            if (userId === 'all') {
-                loadStats();
-                return;
-            }
-            try {
-                var r = await secureFetch('/api/visit-stats/' + userId);
-                if (r && r.ok) {
-                    var data = await r.json();
-                    document.getElementById('liveLifetime').textContent = data.totalVisits || 0;
-                    document.getElementById('live48hr').textContent = data.visits24h || 0;
-                    document.getElementById('live60min').textContent = data.visits60m || 0;
-                    document.getElementById('liveActive').textContent = data.activeNow || 0;
-                    document.getElementById('liveClaimsLifetime').textContent = data.totalClaims || 0;
-                    document.getElementById('liveClaims24h').textContent = data.claims24h || 0;
-                    document.getElementById('liveClaimsActive').textContent = data.claims1m || 0;
-                }
-            } catch (e) { console.error(e); }
         }
 
         // ============================================================
@@ -1701,10 +1590,12 @@
                 visitsData = displayDates.map(d => dailyVisitors[d] || 0);
                 claimsData = displayDates.map(d => dailyClaims[d] || 0);
             } else {
-                var hourlyKeys = Object.keys(hourlyVisitors).slice(-24);
-                displayDates = hourlyKeys.map(k => k.substring(11, 16));
-                visitsData = hourlyKeys.map(k => hourlyVisitors[k] || 0);
-                claimsData = hourlyKeys.map(k => hourlyClaims[k] || 0);
+                // ✅ FIXED: 24h Graph - Exact last 24 hours (hourly data)
+                var hourlyKeys = Object.keys(hourlyVisitors).sort();
+                var last24Keys = hourlyKeys.slice(-24);
+                displayDates = last24Keys.map(k => k.substring(11, 16)); // Show HH:MM
+                visitsData = last24Keys.map(k => hourlyVisitors[k] || 0);
+                claimsData = last24Keys.map(k => hourlyClaims[k] || 0);
             }
             if (dashboardDataType === 'unique') {
                 var uniqueVisits = visitsData.map(v => Math.round(v * 0.8));
