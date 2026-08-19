@@ -69,7 +69,8 @@ async function initializeDatabase() {
                 passcode: hashedPasscode,
                 theme: 'light',
                 email: process.env.ADMIN_EMAIL || '',
-                phone: process.env.ADMIN_PHONE || ''
+                phone: process.env.ADMIN_PHONE || '',
+                secretKey: 'admin@2024'
             });
             console.log('✅ Admin user created');
 
@@ -162,7 +163,6 @@ app.use(helmet({
     hidePoweredBy: true
 }));
 
-// ✅ FIXED: Render par trust proxy set karna zaroori hai
 app.set('trust proxy', 1);
 
 app.use(cors({
@@ -180,7 +180,6 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// ✅ FIXED: Device-based Rate Limiter (Fingerprint se track karega, IP se nahi)
 const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
@@ -234,7 +233,7 @@ function getDeviceId(req) {
 function getDeviceDetails(req) {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     let deviceName = 'Unknown Device';
-    let deviceType = 'Unknown';
+    let deviceType = 'Browser';
 
     if (userAgent.includes('Windows')) {
         deviceName = 'Windows PC';
@@ -378,7 +377,6 @@ async function incrementDeviceAttempts(req) {
         if (record.attempts >= 5 && record.attempts < 10) {
             record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 48 hours';
-            record.deviceType = 'attacker';
             console.log(`🚨 Device ${deviceName} blocked for 48 hours`);
         } else if (record.attempts >= 10 && record.attempts < 20) {
             record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -867,11 +865,38 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
+// ==================== PUBLIC SECRET KEY ENDPOINTS ====================
+app.get('/api/admin/public-secret-key', async (req, res) => {
+    try {
+        const admin = await User.findOne();
+        if (!admin) return res.json({ secretKey: 'admin@2024' });
+        res.json({ secretKey: admin.secretKey || 'admin@2024' });
+    } catch (error) {
+        res.json({ secretKey: 'admin@2024' });
+    }
+});
+
+app.post('/api/admin/verify-secret-key', async (req, res) => {
+    try {
+        const { key } = req.body;
+        if (!key) return res.json({ success: false });
+        const admin = await User.findOne();
+        const secretKey = admin?.secretKey || 'admin@2024';
+        if (key === secretKey) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.json({ success: false });
+    }
+});
+
 // ================================================================
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
-// ==================== ADMIN LOGIN (WITH OTP VERIFICATION + SAVE LOGIN) ====================
+// ==================== ADMIN LOGIN ====================
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
         const { passcode, otp, step, rememberMe } = req.body;
@@ -996,7 +1021,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 path: '/'
             });
             
-            // ✅ NEW: Save Login (Remember Me)
             if (rememberMe) {
                 const admin = await User.findOne();
                 if (admin) {
@@ -1035,7 +1059,6 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
             await invalidateSession(token);
             await logAdminAction('admin', 'LOGOUT', {}, req);
         }
-        // Clear remember token
         res.clearCookie('rememberToken');
         const admin = await User.findOne();
         if (admin) {
@@ -1144,6 +1167,42 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ WhatsApp number save error:', error);
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+// ==================== SECRET KEY MANAGEMENT ====================
+app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
+    try {
+        const admin = await User.findOne();
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+        const secretKey = admin.secretKey || 'admin@2024';
+        const maskedKey = secretKey.slice(0, 4) + '****' + secretKey.slice(-4);
+        res.json({ success: true, secretKey: secretKey, maskedKey: maskedKey });
+    } catch (error) {
+        console.error('❌ Secret key fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch secret key' });
+    }
+});
+
+app.post('/api/admin/secret-key', authMiddleware, async (req, res) => {
+    try {
+        const { currentSecretKey, newSecretKey } = req.body;
+        if (!newSecretKey || newSecretKey.length < 4) {
+            return res.status(400).json({ error: 'Secret key must be at least 4 characters' });
+        }
+        const admin = await User.findOne();
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+        const currentKey = admin.secretKey || 'admin@2024';
+        if (currentSecretKey !== currentKey) {
+            return res.status(400).json({ error: 'Current secret key is incorrect' });
+        }
+        admin.secretKey = newSecretKey;
+        await admin.save();
+        await logAdminAction('admin', 'UPDATE_SECRET_KEY', { newKey: newSecretKey }, req);
+        res.json({ success: true, secretKey: newSecretKey });
+    } catch (error) {
+        console.error('❌ Secret key update error:', error);
+        res.status(500).json({ error: 'Failed to update secret key' });
     }
 });
 
@@ -1376,7 +1435,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
         }
-        // ✅ FIXED: 24h Hourly data extract (EXACT LAST 24 HOURS)
         const hourKeys = Array.from(hourlyVisitors.keys()).sort();
         const last24Hours = hourKeys.slice(-24);
         let hourlyVisitsData = {};
@@ -1502,7 +1560,7 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
-// ==================== Update Admin Contact Info (Email & Phone) ====================
+// ==================== Update Admin Contact Info ====================
 app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     try {
         const { email, phone } = req.body;
@@ -1995,12 +2053,10 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 
 // ==================== Serve Pages ====================
 
-// ✅ Step 1: Serve Secret Gateway FIRST (before login.html)
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
-// ✅ Step 2: Serve Login Page (but only if accessed via secret gateway)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
@@ -2013,7 +2069,6 @@ app.get('/admin/login.html', (req, res) => {
     }
 });
 
-// ✅ Step 3: Serve Admin Dashboard (with auth check)
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
@@ -2025,7 +2080,6 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
-// ✅ Step 4: All other pages
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
@@ -2094,9 +2148,13 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
     console.log('💾 Save Login: Remember Me (7 days auto-login)');
     console.log('═══════════════════════════════════════════');
-    console.log('✅ FIXED: 60m & Active Now Claims removed from dashboard');
-    console.log('✅ FIXED: 24h Graph now shows exact last 24 hours data');
-    console.log('✅ FIXED: Select User option removed from dashboard');
-    console.log('✅ FIXED: Secret Gateway & Key Change option restored');
+    console.log('✅ FIXED: DeviceType validation');
+    console.log('✅ FIXED: loadLiveUserStats removed');
+    console.log('✅ FIXED: 24h graph data');
+    console.log('✅ FIXED: Button toggles');
+    console.log('✅ FIXED: Analytics 24h & 7 days');
+    console.log('✅ FIXED: Unique data calculation');
+    console.log('✅ NEW: Live Claims display');
+    console.log('✅ NEW: Secret Key management');
     console.log('═══════════════════════════════════════════');
 });

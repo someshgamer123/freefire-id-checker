@@ -16,7 +16,7 @@ const BlockedDeviceSchema = new mongoose.Schema({
     },
     deviceType: {
         type: String,
-        enum: ['attacker', 'admin', 'visitor'],
+        enum: ['attacker', 'admin', 'visitor', 'Desktop', 'Mobile', 'Tablet', 'Browser'],
         default: 'visitor'
     },
     attempts: {
