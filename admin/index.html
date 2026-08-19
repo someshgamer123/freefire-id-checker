@@ -360,7 +360,7 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS ===== -->
+            <!-- ===== LIVE VISITORS (With Claims) ===== -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors
@@ -395,6 +395,22 @@
                         <div class="lv-number" id="liveActive">0</div>
                         <div class="lv-label">Active Now</div>
                         <div class="lv-time">🟢 Online</div>
+                    </div>
+                    <!-- ✅ NEW: Claims Data -->
+                    <div class="lv-item" style="border-left-color:#f59e0b;">
+                        <div class="lv-number" style="color:#f59e0b;" id="liveClaimsLifetime">0</div>
+                        <div class="lv-label">Claims Lifetime</div>
+                        <div class="lv-time">All time</div>
+                    </div>
+                    <div class="lv-item" style="border-left-color:#f59e0b;">
+                        <div class="lv-number" style="color:#f59e0b;" id="liveClaims24h">0</div>
+                        <div class="lv-label">Claims 24h</div>
+                        <div class="lv-time">Last 24 hours</div>
+                    </div>
+                    <div class="lv-item" style="border-left-color:#f59e0b;">
+                        <div class="lv-number" style="color:#f59e0b;" id="liveClaimsActive">0</div>
+                        <div class="lv-label">Claims Active</div>
+                        <div class="lv-time">Active Now</div>
                     </div>
                 </div>
             </div>
@@ -466,7 +482,7 @@
                     <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
                 </div>
 
-                <!-- Analytics Graph -->
+                <!-- Analytics Graph (Trading View Style) -->
                 <div class="card" style="margin-top:10px;padding:15px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                         <h3 style="font-size:14px;margin:0;">📈 Detailed Analysis</h3>
@@ -644,7 +660,7 @@
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
                 
-                <!-- ✅ NEW: App Open Mode Toggle -->
+                <!-- App Open Mode Toggle -->
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
                     <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
@@ -659,7 +675,7 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
                 </div>
                 
-                <!-- ✅ NEW: Schedule Expiry -->
+                <!-- Schedule Expiry -->
                 <div style="margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
                     <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
@@ -884,7 +900,7 @@
         }
 
         // ============================================================
-        // SECTION: LIVE VISITORS
+        // SECTION: LIVE VISITORS (WITH CLAIMS)
         // ============================================================
         var previousLiveData = {};
 
@@ -902,7 +918,7 @@
 
             var stats = data.global || {};
             
-            // Lifetime
+            // Lifetime Visits
             var lifetime = document.getElementById('liveLifetime');
             if (lifetime) {
                 var newVal = stats.totalVisitors || 0;
@@ -914,7 +930,7 @@
                 previousLiveData.lifetime = newVal;
             }
             
-            // Last 48 Hours (using visits24h from API)
+            // 48h Visits
             var live48hr = document.getElementById('live48hr');
             if (live48hr) {
                 var newVal24h = stats.visits24h || 0;
@@ -928,7 +944,7 @@
             var live48hrTime = document.getElementById('live48hrTime');
             if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
-            // Last 60 Minutes (using visits60m from API)
+            // 60m Visits (Removed from dashboard but kept for analytics)
             var live60min = document.getElementById('live60min');
             if (live60min) {
                 var newVal60m = stats.visits60m || 0;
@@ -942,7 +958,7 @@
             var live60minTime = document.getElementById('live60minTime');
             if (live60minTime) live60minTime.textContent = 'Last 60 min';
             
-            // Active Now (Real-time from API)
+            // Active Now Visits
             var liveActive = document.getElementById('liveActive');
             if (liveActive) {
                 var newValActive = stats.activeNow || 0;
@@ -952,6 +968,40 @@
                     setTimeout(function() { liveActive.classList.remove('pulse-update'); }, 300);
                 }
                 previousLiveData.liveActive = newValActive;
+            }
+            
+            // ✅ NEW: Claims Data
+            var claimsLifetime = document.getElementById('liveClaimsLifetime');
+            if (claimsLifetime) {
+                var newValClaims = stats.totalClaims || 0;
+                if (previousLiveData.claimsLifetime !== newValClaims) {
+                    claimsLifetime.textContent = newValClaims;
+                    claimsLifetime.classList.add('pulse-update');
+                    setTimeout(function() { claimsLifetime.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.claimsLifetime = newValClaims;
+            }
+            
+            var claims24h = document.getElementById('liveClaims24h');
+            if (claims24h) {
+                var newValClaims24h = stats.claims24h || 0;
+                if (previousLiveData.claims24h !== newValClaims24h) {
+                    claims24h.textContent = newValClaims24h;
+                    claims24h.classList.add('pulse-update');
+                    setTimeout(function() { claims24h.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.claims24h = newValClaims24h;
+            }
+            
+            var claimsActive = document.getElementById('liveClaimsActive');
+            if (claimsActive) {
+                var newValClaimsActive = stats.claims1m || 0;
+                if (previousLiveData.claimsActive !== newValClaimsActive) {
+                    claimsActive.textContent = newValClaimsActive;
+                    claimsActive.classList.add('pulse-update');
+                    setTimeout(function() { claimsActive.classList.remove('pulse-update'); }, 300);
+                }
+                previousLiveData.claimsActive = newValClaimsActive;
             }
             
             // Update refresh time
@@ -965,14 +1015,8 @@
         // Start live refresh (every 5 seconds)
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
-            
-            // Initial load
             loadStats();
-            
-            // Refresh every 5 seconds
-            liveInterval = setInterval(function() {
-                loadStats();
-            }, 5000);
+            liveInterval = setInterval(function() { loadStats(); }, 5000);
         }
 
         // ============================================================
@@ -992,6 +1036,9 @@
                     document.getElementById('live48hr').textContent = data.visits24h || 0;
                     document.getElementById('live60min').textContent = data.visits60m || 0;
                     document.getElementById('liveActive').textContent = data.activeNow || 0;
+                    document.getElementById('liveClaimsLifetime').textContent = data.totalClaims || 0;
+                    document.getElementById('liveClaims24h').textContent = data.claims24h || 0;
+                    document.getElementById('liveClaimsActive').textContent = data.claims1m || 0;
                 }
             } catch (e) { console.error(e); }
         }
@@ -1018,30 +1065,24 @@
         function filterLinks() {
             var query = document.getElementById('searchLinksInput').value.toLowerCase().trim();
             var filtered = allLinks;
-            
             if (query) {
                 filtered = allLinks.filter(function(link) {
                     return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
                 });
             }
-            
             var c = document.getElementById('linksList');
             var countEl = document.getElementById('searchResultsCount');
-            
             if (filtered.length === 0) {
                 c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
                 if (countEl) countEl.textContent = 'No results';
                 return;
             }
-            
             if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
-            
             c.innerHTML = '';
             filtered.forEach(function(link) {
                 var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
                 var created = new Date(link.created).toLocaleDateString();
                 var visits = link.visits || 0;
-                
                 var d = document.createElement('div');
                 d.className = 'link-item';
                 d.innerHTML = `
@@ -1086,7 +1127,6 @@
 
         async function handleStatusAction(id, action) {
             if (!action) return;
-            
             if (action === 'delete') {
                 if (confirm('⚠️ Delete this link permanently?')) {
                     try {
@@ -1102,7 +1142,6 @@
                 }
                 return;
             }
-            
             try {
                 var r = await secureFetch('/api/links/' + id + '/status', {
                     method: 'PUT',
@@ -1131,13 +1170,10 @@
                 showToast('❌ Link not found', 'error');
                 return;
             }
-            
             editingLinkId = linkId;
             var body = document.getElementById('editModalBody');
-            
             var popup = link.popupSettings || {};
             var expiry = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-            
             body.innerHTML = `
                 <div class="form-group">
                     <label>Link Name</label>
@@ -1205,7 +1241,6 @@
                     <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
                 </div>
             `;
-            
             ['editPopupTitle', 'editPopupBtn', 'editPopupSub', 'editPopupImage'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) {
@@ -1214,7 +1249,6 @@
                     });
                 }
             });
-            
             document.getElementById('editModal').classList.add('show');
         }
 
@@ -1225,7 +1259,6 @@
             var img = document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value || '' : '';
             var preview = document.getElementById('editPopupPreview');
             if (!preview) return;
-            
             var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
             preview.innerHTML = imgHtml +
                 '<div class="preview-text">' + escapeHTML(title) + '</div>' +
@@ -1243,19 +1276,14 @@
                 showToast('❌ No link selected', 'error');
                 return;
             }
-            
             var popupSettings = {
                 image: document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value.trim() || null : null,
                 title: document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
                 buttonText: document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value.trim() || 'Claim Now' : 'Claim Now',
                 subtitle: document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
             };
-            
             var expiryDate = document.getElementById('editExpiry') ? document.getElementById('editExpiry').value || null : null;
-            if (expiryDate) {
-                expiryDate = new Date(expiryDate).toISOString();
-            }
-            
+            if (expiryDate) { expiryDate = new Date(expiryDate).toISOString(); }
             try {
                 var r = await secureFetch('/api/links/' + editingLinkId, {
                     method: 'PUT',
@@ -1361,14 +1389,12 @@
             var name = document.getElementById('linkName').value.trim();
             if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
             if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
-            
             var popupSettings = {
                 image: document.getElementById('popupImageUrl').value.trim() || null,
                 title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
                 buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
                 subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
             };
-
             try {
                 var r = await secureFetch('/api/links', {
                     method: 'POST',
@@ -1386,7 +1412,6 @@
                 var link = await r.json();
                 document.getElementById('generatedLink').classList.add('show');
                 document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
-                
                 document.getElementById('linkName').value = '';
                 document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
                 document.getElementById('claim').value = '#';
@@ -1444,7 +1469,6 @@
 
         function filterAnalyticsLinks() {
             var query = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
-            
             if (query) {
                 filteredAnalyticsLinks = analyticsLinks.filter(function(link) {
                     return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
@@ -1452,7 +1476,6 @@
             } else {
                 filteredAnalyticsLinks = analyticsLinks;
             }
-            
             populateAnalyticsSelect();
         }
 
@@ -1460,14 +1483,12 @@
             var select = document.getElementById('analyticsLinkSelect');
             var currentVal = select.value;
             select.innerHTML = '<option value="">-- Select --</option>';
-            
             filteredAnalyticsLinks.forEach(function(link) {
                 var opt = document.createElement('option');
                 opt.value = link.id;
                 opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
                 select.appendChild(opt);
             });
-            
             if (filteredAnalyticsLinks.length > 0) {
                 var exists = filteredAnalyticsLinks.some(function(l) { return l.id === currentVal; });
                 if (exists) {
@@ -1486,7 +1507,6 @@
             });
             var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
             if (btn) btn.classList.add('active');
-            
             var customPicker = document.getElementById('customDatePicker');
             if (filter === 'custom') {
                 customPicker.style.display = 'flex';
@@ -1504,9 +1524,7 @@
                 document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 Select a link</div>';
                 return;
             }
-            
             currentLinkId = linkId;
-            
             try {
                 var r = await fetch('/api/visit-stats/' + linkId);
                 if (!r.ok) {
@@ -1515,21 +1533,16 @@
                 }
                 var data = await r.json();
                 analyticsData = data;
-                
                 document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
                 document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
                 document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
                 document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
-                
                 var filteredData = getFilteredData(data);
-                
                 document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
                 document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
                 document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
                 document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
-                
                 renderAnalyticsChart(filteredData);
-                
             } catch (e) {
                 console.error('Error loading analytics:', e);
                 showToast('❌ Failed to load analytics', 'error');
@@ -1551,24 +1564,16 @@
                 dailyVisits[today] = 0;
                 dailyClaims[today] = 0;
             }
-            
             var now = new Date();
             var filteredDates = [];
-            
             if (currentFilter === 'lifetime') {
                 filteredDates = allDates;
             } else if (currentFilter === '24h') {
                 var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { 
-                    var date = new Date(d);
-                    return date >= oneDayAgo;
-                });
+                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
             } else if (currentFilter === '60m') {
                 var oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { 
-                    var date = new Date(d);
-                    return date >= oneHourAgo;
-                });
+                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneHourAgo; });
             } else if (currentFilter === 'custom') {
                 var fromDate = document.getElementById('analyticsFromDate').value;
                 var toDate = document.getElementById('analyticsToDate').value;
@@ -1583,35 +1588,29 @@
                 }
                 if (!fromDate && !toDate) filteredDates = allDates;
             }
-            
             if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
-            
             filteredDates.forEach(function(date) {
                 result.totalVisits += dailyVisits[date] || 0;
                 result.totalClaims += dailyClaims[date] || 0;
                 result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
             });
-            
             var uniqueDays = Object.keys(result.dailyData).length;
             result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 0.8);
             result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 0.8);
-            
             return result;
         }
 
         // ============================================================
-        // SECTION: CHARTS
+        // SECTION: CHARTS (TRADING VIEW STYLE)
         // ============================================================
         function renderAnalyticsChart(data) {
             var container = document.getElementById('analyticsChart');
             var dates = Object.keys(data.dailyData);
             dates.sort();
-            
             if (dates.length === 0) {
                 container.innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 No data</div>';
                 return;
             }
-            
             var visitsData, claimsData;
             if (analyticsDataType === 'total') {
                 visitsData = dates.map(d => data.dailyData[d].visits);
@@ -1622,13 +1621,10 @@
                 visitsData = uniqueVisits;
                 claimsData = uniqueClaims;
             }
-            
             var ctx = document.getElementById('analyticsChart').getContext('2d');
-            
             if (analyticsChartInstance) {
                 analyticsChartInstance.destroy();
             }
-            
             analyticsChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1689,46 +1685,37 @@
 
         function updateDashboardGraph(data) {
             if (!data) return;
-            
             var stats = data.global || {};
             var dailyVisitors = stats.dailyVisitors || {};
             var dailyClaims = stats.dailyClaims || {};
             var hourlyVisitors = stats.hourlyVisitors || {};
             var hourlyClaims = stats.hourlyClaims || {};
-            
             var dates = Object.keys(dailyVisitors);
             if (dates.length === 0) {
                 dates = Object.keys(dailyClaims);
             }
             dates.sort();
-            
             var displayDates, visitsData, claimsData;
-            
             if (dashboardGraphMode === '7days') {
                 displayDates = dates.slice(-7);
                 visitsData = displayDates.map(d => dailyVisitors[d] || 0);
                 claimsData = displayDates.map(d => dailyClaims[d] || 0);
             } else {
-                // ✅ FIXED: 24h graph shows hourly data (24 slots)
-                var hourlyKeys = Object.keys(hourlyVisitors);
-                displayDates = hourlyKeys;
+                var hourlyKeys = Object.keys(hourlyVisitors).slice(-24);
+                displayDates = hourlyKeys.map(k => k.substring(11, 16));
                 visitsData = hourlyKeys.map(k => hourlyVisitors[k] || 0);
                 claimsData = hourlyKeys.map(k => hourlyClaims[k] || 0);
             }
-            
             if (dashboardDataType === 'unique') {
                 var uniqueVisits = visitsData.map(v => Math.round(v * 0.8));
                 var uniqueClaims = claimsData.map(c => Math.round(c * 0.8));
                 visitsData = uniqueVisits;
                 claimsData = uniqueClaims;
             }
-            
             var ctx = document.getElementById('dashboardChart').getContext('2d');
-            
             if (dashboardChartInstance) {
                 dashboardChartInstance.destroy();
             }
-            
             dashboardChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1824,7 +1811,6 @@
                 showToast('⚠️ Please select a link', 'error');
                 return;
             }
-            
             var container = document.getElementById('analyticsChart');
             var wrapper = document.createElement('div');
             wrapper.style.cssText = 'background:#0f1117;padding:24px;border-radius:12px;min-width:700px;color:#fff;font-family:Inter,sans-serif;position:absolute;left:-9999px;top:0;z-index:9999;';
@@ -1954,7 +1940,6 @@
             var email = document.getElementById('adminEmail').value.trim();
             var phone = document.getElementById('adminPhone').value.trim();
             var statusEl = document.getElementById('contactStatus');
-            
             try {
                 var r = await secureFetch('/api/admin/update-contact', {
                     method: 'POST',
@@ -1994,7 +1979,6 @@
             var oldPasscode = document.getElementById('oldPasscode').value;
             var newPasscode = document.getElementById('newPasscode').value;
             var statusEl = document.getElementById('passcodeStatus');
-
             if (!oldPasscode || !newPasscode) {
                 statusEl.textContent = '❌ Please fill both fields';
                 statusEl.style.color = '#ef4444';
@@ -2010,7 +1994,6 @@
                 statusEl.style.color = '#ef4444';
                 return;
             }
-
             try {
                 var r = await secureFetch('/api/admin/passcode', {
                     method: 'POST',
@@ -2071,7 +2054,6 @@
         function renderDeviceList(items, type) {
             var container = document.getElementById('deviceList');
             var noDevices = document.getElementById('noDevices');
-            
             if (!items || items.length === 0) {
                 if (noDevices) {
                     noDevices.style.display = 'block';
@@ -2081,29 +2063,23 @@
                 }
                 return;
             }
-            
             if (noDevices) {
                 noDevices.style.display = 'none';
             }
             container.innerHTML = '';
-            
             items.forEach(function(item) {
                 var div = document.createElement('div');
-                
                 if (type === 'blocked') {
                     var isPermanent = item.isPermanent;
                     div.className = 'device-item';
                     div.style.borderLeftColor = isPermanent ? '#ef4444' : '#f59e0b';
-                    
                     var remainingTime = '';
                     if (item.blockedUntil && !isPermanent) {
                         var mins = Math.ceil((new Date(item.blockedUntil) - new Date()) / (1000 * 60));
                         remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
                     }
-                    
                     var statusText = isPermanent ? '⛔ PERMANENTLY BANNED' : '⏳ ' + remainingTime;
                     var lastAttempt = item.loginHistory && item.loginHistory.length > 0 ? new Date(item.loginHistory[item.loginHistory.length-1].timestamp).toLocaleString() : 'N/A';
-                    
                     div.innerHTML = `
                         <div class="info">
                             <span class="name">${escapeHTML(item.deviceName || 'Unknown Device')}</span>
@@ -2122,13 +2098,10 @@
                         </div>
                     `;
                 } else {
-                    // Active session
                     div.className = 'session-item';
                     div.style.borderLeftColor = '#22c55e';
-                    
                     var loginTime = new Date(item.lastActivity).toLocaleString();
                     var deviceName = item.userAgent ? item.userAgent.split(' ')[0] || 'Unknown' : 'Unknown';
-                    
                     div.innerHTML = `
                         <div class="info">
                             <span class="name">🟢 ${escapeHTML(deviceName)}</span>
@@ -2255,30 +2228,24 @@
         function filterShortLinks() {
             var query = document.getElementById('searchShortLinksInput').value.toLowerCase().trim();
             var filtered = allShortLinks;
-            
             if (query) {
                 filtered = allShortLinks.filter(function(link) {
                     return link.title.toLowerCase().includes(query) || link.code.toLowerCase().includes(query);
                 });
             }
-            
             var c = document.getElementById('shortLinksList');
             var countEl = document.getElementById('shortSearchResultsCount');
-            
             if (filtered.length === 0) {
                 c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
                 if (countEl) countEl.textContent = 'No results';
                 return;
             }
-            
             if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allShortLinks.length + ' links';
-            
             c.innerHTML = '';
             filtered.forEach(function(link) {
                 var sc = link.status === 'active' ? 'active' : 'disabled';
                 var created = new Date(link.createdAt).toLocaleDateString();
                 var shortUrl = window.location.origin + '/s/' + link.code;
-                
                 var d = document.createElement('div');
                 d.className = 'link-item';
                 d.innerHTML = `
@@ -2310,19 +2277,15 @@
         async function createShortLink() {
             var url = document.getElementById('shortOriginalUrl').value.trim();
             if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
-            
-            // Validate URL
             try {
                 new URL(url);
             } catch (e) {
                 showToast('❌ Invalid URL format', 'error');
                 return;
             }
-            
             var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
             var appOpen = document.getElementById('shortAppOpen').checked;
             var expiryDate = document.getElementById('shortExpiryDate').value;
-            
             try {
                 var r = await secureFetch('/api/short-links', {
                     method: 'POST',
@@ -2375,7 +2338,6 @@
 
         async function handleShortLinkAction(id, action) {
             if (!action) return;
-            
             if (action === 'delete') {
                 if (!confirm('⚠️ Delete this short link permanently?')) return;
                 try {
@@ -2390,7 +2352,6 @@
                 } catch (e) { showToast('❌ Failed to delete', 'error'); }
                 return;
             }
-            
             try {
                 var r = await secureFetch('/api/short-links/' + id, {
                     method: 'PUT',
@@ -2418,7 +2379,6 @@
                     var totalClicks = data.totalClicks;
                     var clicks24h = data.clicks24h;
                     var uniqueDevices = data.uniqueDevices;
-                    
                     var body = document.getElementById('editModalBody');
                     body.innerHTML = `
                         <h3>📊 Analytics: ${escapeHTML(link.title || 'Untitled')}</h3>
@@ -2455,7 +2415,6 @@
         function openShortLinkEdit(id) {
             var link = allShortLinks.find(function(l) { return l._id === id; });
             if (!link) { showToast('❌ Link not found', 'error'); return; }
-            
             var body = document.getElementById('editModalBody');
             body.innerHTML = `
                 <h3>✏️ Edit Short Link</h3>
@@ -2494,7 +2453,6 @@
             var status = document.getElementById('shortEditStatus').value;
             var appOpen = document.getElementById('shortEditAppOpen').value === 'true';
             var expiryDate = document.getElementById('shortEditExpiry').value;
-            
             try {
                 var r = await secureFetch('/api/short-links/' + id, {
                     method: 'PUT',

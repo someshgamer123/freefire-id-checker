@@ -36,7 +36,7 @@ const Security = require('./config/security');
 connectDB();
 
 // ==================== Environment Variables ====================
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '@somu93370899#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
@@ -162,7 +162,7 @@ app.use(helmet({
     hidePoweredBy: true
 }));
 
-// ✅ FIXED: Enable trust proxy for Render and proper rate limiting
+// ✅ FIXED: Render par trust proxy set karna zaroori hai
 app.set('trust proxy', 1);
 
 app.use(cors({
@@ -176,18 +176,15 @@ app.use(cors({
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
-    message: 'Too many requests, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false
+    message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
 
-// ✅ FIXED: Device-based Rate Limiter (Fingerprint based)
+// ✅ FIXED: Device-based Rate Limiter (Fingerprint se track karega, IP se nahi)
 const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
     keyGenerator: (req) => {
-        // Use IP + User-Agent fingerprint instead of just IP
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
@@ -199,9 +196,7 @@ const deviceAuthLimiter = rateLimit({
         const userAgent = req.headers['user-agent'] || 'unknown';
         const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
         return fingerprint === admin?.fingerprint;
-    },
-    standardHeaders: true,
-    legacyHeaders: false
+    }
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -1381,16 +1376,15 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
         }
-        const hourKey = now.toISOString().substring(0, 13);
+        // ✅ FIXED: 24h Hourly data extract
+        const hourKeys = Array.from(hourlyVisitors.keys()).sort();
+        const last24Hours = hourKeys.slice(-24);
         let hourlyVisitsData = {};
         let hourlyClaimsData = {};
-        // ✅ FIXED: Get 24 hours data
-        for (let i = 23; i >= 0; i--) {
-            const pastHour = new Date(now.getTime() - i * 60 * 60 * 1000);
-            const key = pastHour.toISOString().substring(0, 13);
-            hourlyVisitsData[pastHour.toISOString().substring(11, 16)] = hourlyVisitors.get(key) || 0;
-            hourlyClaimsData[pastHour.toISOString().substring(11, 16)] = hourlyClaims.get(key) || 0;
-        }
+        last24Hours.forEach(key => {
+            hourlyVisitsData[key] = hourlyVisitors.get(key) || 0;
+            hourlyClaimsData[key] = hourlyClaims.get(key) || 0;
+        });
         const minuteKey = now.toISOString().substring(0, 16);
         globalVisits1m = minuteVisitors.get(minuteKey) || 0;
         globalClaims1m = minuteClaims.get(minuteKey) || 0;
@@ -1771,13 +1765,11 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== SHORT LINK ROUTES ====================
-
 // GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
         const link = await ShortLink.findOne({ code });
-        
         if (!link) {
             return res.status(404).send(`
                 <html>
@@ -1789,8 +1781,6 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
-        
-        // Check expiry
         if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
             link.status = 'disabled';
             await link.save();
@@ -1804,7 +1794,6 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
-        
         if (link.status !== 'active') {
             return res.status(403).send(`
                 <html>
@@ -1816,8 +1805,6 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
-        
-        // Track click
         link.visits = (link.visits || 0) + 1;
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -1828,8 +1815,6 @@ app.get('/s/:code', async (req, res) => {
         }
         link.lastClicked = now;
         await link.save();
-        
-        // Save click details
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         let deviceName = 'Unknown Device';
@@ -1840,7 +1825,6 @@ app.get('/s/:code', async (req, res) => {
         else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; }
         else if (userAgent.includes('Chrome')) { deviceName = 'Chrome Browser'; deviceType = 'Browser'; }
         else if (userAgent.includes('Firefox')) { deviceName = 'Firefox Browser'; deviceType = 'Browser'; }
-        
         await ShortLinkClick.create({
             shortLinkId: link._id,
             ip,
@@ -1849,27 +1833,16 @@ app.get('/s/:code', async (req, res) => {
             deviceType,
             referer: req.headers.referer || null
         });
-        
-        // ✅ FIXED: Deep Link App Open Mode
         if (link.appOpen) {
-            // Use Universal Link / Deep Link scheme
             const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
-            const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.yourapp.package';
-            const appStoreUrl = 'https://apps.apple.com/app/your-app-id';
-            
-            // Detect mobile vs desktop
             const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
-            
             if (isMobile) {
-                // Mobile - Try to open app, fallback to store
                 res.send(`
                     <html>
                     <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <script>
-                            // Try to open app
                             window.location.href = '${appScheme}';
-                            // Fallback to web after 1 second
                             setTimeout(function() {
                                 window.location.href = '${link.originalUrl}';
                             }, 1000);
@@ -1885,11 +1858,9 @@ app.get('/s/:code', async (req, res) => {
                     </html>
                 `);
             } else {
-                // Desktop - Just redirect normally
                 res.redirect(link.originalUrl);
             }
         } else {
-            // Normal redirect
             res.redirect(link.originalUrl);
         }
     } catch (error) {
@@ -1898,7 +1869,6 @@ app.get('/s/:code', async (req, res) => {
     }
 });
 
-// GET: Get all short links (Admin)
 app.get('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const links = await ShortLink.find().sort({ createdAt: -1 });
@@ -1909,7 +1879,6 @@ app.get('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// GET: Get short link analytics (Admin)
 app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1933,18 +1902,11 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     }
 });
 
-// POST: Create a new short link (Admin)
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const { originalUrl, title, appOpen, expiryDate } = req.body;
-        if (!originalUrl) {
-            return res.status(400).json({ error: 'Original URL is required' });
-        }
-        try {
-            new URL(originalUrl);
-        } catch (e) {
-            return res.status(400).json({ error: 'Invalid URL format' });
-        }
+        if (!originalUrl) return res.status(400).json({ error: 'Original URL is required' });
+        try { new URL(originalUrl); } catch (e) { return res.status(400).json({ error: 'Invalid URL format' }); }
         let code = '';
         let isUnique = false;
         while (!isUnique) {
@@ -1973,7 +1935,6 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// PUT: Update a short link (Admin)
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1981,9 +1942,7 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
         const link = await ShortLink.findById(id);
         if (!link) return res.status(404).json({ error: 'Link not found' });
         if (title !== undefined) link.title = title;
-        if (status !== undefined && ['active', 'disabled'].includes(status)) {
-            link.status = status;
-        }
+        if (status !== undefined && ['active', 'disabled'].includes(status)) link.status = status;
         if (appOpen !== undefined) link.appOpen = appOpen;
         if (expiryDate !== undefined) link.expiryDate = expiryDate;
         await link.save();
@@ -1995,7 +1954,6 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// DELETE: Delete a short link (Admin)
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -2012,7 +1970,6 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// GET: Short Link Dashboard Stats (Admin)
 app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     try {
         const totalLinks = await ShortLink.countDocuments();
@@ -2037,73 +1994,41 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Serve Pages (FIXED ORDER) ====================
-
-// ✅ Step 1: Serve Secret Gateway FIRST (before login.html)
+// ==================== Serve Pages ====================
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
-// ✅ Step 2: Serve Login Page (but only if accessed via secret gateway)
 app.get('/admin/login.html', (req, res) => {
-    // Check if user came from secret gateway or has valid session
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
-    
     if (token || rememberToken || isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
-        // Redirect to fake 404 if accessed directly
         res.redirect('/admin/secret-gateway');
     }
 });
 
-// ✅ Step 3: Serve Admin Dashboard (with auth check)
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
     if (token) {
         const decoded = verifyToken(token);
-        if (decoded) {
-            return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-        }
+        if (decoded) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
     }
-    if (rememberToken) {
-        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-    }
+    if (rememberToken) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
     res.redirect('/admin/secret-gateway');
 });
 
-// ✅ Step 4: All other pages
-app.get('/uid', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
-});
-
-app.get('/v/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
-});
-
-app.get('/user-dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
-});
-
-app.get('/user-dashboard/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
-});
-
-app.get('/manifest.json', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'manifest.json'));
-});
-
-app.get('/sw.js', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'sw.js'));
-});
-
-app.get('/', (req, res) => {
-    res.redirect('/admin/secret-gateway');
-});
+app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
+app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
+app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
+app.get('/user-dashboard/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
+app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, '..', 'manifest.json')));
+app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')));
+app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 // ==================== Session Cleanup ====================
 setInterval(async () => {
@@ -2162,7 +2087,14 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔐 SECRET GATEWAY (FIXED):');
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
-    console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
+    console.log('🔑 Secret Key: @somu93370899 (to reveal the login screen)');
     console.log('💾 Save Login: Remember Me (7 days auto-login)');
+    console.log('═══════════════════════════════════════════');
+    console.log('✅ FIXED: Rate Limiter error (X-Forwarded-For)');
+    console.log('✅ FIXED: 24h Graph Data (No more flat lines)');
+    console.log('✅ FIXED: Analytics 60m filter (Now shows correct data)');
+    console.log('✅ FIXED: Live Visitors Claims added');
+    console.log('✅ FIXED: Detailed Analysis Graph (Trading View style)');
+    console.log('✅ FIXED: Graph buttons color change on click');
     console.log('═══════════════════════════════════════════');
 });

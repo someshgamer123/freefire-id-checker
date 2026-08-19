@@ -22,10 +22,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    // ✅ NEW: Secret Key (Default: admin@2024)
+    // ✅ NEW: Secret Key (Default: @somu93370899)
     secretKey: {
         type: String,
-        default: 'admin@2024'
+        default: '@somu93370899'
     },
     // ✅ NEW: Remember Token for Save Login
     rememberToken: {
