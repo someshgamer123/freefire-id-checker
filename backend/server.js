@@ -198,7 +198,6 @@ const deviceAuthLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
-app.use(express.static('.'));
 
 // ==================== JWT & Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
@@ -1653,13 +1652,7 @@ app.get('/api/admin/block-status', async (req, res) => {
 });
 
 // ==================== Admin Panel Protection Middleware ====================
-// NOTE: This middleware is placed AFTER the secret gateway route
 app.use('/admin', async (req, res, next) => {
-    // Skip if the user is accessing the secret gateway
-    if (req.path === '/secret-gateway' || req.path === '/login.html') {
-        return next();
-    }
-    
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
     if (isFromVisitorLink && !req.cookies?.adminToken) {
@@ -1766,7 +1759,7 @@ app.get('/blocked', (req, res) => {
     `);
 });
 
-// ==================== SHORT LINK ROUTES ====================
+// ==================== SHORT LINK ROUTES (FIXED) ====================
 
 // GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
@@ -1846,23 +1839,29 @@ app.get('/s/:code', async (req, res) => {
             referer: req.headers.referer || null
         });
         
-        // ✅ FIXED: Deep Link App Open Mode (Mobile Only)
+        // ✅ FIXED: Deep Link App Open Mode
         if (link.appOpen) {
+            // Use Universal Link / Deep Link scheme
+            const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
+            const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.yourapp.package';
+            const appStoreUrl = 'https://apps.apple.com/app/your-app-id';
+            
+            // Detect mobile vs desktop
             const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+            
             if (isMobile) {
-                // Use custom scheme for deep linking
-                const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
+                // Mobile - Try to open app, fallback to store
                 res.send(`
                     <html>
                     <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <script>
-                            // Try to open app via deep link
+                            // Try to open app
                             window.location.href = '${appScheme}';
-                            // Fallback to web after 1.5 seconds
+                            // Fallback to web after 1 second
                             setTimeout(function() {
                                 window.location.href = '${link.originalUrl}';
-                            }, 1500);
+                            }, 1000);
                         </script>
                     </head>
                     <body>
@@ -2027,72 +2026,9 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Serve Pages ====================
-
-// ✅ Step 1: Serve Secret Gateway FIRST (before any middleware)
-app.get('/admin/secret-gateway', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
-});
-
-// ✅ Step 2: Serve Login Page (with referer validation)
-app.get('/admin/login.html', (req, res) => {
-    const referer = req.headers.referer || '';
-    const isFromGateway = referer.includes('/admin/secret-gateway');
-    const token = req.cookies?.adminToken;
-    const rememberToken = req.cookies?.rememberToken;
-    
-    if (token || rememberToken || isFromGateway) {
-        res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
-    } else {
-        // Redirect to fake 404 if accessed directly
-        res.redirect('/admin/secret-gateway');
-    }
-});
-
-// ✅ Step 3: Serve Admin Dashboard (with auth check)
-app.get('/admin/index.html', (req, res) => {
-    const token = req.cookies?.adminToken;
-    const rememberToken = req.cookies?.rememberToken;
-    if (token) {
-        const decoded = verifyToken(token);
-        if (decoded) {
-            return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-        }
-    }
-    if (rememberToken) {
-        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-    }
-    res.redirect('/admin/secret-gateway');
-});
-
-// ✅ Step 4: All other pages
-app.get('/uid', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
-});
-
-app.get('/v/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'video-lock.html'));
-});
-
-app.get('/user-dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
-});
-
-app.get('/user-dashboard/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
-});
-
-app.get('/manifest.json', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'manifest.json'));
-});
-
-app.get('/sw.js', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'sw.js'));
-});
-
-app.get('/', (req, res) => {
-    res.redirect('/admin/secret-gateway');
-});
+// ==================== SERVE STATIC FILES (MOVED TO LAST) ====================
+// ✅ IMPORTANT: express.static must be LAST to prevent direct file access
+app.use(express.static('.'));
 
 // ==================== Session Cleanup ====================
 setInterval(async () => {
