@@ -1760,7 +1760,7 @@ app.get('/blocked', (req, res) => {
     `);
 });
 
-// ==================== SHORT LINK ROUTES (UPDATED) ====================
+// ==================== SHORT LINK ROUTES (FIXED) ====================
 
 // GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
@@ -1840,34 +1840,44 @@ app.get('/s/:code', async (req, res) => {
             referer: req.headers.referer || null
         });
         
-        // ✅ NEW: App Open Mode - Redirect to deep link scheme if enabled
+        // ✅ FIXED: Deep Link App Open Mode
         if (link.appOpen) {
-            // Try to open app via deep link (custom scheme)
-            // You can customize this scheme as per your app
+            // Use Universal Link / Deep Link scheme
             const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
-            // Redirect to app scheme, fallback to web
-            res.send(`
-                <html>
-                <head>
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <script>
-                        // Try to open app
-                        window.location.href = '${appScheme}';
-                        // Fallback to web after 1 second
-                        setTimeout(function() {
-                            window.location.href = '${link.originalUrl}';
-                        }, 1000);
-                    </script>
-                </head>
-                <body>
-                    <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f1117;color:#e2e8f0;font-family:Inter,sans-serif;flex-direction:column;text-align:center;">
-                        <div style="font-size:40px;">📱</div>
-                        <h2>Opening App...</h2>
-                        <p style="color:#94a3b8;">If the app doesn't open, you will be redirected to the web version.</p>
-                    </div>
-                </body>
-                </html>
-            `);
+            const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.yourapp.package';
+            const appStoreUrl = 'https://apps.apple.com/app/your-app-id';
+            
+            // Detect mobile vs desktop
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+            
+            if (isMobile) {
+                // Mobile - Try to open app, fallback to store
+                res.send(`
+                    <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <script>
+                            // Try to open app
+                            window.location.href = '${appScheme}';
+                            // Fallback to web after 1 second
+                            setTimeout(function() {
+                                window.location.href = '${link.originalUrl}';
+                            }, 1000);
+                        </script>
+                    </head>
+                    <body>
+                        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f1117;color:#e2e8f0;font-family:Inter,sans-serif;flex-direction:column;text-align:center;">
+                            <div style="font-size:40px;">📱</div>
+                            <h2>Opening App...</h2>
+                            <p style="color:#94a3b8;">If the app doesn't open, you will be redirected to the web version.</p>
+                        </div>
+                    </body>
+                    </html>
+                `);
+            } else {
+                // Desktop - Just redirect normally
+                res.redirect(link.originalUrl);
+            }
         } else {
             // Normal redirect
             res.redirect(link.originalUrl);
@@ -2017,20 +2027,31 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Serve Pages ====================
+// ==================== Serve Pages (FIXED ORDER) ====================
 
-// ✅ Serve the fake 404 page as the new admin gateway
-app.get('/admin/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
-});
-
-// 👉 Hide the real login behind a secret gateway
+// ✅ Step 1: Serve Secret Gateway FIRST (before login.html)
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
+// ✅ Step 2: Serve Login Page (but only if accessed via secret gateway)
+app.get('/admin/login.html', (req, res) => {
+    // Check if user came from secret gateway or has valid session
+    const referer = req.headers.referer || '';
+    const isFromGateway = referer.includes('/admin/secret-gateway');
+    const token = req.cookies?.adminToken;
+    const rememberToken = req.cookies?.rememberToken;
+    
+    if (token || rememberToken || isFromGateway) {
+        res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+    } else {
+        // Redirect to fake 404 if accessed directly
+        res.redirect('/admin/secret-gateway');
+    }
+});
+
+// ✅ Step 3: Serve Admin Dashboard (with auth check)
 app.get('/admin/index.html', (req, res) => {
-    // Check if user is authenticated
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
     if (token) {
@@ -2039,15 +2060,13 @@ app.get('/admin/index.html', (req, res) => {
             return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
         }
     }
-    // Check remember token
     if (rememberToken) {
-        // Validate remember token (simplified check)
         return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
     }
-    // Redirect to fake 404 gateway
     res.redirect('/admin/secret-gateway');
 });
 
+// ✅ Step 4: All other pages
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -2128,10 +2147,10 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
     console.log('═══════════════════════════════════════════');
     console.log('🔗 NEW SHORT LINK FEATURES:');
-    console.log('📱 App Open Mode: Enable/Disable deep link redirection');
+    console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
     console.log('📅 Schedule Expiry: Set expiry date for short links');
     console.log('═══════════════════════════════════════════');
-    console.log('🔐 SECRET GATEWAY:');
+    console.log('🔐 SECRET GATEWAY (FIXED):');
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
     console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
     console.log('💾 Save Login: Remember Me (7 days auto-login)');
