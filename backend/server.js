@@ -1916,7 +1916,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Serve Pages (FIXED ORDER) ====================
+// ==================== Serve Pages (FIXED ORDER - NO MIDDLEWARE INTERFERENCE) ====================
 
 // ✅ Step 1: Serve Secret Gateway FIRST (before any /admin middleware)
 app.get('/admin/secret-gateway', (req, res) => {
