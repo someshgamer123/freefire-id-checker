@@ -162,6 +162,9 @@ app.use(helmet({
     hidePoweredBy: true
 }));
 
+// ✅ FIXED: Enable trust proxy for Render and proper rate limiting
+app.set('trust proxy', 1);
+
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001', 'https://freefire-id-checker.onrender.com'],
     credentials: true,
@@ -169,18 +172,22 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
+// ==================== Rate Limiting (FIXED) ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
-    message: 'Too many requests, please try again later.'
+    message: 'Too many requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false
 });
 app.use('/api', globalLimiter);
 
+// ✅ FIXED: Device-based Rate Limiter (Fingerprint based)
 const deviceAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: MAX_LOGIN_ATTEMPTS,
     keyGenerator: (req) => {
+        // Use IP + User-Agent fingerprint instead of just IP
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
@@ -192,12 +199,15 @@ const deviceAuthLimiter = rateLimit({
         const userAgent = req.headers['user-agent'] || 'unknown';
         const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
         return fingerprint === admin?.fingerprint;
-    }
+    },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(express.static('.'));
 
 // ==================== JWT & Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
@@ -1374,11 +1384,12 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const hourKey = now.toISOString().substring(0, 13);
         let hourlyVisitsData = {};
         let hourlyClaimsData = {};
-        for (let i = 0; i < 24; i++) {
+        // ✅ FIXED: Get 24 hours data
+        for (let i = 23; i >= 0; i--) {
             const pastHour = new Date(now.getTime() - i * 60 * 60 * 1000);
             const key = pastHour.toISOString().substring(0, 13);
-            hourlyVisitsData[key] = hourlyVisitors.get(key) || 0;
-            hourlyClaimsData[key] = hourlyClaims.get(key) || 0;
+            hourlyVisitsData[pastHour.toISOString().substring(11, 16)] = hourlyVisitors.get(key) || 0;
+            hourlyClaimsData[pastHour.toISOString().substring(11, 16)] = hourlyClaims.get(key) || 0;
         }
         const minuteKey = now.toISOString().substring(0, 16);
         globalVisits1m = minuteVisitors.get(minuteKey) || 0;
@@ -1841,16 +1852,24 @@ app.get('/s/:code', async (req, res) => {
         
         // ✅ FIXED: Deep Link App Open Mode
         if (link.appOpen) {
+            // Use Universal Link / Deep Link scheme
             const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
+            const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.yourapp.package';
+            const appStoreUrl = 'https://apps.apple.com/app/your-app-id';
+            
+            // Detect mobile vs desktop
             const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
             
             if (isMobile) {
+                // Mobile - Try to open app, fallback to store
                 res.send(`
                     <html>
                     <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <script>
+                            // Try to open app
                             window.location.href = '${appScheme}';
+                            // Fallback to web after 1 second
                             setTimeout(function() {
                                 window.location.href = '${link.originalUrl}';
                             }, 1000);
@@ -1866,9 +1885,11 @@ app.get('/s/:code', async (req, res) => {
                     </html>
                 `);
             } else {
+                // Desktop - Just redirect normally
                 res.redirect(link.originalUrl);
             }
         } else {
+            // Normal redirect
             res.redirect(link.originalUrl);
         }
     } catch (error) {
@@ -2016,14 +2037,16 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== SERVE PAGES (NO express.static) ====================
-// ✅ CRITICAL FIX: We do NOT use express.static() to prevent direct file access
+// ==================== Serve Pages (FIXED ORDER) ====================
 
+// ✅ Step 1: Serve Secret Gateway FIRST (before login.html)
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
+// ✅ Step 2: Serve Login Page (but only if accessed via secret gateway)
 app.get('/admin/login.html', (req, res) => {
+    // Check if user came from secret gateway or has valid session
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
@@ -2032,10 +2055,12 @@ app.get('/admin/login.html', (req, res) => {
     if (token || rememberToken || isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
+        // Redirect to fake 404 if accessed directly
         res.redirect('/admin/secret-gateway');
     }
 });
 
+// ✅ Step 3: Serve Admin Dashboard (with auth check)
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
@@ -2051,6 +2076,7 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
+// ✅ Step 4: All other pages
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
