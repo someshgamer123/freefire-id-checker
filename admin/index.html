@@ -625,7 +625,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: URL SHORTENER (NEW) ===== -->
+        <!-- ===== SECTION: URL SHORTENER ===== -->
         <div class="section" id="section-shortener">
             <!-- Mini Dashboard Stats -->
             <div class="card">
@@ -643,6 +643,28 @@
                 <h3>➕ Create Short Link</h3>
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
+                
+                <!-- ✅ NEW: App Open Mode Toggle -->
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                    <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
+                    <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
+                        <input type="checkbox" id="shortAppOpen" style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#2d3138;transition:.4s;border-radius:20px;" id="appToggleSlider"></span>
+                        <style>
+                            .switch input:checked + span { background: #6366f1; }
+                            .switch span:before { position:absolute;content:"";height:16px;width:16px;left:2px;bottom:2px;background:white;transition:.4s;border-radius:50%; }
+                            .switch input:checked + span:before { transform:translateX(20px); }
+                        </style>
+                    </label>
+                    <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
+                </div>
+                
+                <!-- ✅ NEW: Schedule Expiry -->
+                <div style="margin-top:8px;">
+                    <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
+                    <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
+                </div>
+                
                 <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:12px;">🚀 Generate Short Link</button>
                 <div class="generated-link" id="shortGeneratedLink">
                     <div class="link-label">✅ Short Link Generated!</div>
@@ -1571,7 +1593,6 @@
             });
             
             var uniqueDays = Object.keys(result.dailyData).length;
-            // ✅ FIXED: Unique data now fluctuates based on actual daily data
             result.uniqueVisitors = Math.round(result.totalVisits / (uniqueDays || 1) * 0.8);
             result.uniqueClaims = Math.round(result.totalClaims / (uniqueDays || 1) * 0.8);
             
@@ -1596,7 +1617,6 @@
                 visitsData = dates.map(d => data.dailyData[d].visits);
                 claimsData = dates.map(d => data.dailyData[d].claims);
             } else {
-                // ✅ FIXED: Unique data now fluctuates based on actual daily data
                 var uniqueVisits = dates.map(d => Math.round(data.dailyData[d].visits * 0.8));
                 var uniqueClaims = dates.map(d => Math.round(data.dailyData[d].claims * 0.8));
                 visitsData = uniqueVisits;
@@ -1689,7 +1709,6 @@
                 visitsData = displayDates.map(d => dailyVisitors[d] || 0);
                 claimsData = displayDates.map(d => dailyClaims[d] || 0);
             } else {
-                // ✅ FIXED: 24h graph shows hourly data
                 var hourlyKeys = Object.keys(hourlyVisitors).slice(-24);
                 displayDates = hourlyKeys.map(k => k.substring(11, 16));
                 visitsData = hourlyKeys.map(k => hourlyVisitors[k] || 0);
@@ -1697,7 +1716,6 @@
             }
             
             if (dashboardDataType === 'unique') {
-                // ✅ FIXED: Unique data now fluctuates based on actual data
                 var uniqueVisits = visitsData.map(v => Math.round(v * 0.8));
                 var uniqueClaims = claimsData.map(c => Math.round(c * 0.8));
                 visitsData = uniqueVisits;
@@ -2301,11 +2319,18 @@
             }
             
             var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
+            var appOpen = document.getElementById('shortAppOpen').checked;
+            var expiryDate = document.getElementById('shortExpiryDate').value;
             
             try {
                 var r = await secureFetch('/api/short-links', {
                     method: 'POST',
-                    body: JSON.stringify({ originalUrl: url, title: title })
+                    body: JSON.stringify({ 
+                        originalUrl: url, 
+                        title: title,
+                        appOpen: appOpen,
+                        expiryDate: expiryDate || null
+                    })
                 });
                 if (!r) return;
                 var data = await r.json();
@@ -2314,6 +2339,8 @@
                     document.getElementById('shortGeneratedLinkInput').value = data.shortUrl;
                     document.getElementById('shortOriginalUrl').value = '';
                     document.getElementById('shortTitle').value = '';
+                    document.getElementById('shortAppOpen').checked = false;
+                    document.getElementById('shortExpiryDate').value = '';
                     loadShortLinks();
                     loadShortLinkStats();
                     showToast('✅ Short link created!', 'success');
@@ -2442,6 +2469,17 @@
                         <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>📱 Open in App</label>
+                    <select id="shortEditAppOpen">
+                        <option value="true" ${link.appOpen ? 'selected' : ''}>Enabled</option>
+                        <option value="false" ${!link.appOpen ? 'selected' : ''}>Disabled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📅 Expiry Date</label>
+                    <input type="datetime-local" id="shortEditExpiry" value="${link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0,16) : ''}">
+                </div>
                 <div class="form-actions" style="margin-top:15px;">
                     <button onclick="saveShortLinkEdit('${link._id}')" class="btn btn-success">💾 Save Changes</button>
                     <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
@@ -2453,11 +2491,18 @@
         async function saveShortLinkEdit(id) {
             var title = document.getElementById('shortEditTitle').value.trim() || 'Untitled Link';
             var status = document.getElementById('shortEditStatus').value;
+            var appOpen = document.getElementById('shortEditAppOpen').value === 'true';
+            var expiryDate = document.getElementById('shortEditExpiry').value;
             
             try {
                 var r = await secureFetch('/api/short-links/' + id, {
                     method: 'PUT',
-                    body: JSON.stringify({ title: title, status: status })
+                    body: JSON.stringify({ 
+                        title: title, 
+                        status: status,
+                        appOpen: appOpen,
+                        expiryDate: expiryDate || null
+                    })
                 });
                 if (!r) return;
                 var data = await r.json();

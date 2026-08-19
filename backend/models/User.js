@@ -22,6 +22,15 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    // ✅ NEW: Remember Token for Save Login
+    rememberToken: {
+        type: String,
+        default: null
+    },
+    rememberTokenExpiry: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

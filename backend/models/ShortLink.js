@@ -27,6 +27,16 @@ const ShortLinkSchema = new mongoose.Schema({
         enum: ['active', 'disabled'],
         default: 'active'
     },
+    // ✅ NEW: App Open Mode
+    appOpen: {
+        type: Boolean,
+        default: false
+    },
+    // ✅ NEW: Schedule Expiry
+    expiryDate: {
+        type: Date,
+        default: null
+    },
     createdBy: {
         type: String,
         default: 'admin'
@@ -43,5 +53,6 @@ const ShortLinkSchema = new mongoose.Schema({
 
 ShortLinkSchema.index({ code: 1 });
 ShortLinkSchema.index({ createdAt: -1 });
+ShortLinkSchema.index({ expiryDate: 1 });
 
 module.exports = mongoose.model('ShortLink', ShortLinkSchema);

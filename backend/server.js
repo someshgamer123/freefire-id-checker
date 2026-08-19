@@ -26,8 +26,6 @@ const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
 const BlockedDevice = require('./models/BlockedDevice');
 const OTPVerification = require('./models/OTPVerification');
-
-// ==================== NEW: Short Link Models ====================
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
@@ -277,7 +275,6 @@ async function logAdminAction(userId, action, details = {}, req = null) {
 // ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
-    
     const blocked = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }],
         $or: [
@@ -285,7 +282,6 @@ async function isDeviceBlocked(req) {
             { isPermanent: true }
         ]
     });
-    
     return blocked;
 }
 
@@ -293,23 +289,18 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
-    
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
-    
     if (fingerprint === adminFingerprint) {
         console.log('⚠️ Skipping block for admin device');
         return null;
     }
-    
     let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
-    
     if (record) {
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
         record.deviceType = deviceType;
-        
         record.loginHistory.push({
             ip,
             deviceName,
@@ -317,7 +308,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             success: false,
             reason: reason
         });
-        
         if (record.attempts >= 5 && record.attempts < 10) {
             record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 48 hours';
@@ -332,7 +322,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             record.reason = 'Permanent ban due to repeated malicious attempts';
             console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
         }
-        
         await record.save();
         return record;
     } else {
@@ -361,25 +350,20 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
 async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
-    
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
-    
     if (fingerprint === adminFingerprint) {
         console.log('⚠️ Skipping attempt tracking for admin device');
         return;
     }
-    
     const record = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }]
     });
-    
     if (record) {
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
         record.deviceType = deviceType;
-        
         record.loginHistory.push({
             ip,
             deviceName,
@@ -387,7 +371,6 @@ async function incrementDeviceAttempts(req) {
             success: false,
             reason: 'Failed login attempt'
         });
-        
         if (record.attempts >= 5 && record.attempts < 10) {
             record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 48 hours';
@@ -403,7 +386,6 @@ async function incrementDeviceAttempts(req) {
             record.reason = 'Permanent ban due to repeated malicious attempts';
             console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED`);
         }
-        
         await record.save();
     } else {
         await BlockedDevice.create({
@@ -507,34 +489,27 @@ async function authMiddleware(req, res, next) {
             });
         }
     }
-
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
-    
     if (!token) return res.status(401).json({ error: 'Authentication required' });
-    
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-    
     const session = await validateSession(token);
     if (!session) {
         res.clearCookie('adminToken');
         return res.status(401).json({ error: 'Session expired. Please login again.' });
     }
-    
     if (csrfToken !== session.csrfToken) {
         await logAdminAction('admin', 'CSRF_ATTEMPT', { token }, req);
         await incrementDeviceAttempts(req);
         return res.status(403).json({ error: 'Invalid CSRF token' });
     }
-    
     const { ip } = getDeviceId(req);
     if (!Security.isIPWhitelisted(ip, IP_WHITELIST)) {
         await logAdminAction('admin', 'IP_BLOCKED', { ip }, req);
         await blockDevice(req, 'IP not whitelisted', 48 * 60);
         return res.status(403).json({ error: 'Access denied from this IP address' });
     }
-    
     req.user = decoded;
     req.session = session;
     next();
@@ -892,10 +867,10 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
-// ==================== ADMIN LOGIN (WITH OTP VERIFICATION) ====================
+// ==================== ADMIN LOGIN (WITH OTP VERIFICATION + SAVE LOGIN) ====================
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
-        const { passcode, otp, step } = req.body;
+        const { passcode, otp, step, rememberMe } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
@@ -922,18 +897,14 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             if (!passcode) {
                 return res.status(400).json({ error: 'Passcode required' });
             }
-            
             const admin = await User.findOne();
             if (!admin) {
                 return res.status(500).json({ error: 'Admin not found' });
             }
-            
             const isValid = bcrypt.compareSync(passcode, admin.passcode);
-            
             if (!isValid) {
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip, deviceName: deviceName }, req);
-                
                 const deviceRecord = await BlockedDevice.findOne({ 
                     $or: [{ fingerprint }, { ip }] 
                 });
@@ -941,34 +912,25 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                     await blockDevice(req, 'Too many failed passcode attempts', 48 * 60);
                     console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked`);
                 }
-                
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
-            
-            // ✅ Check if email is configured
             if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
-                // OTP enabled
                 const otpCode = generateOTP();
                 const adminEmail = admin.email || '';
-                
                 let sent = false;
                 let method = 'email';
                 let contact = adminEmail;
-                
                 if (adminEmail && transporter) {
                     sent = await sendOTPEmail(adminEmail, otpCode);
                     method = 'email';
                     contact = adminEmail;
                 }
-                
                 if (!sent) {
                     return res.status(500).json({ 
                         error: 'Unable to send OTP. Please configure email settings.' 
                     });
                 }
-                
                 await saveOTP(fingerprint, otpCode, method, contact);
-                
                 return res.json({
                     success: false,
                     step: 'otp',
@@ -977,13 +939,11 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                     contact: contact.replace(/(.{3})(.*)(.{2})/, '$1****$3')
                 });
             } else {
-                // ✅ DIRECT LOGIN - NO OTP REQUIRED
                 console.log('⚠️ OTP disabled or email not configured - Direct login allowed');
                 const jwtToken = generateToken('admin');
                 const csrfToken = generateCSRFToken();
                 await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
                 await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
-                
                 res.cookie('adminToken', jwtToken, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production' || true,
@@ -991,7 +951,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                     maxAge: 7 * 24 * 60 * 60 * 1000,
                     path: '/'
                 });
-                
                 return res.json({
                     success: true,
                     csrfToken: csrfToken,
@@ -1005,7 +964,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             if (!otp || otp.length !== 6) {
                 return res.status(400).json({ error: 'Valid 6-digit OTP required' });
             }
-            
             const verified = await verifyOTP(fingerprint, otp);
             if (!verified) {
                 await incrementDeviceAttempts(req);
@@ -1018,18 +976,14 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 }
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
-            
-            // Remove temporary block if any
             await BlockedDevice.findOneAndDelete({ 
                 $or: [{ fingerprint }, { ip }],
                 isPermanent: false 
             });
-            
             const jwtToken = generateToken('admin');
             const csrfToken = generateCSRFToken();
             await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
             await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
-            
             res.cookie('adminToken', jwtToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production' || true,
@@ -1037,6 +991,24 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 path: '/'
             });
+            
+            // ✅ NEW: Save Login (Remember Me)
+            if (rememberMe) {
+                const admin = await User.findOne();
+                if (admin) {
+                    const rememberToken = crypto.randomBytes(64).toString('hex');
+                    admin.rememberToken = rememberToken;
+                    admin.rememberTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                    await admin.save();
+                    res.cookie('rememberToken', rememberToken, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production' || true,
+                        sameSite: 'lax',
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                        path: '/'
+                    });
+                }
+            }
             
             return res.json({
                 success: true,
@@ -1058,6 +1030,14 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
         if (token) {
             await invalidateSession(token);
             await logAdminAction('admin', 'LOGOUT', {}, req);
+        }
+        // Clear remember token
+        res.clearCookie('rememberToken');
+        const admin = await User.findOne();
+        if (admin) {
+            admin.rememberToken = null;
+            admin.rememberTokenExpiry = null;
+            await admin.save();
         }
         res.clearCookie('adminToken');
         res.json({ success: true });
@@ -1081,10 +1061,13 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
             return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
         admin.passcode = bcrypt.hashSync(newPasscode, 10);
+        admin.rememberToken = null;
+        admin.rememberTokenExpiry = null;
         await admin.save();
         await invalidateAllSessions('admin');
         await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
         res.clearCookie('adminToken');
+        res.clearCookie('rememberToken');
         res.json({ success: true, message: 'Passcode changed. Please login again.' });
     } catch (error) {
         console.error('❌ Passcode change error:', error);
@@ -1327,11 +1310,9 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        
         const linkStats = links.map(link => {
             const dailyVisitsMap = link.dailyVisits || new Map();
             const dailyClaimsMap = link.dailyClaims || new Map();
-            
             let visits24h = 0;
             let claims24h = 0;
             for (const [date, count] of dailyVisitsMap) {
@@ -1342,7 +1323,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 const d = new Date(date);
                 if (d >= oneDayAgo) claims24h += count;
             }
-            
             let visits60m = 0;
             let claims60m = 0;
             for (const [date, count] of dailyVisitsMap) {
@@ -1353,7 +1333,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 const d = new Date(date);
                 if (d >= oneHourAgo) claims60m += count;
             }
-            
             return {
                 id: link.id,
                 name: link.name,
@@ -1371,22 +1350,18 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 expiryDate: link.expiryDate || null
             };
         });
-        
-        // Global stats
         const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
         const dailyClaimsGlobal = stats?.dailyClaims || new Map();
         const hourlyVisitors = stats?.hourlyVisitors || new Map();
         const hourlyClaims = stats?.hourlyClaims || new Map();
         const minuteVisitors = stats?.minuteVisitors || new Map();
         const minuteClaims = stats?.minuteClaims || new Map();
-        
         let globalVisits24h = 0;
         let globalClaims24h = 0;
         let globalVisits60m = 0;
         let globalClaims60m = 0;
         let globalVisits1m = 0;
         let globalClaims1m = 0;
-        
         for (const [date, count] of dailyVisitorsGlobal) {
             const d = new Date(date);
             if (d >= oneDayAgo) globalVisits24h += count;
@@ -1397,9 +1372,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
         }
-        
-        // ✅ FIXED: Hourly data for 24h graph
-        const hourKey = now.toISOString().substring(0, 13); // YYYY-MM-DDTHH
+        const hourKey = now.toISOString().substring(0, 13);
         let hourlyVisitsData = {};
         let hourlyClaimsData = {};
         for (let i = 0; i < 24; i++) {
@@ -1408,11 +1381,9 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             hourlyVisitsData[key] = hourlyVisitors.get(key) || 0;
             hourlyClaimsData[key] = hourlyClaims.get(key) || 0;
         }
-        
         const minuteKey = now.toISOString().substring(0, 16);
         globalVisits1m = minuteVisitors.get(minuteKey) || 0;
         globalClaims1m = minuteClaims.get(minuteKey) || 0;
-        
         let activeNow = 0;
         for (let i = 0; i < 5; i++) {
             const pastMinute = new Date(now.getTime() - i * 60 * 1000);
@@ -1421,7 +1392,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         }
         activeNow = Math.round(activeNow / 5);
         if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 12));
-        
         res.json({
             global: {
                 totalVisitors: stats?.totalVisitors || 0,
@@ -1534,10 +1504,8 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
         const { email, phone } = req.body;
         const admin = await User.findOne();
         if (!admin) return res.status(500).json({ error: 'Admin not found' });
-        
         if (email !== undefined) admin.email = email;
         if (phone !== undefined) admin.phone = phone;
-        
         await admin.save();
         await logAdminAction('admin', 'UPDATE_CONTACT', { email, phone }, req);
         res.json({ success: true, email: admin.email, phone: admin.phone });
@@ -1548,8 +1516,6 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 });
 
 // ==================== DEVICE MANAGEMENT ROUTES ====================
-
-// GET: Get all blocked devices with login history
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1558,49 +1524,35 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
                 { isPermanent: true }
             ]
         }).sort({ lastAttempt: -1 });
-        
-        res.json({
-            success: true,
-            devices,
-            count: devices.length
-        });
+        res.json({ success: true, devices, count: devices.length });
     } catch (error) {
         console.error('❌ Blocked devices error:', error);
         res.status(500).json({ error: 'Failed to fetch blocked devices' });
     }
 });
 
-// GET: Get all active login sessions
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
         const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
-        res.json({
-            success: true,
-            sessions,
-            count: sessions.length
-        });
+        res.json({ success: true, sessions, count: sessions.length });
     } catch (error) {
         console.error('❌ Active sessions error:', error);
         res.status(500).json({ error: 'Failed to fetch active sessions' });
     }
 });
 
-// POST: Permanently ban a device
 app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { reason } = req.body;
-        
         const device = await BlockedDevice.findById(id);
         if (!device) {
             return res.status(404).json({ error: 'Device not found' });
         }
-        
         device.isPermanent = true;
         device.permanentBlockedAt = new Date();
         device.reason = reason || 'Permanently banned by admin';
         await device.save();
-        
         await logAdminAction('admin', 'PERMANENT_BAN_DEVICE', { 
             deviceId: id, 
             fingerprint: device.fingerprint,
@@ -1608,56 +1560,40 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
             deviceName: device.deviceName,
             reason: device.reason
         }, req);
-        
-        res.json({
-            success: true,
-            message: 'Device permanently banned!',
-            device
-        });
+        res.json({ success: true, message: 'Device permanently banned!', device });
     } catch (error) {
         console.error('❌ Permanent ban error:', error);
         res.status(500).json({ error: 'Failed to ban device' });
     }
 });
 
-// POST: Unblock a device (permanent or temporary)
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        
         const device = await BlockedDevice.findById(id);
         if (!device) {
             return res.status(404).json({ error: 'Device not found' });
         }
-        
         device.unblockedAt = new Date();
         device.isPermanent = false;
         device.blockedUntil = null;
         await device.save();
-        
         await logAdminAction('admin', 'UNBLOCK_DEVICE', { 
             deviceId: id, 
             fingerprint: device.fingerprint,
             ip: device.ip,
             deviceName: device.deviceName
         }, req);
-        
-        res.json({
-            success: true,
-            message: 'Device unblocked successfully!',
-            device
-        });
+        res.json({ success: true, message: 'Device unblocked successfully!', device });
     } catch (error) {
         console.error('❌ Unblock error:', error);
         res.status(500).json({ error: 'Failed to unblock device' });
     }
 });
 
-// DELETE: Remove a device from blocked list
 app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        
         const device = await BlockedDevice.findById(id);
         if (device) {
             await logAdminAction('admin', 'DELETE_DEVICE_RECORD', { 
@@ -1667,20 +1603,14 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
                 deviceName: device.deviceName
             }, req);
         }
-        
         await BlockedDevice.findByIdAndDelete(id);
-        
-        res.json({
-            success: true,
-            message: 'Device record deleted!'
-        });
+        res.json({ success: true, message: 'Device record deleted!' });
     } catch (error) {
         console.error('❌ Delete device error:', error);
         res.status(500).json({ error: 'Failed to delete device' });
     }
 });
 
-// GET: Check device block status
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
@@ -1691,7 +1621,6 @@ app.get('/api/admin/block-status', async (req, res) => {
                 { isPermanent: true }
             ]
         });
-        
         if (blocked) {
             if (blocked.isPermanent) {
                 res.json({
@@ -1727,7 +1656,6 @@ app.get('/api/admin/block-status', async (req, res) => {
 app.use('/admin', async (req, res, next) => {
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
-    
     if (isFromVisitorLink && !req.cookies?.adminToken) {
         const { deviceName } = getDeviceDetails(req);
         await blockDevice(req, 'Unauthorized admin access from visitor link', 48 * 60);
@@ -1832,12 +1760,13 @@ app.get('/blocked', (req, res) => {
     `);
 });
 
-// ==================== SHORT LINK ROUTES ====================
+// ==================== SHORT LINK ROUTES (UPDATED) ====================
+
 // GET: Redirect short link to original URL (Public)
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
-        const link = await ShortLink.findOne({ code, status: 'active' });
+        const link = await ShortLink.findOne({ code });
         
         if (!link) {
             return res.status(404).send(`
@@ -1845,7 +1774,34 @@ app.get('/s/:code', async (req, res) => {
                 <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;text-align:center;padding:20px;">
                     <div style="font-size:60px;">🔗</div>
                     <h1 style="color:#ef4444;">Link Not Found</h1>
-                    <p style="color:#94a3b8;">The short link you are looking for does not exist or has been disabled.</p>
+                    <p style="color:#94a3b8;">The short link you are looking for does not exist.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        // Check expiry
+        if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
+            link.status = 'disabled';
+            await link.save();
+            return res.status(403).send(`
+                <html>
+                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;text-align:center;padding:20px;">
+                    <div style="font-size:60px;">⌛</div>
+                    <h1 style="color:#f59e0b;">Link Expired</h1>
+                    <p style="color:#94a3b8;">This short link has expired on ${new Date(link.expiryDate).toLocaleString()}.</p>
+                </body>
+                </html>
+            `);
+        }
+        
+        if (link.status !== 'active') {
+            return res.status(403).send(`
+                <html>
+                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;text-align:center;padding:20px;">
+                    <div style="font-size:60px;">🚫</div>
+                    <h1 style="color:#ef4444;">Link Disabled</h1>
+                    <p style="color:#94a3b8;">This short link has been disabled by the admin.</p>
                 </body>
                 </html>
             `);
@@ -1884,7 +1840,38 @@ app.get('/s/:code', async (req, res) => {
             referer: req.headers.referer || null
         });
         
-        res.redirect(link.originalUrl);
+        // ✅ NEW: App Open Mode - Redirect to deep link scheme if enabled
+        if (link.appOpen) {
+            // Try to open app via deep link (custom scheme)
+            // You can customize this scheme as per your app
+            const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
+            // Redirect to app scheme, fallback to web
+            res.send(`
+                <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <script>
+                        // Try to open app
+                        window.location.href = '${appScheme}';
+                        // Fallback to web after 1 second
+                        setTimeout(function() {
+                            window.location.href = '${link.originalUrl}';
+                        }, 1000);
+                    </script>
+                </head>
+                <body>
+                    <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f1117;color:#e2e8f0;font-family:Inter,sans-serif;flex-direction:column;text-align:center;">
+                        <div style="font-size:40px;">📱</div>
+                        <h2>Opening App...</h2>
+                        <p style="color:#94a3b8;">If the app doesn't open, you will be redirected to the web version.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+        } else {
+            // Normal redirect
+            res.redirect(link.originalUrl);
+        }
     } catch (error) {
         console.error('❌ Short link redirect error:', error);
         res.status(500).send('Server error');
@@ -1908,14 +1895,10 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
         const { id } = req.params;
         const link = await ShortLink.findById(id);
         if (!link) return res.status(404).json({ error: 'Link not found' });
-        
         const clicks = await ShortLinkClick.find({ shortLinkId: id }).sort({ timestamp: -1 }).limit(100);
-        
-        // Calculate 24h clicks
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const clicks24h = clicks.filter(c => c.timestamp >= oneDayAgo).length;
-        
         res.json({
             success: true,
             link,
@@ -1933,20 +1916,15 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
 // POST: Create a new short link (Admin)
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     try {
-        const { originalUrl, title } = req.body;
-        
+        const { originalUrl, title, appOpen, expiryDate } = req.body;
         if (!originalUrl) {
             return res.status(400).json({ error: 'Original URL is required' });
         }
-        
-        // Validate URL
         try {
             new URL(originalUrl);
         } catch (e) {
             return res.status(400).json({ error: 'Invalid URL format' });
         }
-        
-        // Generate unique short code
         let code = '';
         let isUnique = false;
         while (!isUnique) {
@@ -1954,18 +1932,16 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
             const existing = await ShortLink.findOne({ code });
             if (!existing) isUnique = true;
         }
-        
         const link = new ShortLink({
             code,
             originalUrl,
             title: title || 'Untitled Link',
+            appOpen: appOpen || false,
+            expiryDate: expiryDate || null,
             createdBy: 'admin'
         });
-        
         await link.save();
-        
-        await logAdminAction('admin', 'CREATE_SHORT_LINK', { code, originalUrl }, req);
-        
+        await logAdminAction('admin', 'CREATE_SHORT_LINK', { code, originalUrl, appOpen, expiryDate }, req);
         res.json({
             success: true,
             link,
@@ -1981,19 +1957,17 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, status } = req.body;
-        
+        const { title, status, appOpen, expiryDate } = req.body;
         const link = await ShortLink.findById(id);
         if (!link) return res.status(404).json({ error: 'Link not found' });
-        
         if (title !== undefined) link.title = title;
         if (status !== undefined && ['active', 'disabled'].includes(status)) {
             link.status = status;
         }
-        
+        if (appOpen !== undefined) link.appOpen = appOpen;
+        if (expiryDate !== undefined) link.expiryDate = expiryDate;
         await link.save();
-        await logAdminAction('admin', 'UPDATE_SHORT_LINK', { id, title, status }, req);
-        
+        await logAdminAction('admin', 'UPDATE_SHORT_LINK', { id, title, status, appOpen, expiryDate }, req);
         res.json({ success: true, link });
     } catch (error) {
         console.error('❌ Short link update error:', error);
@@ -2008,7 +1982,6 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
         const link = await ShortLink.findById(id);
         if (link) {
             await logAdminAction('admin', 'DELETE_SHORT_LINK', { id, code: link.code, title: link.title }, req);
-            // Delete associated clicks
             await ShortLinkClick.deleteMany({ shortLinkId: id });
         }
         await ShortLink.findByIdAndDelete(id);
@@ -2026,12 +1999,9 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
         const activeLinks = await ShortLink.countDocuments({ status: 'active' });
         const totalClicks = await ShortLink.aggregate([{ $group: { _id: null, total: { $sum: '$visits' } } }]);
         const totalClicksCount = totalClicks.length > 0 ? totalClicks[0].total : 0;
-        
-        // 24h clicks
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const clicks24h = await ShortLinkClick.countDocuments({ timestamp: { $gte: oneDayAgo } });
-        
         res.json({
             success: true,
             stats: {
@@ -2048,6 +2018,36 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 });
 
 // ==================== Serve Pages ====================
+
+// ✅ Serve the fake 404 page as the new admin gateway
+app.get('/admin/login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
+});
+
+// 👉 Hide the real login behind a secret gateway
+app.get('/admin/secret-gateway', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
+});
+
+app.get('/admin/index.html', (req, res) => {
+    // Check if user is authenticated
+    const token = req.cookies?.adminToken;
+    const rememberToken = req.cookies?.rememberToken;
+    if (token) {
+        const decoded = verifyToken(token);
+        if (decoded) {
+            return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+        }
+    }
+    // Check remember token
+    if (rememberToken) {
+        // Validate remember token (simplified check)
+        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    }
+    // Redirect to fake 404 gateway
+    res.redirect('/admin/secret-gateway');
+});
+
 app.get('/uid', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'uid-checker.html'));
 });
@@ -2064,14 +2064,6 @@ app.get('/user-dashboard/:id', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'user-dashboard.html'));
 });
 
-app.get('/admin/login.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
-});
-
-app.get('/admin/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-});
-
 app.get('/manifest.json', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'manifest.json'));
 });
@@ -2081,7 +2073,7 @@ app.get('/sw.js', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.redirect('/admin/login.html');
+    res.redirect('/admin/secret-gateway');
 });
 
 // ==================== Session Cleanup ====================
@@ -2089,10 +2081,8 @@ setInterval(async () => {
     try {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} expired sessions`);
-        
         const otpResult = await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
         if (otpResult.deletedCount > 0) console.log(`🧹 Cleaned ${otpResult.deletedCount} expired OTPs`);
-        
         const blockResult = await BlockedDevice.deleteMany({ 
             blockedUntil: { $lt: new Date() },
             isPermanent: false
@@ -2108,7 +2098,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
     console.log('═══════════════════════════════════════════');
-    console.log(`🔧 Admin Panel: http://localhost:${port}/admin/login.html`);
+    console.log(`🔧 Admin Panel: http://localhost:${port}/admin/secret-gateway`);
     console.log(`📊 API: http://localhost:${port}/api/links`);
     console.log(`📊 Stats API: http://localhost:${port}/api/all-stats`);
     console.log('═══════════════════════════════════════════');
@@ -2137,6 +2127,13 @@ app.listen(port, '0.0.0.0', () => {
     console.log('⛔ Progressive Blocking: 48hr → 7 days → Permanent');
     console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
     console.log('═══════════════════════════════════════════');
-    console.log('🔗 NEW FEATURE: URL Shortener added with separate dashboard');
+    console.log('🔗 NEW SHORT LINK FEATURES:');
+    console.log('📱 App Open Mode: Enable/Disable deep link redirection');
+    console.log('📅 Schedule Expiry: Set expiry date for short links');
+    console.log('═══════════════════════════════════════════');
+    console.log('🔐 SECRET GATEWAY:');
+    console.log('🚪 Admin Panel hidden behind a fake 404 page');
+    console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
+    console.log('💾 Save Login: Remember Me (7 days auto-login)');
     console.log('═══════════════════════════════════════════');
 });

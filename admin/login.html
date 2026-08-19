@@ -90,6 +90,18 @@
         .btn-secondary { background: #2d3138; color: #e2e8f0; }
         .btn-secondary:hover { background: #3b3f48; }
         
+        .remember-me {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 10px; justify-content: center;
+            color: #94a3b8; font-size: 13px; cursor: pointer;
+        }
+        .remember-me input[type="checkbox"] {
+            width: 16px; height: 16px;
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+        .remember-me:hover { color: #e2e8f0; }
+        
         .error { color: #ef4444; margin: 10px 0; font-weight: 600; min-height: 24px; font-size: 14px; }
         .error:empty { display: none; }
         .error.success { color: #22c55e; }
@@ -194,6 +206,13 @@
                 <div class="otp-method-info" id="otpMethodInfo">OTP sent to your registered email</div>
                 <button class="resend-btn" id="resendBtn" onclick="resendOTP()">Resend OTP</button>
             </div>
+            
+            <!-- ✅ NEW: Remember Me Checkbox -->
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMe">
+                <label for="rememberMe">💾 Save Login (Remember me for 7 days)</label>
+            </div>
+            
             <button onclick="verifyOTP()" class="btn" id="otpBtn">✅ Verify & Login</button>
             <button onclick="backToPasscode()" class="btn btn-secondary" style="margin-top:8px;">← Back</button>
         </div>
@@ -223,6 +242,7 @@
         var blockReason = document.getElementById('blockReason');
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
+        var rememberMe = document.getElementById('rememberMe');
 
         var currentStep = 'passcode'; // 'passcode' or 'otp'
         var otpSent = false;
@@ -390,6 +410,7 @@
             currentStep = 'passcode';
             loginSubtitle.textContent = 'Enter your passcode';
             otpInput.value = '';
+            rememberMe.checked = false;
         }
 
         function showError(message) {
@@ -544,7 +565,8 @@
                     body: JSON.stringify({ 
                         passcode: passcode, 
                         otp: otp,
-                        step: 'otp'
+                        step: 'otp',
+                        rememberMe: rememberMe.checked
                     })
                 });
 
@@ -680,6 +702,7 @@
         console.log('📱 OTP via Email/SMS');
         console.log('🔒 Strong Password Required');
         console.log('⏰ Session: 7 days');
+        console.log('💾 Save Login: Remember Me enabled');
     </script>
 </body>
 </html>
