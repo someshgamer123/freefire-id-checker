@@ -1714,7 +1714,15 @@ app.get('/api/admin/block-status', async (req, res) => {
 });
 
 // ==================== ADMIN PANEL PROTECTION ====================
+// ✅ IMPORTANT: This middleware should NOT affect public routes
+// It only blocks unauthorized access to /admin/* routes that are NOT already handled
 app.use('/admin', async (req, res, next) => {
+    // Skip if the route is already handled (secret-gateway, login, index)
+    // These are handled by the specific GET routes above
+    if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
+        return next();
+    }
+    
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
     if (isFromVisitorLink && !req.cookies?.adminToken) {
@@ -2051,13 +2059,15 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 
 // ==================== SERVE PAGES ====================
 
-// ✅ FIXED: Secret Gateway - MUST be first before any other /admin routes
-// This ensures secret-gateway.html loads properly
+// ✅ FIXED: Public routes - No auth required
+// These must be defined BEFORE the /admin middleware
+
+// Secret Gateway - Public access
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
-// ✅ FIXED: Login page - Only from secret gateway
+// Login page - Public access (but with referer check)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer && referer.includes('/admin/secret-gateway');
@@ -2071,16 +2081,15 @@ app.get('/admin/login.html', (req, res) => {
         }
     }
     
-    // If coming from secret gateway or direct access with valid session
+    // Only allow from secret gateway
     if (isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
-        // Redirect to secret gateway
         res.redirect('/admin/secret-gateway');
     }
 });
 
-// ✅ FIXED: Admin index - Auth required
+// Admin index - Auth required (redirects to secret gateway if not logged in)
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     
@@ -2094,12 +2103,11 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
-// ✅ FIXED: Root route - redirect to secret gateway
+// Other public pages
 app.get('/', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
-// Other public routes
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
