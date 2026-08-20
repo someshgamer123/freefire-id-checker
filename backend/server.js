@@ -1949,9 +1949,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 // ==================== SERVE PAGES ====================
 // ================================================================
 
-// ✅ IMPORTANT: Public routes FIRST (No auth required)
-// These must be defined BEFORE the admin middleware
-
+// ✅ PUBLIC ROUTES - SABSE PEHLE (No auth required)
 app.get('/', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
@@ -2007,8 +2005,7 @@ app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')
 // ==================== ADMIN PANEL PROTECTION ====================
 // ================================================================
 
-// ✅ MIDDLEWARE: Only for admin API routes, NOT for public pages
-// This runs AFTER the public routes above, so it won't block secret-gateway
+// ✅ This middleware runs AFTER public routes, so it won't block secret-gateway
 app.use('/admin', async (req, res, next) => {
     // Skip public admin pages (already handled above)
     if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
