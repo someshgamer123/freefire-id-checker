@@ -1717,10 +1717,12 @@ app.get('/api/admin/block-status', async (req, res) => {
 // ==================== SHORT LINK ROUTES ====================
 // ================================================================
 
+// ✅ SHORT LINK REDIRECT (FIXED - App Open Mode)
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
         const link = await ShortLink.findOne({ code });
+        
         if (!link) {
             return res.status(404).send(`
                 <html>
@@ -1732,6 +1734,7 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
+        
         if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
             link.status = 'disabled';
             await link.save();
@@ -1745,6 +1748,7 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
+        
         if (link.status !== 'active') {
             return res.status(403).send(`
                 <html>
@@ -1756,6 +1760,8 @@ app.get('/s/:code', async (req, res) => {
                 </html>
             `);
         }
+        
+        // Track visit
         link.visits = (link.visits || 0) + 1;
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -1766,16 +1772,22 @@ app.get('/s/:code', async (req, res) => {
         }
         link.lastClicked = now;
         await link.save();
+        
+        // Track click details
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         let deviceName = 'Unknown Device';
         let deviceType = 'Browser';
+        let isMobile = false;
+        
         if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
         else if (userAgent.includes('Mac')) { deviceName = 'Mac'; deviceType = 'Desktop'; }
-        else if (userAgent.includes('iPhone')) { deviceName = 'iPhone'; deviceType = 'Mobile'; }
-        else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; }
+        else if (userAgent.includes('iPhone')) { deviceName = 'iPhone'; deviceType = 'Mobile'; isMobile = true; }
+        else if (userAgent.includes('iPad')) { deviceName = 'iPad'; deviceType = 'Tablet'; isMobile = true; }
+        else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; isMobile = true; }
         else if (userAgent.includes('Chrome')) { deviceName = 'Chrome Browser'; deviceType = 'Browser'; }
         else if (userAgent.includes('Firefox')) { deviceName = 'Firefox Browser'; deviceType = 'Browser'; }
+        
         await ShortLinkClick.create({
             shortLinkId: link._id,
             ip,
@@ -1784,42 +1796,184 @@ app.get('/s/:code', async (req, res) => {
             deviceType,
             referer: req.headers.referer || null
         });
-        if (link.appOpen) {
-            const appScheme = 'yourapp://open?url=' + encodeURIComponent(link.originalUrl);
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
-            if (isMobile) {
-                res.send(`
-                    <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <script>
-                            window.location.href = '${appScheme}';
-                            setTimeout(function() {
-                                window.location.href = '${link.originalUrl}';
-                            }, 1000);
-                        </script>
-                    </head>
-                    <body>
-                        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f1117;color:#e2e8f0;font-family:Inter,sans-serif;flex-direction:column;text-align:center;">
-                            <div style="font-size:40px;">📱</div>
-                            <h2>Opening App...</h2>
-                            <p style="color:#94a3b8;">If the app doesn't open, you will be redirected to the web version.</p>
-                        </div>
-                    </body>
-                    </html>
-                `);
+        
+        // ✅ ==================== APP OPEN MODE ====================
+        if (link.appOpen && isMobile) {
+            // Mobile device - Try to open app
+            const originalUrl = link.originalUrl;
+            let appDeepLink = originalUrl;
+            
+            // Get custom app scheme
+            let appScheme = link.appScheme || '';
+            
+            // Auto-detect if no custom scheme
+            if (!appScheme) {
+                if (originalUrl.includes('youtube.com') || originalUrl.includes('youtu.be')) {
+                    const videoId = originalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11}))/);
+                    if (videoId) {
+                        appDeepLink = 'vnd.youtube://' + videoId[1];
+                    } else {
+                        appDeepLink = originalUrl;
+                    }
+                } else if (originalUrl.includes('wa.me') || originalUrl.includes('whatsapp.com')) {
+                    appDeepLink = 'whatsapp://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('instagram.com')) {
+                    appDeepLink = 'instagram://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('twitter.com') || originalUrl.includes('x.com')) {
+                    appDeepLink = 'twitter://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('facebook.com')) {
+                    appDeepLink = 'fb://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('t.me') || originalUrl.includes('telegram.org')) {
+                    appDeepLink = 'tg://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('reddit.com')) {
+                    appDeepLink = 'reddit://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('linkedin.com')) {
+                    appDeepLink = 'linkedin://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('spotify.com')) {
+                    appDeepLink = 'spotify://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('netflix.com')) {
+                    appDeepLink = 'netflix://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('amazon.in') || originalUrl.includes('amazon.com')) {
+                    appDeepLink = 'amazon://' + originalUrl.replace(/^https?:\/\//, '');
+                } else if (originalUrl.includes('flipkart.com')) {
+                    appDeepLink = 'flipkart://' + originalUrl.replace(/^https?:\/\//, '');
+                } else {
+                    appDeepLink = originalUrl;
+                }
             } else {
-                res.redirect(link.originalUrl);
+                // Custom scheme provided
+                try {
+                    const urlObj = new URL(originalUrl);
+                    const path = urlObj.pathname + urlObj.search;
+                    appDeepLink = appScheme + path;
+                } catch (e) {
+                    appDeepLink = appScheme + originalUrl;
+                }
             }
+            
+            const appStoreLink = link.appStoreLink || '';
+            
+            // Send HTML page with app deep linking
+            res.send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                    <title>Opening App...</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body {
+                            background: #0f1117;
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                            padding: 20px;
+                        }
+                        .container {
+                            text-align: center;
+                            max-width: 400px;
+                            width: 100%;
+                            animation: fadeIn 0.6s ease;
+                        }
+                        @keyframes fadeIn {
+                            from { opacity: 0; transform: translateY(20px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        .icon { font-size: 70px; margin-bottom: 15px; animation: pulse 1.5s ease-in-out infinite; }
+                        @keyframes pulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.1); }
+                        }
+                        .title { color: #e2e8f0; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+                        .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
+                        .spinner {
+                            width: 40px; height: 40px; margin: 20px auto;
+                            border: 3px solid rgba(255,255,255,0.05);
+                            border-top: 3px solid #6366f1;
+                            border-radius: 50%;
+                            animation: spin 0.8s linear infinite;
+                        }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        .btn-web {
+                            display: inline-block; padding: 12px 30px;
+                            border: 1px solid rgba(255,255,255,0.1);
+                            border-radius: 10px;
+                            background: rgba(255,255,255,0.03);
+                            color: #94a3b8;
+                            text-decoration: none;
+                            font-size: 14px;
+                            font-weight: 500;
+                            transition: 0.3s;
+                            margin-top: 10px;
+                        }
+                        .btn-web:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+                        .footer { margin-top: 20px; font-size: 11px; color: #4a4e57; }
+                        .app-name { color: #6366f1; font-weight: 600; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">📱</div>
+                        <div class="title">Opening App...</div>
+                        <div class="subtitle">Please wait while we open the app</div>
+                        <div class="spinner"></div>
+                        <a href="${appDeepLink}" class="btn-web" id="openAppBtn">🔓 Open in App</a>
+                        <br>
+                        <a href="${originalUrl}" class="btn-web" id="webFallbackBtn">🌐 Open in Browser</a>
+                        <div class="footer">
+                            ${appStoreLink ? `<a href="${appStoreLink}" style="color:#6366f1;text-decoration:none;">📲 Download App</a>` : ''}
+                            <span style="color:#4a4e57;margin:0 8px;">•</span>
+                            <span>${link.title || 'Short Link'}</span>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        const appDeepLink = '${appDeepLink}';
+                        const originalUrl = '${originalUrl}';
+                        
+                        function openApp() {
+                            window.location.href = appDeepLink;
+                            setTimeout(function() {
+                                if (!document.hidden) {
+                                    window.location.href = originalUrl;
+                                }
+                            }, 3000);
+                        }
+                        
+                        setTimeout(openApp, 300);
+                        
+                        document.getElementById('openAppBtn').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            openApp();
+                        });
+                        
+                        document.getElementById('webFallbackBtn').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            window.location.href = originalUrl;
+                        });
+                        
+                        console.log('📱 Opening app with deep link:', appDeepLink);
+                        console.log('🌐 Fallback URL:', originalUrl);
+                    </script>
+                </body>
+                </html>
+            `);
+            
         } else {
+            // Desktop or App Open disabled - Normal redirect
             res.redirect(link.originalUrl);
         }
+        
     } catch (error) {
         console.error('❌ Short link redirect error:', error);
         res.status(500).send('Server error');
     }
 });
 
+// ✅ GET all short links
 app.get('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const links = await ShortLink.find().sort({ createdAt: -1 });
@@ -1830,6 +1984,7 @@ app.get('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ GET short link analytics
 app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1853,11 +2008,13 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ CREATE short link (Updated with appScheme and appStoreLink)
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     try {
-        const { originalUrl, title, appOpen, expiryDate } = req.body;
+        const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
         if (!originalUrl) return res.status(400).json({ error: 'Original URL is required' });
         try { new URL(originalUrl); } catch (e) { return res.status(400).json({ error: 'Invalid URL format' }); }
+        
         let code = '';
         let isUnique = false;
         while (!isUnique) {
@@ -1865,16 +2022,19 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
             const existing = await ShortLink.findOne({ code });
             if (!existing) isUnique = true;
         }
+        
         const link = new ShortLink({
             code,
             originalUrl,
             title: title || 'Untitled Link',
             appOpen: appOpen || false,
+            appScheme: appScheme || '',
+            appStoreLink: appStoreLink || '',
             expiryDate: expiryDate || null,
             createdBy: 'admin'
         });
         await link.save();
-        await logAdminAction('admin', 'CREATE_SHORT_LINK', { code, originalUrl, appOpen, expiryDate }, req);
+        await logAdminAction('admin', 'CREATE_SHORT_LINK', { code, originalUrl, appOpen, appScheme, expiryDate }, req);
         res.json({
             success: true,
             link,
@@ -1886,18 +2046,21 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ UPDATE short link
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, status, appOpen, expiryDate } = req.body;
+        const { title, status, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
         const link = await ShortLink.findById(id);
         if (!link) return res.status(404).json({ error: 'Link not found' });
         if (title !== undefined) link.title = title;
         if (status !== undefined && ['active', 'disabled'].includes(status)) link.status = status;
         if (appOpen !== undefined) link.appOpen = appOpen;
+        if (appScheme !== undefined) link.appScheme = appScheme;
+        if (appStoreLink !== undefined) link.appStoreLink = appStoreLink;
         if (expiryDate !== undefined) link.expiryDate = expiryDate;
         await link.save();
-        await logAdminAction('admin', 'UPDATE_SHORT_LINK', { id, title, status, appOpen, expiryDate }, req);
+        await logAdminAction('admin', 'UPDATE_SHORT_LINK', { id, title, status, appOpen, appScheme, expiryDate }, req);
         res.json({ success: true, link });
     } catch (error) {
         console.error('❌ Short link update error:', error);
@@ -1905,6 +2068,7 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ DELETE short link
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1921,6 +2085,7 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ SHORT LINK STATS
 app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     try {
         const totalLinks = await ShortLink.countDocuments();
@@ -1949,17 +2114,14 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 // ==================== SERVE PAGES ====================
 // ================================================================
 
-// ✅ PUBLIC ROUTES - SABSE PEHLE (No auth required)
 app.get('/', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
-// Secret Gateway - Public access
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
-// Login page - Public access (with referer check)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer && referer.includes('/admin/secret-gateway');
@@ -1979,7 +2141,6 @@ app.get('/admin/login.html', (req, res) => {
     }
 });
 
-// Admin index - Auth required
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     
@@ -1993,7 +2154,6 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
-// Other public pages
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
@@ -2005,9 +2165,7 @@ app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')
 // ==================== ADMIN PANEL PROTECTION ====================
 // ================================================================
 
-// ✅ This middleware runs AFTER public routes, so it won't block secret-gateway
 app.use('/admin', async (req, res, next) => {
-    // Skip public admin pages (already handled above)
     if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
         return next();
     }

@@ -623,15 +623,17 @@
                 </div>
             </div>
 
+            <!-- ✅ Create Short Link (Updated with App Open Mode) -->
             <div class="card">
                 <h3>➕ Create Short Link</h3>
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
                 
+                <!-- ✅ App Open Mode -->
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
                     <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
-                        <input type="checkbox" id="shortAppOpen" style="opacity:0;width:0;height:0;">
+                        <input type="checkbox" id="shortAppOpen" style="opacity:0;width:0;height:0;" onchange="toggleAppScheme()">
                         <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#2d3138;transition:.4s;border-radius:20px;" id="appToggleSlider"></span>
                         <style>
                             .switch input:checked + span { background: #6366f1; }
@@ -642,6 +644,18 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
                 </div>
                 
+                <!-- ✅ App Scheme Input -->
+                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
+                    <label style="font-size:11px;color:var(--text-light);font-weight:500;">📲 App Deep Link Scheme:</label>
+                    <input type="text" id="shortAppScheme" placeholder="e.g., myapp://, vnd.youtube://, whatsapp://" style="margin-top:4px;">
+                    <small style="color:var(--text-light);font-size:10px;">Leave empty for auto-detection (YouTube, WhatsApp, Instagram, etc.)</small>
+                    
+                    <label style="font-size:11px;color:var(--text-light);font-weight:500;margin-top:6px;display:block;">📲 App Store / Play Store Link (Fallback):</label>
+                    <input type="text" id="shortAppStoreLink" placeholder="e.g., https://play.google.com/store/apps/details?id=com.app" style="margin-top:4px;">
+                    <small style="color:var(--text-light);font-size:10px;">If app is not installed, user will be directed here</small>
+                </div>
+                
+                <!-- Schedule Expiry -->
                 <div style="margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
                     <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
@@ -807,7 +821,6 @@
 
         var liveInterval = null;
 
-        // ✅ FIXED: loadStats with optional graph update
         async function loadStats(updateGraphs) {
             if (updateGraphs === undefined) updateGraphs = true;
             try {
@@ -840,10 +853,8 @@
                         if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
                     }
                     
-                    // ✅ Always update live visitors
                     updateLiveVisitors(data);
                     
-                    // ✅ Update graphs ONLY when requested
                     if (updateGraphs) {
                         updateDashboardGraph(data);
                     }
@@ -976,21 +987,17 @@
             }
         }
 
-        // ✅ FIXED: Only refresh live visitors, NOT graphs
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
             
-            // Initial load with graphs
             loadStats(true);
             
-            // ✅ Only refresh live data (no graphs)
             liveInterval = setInterval(async function() {
                 try {
                     var response = await secureFetch('/api/all-stats');
                     if (!response) return;
                     if (response.ok) {
                         var data = await response.json();
-                        // ✅ Only update live numbers, NOT graphs
                         updateLiveVisitors(data);
                     }
                 } catch (e) {
@@ -1898,7 +1905,6 @@
             });
         }
 
-        // ✅ FIXED: Graph switch functions with proper toggle
         function switchDashboardGraph(mode) {
             dashboardGraphMode = mode;
             document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
@@ -2366,6 +2372,83 @@
             } catch (e) { console.error(e); }
         }
 
+        // ✅ Toggle App Scheme Input
+        function toggleAppScheme() {
+            const checked = document.getElementById('shortAppOpen').checked;
+            document.getElementById('appSchemeContainer').style.display = checked ? 'block' : 'none';
+        }
+
+        // ✅ Create Short Link (Updated)
+        async function createShortLink() {
+            var url = document.getElementById('shortOriginalUrl').value.trim();
+            if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
+            try {
+                new URL(url);
+            } catch (e) {
+                showToast('❌ Invalid URL format', 'error');
+                return;
+            }
+            var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
+            var appOpen = document.getElementById('shortAppOpen').checked;
+            var appScheme = document.getElementById('shortAppScheme').value.trim();
+            var appStoreLink = document.getElementById('shortAppStoreLink').value.trim();
+            var expiryDate = document.getElementById('shortExpiryDate').value;
+            
+            try {
+                var r = await secureFetch('/api/short-links', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        originalUrl: url, 
+                        title: title,
+                        appOpen: appOpen,
+                        appScheme: appScheme,
+                        appStoreLink: appStoreLink,
+                        expiryDate: expiryDate || null
+                    })
+                });
+                if (!r) return;
+                var data = await r.json();
+                if (data.success) {
+                    document.getElementById('shortGeneratedLink').classList.add('show');
+                    document.getElementById('shortGeneratedLinkInput').value = data.shortUrl;
+                    document.getElementById('shortOriginalUrl').value = '';
+                    document.getElementById('shortTitle').value = '';
+                    document.getElementById('shortAppOpen').checked = false;
+                    document.getElementById('shortAppScheme').value = '';
+                    document.getElementById('shortAppStoreLink').value = '';
+                    document.getElementById('shortExpiryDate').value = '';
+                    document.getElementById('appSchemeContainer').style.display = 'none';
+                    loadShortLinks();
+                    loadShortLinkStats();
+                    showToast('✅ Short link created!', 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'Failed'), 'error');
+                }
+            } catch (e) { showToast('❌ Network error', 'error'); }
+        }
+
+        function copyShortLink() {
+            var i = document.getElementById('shortGeneratedLinkInput');
+            i.select();
+            document.execCommand('copy');
+            showToast('✅ Link copied!', 'success');
+        }
+
+        function copyShortLinkUrl(code) {
+            var url = window.location.origin + '/s/' + code;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('✅ Link copied!', 'success');
+            }).catch(function() {
+                var t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                showToast('✅ Link copied!', 'success');
+            });
+        }
+
         async function loadShortLinks() {
             try {
                 var r = await secureFetch('/api/short-links');
@@ -2424,68 +2507,6 @@
                     </div>
                 `;
                 c.appendChild(d);
-            });
-        }
-
-        async function createShortLink() {
-            var url = document.getElementById('shortOriginalUrl').value.trim();
-            if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
-            try {
-                new URL(url);
-            } catch (e) {
-                showToast('❌ Invalid URL format', 'error');
-                return;
-            }
-            var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
-            var appOpen = document.getElementById('shortAppOpen').checked;
-            var expiryDate = document.getElementById('shortExpiryDate').value;
-            try {
-                var r = await secureFetch('/api/short-links', {
-                    method: 'POST',
-                    body: JSON.stringify({ 
-                        originalUrl: url, 
-                        title: title,
-                        appOpen: appOpen,
-                        expiryDate: expiryDate || null
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('shortGeneratedLink').classList.add('show');
-                    document.getElementById('shortGeneratedLinkInput').value = data.shortUrl;
-                    document.getElementById('shortOriginalUrl').value = '';
-                    document.getElementById('shortTitle').value = '';
-                    document.getElementById('shortAppOpen').checked = false;
-                    document.getElementById('shortExpiryDate').value = '';
-                    loadShortLinks();
-                    loadShortLinkStats();
-                    showToast('✅ Short link created!', 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed'), 'error');
-                }
-            } catch (e) { showToast('❌ Network error', 'error'); }
-        }
-
-        function copyShortLink() {
-            var i = document.getElementById('shortGeneratedLinkInput');
-            i.select();
-            document.execCommand('copy');
-            showToast('✅ Link copied!', 'success');
-        }
-
-        function copyShortLinkUrl(code) {
-            var url = window.location.origin + '/s/' + code;
-            navigator.clipboard.writeText(url).then(function() {
-                showToast('✅ Link copied!', 'success');
-            }).catch(function() {
-                var t = document.createElement('textarea');
-                t.value = url;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                document.body.removeChild(t);
-                showToast('✅ Link copied!', 'success');
             });
         }
 
@@ -2565,6 +2586,7 @@
             } catch (e) { showToast('❌ Failed to load analytics', 'error'); }
         }
 
+        // ✅ Open Short Link Edit (Updated)
         function openShortLinkEdit(id) {
             var link = allShortLinks.find(function(l) { return l._id === id; });
             if (!link) { showToast('❌ Link not found', 'error'); return; }
@@ -2590,6 +2612,14 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>📲 App Scheme (e.g., myapp://, vnd.youtube://)</label>
+                    <input type="text" id="shortEditAppScheme" value="${escapeHTML(link.appScheme || '')}" placeholder="Leave empty for auto-detection">
+                </div>
+                <div class="form-group">
+                    <label>📲 App Store / Play Store Link</label>
+                    <input type="text" id="shortEditAppStoreLink" value="${escapeHTML(link.appStoreLink || '')}" placeholder="Fallback if app not installed">
+                </div>
+                <div class="form-group">
                     <label>📅 Expiry Date</label>
                     <input type="datetime-local" id="shortEditExpiry" value="${link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0,16) : ''}">
                 </div>
@@ -2601,10 +2631,13 @@
             document.getElementById('editModal').classList.add('show');
         }
 
+        // ✅ Save Short Link Edit (Updated)
         async function saveShortLinkEdit(id) {
             var title = document.getElementById('shortEditTitle').value.trim() || 'Untitled Link';
             var status = document.getElementById('shortEditStatus').value;
             var appOpen = document.getElementById('shortEditAppOpen').value === 'true';
+            var appScheme = document.getElementById('shortEditAppScheme').value.trim();
+            var appStoreLink = document.getElementById('shortEditAppStoreLink').value.trim();
             var expiryDate = document.getElementById('shortEditExpiry').value;
             try {
                 var r = await secureFetch('/api/short-links/' + id, {
@@ -2613,6 +2646,8 @@
                         title: title, 
                         status: status,
                         appOpen: appOpen,
+                        appScheme: appScheme,
+                        appStoreLink: appStoreLink,
                         expiryDate: expiryDate || null
                     })
                 });
@@ -2647,13 +2682,13 @@
         loadTheme();
         loadBackground();
         loadLinks();
-        loadStats(true); // Initial load with graphs
+        loadStats(true);
         loadAnalyticsLinks();
         loadContactInfo();
         loadBlockedDevices();
         loadShortLinks();
         loadShortLinkStats();
-        startLiveRefresh(); // Only updates live numbers
+        startLiveRefresh();
         checkAuth();
         loadSecretKey();
 
@@ -2706,6 +2741,7 @@
         window.filterShortLinks = filterShortLinks;
         window.loadSecretKey = loadSecretKey;
         window.changeSecretKey = changeSecretKey;
+        window.toggleAppScheme = toggleAppScheme;
     </script>
 </body>
 </html>

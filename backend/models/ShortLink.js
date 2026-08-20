@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const ShortLinkSchema = new mongoose.Schema({
     code: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     originalUrl: {
         type: String,
@@ -26,10 +27,22 @@ const ShortLinkSchema = new mongoose.Schema({
         enum: ['active', 'disabled'],
         default: 'active'
     },
+    // ✅ App Open Mode
     appOpen: {
         type: Boolean,
         default: false
     },
+    // ✅ Custom App Scheme
+    appScheme: {
+        type: String,
+        default: ''
+    },
+    // ✅ App Store / Play Store Link (Fallback)
+    appStoreLink: {
+        type: String,
+        default: ''
+    },
+    // ✅ Schedule Expiry
     expiryDate: {
         type: Date,
         default: null
@@ -48,7 +61,6 @@ const ShortLinkSchema = new mongoose.Schema({
     }
 });
 
-// Remove duplicate indexes - use only these
 ShortLinkSchema.index({ code: 1 }, { unique: true });
 ShortLinkSchema.index({ createdAt: -1 });
 ShortLinkSchema.index({ expiryDate: 1 });
