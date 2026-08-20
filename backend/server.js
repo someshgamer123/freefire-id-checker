@@ -12,7 +12,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
-// ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Link = require('./models/Link');
@@ -29,13 +28,10 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// ==================== Security Module ====================
 const Security = require('./config/security');
 
-// Connect to MongoDB
 connectDB();
 
-// ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
@@ -43,11 +39,9 @@ const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
-// Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
-// ==================== Email Transporter ====================
 let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
@@ -59,7 +53,6 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
-// ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
         const adminExists = await User.findOne();
@@ -134,7 +127,6 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -172,7 +164,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -203,7 +194,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
-// ==================== JWT & Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -264,7 +254,6 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
-// ==================== Logging Function ====================
 async function logAdminAction(userId, action, details = {}, req = null) {
     try {
         const ip = req?.ip || req?.connection?.remoteAddress || null;
@@ -275,7 +264,6 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const blocked = await BlockedDevice.findOne({
@@ -410,7 +398,6 @@ async function incrementDeviceAttempts(req) {
     }
 }
 
-// ==================== Login Attempt Tracking ====================
 async function checkLoginAttempts(ip) {
     const record = await LoginAttempt.findOne({ ip });
     if (!record) return { allowed: true, attempts: 0 };
@@ -444,7 +431,6 @@ async function recordLoginAttempt(ip, success) {
     return record;
 }
 
-// ==================== Session Management ====================
 async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
     const session = new Session({
         token, userId, csrfToken, ip, userAgent,
@@ -472,7 +458,6 @@ async function invalidateAllSessions(userId) {
     await Session.updateMany({ userId, isActive: true }, { isActive: false });
 }
 
-// ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -517,7 +502,6 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== OTP Verification Functions ====================
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -576,9 +560,7 @@ async function verifyOTP(deviceId, otp) {
     return false;
 }
 
-// ================================================================
-// ==================== PUBLIC ROUTES (NO AUTH) ====================
-// ================================================================
+// ==================== PUBLIC ROUTES ====================
 
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
@@ -865,7 +847,6 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
-// ==================== PUBLIC SECRET KEY ENDPOINTS ====================
 app.get('/api/admin/public-secret-key', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -892,11 +873,88 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-// ================================================================
-// ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
-// ================================================================
+// ==================== SAVED DEVICE ENDPOINTS ====================
 
-// ==================== ADMIN LOGIN ====================
+app.get('/api/admin/check-saved-device', async (req, res) => {
+    try {
+        const { fingerprint } = getDeviceId(req);
+        const admin = await User.findOne();
+        if (!admin) return res.json({ hasSavedDevice: false });
+        
+        const savedDevices = admin.savedDevices || [];
+        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
+        
+        if (saved && saved.expiry && new Date(saved.expiry) > new Date()) {
+            res.json({ 
+                hasSavedDevice: true, 
+                lastUsed: saved.lastUsed || new Date() 
+            });
+        } else {
+            res.json({ hasSavedDevice: false });
+        }
+    } catch (error) {
+        res.json({ hasSavedDevice: false });
+    }
+});
+
+app.post('/api/admin/login-saved-device', async (req, res) => {
+    try {
+        const { fingerprint, ip, userAgent } = getDeviceId(req);
+        
+        const admin = await User.findOne();
+        if (!admin) return res.status(401).json({ error: 'Admin not found' });
+        
+        const savedDevices = admin.savedDevices || [];
+        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
+        
+        if (!saved || (saved.expiry && new Date(saved.expiry) < new Date())) {
+            return res.status(401).json({ error: 'Saved device expired or not found' });
+        }
+        
+        saved.lastUsed = new Date();
+        await admin.save();
+        
+        const jwtToken = generateToken('admin');
+        const csrfToken = generateCSRFToken();
+        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+        await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Saved Device Login' }, req);
+        
+        res.cookie('adminToken', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || true,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+        
+        res.json({
+            success: true,
+            csrfToken: csrfToken,
+            step: 'complete'
+        });
+    } catch (error) {
+        console.error('❌ Saved device login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+app.post('/api/admin/remove-saved-device', async (req, res) => {
+    try {
+        const { fingerprint } = getDeviceId(req);
+        const admin = await User.findOne();
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+        
+        admin.savedDevices = (admin.savedDevices || []).filter(d => d.fingerprint !== fingerprint);
+        await admin.save();
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove saved device' });
+    }
+});
+
+// ==================== ADMIN ROUTES ====================
+
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
         const { passcode, otp, step, rememberMe } = req.body;
@@ -921,7 +979,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
         }
         
-        // STEP 1: Verify passcode first
         if (!step || step === 'passcode') {
             if (!passcode) {
                 return res.status(400).json({ error: 'Passcode required' });
@@ -973,6 +1030,30 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 const csrfToken = generateCSRFToken();
                 await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
                 await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
+                
+                // Save device if Remember Me is checked
+                if (rememberMe) {
+                    const adminData = await User.findOne();
+                    if (adminData) {
+                        const savedDevices = adminData.savedDevices || [];
+                        const existing = savedDevices.find(d => d.fingerprint === fingerprint);
+                        if (existing) {
+                            existing.lastUsed = new Date();
+                            existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                        } else {
+                            savedDevices.push({
+                                fingerprint: fingerprint,
+                                deviceName: deviceName,
+                                deviceType: deviceType,
+                                lastUsed: new Date(),
+                                expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                            });
+                        }
+                        adminData.savedDevices = savedDevices;
+                        await adminData.save();
+                    }
+                }
+                
                 res.cookie('adminToken', jwtToken, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production' || true,
@@ -988,7 +1069,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
         }
         
-        // STEP 2: Verify OTP
         if (step === 'otp') {
             if (!otp || otp.length !== 6) {
                 return res.status(400).json({ error: 'Valid 6-digit OTP required' });
@@ -1013,6 +1093,30 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             const csrfToken = generateCSRFToken();
             await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
             await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
+            
+            // Save device if Remember Me is checked
+            if (rememberMe) {
+                const adminData = await User.findOne();
+                if (adminData) {
+                    const savedDevices = adminData.savedDevices || [];
+                    const existing = savedDevices.find(d => d.fingerprint === fingerprint);
+                    if (existing) {
+                        existing.lastUsed = new Date();
+                        existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    } else {
+                        savedDevices.push({
+                            fingerprint: fingerprint,
+                            deviceName: deviceName,
+                            deviceType: deviceType,
+                            lastUsed: new Date(),
+                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        });
+                    }
+                    adminData.savedDevices = savedDevices;
+                    await adminData.save();
+                }
+            }
+            
             res.cookie('adminToken', jwtToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production' || true,
@@ -1020,23 +1124,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 path: '/'
             });
-            
-            if (rememberMe) {
-                const admin = await User.findOne();
-                if (admin) {
-                    const rememberToken = crypto.randomBytes(64).toString('hex');
-                    admin.rememberToken = rememberToken;
-                    admin.rememberTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-                    await admin.save();
-                    res.cookie('rememberToken', rememberToken, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production' || true,
-                        sameSite: 'lax',
-                        maxAge: 7 * 24 * 60 * 60 * 1000,
-                        path: '/'
-                    });
-                }
-            }
             
             return res.json({
                 success: true,
@@ -1051,7 +1138,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     }
 });
 
-// ADMIN LOGOUT
 app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     try {
         const token = req.cookies?.adminToken;
@@ -1073,7 +1159,6 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN PASSCODE CHANGE
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -1102,7 +1187,6 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN THEME
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
         const { theme } = req.body;
@@ -1116,7 +1200,6 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN BACKGROUND
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         const { background } = req.body;
@@ -1133,7 +1216,6 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN LOGS
 app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     try {
         const { limit = 50, action, from, to } = req.query;
@@ -1153,7 +1235,6 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN WHATSAPP
 app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     try {
         const { number } = req.body;
@@ -1170,14 +1251,12 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== SECRET KEY MANAGEMENT ====================
 app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
     try {
         const admin = await User.findOne();
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
         const secretKey = admin.secretKey || 'admin@2024';
-        const maskedKey = secretKey.slice(0, 4) + '****' + secretKey.slice(-4);
-        res.json({ success: true, secretKey: secretKey, maskedKey: maskedKey });
+        res.json({ success: true, secretKey: secretKey });
     } catch (error) {
         console.error('❌ Secret key fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch secret key' });
@@ -1206,7 +1285,6 @@ app.post('/api/admin/secret-key', authMiddleware, async (req, res) => {
     }
 });
 
-// LINKS CRUD
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -1311,7 +1389,6 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN PRICING
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { pricing, paymentSettings } = req.body;
@@ -1328,7 +1405,6 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// SEARCH LINKS
 app.get('/api/search-links', authMiddleware, async (req, res) => {
     try {
         const { query } = req.query;
@@ -1344,7 +1420,6 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
     }
 });
 
-// GENERATE DASHBOARD LINK
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
@@ -1364,7 +1439,6 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ADMIN STATS
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -1373,8 +1447,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        
-        // ✅ FIXED: Get today's start (12:00 AM)
         const todayStart = new Date(now);
         todayStart.setHours(0, 0, 0, 0);
         
@@ -1444,14 +1516,12 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneHourAgo) globalClaims60m += count;
         }
         
-        // ✅ FIXED: Get hourly data for today (12:00 AM to current time)
         const hourKeys = Array.from(hourlyVisitors.keys()).sort();
         let todayHours = hourKeys.filter(key => {
             const date = new Date(key);
             return date >= todayStart;
         });
         
-        // If no data today, use last 24 hours
         if (todayHours.length === 0) {
             todayHours = hourKeys.slice(-24);
         }
@@ -1468,13 +1538,22 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         globalClaims1m = minuteClaims.get(minuteKey) || 0;
         
         let activeNow = 0;
-        for (let i = 0; i < 5; i++) {
+        let activeClaimsNow = 0;
+        
+        for (let i = 0; i < 2; i++) {
             const pastMinute = new Date(now.getTime() - i * 60 * 1000);
             const key = pastMinute.toISOString().substring(0, 16);
-            activeNow += minuteVisitors.get(key) || 0;
+            const visits = minuteVisitors.get(key) || 0;
+            activeNow += visits;
+            const claims = minuteClaims.get(key) || 0;
+            activeClaimsNow += claims;
         }
-        activeNow = Math.round(activeNow / 5);
-        if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 12));
+        
+        activeNow = Math.round(activeNow / 2);
+        activeClaimsNow = Math.round(activeClaimsNow / 2);
+        
+        if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 15));
+        if (activeClaimsNow < 1) activeClaimsNow = Math.round(activeNow * 0.3);
         
         res.json({
             global: {
@@ -1489,6 +1568,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 visits1m: globalVisits1m,
                 claims1m: globalClaims1m,
                 activeNow: activeNow,
+                activeClaims: activeClaimsNow,
                 dailyVisitors: Object.fromEntries(dailyVisitorsGlobal),
                 dailyClaims: Object.fromEntries(dailyClaimsGlobal),
                 hourlyVisitors: hourlyVisitsData,
@@ -1502,7 +1582,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// RENEWAL REQUESTS
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
@@ -1582,7 +1661,6 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
-// ==================== Update Admin Contact Info ====================
 app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     try {
         const { email, phone } = req.body;
@@ -1599,7 +1677,6 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DEVICE MANAGEMENT ROUTES ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1736,7 +1813,8 @@ app.get('/api/admin/block-status', async (req, res) => {
     }
 });
 
-// ==================== Admin Panel Protection Middleware ====================
+// ==================== ADMIN PANEL PROTECTION ====================
+
 app.use('/admin', async (req, res, next) => {
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
@@ -1764,7 +1842,6 @@ app.use('/admin', async (req, res, next) => {
     next();
 });
 
-// ==================== Permanent Block Page ====================
 app.get('/blocked', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -1845,6 +1922,7 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== SHORT LINK ROUTES ====================
+
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -2073,7 +2151,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== Serve Pages ====================
+// ==================== SERVE PAGES ====================
 
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
@@ -2110,7 +2188,8 @@ app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, '..', 
 app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')));
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
-// ==================== Session Cleanup ====================
+// ==================== SESSION CLEANUP ====================
+
 setInterval(async () => {
     try {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
@@ -2127,159 +2206,8 @@ setInterval(async () => {
     }
 }, 60 * 60 * 1000);
 
-// ==================== SAVED DEVICE (REMEMBER ME) ENDPOINTS ====================
-
-// Check if device is saved
-app.get('/api/admin/check-saved-device', async (req, res) => {
-    try {
-        const { fingerprint } = getDeviceId(req);
-        const admin = await User.findOne();
-        if (!admin) return res.json({ hasSavedDevice: false });
-        
-        const savedDevices = admin.savedDevices || [];
-        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
-        
-        if (saved && saved.expiry && new Date(saved.expiry) > new Date()) {
-            res.json({ 
-                hasSavedDevice: true, 
-                lastUsed: saved.lastUsed || new Date() 
-            });
-        } else {
-            res.json({ hasSavedDevice: false });
-        }
-    } catch (error) {
-        res.json({ hasSavedDevice: false });
-    }
-});
-
-// Login with saved device
-app.post('/api/admin/login-saved-device', async (req, res) => {
-    try {
-        const { fingerprint, ip, userAgent } = getDeviceId(req);
-        
-        const admin = await User.findOne();
-        if (!admin) return res.status(401).json({ error: 'Admin not found' });
-        
-        const savedDevices = admin.savedDevices || [];
-        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
-        
-        if (!saved || (saved.expiry && new Date(saved.expiry) < new Date())) {
-            return res.status(401).json({ error: 'Saved device expired or not found' });
-        }
-        
-        // Update last used
-        saved.lastUsed = new Date();
-        await admin.save();
-        
-        const jwtToken = generateToken('admin');
-        const csrfToken = generateCSRFToken();
-        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
-        await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Saved Device Login' }, req);
-        
-        res.cookie('adminToken', jwtToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/'
-        });
-        
-        res.json({
-            success: true,
-            csrfToken: csrfToken,
-            step: 'complete'
-        });
-    } catch (error) {
-        console.error('❌ Saved device login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
-
-// Remove saved device
-app.post('/api/admin/remove-saved-device', async (req, res) => {
-    try {
-        const { fingerprint } = getDeviceId(req);
-        const admin = await User.findOne();
-        if (!admin) return res.status(404).json({ error: 'Admin not found' });
-        
-        admin.savedDevices = (admin.savedDevices || []).filter(d => d.fingerprint !== fingerprint);
-        await admin.save();
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove saved device' });
-    }
-});
-
-// Inside the login endpoint after successful OTP verification
-// Add this to save the device
-
-// Save device if Remember Me is checked
-if (rememberMe) {
-    const admin = await User.findOne();
-    if (admin) {
-        const { fingerprint } = getDeviceId(req);
-        const { deviceName, deviceType } = getDeviceDetails(req);
-        
-        const savedDevices = admin.savedDevices || [];
-        const existing = savedDevices.find(d => d.fingerprint === fingerprint);
-        
-        if (existing) {
-            existing.lastUsed = new Date();
-            existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-        } else {
-            savedDevices.push({
-                fingerprint: fingerprint,
-                deviceName: deviceName,
-                deviceType: deviceType,
-                lastUsed: new Date(),
-                expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-            });
-        }
-        
-        admin.savedDevices = savedDevices;
-        await admin.save();
-    }
-}
-
-// In the /api/all-stats endpoint, update the activeNow calculation
-// Replace the existing activeNow calculation with:
-
-let activeNow = 0;
-let activeClaimsNow = 0;
-
-// Get active visitors from last 2 minutes (more real-time)
-for (let i = 0; i < 2; i++) {
-    const pastMinute = new Date(now.getTime() - i * 60 * 1000);
-    const key = pastMinute.toISOString().substring(0, 16);
-    const visits = minuteVisitors.get(key) || 0;
-    activeNow += visits;
-    
-    // Active claims: users who visited AND claimed in last 2 minutes
-    const claims = minuteClaims.get(key) || 0;
-    activeClaimsNow += claims;
-}
-
-// Average per minute
-activeNow = Math.round(activeNow / 2);
-activeClaimsNow = Math.round(activeClaimsNow / 2);
-
-// If no data, use estimates from 60m data
-if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 15));
-if (activeClaimsNow < 1) activeClaimsNow = Math.round(activeNow * 0.3);
-
-// In the response JSON, add activeClaims
-res.json({
-    global: {
-        // ... existing fields ...
-        activeNow: activeNow,
-        activeClaims: activeClaimsNow,
-        // ... rest of fields
-    },
-    links: linkStats
-});
-
 // ==================== START SERVER ====================
+
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');
@@ -2317,18 +2245,15 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
     console.log('📅 Schedule Expiry: Set expiry date for short links');
     console.log('═══════════════════════════════════════════');
-    console.log('🔐 SECRET GATEWAY (FIXED):');
+    console.log('🔐 SECRET GATEWAY:');
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
-    console.log('🔑 Secret Key: admin@2024 (to reveal the login screen)');
-    console.log('💾 Save Login: Remember Me (7 days auto-login)');
+    console.log('👆 Tap invisible area 4 times to reveal secret key input');
+    console.log('🔑 Secret Key: admin@2024 (changeable in settings)');
+    console.log('💾 Save Device: Remember Me (30 days auto-login)');
     console.log('═══════════════════════════════════════════');
-    console.log('✅ FIXED: DeviceType validation');
-    console.log('✅ FIXED: loadLiveUserStats removed');
-    console.log('✅ FIXED: 24h graph data');
-    console.log('✅ FIXED: Button toggles');
-    console.log('✅ FIXED: Analytics 24h & 7 days');
-    console.log('✅ FIXED: Unique data calculation');
-    console.log('✅ NEW: Live Claims display');
-    console.log('✅ NEW: Secret Key management');
+    console.log('🔄 LIVE VISITORS:');
+    console.log('🟢 Active Visits: Users currently watching video (last 2 minutes)');
+    console.log('🟢 Active Claims: Users currently claiming (last 2 minutes)');
+    console.log('⏱️ Auto-refresh: Every 2 seconds');
     console.log('═══════════════════════════════════════════');
 });

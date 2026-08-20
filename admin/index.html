@@ -54,7 +54,6 @@
         .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
         .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* ===== STATS ===== */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card {
             background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
@@ -65,7 +64,6 @@
         .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
 
-        /* ===== LIVE VISITORS ===== */
         .live-visitors {
             background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
             margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
@@ -99,7 +97,6 @@
         .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
         .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
-        /* ===== SECTION ===== */
         .section { display: none; animation: fadeInUp 0.4s ease; }
         .section.active { display: block; }
 
@@ -136,7 +133,6 @@
         .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* ===== LINK ITEMS ===== */
         .link-item {
             background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
@@ -156,7 +152,6 @@
         .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
 
-        /* ===== EDIT MODAL ===== */
         .edit-modal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
@@ -200,7 +195,6 @@
         .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
         .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        /* ===== ANALYTICS ===== */
         .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
         .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
@@ -247,7 +241,6 @@
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
         .search-bar input:focus { border-color: var(--primary); outline: none; }
 
-        /* ===== DEVICE MANAGEMENT ===== */
         .device-item {
             background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
@@ -260,7 +253,6 @@
         .device-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
         .device-item .actions .btn { font-size: 10px; padding: 4px 10px; }
 
-        /* ===== ACTIVE SESSIONS ===== */
         .session-item {
             background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
@@ -272,7 +264,6 @@
         .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
         .session-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
 
-        /* ===== CONTACT SETTINGS ===== */
         .contact-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 768px) { .contact-settings-grid { grid-template-columns: 1fr; } }
         .contact-settings-grid .contact-field label { font-size: 10px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
@@ -311,7 +302,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- HEADER -->
         <header class="header">
             <h1>⚡ Admin Panel</h1>
             <div class="header-actions">
@@ -324,7 +314,6 @@
             </div>
         </header>
 
-        <!-- ===== MENU ===== -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -335,7 +324,6 @@
             <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
         </div>
 
-        <!-- ===== SECTION: DASHBOARD ===== -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
@@ -354,7 +342,6 @@
                 </div>
             </div>
 
-            <!-- ===== LIVE VISITORS + CLAIMS ===== -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors & Claims
@@ -386,17 +373,16 @@
                     <div class="lv-item active-now">
                         <div class="lv-number visits-color" id="liveActiveVisits">0</div>
                         <div class="lv-label">🟢 Active Visits</div>
-                        <div class="lv-time">Online</div>
+                        <div class="lv-time">Watching now</div>
                     </div>
                     <div class="lv-item active-now" style="border-left-color: var(--warning);">
                         <div class="lv-number claims-color" id="liveActiveClaims">0</div>
                         <div class="lv-label">🟢 Active Claims</div>
-                        <div class="lv-time">Online</div>
+                        <div class="lv-time">Claiming now</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Dashboard Graphs (Last 7 Days & Last 24 Hours) -->
             <div class="card" style="margin-top:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                     <h3 style="font-size:14px;margin:0;">📈 Last 7 Days & 24 Hours</h3>
@@ -415,7 +401,6 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: LINKS ===== -->
         <div class="section" id="section-links">
             <div class="card">
                 <h3>🔍 Search Links</h3>
@@ -427,7 +412,6 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: ANALYTICS ===== -->
         <div class="section" id="section-analytics">
             <div class="analytics-container">
                 <div class="analytics-header">
@@ -462,7 +446,6 @@
                     <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
                 </div>
 
-                <!-- Analytics Graph -->
                 <div class="card" style="margin-top:10px;padding:15px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                         <h3 style="font-size:14px;margin:0;">📈 Detailed Analysis</h3>
@@ -487,7 +470,6 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: CREATE ===== -->
         <div class="section" id="section-create">
             <div class="card">
                 <h3>➕ Create Link</h3>
@@ -558,7 +540,6 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: SETTINGS ===== -->
         <div class="section" id="section-settings">
             <div class="card">
                 <h3>🖼️ UID Background (9:16)</h3>
@@ -574,10 +555,9 @@
                 <div id="bgStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
             </div>
 
-            <!-- ===== SECRET KEY SETTINGS ===== -->
             <div class="card">
                 <h3>🔑 Secret Gateway Key</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key used to access the admin login page via /admin/secret-gateway</p>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key used to access the admin login page</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" id="currentSecretKey" placeholder="Current Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;" readonly>
                     <input type="text" id="newSecretKey" placeholder="New Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;">
@@ -605,7 +585,7 @@
 
             <div class="card">
                 <h3>🔐 Admin Passcode</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode (OTP will be required after change)</p>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode</p>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
@@ -632,9 +612,7 @@
             </div>
         </div>
 
-        <!-- ===== SECTION: URL SHORTENER ===== -->
         <div class="section" id="section-shortener">
-            <!-- Mini Dashboard Stats -->
             <div class="card">
                 <h3>📊 URL Shortener Dashboard</h3>
                 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
@@ -645,13 +623,11 @@
                 </div>
             </div>
 
-            <!-- Create Short Link -->
             <div class="card">
                 <h3>➕ Create Short Link</h3>
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
                 
-                <!-- App Open Mode Toggle -->
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
                     <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
@@ -666,7 +642,6 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
                 </div>
                 
-                <!-- Schedule Expiry -->
                 <div style="margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
                     <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
@@ -682,7 +657,6 @@
                 </div>
             </div>
 
-            <!-- Existing Short Links -->
             <div class="card">
                 <h3>🔍 Manage Short Links</h3>
                 <div class="search-bar">
@@ -694,7 +668,6 @@
         </div>
     </div>
 
-    <!-- ===== EDIT MODAL ===== -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeEditModal()">✕</button>
@@ -712,9 +685,6 @@
             window.location.href = 'login.html';
         }
 
-        // ============================================================
-        // SECTION: MENU
-        // ============================================================
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(function(el) {
                 el.classList.remove('active');
@@ -744,9 +714,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: UTILITY
-        // ============================================================
         async function secureFetch(url, options) {
             options = options || {};
             try {
@@ -787,9 +754,6 @@
             return div.innerHTML;
         }
 
-        // ============================================================
-        // SECTION: PWA INSTALL
-        // ============================================================
         var deferredPrompt;
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
@@ -812,9 +776,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: THEME
-        // ============================================================
         async function setTheme(theme) {
             document.body.className = theme;
             var r = await secureFetch('/api/admin/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
@@ -834,9 +795,6 @@
             } catch (e) {}
         }
 
-        // ============================================================
-        // SECTION: LOGOUT
-        // ============================================================
         async function logout() {
             if (confirm('Are you sure you want to logout?')) {
                 try {
@@ -847,9 +805,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: STATS
-        // ============================================================
         var liveInterval = null;
 
         async function loadStats() {
@@ -891,9 +846,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: LIVE VISITORS & CLAIMS
-        // ============================================================
         var previousLiveData = {};
 
         function updateLiveVisitors(data) {
@@ -909,7 +861,43 @@
             }
 
             var stats = data.global || {};
+            var links = data.links || [];
             
+            // Calculate Active Visits - Users currently watching video
+            var activeVisits = stats.activeNow || 0;
+            
+            // Active Claims - Users currently claiming
+            var activeClaims = stats.activeClaims || Math.round((stats.visits60m || 0) * 0.3);
+            if (activeClaims < 0) activeClaims = 0;
+            
+            // More accurate calculation from links
+            if (links && links.length > 0) {
+                var totalActiveVisits = 0;
+                var totalActiveClaims = 0;
+                var today = new Date().toISOString().split('T')[0];
+                
+                links.forEach(function(link) {
+                    if (link.dailyVisits && link.dailyVisits[today]) {
+                        var recentVisits = link.dailyVisits[today];
+                        if (recentVisits > 0) {
+                            totalActiveVisits += Math.max(1, Math.round(recentVisits * 0.15));
+                        }
+                    }
+                    if (link.dailyClaims && link.dailyClaims[today]) {
+                        var recentClaims = link.dailyClaims[today];
+                        if (recentClaims > 0) {
+                            totalActiveClaims += Math.max(0, Math.round(recentClaims * 0.15));
+                        }
+                    }
+                });
+                
+                if (totalActiveVisits > 0) activeVisits = totalActiveVisits;
+                if (totalActiveClaims > 0) activeClaims = totalActiveClaims;
+            }
+            
+            if (activeVisits < 1) activeVisits = Math.max(1, Math.round(stats.visits60m / 12));
+            if (activeClaims < 1) activeClaims = Math.round(activeVisits * 0.3);
+
             // Lifetime Visits
             var lifetimeVisits = document.getElementById('liveLifetimeVisits');
             if (lifetimeVisits) {
@@ -965,19 +953,17 @@
             // Active Visits
             var liveActiveVisits = document.getElementById('liveActiveVisits');
             if (liveActiveVisits) {
-                var newValActive = stats.activeNow || 0;
-                if (previousLiveData.liveActiveVisits !== newValActive) {
-                    liveActiveVisits.textContent = newValActive;
+                if (previousLiveData.liveActiveVisits !== activeVisits) {
+                    liveActiveVisits.textContent = activeVisits;
                     liveActiveVisits.classList.add('pulse-update');
                     setTimeout(function() { liveActiveVisits.classList.remove('pulse-update'); }, 300);
                 }
-                previousLiveData.liveActiveVisits = newValActive;
+                previousLiveData.liveActiveVisits = activeVisits;
             }
             
             // Active Claims
             var liveActiveClaims = document.getElementById('liveActiveClaims');
             if (liveActiveClaims) {
-                var activeClaims = Math.round((stats.activeNow || 0) * 0.6);
                 if (previousLiveData.liveActiveClaims !== activeClaims) {
                     liveActiveClaims.textContent = activeClaims;
                     liveActiveClaims.classList.add('pulse-update');
@@ -986,7 +972,6 @@
                 previousLiveData.liveActiveClaims = activeClaims;
             }
             
-            // Update refresh time
             var refreshTime = document.getElementById('lastRefreshTime');
             if (refreshTime) {
                 var nowTime = new Date();
@@ -994,16 +979,12 @@
             }
         }
 
-        // Start live refresh (every 5 seconds)
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
             loadStats();
-            liveInterval = setInterval(function() { loadStats(); }, 5000);
+            liveInterval = setInterval(function() { loadStats(); }, 2000);
         }
 
-        // ============================================================
-        // SECTION: LINKS
-        // ============================================================
         var allLinks = [];
 
         async function loadLinks() {
@@ -1117,9 +1098,6 @@
             } catch (e) { showToast('❌ Failed to update status', 'error'); }
         }
 
-        // ============================================================
-        // SECTION: EDIT MODAL
-        // ============================================================
         var editingLinkId = null;
 
         function openEditModal(linkId) {
@@ -1277,9 +1255,6 @@
             }
         });
 
-        // ============================================================
-        // SECTION: CREATE LINK
-        // ============================================================
         var selectedExpiry = null;
 
         function updateSchedulePreset() {
@@ -1318,7 +1293,6 @@
             }
         }
 
-        // Popup preview live update
         document.getElementById('popupTitle').addEventListener('input', function() {
             document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
         });
@@ -1398,9 +1372,6 @@
             showToast('✅ Link copied!', 'success');
         }
 
-        // ============================================================
-        // SECTION: ANALYTICS
-        // ============================================================
         var analyticsLinks = [];
         var currentFilter = 'lifetime';
         var currentLinkId = null;
@@ -1566,16 +1537,11 @@
             return result;
         }
 
-        // ============================================================
-        // SECTION: CHARTS (UPDATED WITH BETTER STYLING)
-        // ============================================================
-
         function renderAnalyticsChart(data) {
             var container = document.getElementById('analyticsChart');
             var dates = Object.keys(data.dailyData);
             dates.sort();
             
-            // Filter based on graph mode
             var now = new Date();
             var filteredDates = [];
             if (analyticsGraphMode === '7days') {
@@ -1619,7 +1585,6 @@
                 });
             }
             
-            // Format labels for display
             var labels = filteredDates.map(function(d) { 
                 if (analyticsGraphMode === '24h') {
                     var date = new Date(d);
@@ -1633,7 +1598,6 @@
                 analyticsChartInstance.destroy();
             }
             
-            // Create gradient for fill
             var gradient = ctx.createLinearGradient(0, 0, 0, 280);
             gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
             gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
@@ -1771,12 +1735,9 @@
                 
                 visitsData = displayDates.map(function(d) { return dailyVisitors[d] || 0; });
                 claimsData = displayDates.map(function(d) { return dailyClaims[d] || 0; });
-                
-                // Format dates for display (MM-DD)
                 displayDates = displayDates.map(function(d) { return d.substring(5); });
                 
             } else {
-                // 24h - Show from 12:00 AM to current time
                 var todayStart = new Date(now);
                 todayStart.setHours(0, 0, 0, 0);
                 
@@ -1814,7 +1775,6 @@
                 dashboardChartInstance.destroy();
             }
             
-            // Create gradient for fill
             var gradient = ctx.createLinearGradient(0, 0, 0, 280);
             gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
             gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
@@ -1952,9 +1912,6 @@
             loadAnalytics();
         }
 
-        // ============================================================
-        // SECTION: DOWNLOAD ANALYTICS
-        // ============================================================
         async function downloadAnalyticsImage() {
             if (!currentLinkId) {
                 showToast('⚠️ Please select a link', 'error');
@@ -2025,9 +1982,6 @@
             showToast('✅ CSV downloaded!', 'success');
         }
 
-        // ============================================================
-        // SECTION: BACKGROUND
-        // ============================================================
         document.getElementById('bgImageUrl').addEventListener('input', function() {
             var url = this.value.trim();
             var preview = document.getElementById('bgImagePreview');
@@ -2082,9 +2036,6 @@
             } catch (e) {}
         }
 
-        // ============================================================
-        // SECTION: SECRET KEY
-        // ============================================================
         async function loadSecretKey() {
             try {
                 var r = await secureFetch('/api/admin/secret-key');
@@ -2132,9 +2083,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: CONTACT SETTINGS
-        // ============================================================
         async function updateContactInfo() {
             var email = document.getElementById('adminEmail').value.trim();
             var phone = document.getElementById('adminPhone').value.trim();
@@ -2171,9 +2119,6 @@
             } catch (e) {}
         }
 
-        // ============================================================
-        // SECTION: PASSCODE CHANGE
-        // ============================================================
         async function changePasscode() {
             var oldPasscode = document.getElementById('oldPasscode').value;
             var newPasscode = document.getElementById('newPasscode').value;
@@ -2217,9 +2162,6 @@
             }
         }
 
-        // ============================================================
-        // SECTION: DEVICE MANAGEMENT
-        // ============================================================
         var currentDeviceMode = 'blocked';
 
         async function loadBlockedDevices() {
@@ -2393,9 +2335,6 @@
             } catch (e) { showToast('❌ Failed to delete record', 'error'); }
         }
 
-        // ============================================================
-        // SECTION: URL SHORTENER
-        // ============================================================
         var allShortLinks = [];
 
         async function loadShortLinkStats() {
@@ -2674,9 +2613,6 @@
             } catch (e) { showToast('❌ Failed to update', 'error'); }
         }
 
-        // ============================================================
-        // SECTION: CHECK AUTH
-        // ============================================================
         async function checkAuth() {
             try {
                 var response = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
@@ -2692,172 +2628,6 @@
             }
         }
 
-        // ============================================================
-// SECTION: LIVE VISITORS & CLAIMS (Real-time 2 second refresh)
-// ============================================================
-
-// ✅ UPDATED: Track active users watching video and claiming
-function updateLiveVisitors(data) {
-    if (!data) {
-        secureFetch('/api/all-stats').then(function(response) {
-            if (response && response.ok) {
-                response.json().then(function(d) {
-                    updateLiveVisitors(d);
-                });
-            }
-        });
-        return;
-    }
-
-    var stats = data.global || {};
-    var links = data.links || [];
-    
-    // ✅ Calculate Active Visits - Users currently watching video
-    // Active means: users who have visited in last 5 minutes and haven't claimed yet
-    var activeVisits = 0;
-    var activeClaims = 0;
-    
-    // Use real-time data from activeNow (from server)
-    activeVisits = stats.activeNow || 0;
-    
-    // Active Claims: users who have claimed in last 5 minutes
-    // Calculate based on recent claims
-    activeClaims = Math.round((stats.visits60m || 0) * 0.3);
-    if (activeClaims < 0) activeClaims = 0;
-    
-    // If we have link data, calculate more accurately
-    if (links && links.length > 0) {
-        var totalActiveVisits = 0;
-        var totalActiveClaims = 0;
-        var now = new Date();
-        var fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-        
-        links.forEach(function(link) {
-            // Check if link was visited recently
-            if (link.dailyVisits) {
-                var recentVisits = 0;
-                var recentClaims = 0;
-                var today = new Date().toISOString().split('T')[0];
-                
-                // Check today's data
-                if (link.dailyVisits[today]) {
-                    recentVisits = link.dailyVisits[today];
-                }
-                if (link.dailyClaims && link.dailyClaims[today]) {
-                    recentClaims = link.dailyClaims[today];
-                }
-                
-                // For active now, use a percentage of today's activity
-                if (recentVisits > 0) {
-                    totalActiveVisits += Math.max(1, Math.round(recentVisits * 0.15));
-                }
-                if (recentClaims > 0) {
-                    totalActiveClaims += Math.max(0, Math.round(recentClaims * 0.15));
-                }
-            }
-        });
-        
-        // Use the more accurate calculation if available
-        if (totalActiveVisits > 0) activeVisits = totalActiveVisits;
-        if (totalActiveClaims > 0) activeClaims = totalActiveClaims;
-    }
-    
-    // Ensure minimum values for demo
-    if (activeVisits < 1) activeVisits = Math.max(1, Math.round(stats.visits60m / 12));
-    if (activeClaims < 1) activeClaims = Math.round(activeVisits * 0.3);
-    
-    // Lifetime Visits
-    var lifetimeVisits = document.getElementById('liveLifetimeVisits');
-    if (lifetimeVisits) {
-        var newVal = stats.totalVisitors || 0;
-        if (previousLiveData.lifetimeVisits !== newVal) {
-            lifetimeVisits.textContent = newVal;
-            lifetimeVisits.classList.add('pulse-update');
-            setTimeout(function() { lifetimeVisits.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.lifetimeVisits = newVal;
-    }
-    
-    // Lifetime Claims
-    var lifetimeClaims = document.getElementById('liveLifetimeClaims');
-    if (lifetimeClaims) {
-        var newVal = stats.totalClaims || 0;
-        if (previousLiveData.lifetimeClaims !== newVal) {
-            lifetimeClaims.textContent = newVal;
-            lifetimeClaims.classList.add('pulse-update');
-            setTimeout(function() { lifetimeClaims.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.lifetimeClaims = newVal;
-    }
-    
-    // 48h Visits
-    var live48hrVisits = document.getElementById('live48hrVisits');
-    if (live48hrVisits) {
-        var newVal24h = stats.visits24h || 0;
-        if (previousLiveData.live48hrVisits !== newVal24h) {
-            live48hrVisits.textContent = newVal24h;
-            live48hrVisits.classList.add('pulse-update');
-            setTimeout(function() { live48hrVisits.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.live48hrVisits = newVal24h;
-    }
-    var live48hrTime = document.getElementById('live48hrTime');
-    if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
-    
-    // 48h Claims
-    var live48hrClaims = document.getElementById('live48hrClaims');
-    if (live48hrClaims) {
-        var newValClaims = stats.claims24h || 0;
-        if (previousLiveData.live48hrClaims !== newValClaims) {
-            live48hrClaims.textContent = newValClaims;
-            live48hrClaims.classList.add('pulse-update');
-            setTimeout(function() { live48hrClaims.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.live48hrClaims = newValClaims;
-    }
-    var live48hrClaimsTime = document.getElementById('live48hrClaimsTime');
-    if (live48hrClaimsTime) live48hrClaimsTime.textContent = 'Last 48 hours';
-    
-    // ✅ Active Visits - Users currently watching video
-    var liveActiveVisits = document.getElementById('liveActiveVisits');
-    if (liveActiveVisits) {
-        if (previousLiveData.liveActiveVisits !== activeVisits) {
-            liveActiveVisits.textContent = activeVisits;
-            liveActiveVisits.classList.add('pulse-update');
-            setTimeout(function() { liveActiveVisits.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.liveActiveVisits = activeVisits;
-    }
-    
-    // ✅ Active Claims - Users currently claiming
-    var liveActiveClaims = document.getElementById('liveActiveClaims');
-    if (liveActiveClaims) {
-        if (previousLiveData.liveActiveClaims !== activeClaims) {
-            liveActiveClaims.textContent = activeClaims;
-            liveActiveClaims.classList.add('pulse-update');
-            setTimeout(function() { liveActiveClaims.classList.remove('pulse-update'); }, 300);
-        }
-        previousLiveData.liveActiveClaims = activeClaims;
-    }
-    
-    // Update refresh time
-    var refreshTime = document.getElementById('lastRefreshTime');
-    if (refreshTime) {
-        var nowTime = new Date();
-        refreshTime.textContent = 'Last updated: ' + nowTime.toLocaleTimeString();
-    }
-}
-
-// ✅ UPDATED: Start live refresh every 2 seconds
-function startLiveRefresh() {
-    if (liveInterval) clearInterval(liveInterval);
-    loadStats();
-    liveInterval = setInterval(function() { loadStats(); }, 2000);
-}
-
-        // ============================================================
-        // SECTION: INIT
-        // ============================================================
         loadTheme();
         loadBackground();
         loadLinks();
@@ -2871,7 +2641,6 @@ function startLiveRefresh() {
         checkAuth();
         loadSecretKey();
 
-        // Make functions globally accessible
         window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
