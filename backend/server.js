@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
+// ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Link = require('./models/Link');
@@ -28,10 +29,13 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
+// ==================== Security Module ====================
 const Security = require('./config/security');
 
+// Connect to MongoDB
 connectDB();
 
+// ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
@@ -39,9 +43,11 @@ const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
+// Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
+// ==================== Email Transporter ====================
 let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
@@ -53,6 +59,7 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
+// ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
         const adminExists = await User.findOne();
@@ -127,6 +134,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -164,6 +172,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -194,6 +203,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static('.'));
 
+// ==================== JWT & Auth ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -254,6 +264,7 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
+// ==================== Logging Function ====================
 async function logAdminAction(userId, action, details = {}, req = null) {
     try {
         const ip = req?.ip || req?.connection?.remoteAddress || null;
@@ -264,6 +275,7 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
+// ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const blocked = await BlockedDevice.findOne({
@@ -398,6 +410,7 @@ async function incrementDeviceAttempts(req) {
     }
 }
 
+// ==================== Login Attempt Tracking ====================
 async function checkLoginAttempts(ip) {
     const record = await LoginAttempt.findOne({ ip });
     if (!record) return { allowed: true, attempts: 0 };
@@ -431,6 +444,7 @@ async function recordLoginAttempt(ip, success) {
     return record;
 }
 
+// ==================== Session Management ====================
 async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
     const session = new Session({
         token, userId, csrfToken, ip, userAgent,
@@ -458,6 +472,7 @@ async function invalidateAllSessions(userId) {
     await Session.updateMany({ userId, isActive: true }, { isActive: false });
 }
 
+// ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -502,6 +517,7 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
+// ==================== OTP Verification Functions ====================
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -560,7 +576,9 @@ async function verifyOTP(deviceId, otp) {
     return false;
 }
 
-// ==================== PUBLIC ROUTES ====================
+// ================================================================
+// ==================== PUBLIC ROUTES (NO AUTH) ====================
+// ================================================================
 
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
@@ -847,6 +865,7 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
+// ==================== PUBLIC SECRET KEY ENDPOINTS ====================
 app.get('/api/admin/public-secret-key', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -874,7 +893,6 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
 });
 
 // ==================== SAVED DEVICE ENDPOINTS ====================
-
 app.get('/api/admin/check-saved-device', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
@@ -953,7 +971,9 @@ app.post('/api/admin/remove-saved-device', async (req, res) => {
     }
 });
 
-// ==================== ADMIN ROUTES ====================
+// ================================================================
+// ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
+// ================================================================
 
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
@@ -1031,7 +1051,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
                 await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
                 
-                // Save device if Remember Me is checked
                 if (rememberMe) {
                     const adminData = await User.findOne();
                     if (adminData) {
@@ -1094,7 +1113,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
             await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
             
-            // Save device if Remember Me is checked
             if (rememberMe) {
                 const adminData = await User.findOne();
                 if (adminData) {
@@ -1251,6 +1269,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== SECRET KEY MANAGEMENT ====================
 app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -1285,6 +1304,7 @@ app.post('/api/admin/secret-key', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== LINKS CRUD ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -1677,6 +1697,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== DEVICE MANAGEMENT ROUTES ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1814,7 +1835,6 @@ app.get('/api/admin/block-status', async (req, res) => {
 });
 
 // ==================== ADMIN PANEL PROTECTION ====================
-
 app.use('/admin', async (req, res, next) => {
     const referer = req.headers.referer || '';
     const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
@@ -1922,7 +1942,6 @@ app.get('/blocked', (req, res) => {
 });
 
 // ==================== SHORT LINK ROUTES ====================
-
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -2152,7 +2171,6 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 });
 
 // ==================== SERVE PAGES ====================
-
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
@@ -2189,7 +2207,6 @@ app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 // ==================== SESSION CLEANUP ====================
-
 setInterval(async () => {
     try {
         const result = await Session.deleteMany({ expiresAt: { $lt: new Date() } });
@@ -2207,7 +2224,6 @@ setInterval(async () => {
 }, 60 * 60 * 1000);
 
 // ==================== START SERVER ====================
-
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🔒 SECURE SERVER STARTED SUCCESSFULLY!');

@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const SessionSchema = new mongoose.Schema({
     token: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     userId: {
         type: String,
@@ -40,7 +39,8 @@ const SessionSchema = new mongoose.Schema({
     }
 });
 
-SessionSchema.index({ token: 1 });
+// Remove duplicate indexes - use only these
+SessionSchema.index({ token: 1 }, { unique: true });
 SessionSchema.index({ expiresAt: 1 });
 SessionSchema.index({ userId: 1, isActive: 1 });
 
