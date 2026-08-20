@@ -1713,122 +1713,10 @@ app.get('/api/admin/block-status', async (req, res) => {
     }
 });
 
-// ==================== ADMIN PANEL PROTECTION ====================
-// ✅ IMPORTANT: This middleware should NOT affect public routes
-// It only blocks unauthorized access to /admin/* routes that are NOT already handled
-app.use('/admin', async (req, res, next) => {
-    // Skip if the route is already handled (secret-gateway, login, index)
-    // These are handled by the specific GET routes above
-    if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
-        return next();
-    }
-    
-    const referer = req.headers.referer || '';
-    const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
-    if (isFromVisitorLink && !req.cookies?.adminToken) {
-        const { deviceName } = getDeviceDetails(req);
-        await blockDevice(req, 'Unauthorized admin access from visitor link', 48 * 60);
-        console.log(`🚨 ATTACK DETECTED: Device ${deviceName} attempted to access admin from visitor link`);
-        return res.status(403).send(`
-            <html>
-                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;flex-direction:column;text-align:center;padding:20px;">
-                    <div style="font-size:80px;">🚫</div>
-                    <h1 style="color:#ef4444;">Access Denied!</h1>
-                    <p style="color:#94a3b8;max-width:400px;">
-                        Your device has been blocked for attempting unauthorized access to the admin panel.
-                        Please contact the administrator if this is a mistake.
-                    </p>
-                    <div style="margin-top:20px;padding:15px;background:rgba(239,68,68,0.05);border-radius:10px;border:1px solid rgba(239,68,68,0.15);">
-                        <p style="font-size:13px;color:#ef4444;">🚨 Block Reason: Unauthorized admin access attempt</p>
-                        <p style="font-size:12px;color:#4a4e57;">Block duration: 48 hours</p>
-                    </div>
-                </body>
-            </html>
-        `);
-    }
-    next();
-});
-
-app.get('/blocked', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Device Blocked</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-                body {
-                    background: #0f1117;
-                    min-height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 20px;
-                }
-                .block-container {
-                    max-width: 500px;
-                    width: 100%;
-                    background: rgba(26, 28, 35, 0.7);
-                    backdrop-filter: blur(20px);
-                    border-radius: 24px;
-                    padding: 40px;
-                    text-align: center;
-                    border: 1px solid rgba(255,255,255,0.05);
-                    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
-                    animation: fadeInUp 0.8s ease;
-                }
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(30px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .block-icon { font-size: 80px; margin-bottom: 15px; animation: float 3s ease-in-out infinite; }
-                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-                .block-title { font-size: 32px; font-weight: 800; color: #ef4444; margin-bottom: 8px; }
-                .block-subtitle { font-size: 16px; color: #94a3b8; margin-bottom: 20px; }
-                .block-details {
-                    background: rgba(239,68,68,0.05);
-                    border: 1px solid rgba(239,68,68,0.15);
-                    border-radius: 12px;
-                    padding: 15px;
-                    margin: 15px 0;
-                }
-                .block-details p { font-size: 13px; color: #94a3b8; margin: 4px 0; }
-                .block-details .label { color: #4a4e57; font-weight: 600; }
-                .block-details .value { color: #ef4444; font-weight: 600; }
-                .block-status {
-                    display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px;
-                    font-weight: 700; text-transform: uppercase; background: rgba(239,68,68,0.1);
-                    color: #ef4444; border: 1px solid rgba(239,68,68,0.15); margin-top: 10px;
-                }
-                .block-footer { margin-top: 20px; font-size: 12px; color: #4a4e57; }
-                @media (max-width: 480px) {
-                    .block-container { padding: 30px 20px; }
-                    .block-title { font-size: 24px; }
-                    .block-icon { font-size: 60px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="block-container">
-                <div class="block-icon">🔒</div>
-                <h1 class="block-title">Device Permanently Blocked</h1>
-                <p class="block-subtitle">This device has been permanently banned by the admin.</p>
-                <div class="block-details">
-                    <p><span class="label">📱 Device:</span> <span class="value">${req.query.device || 'Unknown'}</span></p>
-                    <p><span class="label">📅 Blocked Date:</span> <span class="value">${new Date().toLocaleString()}</span></p>
-                    <p><span class="label">🚨 Reason:</span> <span class="value">${req.query.reason || 'Permanent ban by admin'}</span></p>
-                </div>
-                <div class="block-status">⛔ PERMANENTLY BLOCKED</div>
-                <p class="block-footer">If you believe this is a mistake, please contact the administrator.</p>
-            </div>
-        </body>
-        </html>
-    `);
-});
-
+// ================================================================
 // ==================== SHORT LINK ROUTES ====================
+// ================================================================
+
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -2057,23 +1945,28 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
+// ================================================================
 // ==================== SERVE PAGES ====================
+// ================================================================
 
-// ✅ FIXED: Public routes - No auth required
-// These must be defined BEFORE the /admin middleware
+// ✅ IMPORTANT: Public routes FIRST (No auth required)
+// These must be defined BEFORE the admin middleware
+
+app.get('/', (req, res) => {
+    res.redirect('/admin/secret-gateway');
+});
 
 // Secret Gateway - Public access
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
-// Login page - Public access (but with referer check)
+// Login page - Public access (with referer check)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer && referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
     
-    // If already logged in, redirect to index
     if (token) {
         const decoded = verifyToken(token);
         if (decoded) {
@@ -2081,7 +1974,6 @@ app.get('/admin/login.html', (req, res) => {
         }
     }
     
-    // Only allow from secret gateway
     if (isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
@@ -2089,7 +1981,7 @@ app.get('/admin/login.html', (req, res) => {
     }
 });
 
-// Admin index - Auth required (redirects to secret gateway if not logged in)
+// Admin index - Auth required
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     
@@ -2104,16 +1996,130 @@ app.get('/admin/index.html', (req, res) => {
 });
 
 // Other public pages
-app.get('/', (req, res) => {
-    res.redirect('/admin/secret-gateway');
-});
-
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
 app.get('/user-dashboard/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
 app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, '..', 'manifest.json')));
 app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')));
+
+// ================================================================
+// ==================== ADMIN PANEL PROTECTION ====================
+// ================================================================
+
+// ✅ MIDDLEWARE: Only for admin API routes, NOT for public pages
+// This runs AFTER the public routes above, so it won't block secret-gateway
+app.use('/admin', async (req, res, next) => {
+    // Skip public admin pages (already handled above)
+    if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
+        return next();
+    }
+    
+    const referer = req.headers.referer || '';
+    const isFromVisitorLink = referer.includes('/v/') || referer.includes('/uid?link=') || referer.includes('/user-dashboard/');
+    
+    if (isFromVisitorLink && !req.cookies?.adminToken) {
+        const { deviceName } = getDeviceDetails(req);
+        await blockDevice(req, 'Unauthorized admin access from visitor link', 48 * 60);
+        console.log(`🚨 ATTACK DETECTED: Device ${deviceName} attempted to access admin from visitor link`);
+        return res.status(403).send(`
+            <html>
+                <body style="background:#0f1117;color:#e2e8f0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:Inter,sans-serif;flex-direction:column;text-align:center;padding:20px;">
+                    <div style="font-size:80px;">🚫</div>
+                    <h1 style="color:#ef4444;">Access Denied!</h1>
+                    <p style="color:#94a3b8;max-width:400px;">
+                        Your device has been blocked for attempting unauthorized access to the admin panel.
+                        Please contact the administrator if this is a mistake.
+                    </p>
+                    <div style="margin-top:20px;padding:15px;background:rgba(239,68,68,0.05);border-radius:10px;border:1px solid rgba(239,68,68,0.15);">
+                        <p style="font-size:13px;color:#ef4444;">🚨 Block Reason: Unauthorized admin access attempt</p>
+                        <p style="font-size:12px;color:#4a4e57;">Block duration: 48 hours</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    }
+    next();
+});
+
+app.get('/blocked', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Device Blocked</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+                * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+                body {
+                    background: #0f1117;
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                }
+                .block-container {
+                    max-width: 500px;
+                    width: 100%;
+                    background: rgba(26, 28, 35, 0.7);
+                    backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px;
+                    text-align: center;
+                    border: 1px solid rgba(255,255,255,0.05);
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+                    animation: fadeInUp 0.8s ease;
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .block-icon { font-size: 80px; margin-bottom: 15px; animation: float 3s ease-in-out infinite; }
+                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                .block-title { font-size: 32px; font-weight: 800; color: #ef4444; margin-bottom: 8px; }
+                .block-subtitle { font-size: 16px; color: #94a3b8; margin-bottom: 20px; }
+                .block-details {
+                    background: rgba(239,68,68,0.05);
+                    border: 1px solid rgba(239,68,68,0.15);
+                    border-radius: 12px;
+                    padding: 15px;
+                    margin: 15px 0;
+                }
+                .block-details p { font-size: 13px; color: #94a3b8; margin: 4px 0; }
+                .block-details .label { color: #4a4e57; font-weight: 600; }
+                .block-details .value { color: #ef4444; font-weight: 600; }
+                .block-status {
+                    display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px;
+                    font-weight: 700; text-transform: uppercase; background: rgba(239,68,68,0.1);
+                    color: #ef4444; border: 1px solid rgba(239,68,68,0.15); margin-top: 10px;
+                }
+                .block-footer { margin-top: 20px; font-size: 12px; color: #4a4e57; }
+                @media (max-width: 480px) {
+                    .block-container { padding: 30px 20px; }
+                    .block-title { font-size: 24px; }
+                    .block-icon { font-size: 60px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="block-container">
+                <div class="block-icon">🔒</div>
+                <h1 class="block-title">Device Permanently Blocked</h1>
+                <p class="block-subtitle">This device has been permanently banned by the admin.</p>
+                <div class="block-details">
+                    <p><span class="label">📱 Device:</span> <span class="value">${req.query.device || 'Unknown'}</span></p>
+                    <p><span class="label">📅 Blocked Date:</span> <span class="value">${new Date().toLocaleString()}</span></p>
+                    <p><span class="label">🚨 Reason:</span> <span class="value">${req.query.reason || 'Permanent ban by admin'}</span></p>
+                </div>
+                <div class="block-status">⛔ PERMANENTLY BLOCKED</div>
+                <p class="block-footer">If you believe this is a mistake, please contact the administrator.</p>
+            </div>
+        </body>
+        </html>
+    `);
+});
 
 // ==================== SESSION CLEANUP ====================
 setInterval(async () => {
