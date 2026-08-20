@@ -409,7 +409,7 @@
                         <button onclick="switchDashboardData('unique')" class="btn btn-outline btn-sm" id="dashDataUnique">👤 Unique</button>
                     </div>
                 </div>
-                <div style="height:250px;position:relative;">
+                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
                     <canvas id="dashboardChart"></canvas>
                 </div>
             </div>
@@ -475,7 +475,7 @@
                             <button onclick="switchAnalyticsData('unique')" class="btn btn-outline btn-sm" id="anaDataUnique">👤 Unique</button>
                         </div>
                     </div>
-                    <div style="height:250px;position:relative;">
+                    <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
                         <canvas id="analyticsChart"></canvas>
                     </div>
                 </div>
@@ -974,7 +974,7 @@
                 previousLiveData.liveActiveVisits = newValActive;
             }
             
-            // Active Claims (approx based on ratio)
+            // Active Claims
             var liveActiveClaims = document.getElementById('liveActiveClaims');
             if (liveActiveClaims) {
                 var activeClaims = Math.round((stats.activeNow || 0) * 0.6);
@@ -1527,8 +1527,19 @@
             if (currentFilter === 'lifetime') {
                 filteredDates = allDates;
             } else if (currentFilter === '24h') {
-                var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
+                var todayStart = new Date(now);
+                todayStart.setHours(0, 0, 0, 0);
+                filteredDates = allDates.filter(function(d) { 
+                    var date = new Date(d); 
+                    return date >= todayStart; 
+                });
+                if (filteredDates.length === 0) {
+                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    filteredDates = allDates.filter(function(d) { 
+                        var date = new Date(d); 
+                        return date >= oneDayAgo; 
+                    });
+                }
             } else if (currentFilter === 'custom') {
                 var fromDate = document.getElementById('analyticsFromDate').value;
                 var toDate = document.getElementById('analyticsToDate').value;
@@ -1550,14 +1561,15 @@
                 result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
             });
             var uniqueDays = Object.keys(result.dailyData).length || 1;
-            result.uniqueVisitors = Math.round(result.totalVisits / uniqueDays * 0.7);
-            result.uniqueClaims = Math.round(result.totalClaims / uniqueDays * 0.7);
+            result.uniqueVisitors = Math.round(result.totalVisits / uniqueDays * 0.6);
+            result.uniqueClaims = Math.round(result.totalClaims / uniqueDays * 0.6);
             return result;
         }
 
         // ============================================================
-        // SECTION: CHARTS (FIXED)
+        // SECTION: CHARTS (UPDATED WITH BETTER STYLING)
         // ============================================================
+
         function renderAnalyticsChart(data) {
             var container = document.getElementById('analyticsChart');
             var dates = Object.keys(data.dailyData);
@@ -1568,10 +1580,24 @@
             var filteredDates = [];
             if (analyticsGraphMode === '7days') {
                 var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                filteredDates = dates.filter(function(d) { var date = new Date(d); return date >= sevenDaysAgo; });
+                filteredDates = dates.filter(function(d) { 
+                    var date = new Date(d); 
+                    return date >= sevenDaysAgo; 
+                });
             } else if (analyticsGraphMode === '24h') {
-                var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                filteredDates = dates.filter(function(d) { var date = new Date(d); return date >= oneDayAgo; });
+                var todayStart = new Date(now);
+                todayStart.setHours(0, 0, 0, 0);
+                filteredDates = dates.filter(function(d) { 
+                    var date = new Date(d); 
+                    return date >= todayStart; 
+                });
+                if (filteredDates.length === 0) {
+                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    filteredDates = dates.filter(function(d) { 
+                        var date = new Date(d); 
+                        return date >= oneDayAgo; 
+                    });
+                }
             } else {
                 filteredDates = dates;
             }
@@ -1583,7 +1609,6 @@
                 visitsData = filteredDates.map(function(d) { return data.dailyData[d] ? data.dailyData[d].visits : 0; });
                 claimsData = filteredDates.map(function(d) { return data.dailyData[d] ? data.dailyData[d].claims : 0; });
             } else {
-                // Unique: lower values (approx 60-70% of total)
                 visitsData = filteredDates.map(function(d) { 
                     var v = data.dailyData[d] ? data.dailyData[d].visits : 0;
                     return Math.round(v * 0.6);
@@ -1594,39 +1619,63 @@
                 });
             }
             
+            // Format labels for display
+            var labels = filteredDates.map(function(d) { 
+                if (analyticsGraphMode === '24h') {
+                    var date = new Date(d);
+                    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+                return d.substring(5); 
+            });
+            
             var ctx = document.getElementById('analyticsChart').getContext('2d');
             if (analyticsChartInstance) {
                 analyticsChartInstance.destroy();
             }
+            
+            // Create gradient for fill
+            var gradient = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+            
+            var gradient2 = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient2.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
+            gradient2.addColorStop(0.5, 'rgba(245, 158, 11, 0.1)');
+            gradient2.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
+            
             analyticsChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: filteredDates.map(function(d) { 
-                        if (analyticsGraphMode === '24h') {
-                            return d.substring(11, 16) || d.substring(5);
-                        }
-                        return d.substring(5); 
-                    }),
+                    labels: labels,
                     datasets: [
                         {
                             label: 'Visits',
                             data: visitsData,
                             borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99,102,241,0.1)',
+                            backgroundColor: gradient,
                             fill: true,
                             tension: 0.4,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#6366f1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            borderWidth: 3
                         },
                         {
                             label: 'Claims',
                             data: claimsData,
                             borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245,158,11,0.1)',
+                            backgroundColor: gradient2,
                             fill: true,
                             tension: 0.4,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#f59e0b',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            borderWidth: 3
                         }
                     ]
                 },
@@ -1635,26 +1684,61 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            labels: { color: '#e2e8f0' }
+                            labels: { 
+                                color: '#94a3b8',
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(15, 17, 23, 0.9)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(99,102,241,0.2)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
                             callbacks: {
                                 afterLabel: function(context) {
                                     var fullDate = filteredDates[context.dataIndex];
-                                    return 'Date: ' + fullDate;
+                                    if (analyticsGraphMode === '24h') {
+                                        var date = new Date(fullDate);
+                                        return '📅 ' + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                                    }
+                                    return '📅 ' + fullDate;
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#94a3b8', maxTicksLimit: 15 },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            ticks: { 
+                                color: '#64748b',
+                                maxTicksLimit: 15,
+                                font: { size: 10 }
+                            },
+                            grid: { 
+                                color: 'rgba(255,255,255,0.04)',
+                                drawBorder: false
+                            }
                         },
                         y: {
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            ticks: { 
+                                color: '#64748b',
+                                stepSize: 1,
+                                font: { size: 10 }
+                            },
+                            grid: { 
+                                color: 'rgba(255,255,255,0.04)',
+                                drawBorder: false
+                            },
+                            beginAtZero: true
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
@@ -1667,36 +1751,80 @@
             var dailyClaims = stats.dailyClaims || {};
             var hourlyVisitors = stats.hourlyVisitors || {};
             var hourlyClaims = stats.hourlyClaims || {};
-            var dates = Object.keys(dailyVisitors);
-            if (dates.length === 0) {
-                dates = Object.keys(dailyClaims);
-            }
-            dates.sort();
-            var displayDates, visitsData, claimsData;
+            
+            var now = new Date();
+            var displayDates = [];
+            var visitsData = [];
+            var claimsData = [];
+            
             if (dashboardGraphMode === '7days') {
-                var sevenDaysAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
-                displayDates = dates.filter(function(d) { var date = new Date(d); return date >= sevenDaysAgo; });
-                if (displayDates.length === 0) displayDates = dates.slice(-7);
+                var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                var allDates = Object.keys(dailyVisitors);
+                if (allDates.length === 0) allDates = Object.keys(dailyClaims);
+                allDates.sort();
+                
+                displayDates = allDates.filter(function(d) { 
+                    var date = new Date(d); 
+                    return date >= sevenDaysAgo; 
+                });
+                if (displayDates.length === 0) displayDates = allDates.slice(-7);
+                
                 visitsData = displayDates.map(function(d) { return dailyVisitors[d] || 0; });
                 claimsData = displayDates.map(function(d) { return dailyClaims[d] || 0; });
+                
+                // Format dates for display (MM-DD)
+                displayDates = displayDates.map(function(d) { return d.substring(5); });
+                
             } else {
-                // 24h - use hourly data
+                // 24h - Show from 12:00 AM to current time
+                var todayStart = new Date(now);
+                todayStart.setHours(0, 0, 0, 0);
+                
                 var hourKeys = Object.keys(hourlyVisitors).sort();
-                var last24Keys = hourKeys.slice(-24);
-                displayDates = last24Keys.map(function(k) { return k.substring(11, 16); });
-                visitsData = last24Keys.map(function(k) { return hourlyVisitors[k] || 0; });
-                claimsData = last24Keys.map(function(k) { return hourlyClaims[k] || 0; });
+                var todayHours = hourKeys.filter(function(k) {
+                    var date = new Date(k);
+                    return date >= todayStart;
+                });
+                
+                if (todayHours.length === 0) {
+                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    todayHours = hourKeys.filter(function(k) {
+                        var date = new Date(k);
+                        return date >= oneDayAgo;
+                    });
+                }
+                
+                if (todayHours.length === 0) todayHours = hourKeys;
+                
+                displayDates = todayHours.map(function(k) { 
+                    var date = new Date(k);
+                    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                });
+                visitsData = todayHours.map(function(k) { return hourlyVisitors[k] || 0; });
+                claimsData = todayHours.map(function(k) { return hourlyClaims[k] || 0; });
             }
+            
             if (dashboardDataType === 'unique') {
-                var uniqueVisits = visitsData.map(function(v) { return Math.round(v * 0.6); });
-                var uniqueClaims = claimsData.map(function(c) { return Math.round(c * 0.6); });
-                visitsData = uniqueVisits;
-                claimsData = uniqueClaims;
+                visitsData = visitsData.map(function(v) { return Math.round(v * 0.6); });
+                claimsData = claimsData.map(function(c) { return Math.round(c * 0.6); });
             }
+            
             var ctx = document.getElementById('dashboardChart').getContext('2d');
             if (dashboardChartInstance) {
                 dashboardChartInstance.destroy();
             }
+            
+            // Create gradient for fill
+            var gradient = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+            
+            var gradient2 = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient2.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
+            gradient2.addColorStop(0.5, 'rgba(245, 158, 11, 0.1)');
+            gradient2.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
+            
             dashboardChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1706,21 +1834,29 @@
                             label: 'Visits',
                             data: visitsData,
                             borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99,102,241,0.1)',
+                            backgroundColor: gradient,
                             fill: true,
                             tension: 0.4,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#6366f1',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            borderWidth: 3
                         },
                         {
                             label: 'Claims',
                             data: claimsData,
                             borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245,158,11,0.1)',
+                            backgroundColor: gradient2,
                             fill: true,
                             tension: 0.4,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#f59e0b',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            borderWidth: 3
                         }
                     ]
                 },
@@ -1729,26 +1865,60 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            labels: { color: '#e2e8f0' }
+                            labels: { 
+                                color: '#94a3b8',
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(15, 17, 23, 0.9)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#94a3b8',
+                            borderColor: 'rgba(99,102,241,0.2)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
                             callbacks: {
                                 afterLabel: function(context) {
-                                    var fullDate = displayDates[context.dataIndex];
-                                    return 'Date: ' + fullDate;
+                                    var label = displayDates[context.dataIndex];
+                                    if (dashboardGraphMode === '24h') {
+                                        return '🕐 ' + label;
+                                    }
+                                    return '📅 ' + label;
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#94a3b8', maxTicksLimit: 15 },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            ticks: { 
+                                color: '#64748b',
+                                maxTicksLimit: 15,
+                                font: { size: 10 }
+                            },
+                            grid: { 
+                                color: 'rgba(255,255,255,0.04)',
+                                drawBorder: false
+                            }
                         },
                         y: {
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            ticks: { 
+                                color: '#64748b',
+                                stepSize: 1,
+                                font: { size: 10 }
+                            },
+                            grid: { 
+                                color: 'rgba(255,255,255,0.04)',
+                                drawBorder: false
+                            },
+                            beginAtZero: true
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });

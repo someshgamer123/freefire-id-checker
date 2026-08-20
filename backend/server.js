@@ -1373,6 +1373,11 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        
+        // ✅ FIXED: Get today's start (12:00 AM)
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        
         const linkStats = links.map(link => {
             const dailyVisitsMap = link.dailyVisits || new Map();
             const dailyClaimsMap = link.dailyClaims || new Map();
@@ -1413,18 +1418,21 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 expiryDate: link.expiryDate || null
             };
         });
+        
         const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
         const dailyClaimsGlobal = stats?.dailyClaims || new Map();
         const hourlyVisitors = stats?.hourlyVisitors || new Map();
         const hourlyClaims = stats?.hourlyClaims || new Map();
         const minuteVisitors = stats?.minuteVisitors || new Map();
         const minuteClaims = stats?.minuteClaims || new Map();
+        
         let globalVisits24h = 0;
         let globalClaims24h = 0;
         let globalVisits60m = 0;
         let globalClaims60m = 0;
         let globalVisits1m = 0;
         let globalClaims1m = 0;
+        
         for (const [date, count] of dailyVisitorsGlobal) {
             const d = new Date(date);
             if (d >= oneDayAgo) globalVisits24h += count;
@@ -1435,17 +1443,30 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             if (d >= oneDayAgo) globalClaims24h += count;
             if (d >= oneHourAgo) globalClaims60m += count;
         }
+        
+        // ✅ FIXED: Get hourly data for today (12:00 AM to current time)
         const hourKeys = Array.from(hourlyVisitors.keys()).sort();
-        const last24Hours = hourKeys.slice(-24);
+        let todayHours = hourKeys.filter(key => {
+            const date = new Date(key);
+            return date >= todayStart;
+        });
+        
+        // If no data today, use last 24 hours
+        if (todayHours.length === 0) {
+            todayHours = hourKeys.slice(-24);
+        }
+        
         let hourlyVisitsData = {};
         let hourlyClaimsData = {};
-        last24Hours.forEach(key => {
+        todayHours.forEach(key => {
             hourlyVisitsData[key] = hourlyVisitors.get(key) || 0;
             hourlyClaimsData[key] = hourlyClaims.get(key) || 0;
         });
+        
         const minuteKey = now.toISOString().substring(0, 16);
         globalVisits1m = minuteVisitors.get(minuteKey) || 0;
         globalClaims1m = minuteClaims.get(minuteKey) || 0;
+        
         let activeNow = 0;
         for (let i = 0; i < 5; i++) {
             const pastMinute = new Date(now.getTime() - i * 60 * 1000);
@@ -1454,6 +1475,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         }
         activeNow = Math.round(activeNow / 5);
         if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 12));
+        
         res.json({
             global: {
                 totalVisitors: stats?.totalVisitors || 0,
