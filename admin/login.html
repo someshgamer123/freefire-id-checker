@@ -90,7 +90,7 @@
         .btn-secondary { background: #2d3138; color: #e2e8f0; }
         .btn-secondary:hover { background: #3b3f48; }
         
-        /* ===== SAVED DEVICE BUTTON ===== */
+        /* ===== SAVED DEVICE SECTION ===== */
         .saved-device-section {
             margin-top: 12px;
             padding-top: 12px;
@@ -268,6 +268,12 @@
                 <button class="resend-btn" id="resendBtn" onclick="resendOTP()">Resend OTP</button>
             </div>
             
+            <!-- Remember Me in OTP step -->
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMeOTP">
+                <label for="rememberMeOTP">💾 Save this device (Skip login next time)</label>
+            </div>
+            
             <button onclick="verifyOTP()" class="btn" id="otpBtn">✅ Verify & Login</button>
             <button onclick="backToPasscode()" class="btn btn-secondary" style="margin-top:8px;">← Back</button>
         </div>
@@ -298,8 +304,8 @@
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
         var rememberMe = document.getElementById('rememberMe');
+        var rememberMeOTP = document.getElementById('rememberMeOTP');
         var savedDeviceSection = document.getElementById('savedDeviceSection');
-        var savedDeviceBtn = document.getElementById('savedDeviceBtn');
         var savedDeviceInfo = document.getElementById('savedDeviceInfo');
 
         var currentStep = 'passcode';
@@ -538,6 +544,7 @@
             loginSubtitle.textContent = 'Enter your passcode';
             otpInput.value = '';
             rememberMe.checked = false;
+            rememberMeOTP.checked = false;
         }
 
         function showError(message) {
@@ -580,6 +587,9 @@
                 return;
             }
 
+            // Check remember me from either checkbox
+            var isRememberMe = rememberMe.checked || rememberMeOTP.checked;
+
             try {
                 var response = await fetch('/api/admin/login', {
                     method: 'POST',
@@ -587,7 +597,7 @@
                     body: JSON.stringify({ 
                         passcode: passcode, 
                         step: 'passcode',
-                        rememberMe: rememberMe.checked
+                        rememberMe: isRememberMe
                     })
                 });
 
@@ -626,6 +636,10 @@
                     if (loginBtn) {
                         loginBtn.disabled = false;
                         loginBtn.textContent = '🔑 Continue';
+                    }
+                    // Remember Me checkbox for OTP step
+                    if (isRememberMe) {
+                        rememberMeOTP.checked = true;
                     }
                 } else if (data.error) {
                     showError(data.error);
@@ -688,6 +702,8 @@
 
             try {
                 var passcode = getPasscode();
+                var isRememberMe = rememberMeOTP.checked;
+                
                 var response = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -695,7 +711,7 @@
                         passcode: passcode, 
                         otp: otp,
                         step: 'otp',
-                        rememberMe: rememberMe.checked
+                        rememberMe: isRememberMe
                     })
                 });
 

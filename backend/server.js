@@ -36,7 +36,7 @@ const Security = require('./config/security');
 connectDB();
 
 // ==================== Environment Variables ====================
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'Admin@2024#Secure';
+const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
@@ -491,9 +491,38 @@ async function authMiddleware(req, res, next) {
             });
         }
     }
-    const token = req.cookies?.adminToken;
-    const csrfToken = req.headers['x-csrf-token'];
-    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    
+    // Check token from cookie
+    let token = req.cookies?.adminToken;
+    let csrfToken = req.headers['x-csrf-token'];
+    
+    // If no token, check remember token
+    if (!token) {
+        const rememberToken = req.cookies?.rememberToken;
+        if (rememberToken) {
+            const admin = await User.findOne({ rememberToken });
+            if (admin && admin.rememberTokenExpiry && new Date(admin.rememberTokenExpiry) > new Date()) {
+                // Create new session
+                const { ip, userAgent } = getDeviceId(req);
+                const jwtToken = generateToken('admin');
+                const newCsrfToken = generateCSRFToken();
+                await createSession(jwtToken, 'admin', newCsrfToken, ip, userAgent);
+                res.cookie('adminToken', jwtToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' || true,
+                    sameSite: 'lax',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                    path: '/'
+                });
+                req.user = { id: 'admin', role: 'admin' };
+                req.session = await validateSession(jwtToken);
+                req.csrfToken = newCsrfToken;
+                return next();
+            }
+        }
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
     const session = await validateSession(token);
@@ -892,7 +921,9 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-// ==================== SAVED DEVICE ENDPOINTS ====================
+// ==================== SAVED DEVICE (REMEMBER ME) ENDPOINTS ====================
+
+// Check if device is saved
 app.get('/api/admin/check-saved-device', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
@@ -911,10 +942,12 @@ app.get('/api/admin/check-saved-device', async (req, res) => {
             res.json({ hasSavedDevice: false });
         }
     } catch (error) {
+        console.error('❌ Check saved device error:', error);
         res.json({ hasSavedDevice: false });
     }
 });
 
+// Login with saved device
 app.post('/api/admin/login-saved-device', async (req, res) => {
     try {
         const { fingerprint, ip, userAgent } = getDeviceId(req);
@@ -929,6 +962,7 @@ app.post('/api/admin/login-saved-device', async (req, res) => {
             return res.status(401).json({ error: 'Saved device expired or not found' });
         }
         
+        // Update last used
         saved.lastUsed = new Date();
         await admin.save();
         
@@ -956,6 +990,7 @@ app.post('/api/admin/login-saved-device', async (req, res) => {
     }
 });
 
+// Remove saved device
 app.post('/api/admin/remove-saved-device', async (req, res) => {
     try {
         const { fingerprint } = getDeviceId(req);
@@ -967,6 +1002,7 @@ app.post('/api/admin/remove-saved-device', async (req, res) => {
         
         res.json({ success: true });
     } catch (error) {
+        console.error('❌ Remove saved device error:', error);
         res.status(500).json({ error: 'Failed to remove saved device' });
     }
 });
@@ -999,6 +1035,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
         }
         
+        // STEP 1: Verify passcode first
         if (!step || step === 'passcode') {
             if (!passcode) {
                 return res.status(400).json({ error: 'Passcode required' });
@@ -1020,6 +1057,31 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 }
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
+            
+            // ✅ SAVE DEVICE (Remember Me) - Save before OTP
+            if (rememberMe) {
+                const adminData = await User.findOne();
+                if (adminData) {
+                    const savedDevices = adminData.savedDevices || [];
+                    const existing = savedDevices.find(d => d.fingerprint === fingerprint);
+                    if (existing) {
+                        existing.lastUsed = new Date();
+                        existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    } else {
+                        savedDevices.push({
+                            fingerprint: fingerprint,
+                            deviceName: deviceName,
+                            deviceType: deviceType,
+                            lastUsed: new Date(),
+                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        });
+                    }
+                    adminData.savedDevices = savedDevices;
+                    await adminData.save();
+                    console.log(`✅ Device saved: ${deviceName} (${fingerprint.substring(0, 12)}...)`);
+                }
+            }
+            
             if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
                 const otpCode = generateOTP();
                 const adminEmail = admin.email || '';
@@ -1051,28 +1113,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
                 await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Direct Login (No OTP)' }, req);
                 
-                if (rememberMe) {
-                    const adminData = await User.findOne();
-                    if (adminData) {
-                        const savedDevices = adminData.savedDevices || [];
-                        const existing = savedDevices.find(d => d.fingerprint === fingerprint);
-                        if (existing) {
-                            existing.lastUsed = new Date();
-                            existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                        } else {
-                            savedDevices.push({
-                                fingerprint: fingerprint,
-                                deviceName: deviceName,
-                                deviceType: deviceType,
-                                lastUsed: new Date(),
-                                expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                            });
-                        }
-                        adminData.savedDevices = savedDevices;
-                        await adminData.save();
-                    }
-                }
-                
                 res.cookie('adminToken', jwtToken, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production' || true,
@@ -1080,6 +1120,18 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                     maxAge: 7 * 24 * 60 * 60 * 1000,
                     path: '/'
                 });
+                
+                // ✅ Set remember token cookie
+                if (rememberMe) {
+                    res.cookie('rememberToken', 'saved_' + fingerprint, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production' || true,
+                        sameSite: 'lax',
+                        maxAge: 30 * 24 * 60 * 60 * 1000,
+                        path: '/'
+                    });
+                }
+                
                 return res.json({
                     success: true,
                     csrfToken: csrfToken,
@@ -1088,6 +1140,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
         }
         
+        // STEP 2: Verify OTP
         if (step === 'otp') {
             if (!otp || otp.length !== 6) {
                 return res.status(400).json({ error: 'Valid 6-digit OTP required' });
@@ -1113,28 +1166,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
             await logAdminAction('admin', 'LOGIN', { ip: ip, method: '2FA with OTP' }, req);
             
-            if (rememberMe) {
-                const adminData = await User.findOne();
-                if (adminData) {
-                    const savedDevices = adminData.savedDevices || [];
-                    const existing = savedDevices.find(d => d.fingerprint === fingerprint);
-                    if (existing) {
-                        existing.lastUsed = new Date();
-                        existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                    } else {
-                        savedDevices.push({
-                            fingerprint: fingerprint,
-                            deviceName: deviceName,
-                            deviceType: deviceType,
-                            lastUsed: new Date(),
-                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                        });
-                    }
-                    adminData.savedDevices = savedDevices;
-                    await adminData.save();
-                }
-            }
-            
             res.cookie('adminToken', jwtToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production' || true,
@@ -1142,6 +1173,17 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
                 path: '/'
             });
+            
+            // ✅ Set remember token cookie
+            if (rememberMe) {
+                res.cookie('rememberToken', 'saved_' + fingerprint, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' || true,
+                    sameSite: 'lax',
+                    maxAge: 30 * 24 * 60 * 60 * 1000,
+                    path: '/'
+                });
+            }
             
             return res.json({
                 success: true,
@@ -1164,12 +1206,6 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
             await logAdminAction('admin', 'LOGOUT', {}, req);
         }
         res.clearCookie('rememberToken');
-        const admin = await User.findOne();
-        if (admin) {
-            admin.rememberToken = null;
-            admin.rememberTokenExpiry = null;
-            await admin.save();
-        }
         res.clearCookie('adminToken');
         res.json({ success: true });
     } catch (error) {
@@ -1275,7 +1311,8 @@ app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
         const admin = await User.findOne();
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
         const secretKey = admin.secretKey || 'admin@2024';
-        res.json({ success: true, secretKey: secretKey });
+        const maskedKey = secretKey.slice(0, 4) + '****' + secretKey.slice(-4);
+        res.json({ success: true, secretKey: secretKey, maskedKey: maskedKey });
     } catch (error) {
         console.error('❌ Secret key fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch secret key' });
@@ -2171,30 +2208,51 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 });
 
 // ==================== SERVE PAGES ====================
+
+// ✅ FIXED: Secret Gateway first
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
+// ✅ FIXED: Login page - Only from secret gateway
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
-    if (token || rememberToken || isFromGateway) {
+    
+    // If already logged in, redirect to index
+    if (token || rememberToken) {
+        const decoded = token ? verifyToken(token) : null;
+        if (decoded || rememberToken) {
+            return res.redirect('/admin/index.html');
+        }
+    }
+    
+    // Only allow from secret gateway
+    if (isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
         res.redirect('/admin/secret-gateway');
     }
 });
 
+// ✅ FIXED: Admin index - Auth required
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     const rememberToken = req.cookies?.rememberToken;
+    
     if (token) {
         const decoded = verifyToken(token);
         if (decoded) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
     }
-    if (rememberToken) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    
+    // Check remember token
+    if (rememberToken) {
+        // Auto-login with saved device
+        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+    }
+    
     res.redirect('/admin/secret-gateway');
 });
 
@@ -2247,7 +2305,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📦 CDN: cdn.jsdelivr.net allowed for html2canvas');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
-    console.log('🚨 NEW SECURITY FEATURES:');
+    console.log('🚨 SECURITY FEATURES:');
     console.log('🛡️ Device-based blocking: Individual device blocks (Admin protected)');
     console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
     console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
@@ -2257,7 +2315,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('⛔ Progressive Blocking: 48hr → 7 days → Permanent');
     console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
     console.log('═══════════════════════════════════════════');
-    console.log('🔗 NEW SHORT LINK FEATURES:');
+    console.log('🔗 SHORT LINK FEATURES:');
     console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
     console.log('📅 Schedule Expiry: Set expiry date for short links');
     console.log('═══════════════════════════════════════════');

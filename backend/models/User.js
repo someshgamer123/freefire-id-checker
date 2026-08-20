@@ -24,7 +24,7 @@ const UserSchema = new mongoose.Schema({
     },
     secretKey: {
         type: String,
-        default: '@somu93370899'
+        default: 'admin@2024'
     },
     rememberToken: {
         type: String,
@@ -34,7 +34,7 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    // ✅ NEW: Saved Devices (Remember Me)
+    // ✅ Saved Devices (Remember Me)
     savedDevices: [{
         fingerprint: { type: String, required: true },
         deviceName: { type: String, default: 'Unknown Device' },
