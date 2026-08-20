@@ -492,34 +492,10 @@ async function authMiddleware(req, res, next) {
         }
     }
     
-    // Check token from cookie
-    let token = req.cookies?.adminToken;
-    let csrfToken = req.headers['x-csrf-token'];
+    const token = req.cookies?.adminToken;
+    const csrfToken = req.headers['x-csrf-token'];
     
-    // If no token, check remember token
     if (!token) {
-        const rememberToken = req.cookies?.rememberToken;
-        if (rememberToken) {
-            const admin = await User.findOne({ rememberToken });
-            if (admin && admin.rememberTokenExpiry && new Date(admin.rememberTokenExpiry) > new Date()) {
-                // Create new session
-                const { ip, userAgent } = getDeviceId(req);
-                const jwtToken = generateToken('admin');
-                const newCsrfToken = generateCSRFToken();
-                await createSession(jwtToken, 'admin', newCsrfToken, ip, userAgent);
-                res.cookie('adminToken', jwtToken, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production' || true,
-                    sameSite: 'lax',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                    path: '/'
-                });
-                req.user = { id: 'admin', role: 'admin' };
-                req.session = await validateSession(jwtToken);
-                req.csrfToken = newCsrfToken;
-                return next();
-            }
-        }
         return res.status(401).json({ error: 'Authentication required' });
     }
     
@@ -921,111 +897,13 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-// ==================== SAVED DEVICE (REMEMBER ME) ENDPOINTS ====================
-
-// Check if device is saved
-app.get('/api/admin/check-saved-device', async (req, res) => {
-    try {
-        const { fingerprint } = getDeviceId(req);
-        const admin = await User.findOne();
-        if (!admin) return res.json({ hasSavedDevice: false });
-        
-        const savedDevices = admin.savedDevices || [];
-        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
-        
-        if (saved && saved.expiry && new Date(saved.expiry) > new Date()) {
-            res.json({ 
-                hasSavedDevice: true, 
-                lastUsed: saved.lastUsed || new Date() 
-            });
-        } else {
-            res.json({ hasSavedDevice: false });
-        }
-    } catch (error) {
-        console.error('❌ Check saved device error:', error);
-        res.json({ hasSavedDevice: false });
-    }
-});
-
-// Login with saved device
-app.post('/api/admin/login-saved-device', async (req, res) => {
-    try {
-        const { fingerprint, ip, userAgent } = getDeviceId(req);
-        
-        const admin = await User.findOne();
-        if (!admin) return res.status(401).json({ error: 'Admin not found' });
-        
-        const savedDevices = admin.savedDevices || [];
-        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
-        
-        if (!saved || (saved.expiry && new Date(saved.expiry) < new Date())) {
-            return res.status(401).json({ error: 'Saved device expired or not found' });
-        }
-        
-        // Update last used
-        saved.lastUsed = new Date();
-        await admin.save();
-        
-        const jwtToken = generateToken('admin');
-        const csrfToken = generateCSRFToken();
-        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
-        await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Saved Device Login' }, req);
-        
-        res.cookie('adminToken', jwtToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            path: '/'
-        });
-        
-        // ✅ Set remember token cookie
-        res.cookie('rememberToken', 'saved_' + fingerprint, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || true,
-            sameSite: 'lax',
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-            path: '/'
-        });
-        
-        res.json({
-            success: true,
-            csrfToken: csrfToken,
-            step: 'complete'
-        });
-    } catch (error) {
-        console.error('❌ Saved device login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
-
-// Remove saved device
-app.post('/api/admin/remove-saved-device', async (req, res) => {
-    try {
-        const { fingerprint } = getDeviceId(req);
-        const admin = await User.findOne();
-        if (!admin) return res.status(404).json({ error: 'Admin not found' });
-        
-        admin.savedDevices = (admin.savedDevices || []).filter(d => d.fingerprint !== fingerprint);
-        await admin.save();
-        
-        // Clear remember token cookie
-        res.clearCookie('rememberToken');
-        
-        res.json({ success: true });
-    } catch (error) {
-        console.error('❌ Remove saved device error:', error);
-        res.status(500).json({ error: 'Failed to remove saved device' });
-    }
-});
-
 // ================================================================
 // ==================== ADMIN ROUTES (AUTH REQUIRED) ===============
 // ================================================================
 
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
-        const { passcode, otp, step, rememberMe } = req.body;
+        const { passcode, otp, step } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
@@ -1070,30 +948,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
             
-            // ✅ SAVE DEVICE (Remember Me)
-            if (rememberMe) {
-                const adminData = await User.findOne();
-                if (adminData) {
-                    const savedDevices = adminData.savedDevices || [];
-                    const existing = savedDevices.find(d => d.fingerprint === fingerprint);
-                    if (existing) {
-                        existing.lastUsed = new Date();
-                        existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                    } else {
-                        savedDevices.push({
-                            fingerprint: fingerprint,
-                            deviceName: deviceName,
-                            deviceType: deviceType,
-                            lastUsed: new Date(),
-                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                        });
-                    }
-                    adminData.savedDevices = savedDevices;
-                    await adminData.save();
-                    console.log(`✅ Device saved: ${deviceName} (${fingerprint.substring(0, 12)}...)`);
-                }
-            }
-            
             if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
                 const otpCode = generateOTP();
                 const adminEmail = admin.email || '';
@@ -1132,17 +986,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                     maxAge: 7 * 24 * 60 * 60 * 1000,
                     path: '/'
                 });
-                
-                // ✅ Set remember token cookie
-                if (rememberMe) {
-                    res.cookie('rememberToken', 'saved_' + fingerprint, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production' || true,
-                        sameSite: 'lax',
-                        maxAge: 30 * 24 * 60 * 60 * 1000,
-                        path: '/'
-                    });
-                }
                 
                 return res.json({
                     success: true,
@@ -1186,17 +1029,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 path: '/'
             });
             
-            // ✅ Set remember token cookie
-            if (rememberMe) {
-                res.cookie('rememberToken', 'saved_' + fingerprint, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production' || true,
-                    sameSite: 'lax',
-                    maxAge: 30 * 24 * 60 * 60 * 1000,
-                    path: '/'
-                });
-            }
-            
             return res.json({
                 success: true,
                 csrfToken: csrfToken,
@@ -1217,7 +1049,6 @@ app.post('/api/admin/logout', authMiddleware, async (req, res) => {
             await invalidateSession(token);
             await logAdminAction('admin', 'LOGOUT', {}, req);
         }
-        res.clearCookie('rememberToken');
         res.clearCookie('adminToken');
         res.json({ success: true });
     } catch (error) {
@@ -1239,15 +1070,10 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
             return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
         admin.passcode = bcrypt.hashSync(newPasscode, 10);
-        admin.rememberToken = null;
-        admin.rememberTokenExpiry = null;
-        // Clear saved devices on passcode change
-        admin.savedDevices = [];
         await admin.save();
         await invalidateAllSessions('admin');
         await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
         res.clearCookie('adminToken');
-        res.clearCookie('rememberToken');
         res.json({ success: true, message: 'Passcode changed. Please login again.' });
     } catch (error) {
         console.error('❌ Passcode change error:', error);
@@ -2235,12 +2061,11 @@ app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
-    const rememberToken = req.cookies?.rememberToken;
     
     // If already logged in, redirect to index
-    if (token || rememberToken) {
-        const decoded = token ? verifyToken(token) : null;
-        if (decoded || rememberToken) {
+    if (token) {
+        const decoded = verifyToken(token);
+        if (decoded) {
             return res.redirect('/admin/index.html');
         }
     }
@@ -2256,17 +2081,10 @@ app.get('/admin/login.html', (req, res) => {
 // ✅ FIXED: Admin index - Auth required
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
-    const rememberToken = req.cookies?.rememberToken;
     
     if (token) {
         const decoded = verifyToken(token);
         if (decoded) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
-    }
-    
-    // Check remember token
-    if (rememberToken) {
-        // Auto-login with saved device
-        return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
     }
     
     res.redirect('/admin/secret-gateway');
@@ -2339,7 +2157,6 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
     console.log('👆 Tap invisible area 4 times to reveal secret key input');
     console.log('🔑 Secret Key: admin@2024 (changeable in settings)');
-    console.log('💾 Save Device: Remember Me (30 days auto-login)');
     console.log('═══════════════════════════════════════════');
     console.log('🔄 LIVE VISITORS:');
     console.log('🟢 Active Visits: Users currently watching video (last 2 minutes)');
