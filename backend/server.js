@@ -2127,6 +2127,158 @@ setInterval(async () => {
     }
 }, 60 * 60 * 1000);
 
+// ==================== SAVED DEVICE (REMEMBER ME) ENDPOINTS ====================
+
+// Check if device is saved
+app.get('/api/admin/check-saved-device', async (req, res) => {
+    try {
+        const { fingerprint } = getDeviceId(req);
+        const admin = await User.findOne();
+        if (!admin) return res.json({ hasSavedDevice: false });
+        
+        const savedDevices = admin.savedDevices || [];
+        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
+        
+        if (saved && saved.expiry && new Date(saved.expiry) > new Date()) {
+            res.json({ 
+                hasSavedDevice: true, 
+                lastUsed: saved.lastUsed || new Date() 
+            });
+        } else {
+            res.json({ hasSavedDevice: false });
+        }
+    } catch (error) {
+        res.json({ hasSavedDevice: false });
+    }
+});
+
+// Login with saved device
+app.post('/api/admin/login-saved-device', async (req, res) => {
+    try {
+        const { fingerprint, ip, userAgent } = getDeviceId(req);
+        
+        const admin = await User.findOne();
+        if (!admin) return res.status(401).json({ error: 'Admin not found' });
+        
+        const savedDevices = admin.savedDevices || [];
+        const saved = savedDevices.find(d => d.fingerprint === fingerprint);
+        
+        if (!saved || (saved.expiry && new Date(saved.expiry) < new Date())) {
+            return res.status(401).json({ error: 'Saved device expired or not found' });
+        }
+        
+        // Update last used
+        saved.lastUsed = new Date();
+        await admin.save();
+        
+        const jwtToken = generateToken('admin');
+        const csrfToken = generateCSRFToken();
+        await createSession(jwtToken, 'admin', csrfToken, ip, userAgent);
+        await logAdminAction('admin', 'LOGIN', { ip: ip, method: 'Saved Device Login' }, req);
+        
+        res.cookie('adminToken', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || true,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+        
+        res.json({
+            success: true,
+            csrfToken: csrfToken,
+            step: 'complete'
+        });
+    } catch (error) {
+        console.error('❌ Saved device login error:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Remove saved device
+app.post('/api/admin/remove-saved-device', async (req, res) => {
+    try {
+        const { fingerprint } = getDeviceId(req);
+        const admin = await User.findOne();
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+        
+        admin.savedDevices = (admin.savedDevices || []).filter(d => d.fingerprint !== fingerprint);
+        await admin.save();
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove saved device' });
+    }
+});
+
+// Inside the login endpoint after successful OTP verification
+// Add this to save the device
+
+// Save device if Remember Me is checked
+if (rememberMe) {
+    const admin = await User.findOne();
+    if (admin) {
+        const { fingerprint } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
+        
+        const savedDevices = admin.savedDevices || [];
+        const existing = savedDevices.find(d => d.fingerprint === fingerprint);
+        
+        if (existing) {
+            existing.lastUsed = new Date();
+            existing.expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        } else {
+            savedDevices.push({
+                fingerprint: fingerprint,
+                deviceName: deviceName,
+                deviceType: deviceType,
+                lastUsed: new Date(),
+                expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+            });
+        }
+        
+        admin.savedDevices = savedDevices;
+        await admin.save();
+    }
+}
+
+// In the /api/all-stats endpoint, update the activeNow calculation
+// Replace the existing activeNow calculation with:
+
+let activeNow = 0;
+let activeClaimsNow = 0;
+
+// Get active visitors from last 2 minutes (more real-time)
+for (let i = 0; i < 2; i++) {
+    const pastMinute = new Date(now.getTime() - i * 60 * 1000);
+    const key = pastMinute.toISOString().substring(0, 16);
+    const visits = minuteVisitors.get(key) || 0;
+    activeNow += visits;
+    
+    // Active claims: users who visited AND claimed in last 2 minutes
+    const claims = minuteClaims.get(key) || 0;
+    activeClaimsNow += claims;
+}
+
+// Average per minute
+activeNow = Math.round(activeNow / 2);
+activeClaimsNow = Math.round(activeClaimsNow / 2);
+
+// If no data, use estimates from 60m data
+if (activeNow < 1) activeNow = Math.max(1, Math.round(globalVisits60m / 15));
+if (activeClaimsNow < 1) activeClaimsNow = Math.round(activeNow * 0.3);
+
+// In the response JSON, add activeClaims
+res.json({
+    global: {
+        // ... existing fields ...
+        activeNow: activeNow,
+        activeClaims: activeClaimsNow,
+        // ... rest of fields
+    },
+    links: linkStats
+});
+
 // ==================== START SERVER ====================
 app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');

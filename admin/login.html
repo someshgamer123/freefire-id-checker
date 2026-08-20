@@ -90,6 +90,49 @@
         .btn-secondary { background: #2d3138; color: #e2e8f0; }
         .btn-secondary:hover { background: #3b3f48; }
         
+        /* ===== SAVED DEVICE BUTTON ===== */
+        .saved-device-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .saved-device-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 12px;
+            background: rgba(99,102,241,0.05);
+            color: #e2e8f0;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .saved-device-btn:hover {
+            background: rgba(99,102,241,0.1);
+            border-color: rgba(99,102,241,0.4);
+            transform: translateY(-1px);
+        }
+        .saved-device-btn .device-icon { font-size: 20px; }
+        .saved-device-btn .device-info { font-size: 12px; color: #94a3b8; font-weight: 400; }
+        .saved-device-btn .remove-device {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+        .saved-device-btn .remove-device:hover {
+            background: rgba(239,68,68,0.1);
+        }
+
         .remember-me {
             display: flex; align-items: center; gap: 8px;
             margin-top: 10px; justify-content: center;
@@ -151,6 +194,8 @@
             .passcode-inputs input { width: 42px; height: 50px; font-size: 20px; }
             .passcode-inputs { gap: 8px; }
             .otp-input-wrapper input { font-size: 18px; padding: 12px; letter-spacing: 6px; }
+            .saved-device-btn { font-size: 12px; padding: 10px; }
+            .saved-device-btn .device-info { font-size: 10px; }
         }
         @media (max-width: 380px) {
             .passcode-inputs input { width: 35px; height: 42px; font-size: 16px; }
@@ -175,6 +220,16 @@
             <span style="font-size:13px;font-weight:400;display:block;margin-top:4px;">Reason: <span id="blockReason">Too many attempts</span></span>
         </div>
         
+        <!-- ===== SAVED DEVICE SECTION ===== -->
+        <div class="saved-device-section" id="savedDeviceSection" style="display:none;">
+            <button class="saved-device-btn" id="savedDeviceBtn" onclick="loginWithSavedDevice()">
+                <span class="device-icon">💾</span>
+                <span>Login with saved device</span>
+                <span class="device-info" id="savedDeviceInfo">(Last used: today)</span>
+                <button class="remove-device" onclick="event.stopPropagation();removeSavedDevice()">✕</button>
+            </button>
+        </div>
+        
         <!-- Step 1: Passcode -->
         <div id="stepPasscode">
             <div class="passcode-inputs" id="passcodeContainer">
@@ -196,6 +251,12 @@
             </div>
             
             <button onclick="verifyPasscode()" class="btn" id="loginBtn">🔑 Continue</button>
+            
+            <!-- Remember Me Checkbox -->
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMe">
+                <label for="rememberMe">💾 Save this device (Skip login next time)</label>
+            </div>
         </div>
         
         <!-- Step 2: OTP -->
@@ -205,12 +266,6 @@
                 <input type="text" id="otpInput" maxlength="6" inputmode="numeric" placeholder="000000" autofocus>
                 <div class="otp-method-info" id="otpMethodInfo">OTP sent to your registered email</div>
                 <button class="resend-btn" id="resendBtn" onclick="resendOTP()">Resend OTP</button>
-            </div>
-            
-            <!-- ✅ NEW: Remember Me Checkbox -->
-            <div class="remember-me">
-                <input type="checkbox" id="rememberMe">
-                <label for="rememberMe">💾 Save Login (Remember me for 7 days)</label>
             </div>
             
             <button onclick="verifyOTP()" class="btn" id="otpBtn">✅ Verify & Login</button>
@@ -243,13 +298,86 @@
         var rateLimitMsg = document.getElementById('rateLimitMsg');
         var rateLimitCountdown = document.getElementById('rateLimitCountdown');
         var rememberMe = document.getElementById('rememberMe');
+        var savedDeviceSection = document.getElementById('savedDeviceSection');
+        var savedDeviceBtn = document.getElementById('savedDeviceBtn');
+        var savedDeviceInfo = document.getElementById('savedDeviceInfo');
 
-        var currentStep = 'passcode'; // 'passcode' or 'otp'
+        var currentStep = 'passcode';
         var otpSent = false;
         var resendCooldown = 0;
 
+        // ===== CHECK FOR SAVED DEVICE =====
+        async function checkSavedDevice() {
+            try {
+                const response = await fetch('/api/admin/check-saved-device', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (data && data.hasSavedDevice) {
+                    savedDeviceSection.style.display = 'block';
+                    const lastUsed = data.lastUsed ? new Date(data.lastUsed).toLocaleString() : 'today';
+                    savedDeviceInfo.textContent = '(Last used: ' + lastUsed + ')';
+                } else {
+                    savedDeviceSection.style.display = 'none';
+                }
+            } catch (e) {
+                savedDeviceSection.style.display = 'none';
+            }
+        }
+
+        // ===== LOGIN WITH SAVED DEVICE =====
+        async function loginWithSavedDevice() {
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '⏳ Logging in...';
+            }
+            try {
+                const response = await fetch('/api/admin/login-saved-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    handleLoginSuccess(data);
+                } else {
+                    showError(data.error || 'Failed to login with saved device');
+                    savedDeviceSection.style.display = 'none';
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = '🔑 Continue';
+                    }
+                }
+            } catch (e) {
+                showError('Connection error');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔑 Continue';
+                }
+            }
+        }
+
+        // ===== REMOVE SAVED DEVICE =====
+        async function removeSavedDevice() {
+            if (!confirm('Remove this saved device? You will need to enter passcode next time.')) return;
+            try {
+                const response = await fetch('/api/admin/remove-saved-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    savedDeviceSection.style.display = 'none';
+                    showSuccess('Saved device removed');
+                }
+            } catch (e) {
+                showError('Failed to remove saved device');
+            }
+        }
+
         window.addEventListener('load', function() { 
             checkBlockStatus();
+            checkSavedDevice();
             setTimeout(function() {
                 var pin1 = document.getElementById('pin1');
                 if (pin1) pin1.focus(); 
@@ -404,7 +532,6 @@
                 loginBtn.textContent = '🔑 Continue';
             }
             
-            // Reset OTP step
             stepOTP.style.display = 'none';
             stepPasscode.style.display = 'block';
             currentStep = 'passcode';
@@ -457,7 +584,11 @@
                 var response = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passcode: passcode, step: 'passcode' })
+                    body: JSON.stringify({ 
+                        passcode: passcode, 
+                        step: 'passcode',
+                        rememberMe: rememberMe.checked
+                    })
                 });
 
                 if (response.status === 403) {
@@ -489,10 +620,8 @@
                 var data = await response.json();
 
                 if (data.success && data.step === 'complete') {
-                    // Direct login (no OTP needed)
                     handleLoginSuccess(data);
                 } else if (data.step === 'otp') {
-                    // OTP required
                     showOTPStep(data.method, data.contact);
                     if (loginBtn) {
                         loginBtn.disabled = false;
@@ -702,7 +831,7 @@
         console.log('📱 OTP via Email/SMS');
         console.log('🔒 Strong Password Required');
         console.log('⏰ Session: 7 days');
-        console.log('💾 Save Login: Remember Me enabled');
+        console.log('💾 Save Device: Skip login on trusted devices');
     </script>
 </body>
 </html>

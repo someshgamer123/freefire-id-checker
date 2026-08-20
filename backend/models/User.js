@@ -22,12 +22,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    // ✅ NEW: Secret Key (Default: @somu93370899)
     secretKey: {
         type: String,
         default: '@somu93370899'
     },
-    // ✅ NEW: Remember Token for Save Login
     rememberToken: {
         type: String,
         default: null
@@ -36,6 +34,15 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    // ✅ NEW: Saved Devices (Remember Me)
+    savedDevices: [{
+        fingerprint: { type: String, required: true },
+        deviceName: { type: String, default: 'Unknown Device' },
+        deviceType: { type: String, default: 'Browser' },
+        lastUsed: { type: Date, default: Date.now },
+        expiry: { type: Date, default: null },
+        createdAt: { type: Date, default: Date.now }
+    }],
     createdAt: {
         type: Date,
         default: Date.now
