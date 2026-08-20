@@ -979,6 +979,15 @@ app.post('/api/admin/login-saved-device', async (req, res) => {
             path: '/'
         });
         
+        // ✅ Set remember token cookie
+        res.cookie('rememberToken', 'saved_' + fingerprint, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || true,
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+            path: '/'
+        });
+        
         res.json({
             success: true,
             csrfToken: csrfToken,
@@ -999,6 +1008,9 @@ app.post('/api/admin/remove-saved-device', async (req, res) => {
         
         admin.savedDevices = (admin.savedDevices || []).filter(d => d.fingerprint !== fingerprint);
         await admin.save();
+        
+        // Clear remember token cookie
+        res.clearCookie('rememberToken');
         
         res.json({ success: true });
     } catch (error) {
@@ -1058,7 +1070,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid passcode' });
             }
             
-            // ✅ SAVE DEVICE (Remember Me) - Save before OTP
+            // ✅ SAVE DEVICE (Remember Me)
             if (rememberMe) {
                 const adminData = await User.findOne();
                 if (adminData) {
@@ -1229,6 +1241,8 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
         admin.passcode = bcrypt.hashSync(newPasscode, 10);
         admin.rememberToken = null;
         admin.rememberTokenExpiry = null;
+        // Clear saved devices on passcode change
+        admin.savedDevices = [];
         await admin.save();
         await invalidateAllSessions('admin');
         await logAdminAction('admin', 'PASSCODE_CHANGE', {}, req);
@@ -1496,6 +1510,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== STATS API ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -1639,6 +1654,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== RENEWAL REQUESTS ====================
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
@@ -2328,6 +2344,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔄 LIVE VISITORS:');
     console.log('🟢 Active Visits: Users currently watching video (last 2 minutes)');
     console.log('🟢 Active Claims: Users currently claiming (last 2 minutes)');
-    console.log('⏱️ Auto-refresh: Every 2 seconds');
+    console.log('⏱️ Auto-refresh: Every 2 seconds (Live numbers only)');
+    console.log('📊 Graphs: Static - Manual refresh only');
     console.log('═══════════════════════════════════════════');
 });

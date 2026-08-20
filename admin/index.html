@@ -576,7 +576,7 @@
                     </div>
                     <div class="contact-field">
                         <label>📞 Phone Number (with country code)</label>
-                        <input type="text" id="adminPhone" placeholder="+916372923348">
+                        <input type="text" id="adminPhone" placeholder="+919876543210">
                     </div>
                 </div>
                 <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:8px 20px;">💾 Save Contact Info</button>
@@ -807,7 +807,9 @@
 
         var liveInterval = null;
 
-        async function loadStats() {
+        // ✅ FIXED: loadStats with optional graph update
+        async function loadStats(updateGraphs) {
+            if (updateGraphs === undefined) updateGraphs = true;
             try {
                 var response = await secureFetch('/api/all-stats');
                 if (!response) return;
@@ -838,8 +840,13 @@
                         if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
                     }
                     
+                    // ✅ Always update live visitors
                     updateLiveVisitors(data);
-                    updateDashboardGraph(data);
+                    
+                    // ✅ Update graphs ONLY when requested
+                    if (updateGraphs) {
+                        updateDashboardGraph(data);
+                    }
                 }
             } catch (e) {
                 console.error('Failed to load stats:', e);
@@ -863,14 +870,10 @@
             var stats = data.global || {};
             var links = data.links || [];
             
-            // Calculate Active Visits - Users currently watching video
             var activeVisits = stats.activeNow || 0;
-            
-            // Active Claims - Users currently claiming
             var activeClaims = stats.activeClaims || Math.round((stats.visits60m || 0) * 0.3);
             if (activeClaims < 0) activeClaims = 0;
             
-            // More accurate calculation from links
             if (links && links.length > 0) {
                 var totalActiveVisits = 0;
                 var totalActiveClaims = 0;
@@ -898,7 +901,6 @@
             if (activeVisits < 1) activeVisits = Math.max(1, Math.round(stats.visits60m / 12));
             if (activeClaims < 1) activeClaims = Math.round(activeVisits * 0.3);
 
-            // Lifetime Visits
             var lifetimeVisits = document.getElementById('liveLifetimeVisits');
             if (lifetimeVisits) {
                 var newVal = stats.totalVisitors || 0;
@@ -910,7 +912,6 @@
                 previousLiveData.lifetimeVisits = newVal;
             }
             
-            // Lifetime Claims
             var lifetimeClaims = document.getElementById('liveLifetimeClaims');
             if (lifetimeClaims) {
                 var newVal = stats.totalClaims || 0;
@@ -922,7 +923,6 @@
                 previousLiveData.lifetimeClaims = newVal;
             }
             
-            // 48h Visits
             var live48hrVisits = document.getElementById('live48hrVisits');
             if (live48hrVisits) {
                 var newVal24h = stats.visits24h || 0;
@@ -936,7 +936,6 @@
             var live48hrTime = document.getElementById('live48hrTime');
             if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
             
-            // 48h Claims
             var live48hrClaims = document.getElementById('live48hrClaims');
             if (live48hrClaims) {
                 var newValClaims = stats.claims24h || 0;
@@ -950,7 +949,6 @@
             var live48hrClaimsTime = document.getElementById('live48hrClaimsTime');
             if (live48hrClaimsTime) live48hrClaimsTime.textContent = 'Last 48 hours';
             
-            // Active Visits
             var liveActiveVisits = document.getElementById('liveActiveVisits');
             if (liveActiveVisits) {
                 if (previousLiveData.liveActiveVisits !== activeVisits) {
@@ -961,7 +959,6 @@
                 previousLiveData.liveActiveVisits = activeVisits;
             }
             
-            // Active Claims
             var liveActiveClaims = document.getElementById('liveActiveClaims');
             if (liveActiveClaims) {
                 if (previousLiveData.liveActiveClaims !== activeClaims) {
@@ -979,10 +976,27 @@
             }
         }
 
+        // ✅ FIXED: Only refresh live visitors, NOT graphs
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
-            loadStats();
-            liveInterval = setInterval(function() { loadStats(); }, 2000);
+            
+            // Initial load with graphs
+            loadStats(true);
+            
+            // ✅ Only refresh live data (no graphs)
+            liveInterval = setInterval(async function() {
+                try {
+                    var response = await secureFetch('/api/all-stats');
+                    if (!response) return;
+                    if (response.ok) {
+                        var data = await response.json();
+                        // ✅ Only update live numbers, NOT graphs
+                        updateLiveVisitors(data);
+                    }
+                } catch (e) {
+                    console.error('Live refresh failed:', e);
+                }
+            }, 2000);
         }
 
         var allLinks = [];
@@ -1074,7 +1088,7 @@
                         var data = await r.json();
                         if (data.success) {
                             loadLinks();
-                            loadStats();
+                            loadStats(false);
                             showToast('✅ Link deleted!', 'success');
                         }
                     } catch (e) { showToast('❌ Failed to delete', 'error'); }
@@ -1093,7 +1107,7 @@
                     return;
                 }
                 loadLinks();
-                loadStats();
+                loadStats(false);
                 showToast('✅ Status updated to: ' + action, 'success');
             } catch (e) { showToast('❌ Failed to update status', 'error'); }
         }
@@ -1242,7 +1256,7 @@
                 }
                 closeEditModal();
                 loadLinks();
-                loadStats();
+                loadStats(false);
                 showToast('✅ Link updated successfully!', 'success');
             } catch (e) {
                 showToast('❌ Failed to update link', 'error');
@@ -1360,7 +1374,7 @@
                 document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
                 selectedExpiry = null;
                 loadLinks();
-                loadStats();
+                loadStats(false);
                 showToast('✅ Link created!', 'success');
             } catch (e) { showToast('❌ Failed to create link', 'error'); }
         }
@@ -1884,18 +1898,19 @@
             });
         }
 
+        // ✅ FIXED: Graph switch functions with proper toggle
         function switchDashboardGraph(mode) {
             dashboardGraphMode = mode;
             document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
             document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
-            loadStats();
+            loadStats(true);
         }
 
         function switchDashboardData(type) {
             dashboardDataType = type;
             document.getElementById('dashDataTotal').classList.toggle('active', type === 'total');
             document.getElementById('dashDataUnique').classList.toggle('active', type === 'unique');
-            loadStats();
+            loadStats(true);
         }
 
         function switchAnalyticsGraph(mode) {
@@ -2042,7 +2057,7 @@
                 if (!r) return;
                 var data = await r.json();
                 if (data.success) {
-                    document.getElementById('currentSecretKey').value = data.secretKey || '@somu93370899';
+                    document.getElementById('currentSecretKey').value = data.secretKey || 'admin@2024';
                 }
             } catch (e) {
                 console.error('Failed to load secret key:', e);
@@ -2628,19 +2643,21 @@
             }
         }
 
+        // ==================== INIT ====================
         loadTheme();
         loadBackground();
         loadLinks();
-        loadStats();
+        loadStats(true); // Initial load with graphs
         loadAnalyticsLinks();
         loadContactInfo();
         loadBlockedDevices();
         loadShortLinks();
         loadShortLinkStats();
-        startLiveRefresh();
+        startLiveRefresh(); // Only updates live numbers
         checkAuth();
         loadSecretKey();
 
+        // Make functions globally accessible
         window.showSection = showSection;
         window.setTheme = setTheme;
         window.logout = logout;
