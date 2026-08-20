@@ -2051,7 +2051,8 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 
 // ==================== SERVE PAGES ====================
 
-// ✅ FIXED: Secret Gateway first
+// ✅ FIXED: Secret Gateway - MUST be first before any other /admin routes
+// This ensures secret-gateway.html loads properly
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
@@ -2059,7 +2060,7 @@ app.get('/admin/secret-gateway', (req, res) => {
 // ✅ FIXED: Login page - Only from secret gateway
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
-    const isFromGateway = referer.includes('/admin/secret-gateway');
+    const isFromGateway = referer && referer.includes('/admin/secret-gateway');
     const token = req.cookies?.adminToken;
     
     // If already logged in, redirect to index
@@ -2070,10 +2071,11 @@ app.get('/admin/login.html', (req, res) => {
         }
     }
     
-    // Only allow from secret gateway
+    // If coming from secret gateway or direct access with valid session
     if (isFromGateway) {
         res.sendFile(path.join(__dirname, '..', 'admin', 'login.html'));
     } else {
+        // Redirect to secret gateway
         res.redirect('/admin/secret-gateway');
     }
 });
@@ -2084,19 +2086,26 @@ app.get('/admin/index.html', (req, res) => {
     
     if (token) {
         const decoded = verifyToken(token);
-        if (decoded) return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+        if (decoded) {
+            return res.sendFile(path.join(__dirname, '..', 'admin', 'index.html'));
+        }
     }
     
     res.redirect('/admin/secret-gateway');
 });
 
+// ✅ FIXED: Root route - redirect to secret gateway
+app.get('/', (req, res) => {
+    res.redirect('/admin/secret-gateway');
+});
+
+// Other public routes
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
 app.get('/user-dashboard/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
 app.get('/manifest.json', (req, res) => res.sendFile(path.join(__dirname, '..', 'manifest.json')));
 app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')));
-app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 // ==================== SESSION CLEANUP ====================
 setInterval(async () => {
