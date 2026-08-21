@@ -172,10 +172,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting ====================
+// ==================== Rate Limiting (FIXED) ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 500, // ✅ 200 se 500 kar diya
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
@@ -1717,7 +1717,6 @@ app.get('/api/admin/block-status', async (req, res) => {
 // ==================== SHORT LINK ROUTES ====================
 // ================================================================
 
-// ✅ SHORT LINK REDIRECT (FIXED - App Open Mode)
 app.get('/s/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -1808,36 +1807,62 @@ app.get('/s/:code', async (req, res) => {
             
             // Auto-detect if no custom scheme
             if (!appScheme) {
+                // YouTube
                 if (originalUrl.includes('youtube.com') || originalUrl.includes('youtu.be')) {
-                    const videoId = originalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11}))/);
-                    if (videoId) {
-                        appDeepLink = 'vnd.youtube://' + videoId[1];
+                    // ✅ FIXED: No extra )
+                    const videoIdMatch = originalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+                    if (videoIdMatch) {
+                        appDeepLink = 'vnd.youtube://' + videoIdMatch[1];
                     } else {
                         appDeepLink = originalUrl;
                     }
-                } else if (originalUrl.includes('wa.me') || originalUrl.includes('whatsapp.com')) {
+                }
+                // WhatsApp
+                else if (originalUrl.includes('wa.me') || originalUrl.includes('whatsapp.com')) {
                     appDeepLink = 'whatsapp://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('instagram.com')) {
+                }
+                // Instagram
+                else if (originalUrl.includes('instagram.com')) {
                     appDeepLink = 'instagram://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('twitter.com') || originalUrl.includes('x.com')) {
+                }
+                // Twitter/X
+                else if (originalUrl.includes('twitter.com') || originalUrl.includes('x.com')) {
                     appDeepLink = 'twitter://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('facebook.com')) {
+                }
+                // Facebook
+                else if (originalUrl.includes('facebook.com')) {
                     appDeepLink = 'fb://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('t.me') || originalUrl.includes('telegram.org')) {
+                }
+                // Telegram
+                else if (originalUrl.includes('t.me') || originalUrl.includes('telegram.org')) {
                     appDeepLink = 'tg://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('reddit.com')) {
+                }
+                // Reddit
+                else if (originalUrl.includes('reddit.com')) {
                     appDeepLink = 'reddit://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('linkedin.com')) {
+                }
+                // LinkedIn
+                else if (originalUrl.includes('linkedin.com')) {
                     appDeepLink = 'linkedin://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('spotify.com')) {
+                }
+                // Spotify
+                else if (originalUrl.includes('spotify.com')) {
                     appDeepLink = 'spotify://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('netflix.com')) {
+                }
+                // Netflix
+                else if (originalUrl.includes('netflix.com')) {
                     appDeepLink = 'netflix://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('amazon.in') || originalUrl.includes('amazon.com')) {
+                }
+                // Amazon
+                else if (originalUrl.includes('amazon.in') || originalUrl.includes('amazon.com')) {
                     appDeepLink = 'amazon://' + originalUrl.replace(/^https?:\/\//, '');
-                } else if (originalUrl.includes('flipkart.com')) {
+                }
+                // Flipkart
+                else if (originalUrl.includes('flipkart.com')) {
                     appDeepLink = 'flipkart://' + originalUrl.replace(/^https?:\/\//, '');
-                } else {
+                }
+                // Default
+                else {
                     appDeepLink = originalUrl;
                 }
             } else {
@@ -2008,7 +2033,7 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ CREATE short link (Updated with appScheme and appStoreLink)
+// ✅ CREATE short link
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
@@ -2339,7 +2364,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('🔄 LIVE VISITORS:');
     console.log('🟢 Active Visits: Users currently watching video (last 2 minutes)');
     console.log('🟢 Active Claims: Users currently claiming (last 2 minutes)');
-    console.log('⏱️ Auto-refresh: Every 2 seconds (Live numbers only)');
+    console.log('⏱️ Auto-refresh: Every 5 seconds (Live numbers only)');
     console.log('📊 Graphs: Static - Manual refresh only');
     console.log('═══════════════════════════════════════════');
 });

@@ -623,13 +623,11 @@
                 </div>
             </div>
 
-            <!-- ✅ Create Short Link (Updated with App Open Mode) -->
             <div class="card">
                 <h3>➕ Create Short Link</h3>
                 <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
                 <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
                 
-                <!-- ✅ App Open Mode -->
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
                     <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
@@ -644,7 +642,6 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
                 </div>
                 
-                <!-- ✅ App Scheme Input -->
                 <div id="appSchemeContainer" style="display:none;margin-top:8px;">
                     <label style="font-size:11px;color:var(--text-light);font-weight:500;">📲 App Deep Link Scheme:</label>
                     <input type="text" id="shortAppScheme" placeholder="e.g., myapp://, vnd.youtube://, whatsapp://" style="margin-top:4px;">
@@ -655,7 +652,6 @@
                     <small style="color:var(--text-light);font-size:10px;">If app is not installed, user will be directed here</small>
                 </div>
                 
-                <!-- Schedule Expiry -->
                 <div style="margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
                     <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
@@ -987,6 +983,7 @@
             }
         }
 
+        // ✅ FIXED: Live refresh every 5 seconds (not 2 seconds)
         function startLiveRefresh() {
             if (liveInterval) clearInterval(liveInterval);
             
@@ -1003,7 +1000,7 @@
                 } catch (e) {
                     console.error('Live refresh failed:', e);
                 }
-            }, 2000);
+            }, 5000);  // ✅ 5 seconds
         }
 
         var allLinks = [];
@@ -1712,7 +1709,8 @@
                             ticks: { 
                                 color: '#64748b',
                                 stepSize: 1,
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                maxTicksLimit: 20  // ✅ Added
                             },
                             grid: { 
                                 color: 'rgba(255,255,255,0.04)',
@@ -1888,7 +1886,8 @@
                             ticks: { 
                                 color: '#64748b',
                                 stepSize: 1,
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                maxTicksLimit: 20  // ✅ Added
                             },
                             grid: { 
                                 color: 'rgba(255,255,255,0.04)',
@@ -2372,13 +2371,11 @@
             } catch (e) { console.error(e); }
         }
 
-        // ✅ Toggle App Scheme Input
         function toggleAppScheme() {
             const checked = document.getElementById('shortAppOpen').checked;
             document.getElementById('appSchemeContainer').style.display = checked ? 'block' : 'none';
         }
 
-        // ✅ Create Short Link (Updated)
         async function createShortLink() {
             var url = document.getElementById('shortOriginalUrl').value.trim();
             if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
@@ -2586,7 +2583,6 @@
             } catch (e) { showToast('❌ Failed to load analytics', 'error'); }
         }
 
-        // ✅ Open Short Link Edit (Updated)
         function openShortLinkEdit(id) {
             var link = allShortLinks.find(function(l) { return l._id === id; });
             if (!link) { showToast('❌ Link not found', 'error'); return; }
@@ -2631,7 +2627,6 @@
             document.getElementById('editModal').classList.add('show');
         }
 
-        // ✅ Save Short Link Edit (Updated)
         async function saveShortLinkEdit(id) {
             var title = document.getElementById('shortEditTitle').value.trim() || 'Untitled Link';
             var status = document.getElementById('shortEditStatus').value;
