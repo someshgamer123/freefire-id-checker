@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const BlockedDeviceSchema = new mongoose.Schema({
     fingerprint: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     ip: {
         type: String,
@@ -59,10 +60,11 @@ const BlockedDeviceSchema = new mongoose.Schema({
     }
 });
 
-// Remove duplicate indexes - use only these
+// ✅ Indexes - Remove duplicates
 BlockedDeviceSchema.index({ fingerprint: 1 }, { unique: true });
 BlockedDeviceSchema.index({ ip: 1 });
 BlockedDeviceSchema.index({ deviceType: 1 });
 BlockedDeviceSchema.index({ isPermanent: 1 });
+BlockedDeviceSchema.index({ blockedUntil: 1 });
 
 module.exports = mongoose.model('BlockedDevice', BlockedDeviceSchema);

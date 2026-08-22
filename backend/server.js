@@ -172,10 +172,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Rate Limiting (FIXED) ====================
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500, // ✅ 200 se 500 kar diya
+    max: 500,
     message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
@@ -275,7 +275,7 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking ====================
+// ==================== Device Blocking (FIXED - Admin Protection) ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const blocked = await BlockedDevice.findOne({
@@ -285,6 +285,16 @@ async function isDeviceBlocked(req) {
             { isPermanent: true }
         ]
     });
+    
+    // ✅ Agar admin device hai toh block mat karo
+    if (blocked) {
+        const admin = await User.findOne();
+        if (admin && (fingerprint === admin.fingerprint || ip === admin.ip)) {
+            console.log('⚠️ Admin device found in blocked list, skipping block check');
+            return null;
+        }
+    }
+    
     return blocked;
 }
 
@@ -292,14 +302,26 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+    
+    // ✅ ADMIN DEVICE PROTECTION - Block mat karo
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
-    if (fingerprint === adminFingerprint) {
-        console.log('⚠️ Skipping block for admin device');
+    const adminIp = admin?.ip || null;
+    
+    if (fingerprint === adminFingerprint || ip === adminIp) {
+        console.log('🛡️ Skipping block for admin device');
         return null;
     }
+    
     let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+    
     if (record) {
+        // Agar record admin device ka hai toh mat block karo
+        if (record.fingerprint === adminFingerprint || record.ip === adminIp) {
+            console.log('🛡️ Skipping block for admin device (existing record)');
+            return null;
+        }
+        
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
@@ -311,30 +333,40 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             success: false,
             reason: reason
         });
-        if (record.attempts >= 5 && record.attempts < 10) {
-            record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
-            record.reason = 'Too many failed attempts - Blocked for 48 hours';
-            console.log(`🚨 Device ${deviceName} blocked for 48 hours (${record.attempts} attempts)`);
-        } else if (record.attempts >= 10 && record.attempts < 20) {
-            record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            record.reason = 'Repeated attempts - Blocked for 7 days';
-            console.log(`🚨 Device ${deviceName} blocked for 7 days (${record.attempts} attempts)`);
-        } else if (record.attempts >= 20) {
+        
+        // ✅ PROGRESSIVE BLOCKING: 1st=No block, 2nd=24hrs, 3rd=14days, 4th=Permanent
+        if (record.attempts >= 4) {
             record.isPermanent = true;
             record.permanentBlockedAt = new Date();
-            record.reason = 'Permanent ban due to repeated malicious attempts';
-            console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+            record.reason = 'Permanent ban due to repeated malicious attempts (4th attempt)';
+            record.blockedUntil = null;
+            console.log(`🚨 ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+        } else if (record.attempts >= 3) {
+            record.blockedUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+            record.reason = 'Repeated attempts - Blocked for 14 days';
+            console.log(`🚨 ${deviceName} blocked for 14 days (${record.attempts} attempts)`);
+        } else if (record.attempts >= 2) {
+            record.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            record.reason = 'Too many failed attempts - Blocked for 24 hours';
+            console.log(`🚨 ${deviceName} blocked for 24 hours (${record.attempts} attempts)`);
+        } else {
+            // 1st attempt - No block, only track
+            record.blockedUntil = null;
+            record.reason = 'Login attempt - Monitoring';
+            console.log(`📝 ${deviceName} tracked (${record.attempts} attempts)`);
         }
+        
         await record.save();
         return record;
     } else {
+        // ✅ Naya device - pehle attempt me block nahi, sirf track
         const newRecord = new BlockedDevice({
             fingerprint,
             ip,
             deviceName,
             deviceType,
             attempts: 1,
-            reason: 'Login attempt',
+            reason: 'Login attempt - Monitoring',
             blockedUntil: null,
             lastAttempt: new Date(),
             loginHistory: [{
@@ -346,6 +378,7 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             }]
         });
         await newRecord.save();
+        console.log(`📝 New device tracked: ${deviceName} (${fingerprint.substring(0, 12)}...)`);
         return newRecord;
     }
 }
@@ -353,16 +386,28 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
 async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
+    
+    // ✅ ADMIN DEVICE PROTECTION - Track mat karo
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
-    if (fingerprint === adminFingerprint) {
-        console.log('⚠️ Skipping attempt tracking for admin device');
+    const adminIp = admin?.ip || null;
+    
+    if (fingerprint === adminFingerprint || ip === adminIp) {
+        console.log('🛡️ Skipping attempt tracking for admin device');
         return;
     }
+    
     const record = await BlockedDevice.findOne({
         $or: [{ fingerprint }, { ip }]
     });
+    
     if (record) {
+        // Agar record admin device ka hai toh mat badhao
+        if (record.fingerprint === adminFingerprint || record.ip === adminIp) {
+            console.log('🛡️ Skipping attempt tracking for admin device (existing record)');
+            return;
+        }
+        
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
         record.deviceName = deviceName;
@@ -374,20 +419,24 @@ async function incrementDeviceAttempts(req) {
             success: false,
             reason: 'Failed login attempt'
         });
-        if (record.attempts >= 5 && record.attempts < 10) {
-            record.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
-            record.reason = 'Too many failed attempts - Blocked for 48 hours';
-            console.log(`🚨 Device ${deviceName} blocked for 48 hours`);
-        } else if (record.attempts >= 10 && record.attempts < 20) {
-            record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            record.reason = 'Repeated attempts - Blocked for 7 days';
-            console.log(`🚨 Device ${deviceName} blocked for 7 days`);
-        } else if (record.attempts >= 20) {
+        
+        // ✅ PROGRESSIVE BLOCKING
+        if (record.attempts >= 4) {
             record.isPermanent = true;
             record.permanentBlockedAt = new Date();
             record.reason = 'Permanent ban due to repeated malicious attempts';
-            console.log(`🚨 Device ${deviceName} PERMANENTLY BANNED`);
+            record.blockedUntil = null;
+            console.log(`🚨 ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+        } else if (record.attempts >= 3) {
+            record.blockedUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+            record.reason = 'Repeated attempts - Blocked for 14 days';
+            console.log(`🚨 ${deviceName} blocked for 14 days (${record.attempts} attempts)`);
+        } else if (record.attempts >= 2) {
+            record.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            record.reason = 'Too many failed attempts - Blocked for 24 hours';
+            console.log(`🚨 ${deviceName} blocked for 24 hours (${record.attempts} attempts)`);
         }
+        
         await record.save();
     } else {
         await BlockedDevice.create({
@@ -396,7 +445,7 @@ async function incrementDeviceAttempts(req) {
             deviceName,
             deviceType,
             attempts: 1,
-            reason: 'Login attempt',
+            reason: 'Login attempt - Monitoring',
             blockedUntil: null,
             lastAttempt: new Date(),
             loginHistory: [{
@@ -907,6 +956,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
+        // ✅ Check if device is blocked (Admin protected)
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             if (blocked.isPermanent) {
@@ -936,16 +986,30 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
             const isValid = bcrypt.compareSync(passcode, admin.passcode);
             if (!isValid) {
+                // ✅ Track failed attempt (Admin protected)
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip, deviceName: deviceName }, req);
+                
+                // ✅ Block device after multiple attempts (Admin protected)
                 const deviceRecord = await BlockedDevice.findOne({ 
                     $or: [{ fingerprint }, { ip }] 
                 });
-                if (deviceRecord && deviceRecord.attempts >= 5) {
-                    await blockDevice(req, 'Too many failed passcode attempts', 48 * 60);
-                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked`);
+                if (deviceRecord) {
+                    // Agar admin device hai toh block mat karo
+                    if (deviceRecord.fingerprint !== admin.fingerprint && deviceRecord.ip !== admin.ip) {
+                        // Progressive blocking handled in incrementDeviceAttempts
+                        console.log(`🔒 Device ${deviceName} has ${deviceRecord.attempts} failed attempts`);
+                    }
                 }
                 return res.status(401).json({ error: 'Invalid passcode' });
+            }
+            
+            // ✅ Successful login - Save admin fingerprint and IP
+            if (admin) {
+                admin.fingerprint = fingerprint;
+                admin.ip = ip;
+                await admin.save();
+                console.log('✅ Admin fingerprint and IP saved');
             }
             
             if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
@@ -1003,13 +1067,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             const verified = await verifyOTP(fingerprint, otp);
             if (!verified) {
                 await incrementDeviceAttempts(req);
-                const deviceRecord = await BlockedDevice.findOne({ 
-                    $or: [{ fingerprint }, { ip }] 
-                });
-                if (deviceRecord && deviceRecord.attempts >= 3) {
-                    await blockDevice(req, 'Too many failed OTP attempts', 48 * 60);
-                    console.log(`🚨 ATTACK DETECTED: Device ${deviceName} (${fingerprint}) blocked`);
-                }
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             await BlockedDevice.findOneAndDelete({ 
@@ -1682,6 +1739,13 @@ app.get('/api/admin/block-status', async (req, res) => {
                 { isPermanent: true }
             ]
         });
+        
+        // ✅ Agar admin device hai toh block mat dikhao
+        const admin = await User.findOne();
+        if (blocked && admin && fingerprint === admin.fingerprint) {
+            return res.json({ blocked: false });
+        }
+        
         if (blocked) {
             if (blocked.isPermanent) {
                 res.json({
@@ -1796,77 +1860,46 @@ app.get('/s/:code', async (req, res) => {
             referer: req.headers.referer || null
         });
         
-        // ✅ ==================== APP OPEN MODE ====================
+        // ==================== APP OPEN MODE ====================
         if (link.appOpen && isMobile) {
-            // Mobile device - Try to open app
             const originalUrl = link.originalUrl;
             let appDeepLink = originalUrl;
-            
-            // Get custom app scheme
             let appScheme = link.appScheme || '';
             
-            // Auto-detect if no custom scheme
             if (!appScheme) {
-                // YouTube
                 if (originalUrl.includes('youtube.com') || originalUrl.includes('youtu.be')) {
-                    // ✅ FIXED: No extra )
                     const videoIdMatch = originalUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
                     if (videoIdMatch) {
                         appDeepLink = 'vnd.youtube://' + videoIdMatch[1];
                     } else {
                         appDeepLink = originalUrl;
                     }
-                }
-                // WhatsApp
-                else if (originalUrl.includes('wa.me') || originalUrl.includes('whatsapp.com')) {
+                } else if (originalUrl.includes('wa.me') || originalUrl.includes('whatsapp.com')) {
                     appDeepLink = 'whatsapp://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Instagram
-                else if (originalUrl.includes('instagram.com')) {
+                } else if (originalUrl.includes('instagram.com')) {
                     appDeepLink = 'instagram://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Twitter/X
-                else if (originalUrl.includes('twitter.com') || originalUrl.includes('x.com')) {
+                } else if (originalUrl.includes('twitter.com') || originalUrl.includes('x.com')) {
                     appDeepLink = 'twitter://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Facebook
-                else if (originalUrl.includes('facebook.com')) {
+                } else if (originalUrl.includes('facebook.com')) {
                     appDeepLink = 'fb://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Telegram
-                else if (originalUrl.includes('t.me') || originalUrl.includes('telegram.org')) {
+                } else if (originalUrl.includes('t.me') || originalUrl.includes('telegram.org')) {
                     appDeepLink = 'tg://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Reddit
-                else if (originalUrl.includes('reddit.com')) {
+                } else if (originalUrl.includes('reddit.com')) {
                     appDeepLink = 'reddit://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // LinkedIn
-                else if (originalUrl.includes('linkedin.com')) {
+                } else if (originalUrl.includes('linkedin.com')) {
                     appDeepLink = 'linkedin://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Spotify
-                else if (originalUrl.includes('spotify.com')) {
+                } else if (originalUrl.includes('spotify.com')) {
                     appDeepLink = 'spotify://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Netflix
-                else if (originalUrl.includes('netflix.com')) {
+                } else if (originalUrl.includes('netflix.com')) {
                     appDeepLink = 'netflix://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Amazon
-                else if (originalUrl.includes('amazon.in') || originalUrl.includes('amazon.com')) {
+                } else if (originalUrl.includes('amazon.in') || originalUrl.includes('amazon.com')) {
                     appDeepLink = 'amazon://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Flipkart
-                else if (originalUrl.includes('flipkart.com')) {
+                } else if (originalUrl.includes('flipkart.com')) {
                     appDeepLink = 'flipkart://' + originalUrl.replace(/^https?:\/\//, '');
-                }
-                // Default
-                else {
+                } else {
                     appDeepLink = originalUrl;
                 }
             } else {
-                // Custom scheme provided
                 try {
                     const urlObj = new URL(originalUrl);
                     const path = urlObj.pathname + urlObj.search;
@@ -1878,7 +1911,6 @@ app.get('/s/:code', async (req, res) => {
             
             const appStoreLink = link.appStoreLink || '';
             
-            // Send HTML page with app deep linking
             res.send(`
                 <!DOCTYPE html>
                 <html>
@@ -1936,7 +1968,6 @@ app.get('/s/:code', async (req, res) => {
                         }
                         .btn-web:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
                         .footer { margin-top: 20px; font-size: 11px; color: #4a4e57; }
-                        .app-name { color: #6366f1; font-weight: 600; }
                     </style>
                 </head>
                 <body>
@@ -1979,16 +2010,12 @@ app.get('/s/:code', async (req, res) => {
                             e.preventDefault();
                             window.location.href = originalUrl;
                         });
-                        
-                        console.log('📱 Opening app with deep link:', appDeepLink);
-                        console.log('🌐 Fallback URL:', originalUrl);
                     </script>
                 </body>
                 </html>
             `);
             
         } else {
-            // Desktop or App Open disabled - Normal redirect
             res.redirect(link.originalUrl);
         }
         
@@ -1998,7 +2025,6 @@ app.get('/s/:code', async (req, res) => {
     }
 });
 
-// ✅ GET all short links
 app.get('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const links = await ShortLink.find().sort({ createdAt: -1 });
@@ -2009,7 +2035,6 @@ app.get('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ GET short link analytics
 app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -2033,7 +2058,6 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ CREATE short link
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     try {
         const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
@@ -2071,7 +2095,6 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ UPDATE short link
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -2093,7 +2116,6 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ DELETE short link
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -2110,7 +2132,6 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ SHORT LINK STATS
 app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     try {
         const totalLinks = await ShortLink.countDocuments();
@@ -2342,15 +2363,10 @@ app.listen(port, '0.0.0.0', () => {
     console.log('📦 CDN: cdn.jsdelivr.net allowed for html2canvas');
     console.log('🗄️ Database: MongoDB Atlas');
     console.log('═══════════════════════════════════════════');
-    console.log('🚨 SECURITY FEATURES:');
-    console.log('🛡️ Device-based blocking: Individual device blocks (Admin protected)');
-    console.log('🔐 2-Step Verification: Passcode + OTP (Email)');
-    console.log('🚫 Admin Panel Hiding: Blocks visitor link access');
-    console.log('📱 OTP Methods: Email support (SMS disabled)');
-    console.log('🔧 Device Management: View, Ban, and Unban devices');
-    console.log('📋 Attack Logging: Detects and logs attack attempts');
-    console.log('⛔ Progressive Blocking: 48hr → 7 days → Permanent');
-    console.log('📊 Real-time Tracking: Active Now, 1m, 60m, 24h, Lifetime');
+    console.log('🛡️ ADMIN DEVICE PROTECTION:');
+    console.log('✅ Admin device will NEVER be blocked');
+    console.log('✅ Only attacker devices get blocked');
+    console.log('📊 Progressive Blocking: 1st=Track, 2nd=24hrs, 3rd=14days, 4th=Permanent');
     console.log('═══════════════════════════════════════════');
     console.log('🔗 SHORT LINK FEATURES:');
     console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
