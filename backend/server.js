@@ -194,7 +194,6 @@ const deviceAuthLimiter = rateLimit({
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
-        // ✅ Admin device ko skip karo
         if (admin && fingerprint === admin.fingerprint && ip === admin.ip) {
             return true;
         }
@@ -234,7 +233,6 @@ function getDeviceId(req) {
     return { ip, userAgent, fingerprint };
 }
 
-// ✅ Generate unique device key
 function getDeviceKey(fingerprint, ip) {
     return crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
 }
@@ -284,13 +282,11 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (IP + Fingerprint Based) ====================
-
+// ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const deviceKey = getDeviceKey(fingerprint, ip);
     
-    // ✅ Admin device check - Admin ka fingerprint + IP match kare toh block skip
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
     const adminIp = admin?.ip || null;
@@ -300,7 +296,6 @@ async function isDeviceBlocked(req) {
         return null;
     }
     
-    // ✅ DeviceKey se block check karo
     const blocked = await BlockedDevice.findOne({
         deviceKey: deviceKey,
         $or: [
@@ -318,7 +313,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     const deviceKey = getDeviceKey(fingerprint, ip);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
     
-    // ✅ ADMIN DEVICE PROTECTION - Block mat karo
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
     const adminIp = admin?.ip || null;
@@ -331,7 +325,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     let record = await BlockedDevice.findOne({ deviceKey: deviceKey });
     
     if (record) {
-        // ✅ Agar record admin device ka hai toh mat block karo
         if (record.fingerprint === adminFingerprint && record.ip === adminIp) {
             console.log('🛡️ Skipping block for admin device (existing record)');
             return null;
@@ -349,7 +342,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             reason: reason
         });
         
-        // ✅ PROGRESSIVE BLOCKING: 1st=No block, 2nd=24hrs, 3rd=14days, 4th=Permanent
         if (record.attempts >= 4) {
             record.isPermanent = true;
             record.permanentBlockedAt = new Date();
@@ -365,7 +357,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             record.reason = 'Too many failed attempts - Blocked for 24 hours';
             console.log(`🚨 ${deviceName} (${ip}) blocked for 24 hours (${record.attempts} attempts)`);
         } else {
-            // 1st attempt - No block, only track
             record.blockedUntil = null;
             record.reason = 'Login attempt - Monitoring';
             console.log(`📝 ${deviceName} (${ip}) tracked (${record.attempts} attempts)`);
@@ -374,7 +365,6 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
         await record.save();
         return record;
     } else {
-        // ✅ Naya device - pehle attempt me block nahi, sirf track
         const newRecord = new BlockedDevice({
             deviceKey: deviceKey,
             fingerprint,
@@ -404,7 +394,6 @@ async function incrementDeviceAttempts(req) {
     const { deviceName, deviceType } = getDeviceDetails(req);
     const deviceKey = getDeviceKey(fingerprint, ip);
     
-    // ✅ ADMIN DEVICE PROTECTION - Track mat karo
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
     const adminIp = admin?.ip || null;
@@ -417,7 +406,6 @@ async function incrementDeviceAttempts(req) {
     let record = await BlockedDevice.findOne({ deviceKey: deviceKey });
     
     if (record) {
-        // ✅ Agar record admin device ka hai toh mat badhao
         if (record.fingerprint === adminFingerprint && record.ip === adminIp) {
             console.log('🛡️ Skipping attempt tracking for admin device (existing record)');
             return;
@@ -435,7 +423,6 @@ async function incrementDeviceAttempts(req) {
             reason: 'Failed login attempt'
         });
         
-        // ✅ PROGRESSIVE BLOCKING
         if (record.attempts >= 4) {
             record.isPermanent = true;
             record.permanentBlockedAt = new Date();
@@ -935,29 +922,41 @@ app.get('/api/popup-settings/:linkId?', async (req, res) => {
     }
 });
 
-// ==================== PUBLIC SECRET KEY ENDPOINTS ====================
+// ================================================================
+// ==================== SECRET GATEWAY ROUTES ====================
+// ================================================================
+
+// ✅ Public secret key - Get current secret key from database
 app.get('/api/admin/public-secret-key', async (req, res) => {
     try {
         const admin = await User.findOne();
-        if (!admin) return res.json({ secretKey: 'admin@2024' });
+        if (!admin) {
+            return res.json({ secretKey: 'admin@2024' });
+        }
         res.json({ secretKey: admin.secretKey || 'admin@2024' });
     } catch (error) {
+        console.error('❌ Secret key fetch error:', error);
         res.json({ secretKey: 'admin@2024' });
     }
 });
 
+// ✅ Verify secret key - Check if entered key matches
 app.post('/api/admin/verify-secret-key', async (req, res) => {
     try {
         const { key } = req.body;
-        if (!key) return res.json({ success: false });
+        if (!key) {
+            return res.json({ success: false });
+        }
         const admin = await User.findOne();
         const secretKey = admin?.secretKey || 'admin@2024';
+        
         if (key === secretKey) {
             res.json({ success: true });
         } else {
             res.json({ success: false });
         }
     } catch (error) {
+        console.error('❌ Secret key verify error:', error);
         res.json({ success: false });
     }
 });
@@ -972,7 +971,6 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
         const { ip, userAgent, fingerprint } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         
-        // ✅ Check if device is blocked (Admin protected)
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             if (blocked.isPermanent) {
@@ -1002,16 +1000,13 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
             }
             const isValid = bcrypt.compareSync(passcode, admin.passcode);
             if (!isValid) {
-                // ✅ Track failed attempt (Admin protected)
                 await incrementDeviceAttempts(req);
                 await logAdminAction('admin', 'LOGIN_FAILED', { ip: ip, deviceName: deviceName }, req);
                 
-                // ✅ Block device after multiple attempts (Admin protected)
                 const deviceRecord = await BlockedDevice.findOne({ 
                     deviceKey: getDeviceKey(fingerprint, ip)
                 });
                 if (deviceRecord) {
-                    // Agar admin device hai toh block mat karo
                     if (deviceRecord.fingerprint !== admin.fingerprint || deviceRecord.ip !== admin.ip) {
                         console.log(`🔒 Device ${deviceName} (${ip}) has ${deviceRecord.attempts} failed attempts`);
                     }
@@ -1224,7 +1219,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== SECRET KEY MANAGEMENT ====================
+// ==================== SECRET KEY MANAGEMENT (Admin) ====================
 app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -1756,7 +1751,6 @@ app.get('/api/admin/block-status', async (req, res) => {
         const { fingerprint, ip } = getDeviceId(req);
         const deviceKey = getDeviceKey(fingerprint, ip);
         
-        // ✅ Agar admin device hai toh block mat dikhao
         const admin = await User.findOne();
         if (admin && fingerprint === admin.fingerprint && ip === admin.ip) {
             return res.json({ blocked: false });
@@ -1848,7 +1842,6 @@ app.get('/s/:code', async (req, res) => {
             `);
         }
         
-        // Track visit
         link.visits = (link.visits || 0) + 1;
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -1860,7 +1853,6 @@ app.get('/s/:code', async (req, res) => {
         link.lastClicked = now;
         await link.save();
         
-        // Track click details
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         let deviceName = 'Unknown Device';
@@ -1884,7 +1876,6 @@ app.get('/s/:code', async (req, res) => {
             referer: req.headers.referer || null
         });
         
-        // ==================== APP OPEN MODE ====================
         if (link.appOpen && isMobile) {
             const originalUrl = link.originalUrl;
             let appDeepLink = originalUrl;
@@ -2184,14 +2175,19 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 // ==================== SERVE PAGES ====================
 // ================================================================
 
+// ✅ PUBLIC ROUTES - SABSE PEHLE (No auth required)
+
+// Root redirect
 app.get('/', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
+// ✅ Secret Gateway - Public access
 app.get('/admin/secret-gateway', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin', 'secret-gateway.html'));
 });
 
+// ✅ Login page - Public access (with referer check)
 app.get('/admin/login.html', (req, res) => {
     const referer = req.headers.referer || '';
     const isFromGateway = referer && referer.includes('/admin/secret-gateway');
@@ -2211,6 +2207,7 @@ app.get('/admin/login.html', (req, res) => {
     }
 });
 
+// ✅ Admin index - Auth required
 app.get('/admin/index.html', (req, res) => {
     const token = req.cookies?.adminToken;
     
@@ -2224,6 +2221,7 @@ app.get('/admin/index.html', (req, res) => {
     res.redirect('/admin/secret-gateway');
 });
 
+// Other public pages
 app.get('/uid', (req, res) => res.sendFile(path.join(__dirname, '..', 'uid-checker.html')));
 app.get('/v/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'video-lock.html')));
 app.get('/user-dashboard', (req, res) => res.sendFile(path.join(__dirname, '..', 'user-dashboard.html')));
@@ -2235,7 +2233,9 @@ app.get('/sw.js', (req, res) => res.sendFile(path.join(__dirname, '..', 'sw.js')
 // ==================== ADMIN PANEL PROTECTION ====================
 // ================================================================
 
+// ✅ This middleware runs AFTER public routes, so it won't block secret-gateway
 app.use('/admin', async (req, res, next) => {
+    // Skip public admin pages (already handled above)
     if (req.path === '/secret-gateway' || req.path === '/login.html' || req.path === '/index.html') {
         return next();
     }
@@ -2393,14 +2393,16 @@ app.listen(port, '0.0.0.0', () => {
     console.log('✅ Only attacker devices get blocked');
     console.log('📊 Progressive Blocking: 1st=Track, 2nd=24hrs, 3rd=14days, 4th=Permanent');
     console.log('═══════════════════════════════════════════');
-    console.log('🔗 SHORT LINK FEATURES:');
-    console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
-    console.log('📅 Schedule Expiry: Set expiry date for short links');
-    console.log('═══════════════════════════════════════════');
     console.log('🔐 SECRET GATEWAY:');
     console.log('🚪 Admin Panel hidden behind a fake 404 page');
     console.log('👆 Tap invisible area 4 times to reveal secret key input');
     console.log('🔑 Secret Key: admin@2024 (changeable in settings)');
+    console.log('✅ Public secret key API: /api/admin/public-secret-key');
+    console.log('✅ Verify secret key API: /api/admin/verify-secret-key');
+    console.log('═══════════════════════════════════════════');
+    console.log('🔗 SHORT LINK FEATURES:');
+    console.log('📱 App Open Mode: Enable/Disable deep link redirection (Mobile Only)');
+    console.log('📅 Schedule Expiry: Set expiry date for short links');
     console.log('═══════════════════════════════════════════');
     console.log('🔄 LIVE VISITORS:');
     console.log('🟢 Active Visits: Users currently watching video (last 2 minutes)');
