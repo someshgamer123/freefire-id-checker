@@ -18,7 +18,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    // ✅ Admin fingerprint (for identification)
     fingerprint: {
+        type: String,
+        default: null
+    },
+    // ✅ Admin IP (for identification)
+    ip: {
         type: String,
         default: null
     },

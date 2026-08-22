@@ -194,7 +194,11 @@ const deviceAuthLimiter = rateLimit({
         const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
         const userAgent = req.headers['user-agent'] || 'unknown';
         const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
-        return fingerprint === admin?.fingerprint;
+        // ✅ Admin device ko skip karo
+        if (admin && fingerprint === admin.fingerprint && ip === admin.ip) {
+            return true;
+        }
+        return false;
     }
 });
 
@@ -228,6 +232,11 @@ function getDeviceId(req) {
     const userAgent = req.headers['user-agent'] || 'unknown';
     const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     return { ip, userAgent, fingerprint };
+}
+
+// ✅ Generate unique device key
+function getDeviceKey(fingerprint, ip) {
+    return crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
 }
 
 function getDeviceDetails(req) {
@@ -275,25 +284,30 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking (FIXED - Admin Protection) ====================
+// ==================== Device Blocking (IP + Fingerprint Based) ====================
+
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
+    const deviceKey = getDeviceKey(fingerprint, ip);
+    
+    // ✅ Admin device check - Admin ka fingerprint + IP match kare toh block skip
+    const admin = await User.findOne();
+    const adminFingerprint = admin?.fingerprint || null;
+    const adminIp = admin?.ip || null;
+    
+    if (fingerprint === adminFingerprint && ip === adminIp) {
+        console.log('🛡️ Admin device detected, skipping block check');
+        return null;
+    }
+    
+    // ✅ DeviceKey se block check karo
     const blocked = await BlockedDevice.findOne({
-        $or: [{ fingerprint }, { ip }],
+        deviceKey: deviceKey,
         $or: [
             { blockedUntil: { $gt: new Date() } },
             { isPermanent: true }
         ]
     });
-    
-    // ✅ Agar admin device hai toh block mat karo
-    if (blocked) {
-        const admin = await User.findOne();
-        if (admin && (fingerprint === admin.fingerprint || ip === admin.ip)) {
-            console.log('⚠️ Admin device found in blocked list, skipping block check');
-            return null;
-        }
-    }
     
     return blocked;
 }
@@ -301,6 +315,7 @@ async function isDeviceBlocked(req) {
 async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 48 * 60) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
+    const deviceKey = getDeviceKey(fingerprint, ip);
     const blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
     
     // ✅ ADMIN DEVICE PROTECTION - Block mat karo
@@ -308,16 +323,16 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     const adminFingerprint = admin?.fingerprint || null;
     const adminIp = admin?.ip || null;
     
-    if (fingerprint === adminFingerprint || ip === adminIp) {
+    if (fingerprint === adminFingerprint && ip === adminIp) {
         console.log('🛡️ Skipping block for admin device');
         return null;
     }
     
-    let record = await BlockedDevice.findOne({ $or: [{ fingerprint }, { ip }] });
+    let record = await BlockedDevice.findOne({ deviceKey: deviceKey });
     
     if (record) {
-        // Agar record admin device ka hai toh mat block karo
-        if (record.fingerprint === adminFingerprint || record.ip === adminIp) {
+        // ✅ Agar record admin device ka hai toh mat block karo
+        if (record.fingerprint === adminFingerprint && record.ip === adminIp) {
             console.log('🛡️ Skipping block for admin device (existing record)');
             return null;
         }
@@ -340,20 +355,20 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             record.permanentBlockedAt = new Date();
             record.reason = 'Permanent ban due to repeated malicious attempts (4th attempt)';
             record.blockedUntil = null;
-            console.log(`🚨 ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) PERMANENTLY BANNED (${record.attempts} attempts)`);
         } else if (record.attempts >= 3) {
             record.blockedUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
             record.reason = 'Repeated attempts - Blocked for 14 days';
-            console.log(`🚨 ${deviceName} blocked for 14 days (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) blocked for 14 days (${record.attempts} attempts)`);
         } else if (record.attempts >= 2) {
             record.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 24 hours';
-            console.log(`🚨 ${deviceName} blocked for 24 hours (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) blocked for 24 hours (${record.attempts} attempts)`);
         } else {
             // 1st attempt - No block, only track
             record.blockedUntil = null;
             record.reason = 'Login attempt - Monitoring';
-            console.log(`📝 ${deviceName} tracked (${record.attempts} attempts)`);
+            console.log(`📝 ${deviceName} (${ip}) tracked (${record.attempts} attempts)`);
         }
         
         await record.save();
@@ -361,6 +376,7 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     } else {
         // ✅ Naya device - pehle attempt me block nahi, sirf track
         const newRecord = new BlockedDevice({
+            deviceKey: deviceKey,
             fingerprint,
             ip,
             deviceName,
@@ -378,7 +394,7 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
             }]
         });
         await newRecord.save();
-        console.log(`📝 New device tracked: ${deviceName} (${fingerprint.substring(0, 12)}...)`);
+        console.log(`📝 New device tracked: ${deviceName} (${ip}) (${fingerprint.substring(0, 12)}...)`);
         return newRecord;
     }
 }
@@ -386,24 +402,23 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
 async function incrementDeviceAttempts(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
+    const deviceKey = getDeviceKey(fingerprint, ip);
     
     // ✅ ADMIN DEVICE PROTECTION - Track mat karo
     const admin = await User.findOne();
     const adminFingerprint = admin?.fingerprint || null;
     const adminIp = admin?.ip || null;
     
-    if (fingerprint === adminFingerprint || ip === adminIp) {
+    if (fingerprint === adminFingerprint && ip === adminIp) {
         console.log('🛡️ Skipping attempt tracking for admin device');
         return;
     }
     
-    const record = await BlockedDevice.findOne({
-        $or: [{ fingerprint }, { ip }]
-    });
+    let record = await BlockedDevice.findOne({ deviceKey: deviceKey });
     
     if (record) {
-        // Agar record admin device ka hai toh mat badhao
-        if (record.fingerprint === adminFingerprint || record.ip === adminIp) {
+        // ✅ Agar record admin device ka hai toh mat badhao
+        if (record.fingerprint === adminFingerprint && record.ip === adminIp) {
             console.log('🛡️ Skipping attempt tracking for admin device (existing record)');
             return;
         }
@@ -426,20 +441,21 @@ async function incrementDeviceAttempts(req) {
             record.permanentBlockedAt = new Date();
             record.reason = 'Permanent ban due to repeated malicious attempts';
             record.blockedUntil = null;
-            console.log(`🚨 ${deviceName} PERMANENTLY BANNED (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) PERMANENTLY BANNED (${record.attempts} attempts)`);
         } else if (record.attempts >= 3) {
             record.blockedUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
             record.reason = 'Repeated attempts - Blocked for 14 days';
-            console.log(`🚨 ${deviceName} blocked for 14 days (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) blocked for 14 days (${record.attempts} attempts)`);
         } else if (record.attempts >= 2) {
             record.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
             record.reason = 'Too many failed attempts - Blocked for 24 hours';
-            console.log(`🚨 ${deviceName} blocked for 24 hours (${record.attempts} attempts)`);
+            console.log(`🚨 ${deviceName} (${ip}) blocked for 24 hours (${record.attempts} attempts)`);
         }
         
         await record.save();
     } else {
         await BlockedDevice.create({
+            deviceKey: deviceKey,
             fingerprint,
             ip,
             deviceName,
@@ -992,13 +1008,12 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 
                 // ✅ Block device after multiple attempts (Admin protected)
                 const deviceRecord = await BlockedDevice.findOne({ 
-                    $or: [{ fingerprint }, { ip }] 
+                    deviceKey: getDeviceKey(fingerprint, ip)
                 });
                 if (deviceRecord) {
                     // Agar admin device hai toh block mat karo
-                    if (deviceRecord.fingerprint !== admin.fingerprint && deviceRecord.ip !== admin.ip) {
-                        // Progressive blocking handled in incrementDeviceAttempts
-                        console.log(`🔒 Device ${deviceName} has ${deviceRecord.attempts} failed attempts`);
+                    if (deviceRecord.fingerprint !== admin.fingerprint || deviceRecord.ip !== admin.ip) {
+                        console.log(`🔒 Device ${deviceName} (${ip}) has ${deviceRecord.attempts} failed attempts`);
                     }
                 }
                 return res.status(401).json({ error: 'Invalid passcode' });
@@ -1010,6 +1025,13 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 admin.ip = ip;
                 await admin.save();
                 console.log('✅ Admin fingerprint and IP saved');
+                
+                // ✅ Admin device ko blocked list se hatao agar hai toh
+                await BlockedDevice.deleteMany({
+                    fingerprint: fingerprint,
+                    ip: ip
+                });
+                console.log('✅ Admin device removed from blocked list');
             }
             
             if (ENABLE_2FA && EMAIL_USER && EMAIL_PASS && transporter) {
@@ -1070,7 +1092,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
                 return res.status(401).json({ error: 'Invalid or expired OTP' });
             }
             await BlockedDevice.findOneAndDelete({ 
-                $or: [{ fingerprint }, { ip }],
+                deviceKey: getDeviceKey(fingerprint, ip),
                 isPermanent: false 
             });
             const jwtToken = generateToken('admin');
@@ -1731,20 +1753,22 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
 
 app.get('/api/admin/block-status', async (req, res) => {
     try {
-        const { fingerprint } = getDeviceId(req);
+        const { fingerprint, ip } = getDeviceId(req);
+        const deviceKey = getDeviceKey(fingerprint, ip);
+        
+        // ✅ Agar admin device hai toh block mat dikhao
+        const admin = await User.findOne();
+        if (admin && fingerprint === admin.fingerprint && ip === admin.ip) {
+            return res.json({ blocked: false });
+        }
+        
         const blocked = await BlockedDevice.findOne({ 
-            fingerprint,
+            deviceKey: deviceKey,
             $or: [
                 { blockedUntil: { $gt: new Date() } },
                 { isPermanent: true }
             ]
         });
-        
-        // ✅ Agar admin device hai toh block mat dikhao
-        const admin = await User.findOne();
-        if (blocked && admin && fingerprint === admin.fingerprint) {
-            return res.json({ blocked: false });
-        }
         
         if (blocked) {
             if (blocked.isPermanent) {
@@ -2365,6 +2389,7 @@ app.listen(port, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════');
     console.log('🛡️ ADMIN DEVICE PROTECTION:');
     console.log('✅ Admin device will NEVER be blocked');
+    console.log('✅ IP + Fingerprint based blocking');
     console.log('✅ Only attacker devices get blocked');
     console.log('📊 Progressive Blocking: 1st=Track, 2nd=24hrs, 3rd=14days, 4th=Permanent');
     console.log('═══════════════════════════════════════════');

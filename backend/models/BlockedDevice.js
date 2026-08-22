@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
 const BlockedDeviceSchema = new mongoose.Schema({
-    fingerprint: {
+    // ✅ Combined Key: fingerprint + ip (unique combination)
+    deviceKey: {
         type: String,
         required: true,
         unique: true
+    },
+    fingerprint: {
+        type: String,
+        required: true
     },
     ip: {
         type: String,
@@ -60,8 +65,9 @@ const BlockedDeviceSchema = new mongoose.Schema({
     }
 });
 
-// ✅ Indexes - Remove duplicates
-BlockedDeviceSchema.index({ fingerprint: 1 }, { unique: true });
+// ✅ Indexes - Unique deviceKey
+BlockedDeviceSchema.index({ deviceKey: 1 }, { unique: true });
+BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
 BlockedDeviceSchema.index({ deviceType: 1 });
 BlockedDeviceSchema.index({ isPermanent: 1 });
