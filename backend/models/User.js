@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
     },
     theme: {
         type: String,
-        default: 'light',
+        default: 'dark',
         enum: ['light', 'dark']
     },
     email: {
@@ -18,12 +18,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    // ✅ Admin fingerprint (for identification)
     fingerprint: {
         type: String,
         default: null
     },
-    // ✅ Admin IP (for identification)
     ip: {
         type: String,
         default: null
