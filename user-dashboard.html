@@ -1,584 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>User Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta charset="UTF-8">
+    <title>Link Insights & Renewal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            document.addEventListener('contextmenu', e => e.preventDefault(), true);
+            window.addEventListener('keydown', e => {
+                if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
+                    e.preventDefault();
+                }
+            }, true);
+            try { ['log', 'debug', 'info', 'warn', 'error'].forEach(m => window.console[m] = () => {}); } catch(e) {}
+        })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
-            background: #0a0a1a;
-            color: #fff;
+            background: #090a10;
+            color: #f8fafc;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
         }
-        .container {
-            max-width: 700px;
+
+        .dashboard-container {
             width: 100%;
-            background: rgba(255,255,255,0.06);
-            backdrop-filter: blur(20px);
+            max-width: 680px;
+            background: rgba(18, 21, 31, 0.85);
             border-radius: 24px;
-            padding: 30px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(16px);
+        }
+
+        .head { text-align: center; margin-bottom: 24px; }
+        .head h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .head p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-item {
+            background: rgba(10, 12, 19, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-val { font-size: 28px; font-weight: 800; color: #818cf8; }
+        .stat-lbl { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
+
+        .plans-box {
+            background: rgba(10, 12, 19, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            padding: 20px;
             margin-top: 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .header h1 { font-size: 26px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header p { color: rgba(255,255,255,0.5); font-size: 14px; }
-        
-        .stats-grid {
+
+        .plans-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 14px;
-            margin: 20px 0;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 14px;
-            padding: 18px 16px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.06);
-            transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.08); }
-        .stat-card .number { font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-        
-        .info-card {
-            background: rgba(255,255,255,0.03);
-            border-radius: 14px;
-            padding: 18px 20px;
-            margin: 12px 0;
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        .info-card .label { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
-        .info-card .value { font-size: 16px; font-weight: 600; margin-top: 4px; word-break: break-all; }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .status-badge.active { background: rgba(72,187,120,0.2); color: #48bb78; border: 1px solid rgba(72,187,120,0.2); }
-        .status-badge.suspended { background: rgba(246,173,85,0.2); color: #f6ad55; border: 1px solid rgba(246,173,85,0.2); }
-        .status-badge.disabled { background: rgba(252,129,129,0.2); color: #fc8181; border: 1px solid rgba(252,129,129,0.2); }
-        .status-badge.expired { background: rgba(252,129,129,0.2); color: #fc8181; border: 1px solid rgba(252,129,129,0.2); }
-        
-        .renewal-section {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-        }
-        .renewal-section h3 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: rgba(255,255,255,0.8);
-        }
-        .renewal-section .sub-text {
-            font-size: 13px;
-            color: rgba(255,255,255,0.4);
-            margin-bottom: 15px;
-        }
-        .plan-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
             gap: 10px;
-            margin: 12px 0;
+            margin: 16px 0;
         }
-        .plan-btn {
-            padding: 14px 8px;
-            border: 2px solid rgba(255,255,255,0.1);
+
+        .plan-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
-            background: rgba(255,255,255,0.03);
-            color: #fff;
-            cursor: pointer;
-            transition: 0.3s;
+            padding: 12px 8px;
             text-align: center;
-            font-size: 13px;
-            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .plan-btn:hover { border-color: #667eea; background: rgba(102,126,234,0.1); transform: translateY(-2px); }
-        .plan-btn .price { font-size: 20px; color: #667eea; display: block; margin-top: 4px; font-weight: 800; }
-        .plan-btn .days { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 2px; }
-        .plan-btn.selected { border-color: #667eea; background: rgba(102,126,234,0.15); box-shadow: 0 0 30px rgba(102,126,234,0.1); }
-        .plan-btn .check-mark { display: none; color: #48bb78; font-size: 16px; }
-        .plan-btn.selected .check-mark { display: inline-block; }
-        
-        .btn {
-            padding: 14px 30px;
+
+        .plan-card.active {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .plan-card .price { display: block; font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; }
+
+        .btn-wa {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: #fff;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 14px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            transition: 0.3s;
-            width: 100%;
-            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-        }
-        .btn-whatsapp { background: #25D366; }
-        .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,211,102,0.3); }
-        
-        .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(120px);
-            padding: 14px 28px; border-radius: 12px; color: #fff; font-weight: 600;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 9999; max-width: 90%; text-align: center;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast.success { border-color: #48bb78; }
-        .toast.error { border-color: #fc8181; }
-        .toast.info { border-color: #667eea; }
-
-        .selected-plan-display {
-            text-align: center;
-            font-size: 14px;
-            color: rgba(255,255,255,0.6);
-            margin: 10px 0;
-            padding: 8px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .selected-plan-display strong { color: #667eea; }
-
-        .link-id-display {
-            font-size: 11px;
-            color: rgba(255,255,255,0.25);
-            text-align: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            word-break: break-all;
-        }
-
-        @media (max-width: 480px) {
-            .container { padding: 20px 16px; }
-            .stat-card .number { font-size: 24px; }
-            .plan-grid { grid-template-columns: repeat(3, 1fr); }
-            .plan-btn { padding: 10px 6px; font-size: 11px; }
-            .plan-btn .price { font-size: 16px; }
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
         }
     </style>
 </head>
 <body>
-    <div class="container" id="app">
-        <div class="header">
-            <h1>📊 Link Dashboard</h1>
-            <p>View your link stats and request renewal</p>
+    <div class="dashboard-container">
+        <div class="head">
+            <h1>📊 Link Analytics & Extension</h1>
+            <p>Track visitor performance and renew your link validity</p>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
-                <div class="number" id="totalVisits">0</div>
-                <div class="label">👁️ Total Visits</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="totalClaims">0</div>
-                <div class="label">🎁 Total Claims</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="todayVisits">0</div>
-                <div class="label">📅 Today's Visits</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="todayClaims">0</div>
-                <div class="label">📅 Today's Claims</div>
-            </div>
+        <div class="stat-grid">
+            <div class="stat-item"><div class="stat-val" id="vVisits">0</div><div class="stat-lbl">Total Visits</div></div>
+            <div class="stat-item"><div class="stat-val" id="vClaims">0</div><div class="stat-lbl">Total Claims</div></div>
         </div>
 
-        <!-- Link Info -->
-        <div class="info-card">
-            <div class="label">🔗 Link Name</div>
-            <div class="value" id="linkName">Loading...</div>
-        </div>
-        <div class="info-card">
-            <div class="label">📅 Status</div>
-            <div class="value"><span class="status-badge" id="linkStatus">Loading...</span></div>
-        </div>
-        <div class="info-card">
-            <div class="label">⏰ Expiry Date</div>
-            <div class="value" id="expiryDate">Loading...</div>
-        </div>
-
-        <!-- Renewal Section -->
-        <div class="renewal-section" id="renewalSection">
-            <h3>🔄 Renew Your Link</h3>
-            <p class="sub-text">Select a plan and contact admin via WhatsApp to renew your link</p>
-            
-            <div class="plan-grid" id="planGrid">
-                <div class="plan-btn" data-plan="3days" onclick="selectPlan('3days')">
-                    3 Days
-                    <span class="price">₹50</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="7days" onclick="selectPlan('7days')">
-                    7 Days
-                    <span class="price">₹100</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="15days" onclick="selectPlan('15days')">
-                    15 Days
-                    <span class="price">₹200</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="1month" onclick="selectPlan('1month')">
-                    1 Month
-                    <span class="price">₹500</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="3months" onclick="selectPlan('3months')">
-                    3 Months
-                    <span class="price">₹1200</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="6months" onclick="selectPlan('6months')">
-                    6 Months
-                    <span class="price">₹2000</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
-                <div class="plan-btn" data-plan="12months" onclick="selectPlan('12months')">
-                    12 Months
-                    <span class="price">₹3500</span>
-                    <span class="days">Extension</span>
-                    <span class="check-mark">✅</span>
-                </div>
+        <div class="plans-box">
+            <h3>⚡ Extend Link Validity</h3>
+            <div class="plans-grid">
+                <div class="plan-card active" onclick="pickPlan('3days', 50)">3 Days<span class="price">₹50</span></div>
+                <div class="plan-card" onclick="pickPlan('7days', 100)">7 Days<span class="price">₹100</span></div>
+                <div class="plan-card" onclick="pickPlan('15days', 200)">15 Days<span class="price">₹200</span></div>
+                <div class="plan-card" onclick="pickPlan('1month', 500)">1 Mo<span class="price">₹500</span></div>
             </div>
-            
-            <div class="selected-plan-display" id="selectedPlanDisplay">
-                💡 Select a plan above
-            </div>
-            
-            <button class="btn btn-whatsapp" id="renewBtn" onclick="sendWhatsAppRequest()">
-                📱 Contact Admin via WhatsApp
-            </button>
-            
-            <div id="renewalStatus" style="margin-top:10px;font-size:13px;text-align:center;color:rgba(255,255,255,0.4);"></div>
+            <button class="btn-wa" onclick="sendRenewal()">📱 Contact on WhatsApp for Renewal</button>
         </div>
-
-        <!-- Link ID -->
-        <div class="link-id-display" id="linkIdDisplay">🔑 Link ID: <span id="linkIdValue">Loading...</span></div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
     <script>
-        // ===== GET LINK ID FROM URL =====
-        var pathSegments = window.location.pathname.split('/');
-        var rawId = pathSegments[pathSegments.length - 1] || '';
-        var linkId = rawId;
-        var actualLinkId = null;
-        var whatsappNumber = '';
-        var selectedPlan = null;
-        var linkData = null;
+        let selectedPlan = '3days';
+        let planPrice = 50;
+        let adminPhone = '916372923348';
 
-        console.log('📌 Raw ID from URL:', rawId);
-
-        function showToast(msg, type) {
-            type = type || 'info';
-            var t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast ' + type + ' show';
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
-        }
-
-        // ===== LOAD WHATSAPP NUMBER =====
-        async function loadWhatsAppNumber() {
-            try {
-                var r = await fetch('/api/whatsapp-number');
-                var data = await r.json();
-                if (data && data.number) {
-                    whatsappNumber = data.number;
-                    console.log('📱 WhatsApp Number loaded:', whatsappNumber);
-                } else {
-                    whatsappNumber = '916372923348';
-                }
-            } catch (e) {
-                console.error('Error loading WhatsApp number:', e);
-                whatsappNumber = '916372923348';
-            }
-        }
-
-        // ===== RESOLVE LINK ID =====
-        async function resolveLinkId() {
-            try {
-                if (rawId.startsWith('link_')) {
-                    console.log('✅ Direct link ID detected:', rawId);
-                    linkId = rawId;
-                    actualLinkId = rawId;
-                    return true;
-                }
-                
-                if (rawId.startsWith('dashboard_')) {
-                    console.log('🔍 Dashboard ID detected. Fetching actual link...');
-                    
-                    try {
-                        var mapRes = await fetch('/api/dashboard-map/' + rawId);
-                        if (mapRes.ok) {
-                            var mapData = await mapRes.json();
-                            if (mapData.linkId) {
-                                actualLinkId = mapData.linkId;
-                                linkId = actualLinkId;
-                                console.log('✅ Found link via mapping API:', actualLinkId);
-                                return true;
-                            }
-                        }
-                    } catch (e) {
-                        console.log('⚠️ Dashboard map API failed, trying direct search...');
-                    }
-                    
-                    var allLinksRes = await fetch('/api/links');
-                    if (allLinksRes.ok) {
-                        var allLinks = await allLinksRes.json();
-                        var matched = allLinks.find(function(l) {
-                            return l.dashboardId === rawId;
-                        });
-                        if (matched) {
-                            actualLinkId = matched.id;
-                            linkId = actualLinkId;
-                            console.log('✅ Found link via dashboardId search:', actualLinkId);
-                            return true;
-                        }
-                    }
-                    
-                    console.log('⚠️ No mapping found for dashboardId:', rawId);
-                    linkId = rawId;
-                    actualLinkId = rawId;
-                    return true;
-                }
-                
-                linkId = rawId;
-                actualLinkId = rawId;
-                return true;
-                
-            } catch (e) {
-                console.error('Error resolving link ID:', e);
-                linkId = rawId;
-                actualLinkId = rawId;
-                return true;
-            }
-        }
-
-        // ===== LOAD DATA =====
-        async function loadData() {
-            try {
-                console.log('📊 Loading data for linkId:', linkId);
-                
-                var statsRes = await fetch('/api/visit-stats/' + linkId);
-                
-                if (statsRes.status === 404 && rawId !== linkId) {
-                    console.log('⚠️ Link not found with resolved ID, trying raw ID:', rawId);
-                    statsRes = await fetch('/api/visit-stats/' + rawId);
-                }
-                
-                if (statsRes.status === 404) {
-                    console.log('⚠️ Link not found with ID:', linkId);
-                    
-                    var allLinksRes = await fetch('/api/links');
-                    if (allLinksRes.ok) {
-                        var allLinks = await allLinksRes.json();
-                        var matchedLink = allLinks.find(function(l) {
-                            return l.id === rawId || 
-                                   l.dashboardId === rawId || 
-                                   rawId.includes(l.id) ||
-                                   (l.dashboardId && rawId.includes(l.dashboardId));
-                        });
-                        
-                        if (matchedLink) {
-                            console.log('✅ Found link by searching:', matchedLink.id);
-                            linkId = matchedLink.id;
-                            actualLinkId = matchedLink.id;
-                            statsRes = await fetch('/api/visit-stats/' + linkId);
-                        }
-                    }
-                    
-                    if (statsRes.status === 404) {
-                        showToast('⚠️ Link not found. Please check your dashboard link.', 'error');
-                        document.getElementById('linkName').textContent = 'Link not found';
-                        document.getElementById('linkStatus').textContent = 'NOT FOUND';
-                        document.getElementById('linkStatus').className = 'status-badge disabled';
-                        document.getElementById('expiryDate').textContent = 'N/A';
-                        document.getElementById('linkIdValue').textContent = linkId;
-                        return;
-                    }
-                }
-                
-                if (statsRes.ok) {
-                    var data = await statsRes.json();
-                    linkData = data;
-                    
-                    document.getElementById('linkName').textContent = data.name || 'Unknown';
-                    document.getElementById('totalVisits').textContent = data.totalVisits || 0;
-                    document.getElementById('totalClaims').textContent = data.totalClaims || 0;
-                    
-                    var todayVisits = 0, todayClaims = 0;
-                    if (data.dailyVisits) {
-                        var today = new Date().toISOString().split('T')[0];
-                        todayVisits = data.dailyVisits[today] || 0;
-                        todayClaims = data.dailyClaims && data.dailyClaims[today] ? data.dailyClaims[today] : 0;
-                    }
-                    document.getElementById('todayVisits').textContent = todayVisits;
-                    document.getElementById('todayClaims').textContent = todayClaims;
-                    
-                    var statusEl = document.getElementById('linkStatus');
-                    var status = data.status || 'unknown';
-                    statusEl.textContent = status.toUpperCase();
-                    statusEl.className = 'status-badge ' + status;
-                    
-                    var expiryEl = document.getElementById('expiryDate');
-                    if (data.expiryDate) {
-                        var date = new Date(data.expiryDate);
-                        expiryEl.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-                    } else {
-                        expiryEl.textContent = 'No expiry set';
-                    }
-                    
-                    document.getElementById('linkIdValue').textContent = linkId;
-                } else {
-                    showToast('❌ Failed to load stats', 'error');
-                }
-
-            } catch (e) {
-                console.error('Error loading data:', e);
-                showToast('❌ Failed to load data', 'error');
-            }
-        }
-
-        // ===== SELECT PLAN =====
-        function selectPlan(plan) {
+        function pickPlan(plan, price) {
             selectedPlan = plan;
-            document.querySelectorAll('.plan-btn').forEach(function(el) {
-                el.classList.toggle('selected', el.dataset.plan === plan);
-            });
-            document.getElementById('selectedPlanDisplay').innerHTML = '✅ Selected: <strong>' + plan + '</strong>';
+            planPrice = price;
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }
 
-        // ===== SEND WHATSAPP REQUEST =====
-        async function sendWhatsAppRequest() {
-            if (!selectedPlan) {
-                showToast('⚠️ Please select a plan first', 'error');
-                return;
-            }
-
-            if (!whatsappNumber) {
-                showToast('⏳ Loading WhatsApp number...', 'info');
-                await loadWhatsAppNumber();
-                if (!whatsappNumber) {
-                    showToast('❌ WhatsApp number not available', 'error');
-                    return;
-                }
-            }
-
-            var btn = document.getElementById('renewBtn');
-            var originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Processing...';
-            btn.disabled = true;
-
-            try {
-                var priceRes = await fetch('/api/pricing');
-                var priceData = await priceRes.json();
-                var pricing = priceData.pricing || {};
-                
-                var planMap = {
-                    '3days': 3,
-                    '7days': 7,
-                    '15days': 15,
-                    '1month': 30,
-                    '3months': 90,
-                    '6months': 180,
-                    '12months': 365
-                };
-                var days = planMap[selectedPlan] || 0;
-                var amount = pricing[selectedPlan] || 0;
-
-                if (amount === 0) {
-                    showToast('❌ Price not set for this plan', 'error');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    return;
-                }
-
-                var linkName = linkData ? linkData.name : 'Unknown';
-                var linkIdDisplay = linkId || 'N/A';
-                var status = linkData ? linkData.status : 'Unknown';
-                var expiry = linkData && linkData.expiryDate ? new Date(linkData.expiryDate).toLocaleDateString() : 'No expiry';
-
-                var message = `🔔 *RENEWAL REQUEST* 🔔
-
-📌 *Link Name:* ${linkName}
-🆔 *Link ID:* ${linkIdDisplay}
-📊 *Status:* ${status}
-⏰ *Expiry:* ${expiry}
-
-📆 *Plan:* ${selectedPlan}
-📅 *Days:* ${days} days
-💰 *Amount:* ₹${amount}
-
-📱 *Request Date:* ${new Date().toLocaleString()}
-🔗 *Dashboard:* ${window.location.href}
-
-💳 *Payment Instructions:*
-Please pay ₹${amount} for ${selectedPlan} plan.
-Reply with transaction ID after payment.`;
-
-                var encodedMessage = encodeURIComponent(message);
-                var whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-                window.open(whatsappUrl, '_blank');
-                
-                showToast('✅ Opening WhatsApp with your request!', 'success');
-                document.getElementById('renewalStatus').textContent = '✅ WhatsApp opened! Send the message to admin.';
-                
-                setTimeout(function() {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }, 3000);
-
-            } catch (e) {
-                console.error('Error:', e);
-                showToast('❌ Network error', 'error');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+        function sendRenewal() {
+            const msg = encodeURIComponent(`Hello Admin, I want to renew my link with ${selectedPlan} plan for ₹${planPrice}.`);
+            window.open(`https://wa.me/${adminPhone}?text=${msg}`, '_blank');
         }
 
-        // ===== INIT =====
-        async function init() {
-            await loadWhatsAppNumber();
-            await resolveLinkId();
-            await loadData();
-            console.log('📊 User Dashboard Loaded');
-            console.log('🔗 Final Link ID:', linkId);
-            console.log('📱 WhatsApp Number:', whatsappNumber);
+        // Fetch live stats for dashboard link
+        const linkId = window.location.pathname.split('/').pop();
+        if (linkId) {
+            fetch('/api/visit-stats/' + linkId)
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.totalVisits !== undefined) {
+                        document.getElementById('vVisits').textContent = d.totalVisits;
+                        document.getElementById('vClaims').textContent = d.totalClaims;
+                    }
+                }).catch(() => {});
         }
-
-        init();
-        setInterval(function() { loadData(); }, 30000);
-        
-        window.selectPlan = selectPlan;
-        window.sendWhatsAppRequest = sendWhatsAppRequest;
     </script>
 </body>
 </html>
