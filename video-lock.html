@@ -44,7 +44,6 @@
             -webkit-user-select: none;
         }
 
-        /* Ambient Dynamic Background Glow */
         .ambient-glow {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: 
@@ -58,7 +57,6 @@
             position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 820px; margin: 0 auto;
         }
 
-        /* Studio Video Player Wrapper */
         .video-wrapper {
             background: rgba(16, 23, 41, 0.82);
             border-radius: 22px;
@@ -120,7 +118,7 @@
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
-        /* ✨ LUXURY SHINING CLAIM BUTTON ✨ */
+        /* ✨ GLOWING SHINING CLAIM BUTTON ✨ */
         .claim-btn {
             position: relative;
             padding: 16px 54px;
@@ -148,7 +146,7 @@
         }
         .claim-btn:active { transform: scale(0.97); }
 
-        /* Continuous Holographic Light Sweep Ray */
+        /* Continuous Holographic Light Sweep */
         .claim-btn::after, .popup-claim-btn::after {
             content: '';
             position: absolute;
@@ -180,12 +178,12 @@
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        /* ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== */
+        /* ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-            background: rgba(4, 7, 15, 0.86);
-            backdrop-filter: blur(22px);
-            -webkit-backdrop-filter: blur(22px);
+            background: rgba(4, 7, 15, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             display: flex; justify-content: center; align-items: center;
             opacity: 0; visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
@@ -221,11 +219,10 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* 100% FIXED 16:9 BANNER CONTAINER (NO CROPPING, FULL-WIDTH HORIZONTAL) */
+        /* 16:9 BANNER CONTAINER (Full Width, Zero Cropping, Zero Ghost Space) */
         .popup-image-container {
             width: 100%;
             aspect-ratio: 16 / 9;
-            height: auto;
             border-radius: 18px;
             overflow: hidden;
             background: #090d16;
@@ -238,7 +235,6 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
         }
 
-        /* 16:9 Image will always stretch and fit 100% horizontally */
         .popup-main-img {
             width: 100%;
             height: 100%;
@@ -320,7 +316,7 @@
         }
         .sound-toggle:hover { background: rgba(99, 102, 241, 0.3); transform: scale(1.08); }
 
-        /* ==================== 💬 LIVE CHAT WITH HUMAN TIME ==================== */
+        /* LIVE CHAT WITH HUMAN TIMESTAMPS */
         .chat-section {
             position: relative; z-index: 1; flex: 1; width: 100%; max-width: 820px; margin: 8px auto 0;
             min-height: 0; overflow: hidden; border-radius: 20px;
@@ -491,13 +487,13 @@
     <!-- ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <!-- 100% 16:9 Aspect Ratio Container (Full horizontal banner, zero 9:16 striping) -->
+            <!-- Strict 16:9 Aspect Ratio Container -->
             <div class="popup-image-container" id="popupImageContainer">
                 <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
                     <span>Reward Banner (16:9)</span>
                 </div>
-                <img id="popupImg" class="popup-main-img" style="display:none;" alt="16:9 Banner Image">
+                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="16:9 Banner Image">
             </div>
 
             <div class="popup-pill-tag">
@@ -672,6 +668,7 @@
                 el.style.width = w + 'px'; el.style.height = h + 'px';
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                const angle = Math.random() * 2 * Math.PI;
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
                 const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
@@ -687,7 +684,7 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== 16:9 IMAGE LOADING SYSTEM ====================
+        // ==================== STRICT 16:9 IMAGE LOADING SYSTEM ====================
         async function loadPopupData() {
             try {
                 const response = await fetch(`/api/link/${linkId}`);
@@ -701,21 +698,42 @@
                     const imgUrl = popup.image || data.image;
                     if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim().length > 4) {
                         const img = document.getElementById('popupImg');
+                        img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection
                         img.src = imgUrl.trim();
                         img.onload = () => {
                             img.style.display = 'block';
                             document.getElementById('popupPlaceholder').style.display = 'none';
                         };
                         img.onerror = () => {
-                            document.getElementById('popupImg').style.display = 'none';
-                            document.getElementById('popupPlaceholder').style.display = 'flex';
+                            tryFallback();
                         };
                         return;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                tryFallback();
+                return;
+            }
+            tryFallback();
+        }
 
-            // Placeholder if no image set on link
+        async function tryFallback() {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const s = await res.json();
+                    if (s && s.background && s.background.trim().length > 4) {
+                        const img = document.getElementById('popupImg');
+                        img.referrerPolicy = 'no-referrer';
+                        img.src = s.background.trim();
+                        img.onload = () => {
+                            img.style.display = 'block';
+                            document.getElementById('popupPlaceholder').style.display = 'none';
+                        };
+                        return;
+                    }
+                }
+            } catch(e) {}
             document.getElementById('popupImg').style.display = 'none';
             document.getElementById('popupPlaceholder').style.display = 'flex';
         }
@@ -885,7 +903,7 @@
             createFlyingReaction(emoji);
         }
 
-        // ==================== 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
+        // ==================== ALL 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮', vip: true }, { name: 'KingSlayer', emoji: '👑', vip: true }, { name: 'NightWolf', emoji: '🐺', vip: false },
             { name: 'ShadowX', emoji: '🌙', vip: false }, { name: 'BlazeIt', emoji: '🔥', vip: true }, { name: 'SniperPro', emoji: '🎯', vip: false },
