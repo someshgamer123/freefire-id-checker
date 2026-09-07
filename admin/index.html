@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Admin Panel</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     
+    <!-- CHART.JS & HTML2CANVAS LIBRARIES -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
         (function() {
@@ -26,285 +31,240 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
-            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
-            --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0;
-            --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+            --bg: #090a0f; --card-bg: #121520; --text: #f8fafc;
+            --text-light: #94a3b8; --border: #1e2433; --radius: 14px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; padding: 20px; }
-        body.dark { --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0; --text-light: #94a3b8; --border: #2d3138; }
-        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; transition: 0.3s; }
+        body.dark { --bg: #090a0f; --card-bg: #121520; --text: #f8fafc; --text-light: #94a3b8; --border: #1e2433; }
+        body.light { --bg: #f8fafc; --card-bg: #ffffff; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; --shadow: 0 4px 20px rgba(0,0,0,0.06); }
         
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
         .header {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 16px 22px; border-radius: var(--radius);
             box-shadow: var(--shadow); display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
             border: 1px solid var(--border);
         }
-        .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .header h1 {
+            font-size: 21px; font-weight: 800; letter-spacing: -0.3px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .header-actions button {
+            padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer;
+            font-weight: 600; transition: 0.25s; font-size: 12px; background: var(--bg);
+            color: var(--text); border: 1px solid var(--border);
+        }
         .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
-        .btn-logout:hover { background: #dc2626; }
+        .btn-logout:hover { background: #dc2626 !important; }
         .btn-install { background: var(--success); color: white; border: none !important; display: none; }
         .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
+        .theme-toggle button { padding: 5px 11px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.2s; font-size: 12px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
         .menu-container {
             display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
             background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
-            border: 1px solid var(--border); align-items: center;
+            border: 1px solid var(--border); align-items: center; box-shadow: var(--shadow);
         }
-        .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
+        .menu-container .menu-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-right: 4px; }
         .menu-container .menu-btn {
-            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px;
-            font-weight: 600; transition: 0.3s;
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 12.5px;
+            font-weight: 600; transition: 0.25s ease;
         }
-        .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .menu-container .menu-btn:hover { background: rgba(99, 102, 241, 0.12); color: var(--text); border-color: var(--primary); }
+        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
         .stat-card {
-            background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 18px 16px; border-radius: var(--radius);
             box-shadow: var(--shadow); text-align: center; transition: 0.3s;
             border: 1px solid var(--border);
         }
-        .stat-card:hover { transform: translateY(-3px); }
-        .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
+        .stat-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .stat-card .number { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .label { color: var(--text-light); font-size: 11.5px; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
 
         .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+            background: var(--card-bg); border-radius: var(--radius); padding: 18px 22px;
             margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
+            box-shadow: var(--shadow);
         }
         .live-visitors .lv-title {
-            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
+            font-size: 13.5px; font-weight: 700; color: var(--success); margin-bottom: 12px;
             display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         .live-visitors .lv-title .dot {
             display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite;
         }
         .live-visitors .lv-title .live-badge {
-            font-size: 10px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 10px; border-radius: 20px;
+            font-size: 10px; color: var(--success); background: rgba(16,185,129,0.12); padding: 2px 10px; border-radius: 20px; font-weight: 700;
         }
-        .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
+        .live-visitors .lv-title .refresh-time { font-size: 11px; color: var(--text-light); font-weight: 500; margin-left: auto; }
         
-        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
         .live-visitors .lv-item {
-            background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
+            background: var(--bg); border-radius: 10px; padding: 12px 14px; text-align: center;
             border: 1px solid var(--border); transition: 0.3s;
         }
-        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
-        .live-visitors .lv-item .lv-number {
-            font-size: 24px; font-weight: 800; transition: 0.3s;
-        }
+        .live-visitors .lv-item:hover { border-color: var(--primary); }
+        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; }
         .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
         .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
-        .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
-        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+        .live-visitors .lv-item .lv-label { font-size: 10.5px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+        .live-visitors .lv-item .lv-time { font-size: 9.5px; color: var(--text-light); opacity: 0.7; margin-top: 2px; }
         .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
-        .section { display: none; animation: fadeInUp 0.4s ease; }
+        .section { display: none; animation: fadeInUp 0.3s ease; }
         .section.active { display: block; }
 
         .card {
-            background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
-            box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
+            background: var(--card-bg); padding: 22px 24px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border);
         }
-        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
-        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .card h3 {
+            color: var(--text); font-size: 16px; margin-bottom: 16px; font-weight: 700;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+            padding-bottom: 10px; border-bottom: 1px solid var(--border);
+        }
         .card input, .card select, .card textarea {
-            width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); transition: 0.3s; outline: none;
+            width: 100%; padding: 10px 14px; margin: 6px 0; border: 1px solid var(--border);
+            border-radius: 10px; font-size: 13.5px; background: var(--bg); color: var(--text);
+            transition: 0.2s; outline: none;
         }
-        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
+        .card input:focus, .card select:focus, .card textarea:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
         .btn {
-            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 18px; border: none; border-radius: 10px; font-size: 13px;
+            font-weight: 700; cursor: pointer; transition: 0.25s; display: inline-flex; align-items: center; gap: 6px;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
         .btn:active { transform: scale(0.97); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
-        .btn-success:hover { background: #16a34a; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: #dc2626; }
         .btn-warning { background: var(--warning); color: white; }
-        .btn-warning:hover { background: #d97706; }
-        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
-        .btn-block { width: 100%; }
+        .btn-sm { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
+        .btn-block { width: 100%; justify-content: center; padding: 12px; font-size: 14px; }
         .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
         .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            background: var(--bg); padding: 12px 16px; margin-bottom: 8px; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
+            gap: 10px; border-left: 3px solid var(--primary); border: 1px solid var(--border);
+            transition: 0.2s ease;
         }
-        .link-item:hover { transform: translateX(4px); }
-        .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
-        .link-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .link-item .actions .status-dropdown { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 10px; cursor: pointer; }
+        .link-item:hover { transform: translateX(3px); border-color: var(--primary); }
+        .link-item .info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; flex: 1; }
+        .link-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); min-width: 140px; }
+        .link-item .info .details { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-light); }
+        .link-item .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
-        .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
+        .status-badge { padding: 3px 9px; border-radius: 12px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+        .status-active { background: rgba(16,185,129,0.15); color: var(--success); }
         .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
 
         .edit-modal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000;
             justify-content: center; align-items: center; padding: 20px;
         }
         .edit-modal.show { display: flex; }
         .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
-            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
-            border: 1px solid var(--border); animation: fadeInUp 0.3s ease;
+            background: var(--card-bg); border-radius: 18px; padding: 26px 30px;
+            max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto;
+            border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            animation: fadeInUp 0.3s ease;
         }
         .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
-        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
-        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
-        .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
-        .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
-            width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text); font-size: 13px; outline: none;
+        .edit-modal .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 22px; cursor: pointer; }
+        .edit-modal label { font-size: 12px; color: var(--text-light); display: block; margin-top: 8px; margin-bottom: 2px; font-weight: 600; }
+        
+        .img-preview-box {
+            width: 100%; height: 140px; border-radius: 12px; background: var(--bg);
+            border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center;
+            overflow: hidden; margin: 8px 0;
         }
-        .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-        .edit-modal .modal-content .popup-preview-small { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; margin-top: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .edit-modal .modal-content .popup-preview-small .preview-img { max-width: 100%; max-height: 60px; border-radius: 4px; object-fit: cover; }
-        .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 11px; font-weight: 700; margin-top: 4px; }
-        .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.4); font-size: 9px; }
-        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 12px; border: none; border-radius: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 9px; font-weight: 700; cursor: default; margin-top: 4px; }
-
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
-        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .img-preview-box span { color: var(--text-light); font-size: 11px; }
 
         .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
-            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 99999; max-width: 400px; font-size: 13px;
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 12px;
+            color: white; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            transform: translateY(120px); opacity: 0; transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+            z-index: 99999; font-size: 13px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
+        .toast.success { background: linear-gradient(135deg, var(--success), #059669); }
         .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
         .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 22px; border: 1px solid var(--border); box-shadow: var(--shadow); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
-        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
-        .analytics-container .analytics-header .link-selector .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 150px; flex: 1; }
+        .analytics-container .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
         .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
-        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
+        .analytics-container .time-filters .filter-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11.5px; font-weight: 600; transition: 0.3s; }
         .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
-        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
-        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
-        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
-        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
-        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-        .custom-date-input input[type="date"] { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
-
-        .search-results-count { font-size: 11px; color: var(--text-light); }
-
-        .generated-link { background: rgba(99,102,241,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed rgba(99,102,241,0.3); }
-        .generated-link.show { display: block; }
-        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
-
-        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
-
-        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
-        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin-bottom: 6px; }
-        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
-        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
 
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
 
         .device-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            background: var(--bg); padding: 12px 16px; margin-bottom: 8px; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
+            gap: 8px; border-left: 3px solid var(--danger); border: 1px solid var(--border);
         }
-        .device-item:hover { transform: translateX(4px); }
         .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-
-        .session-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--success); transition: 0.3s;
-        }
-        .session-item:hover { transform: translateX(4px); }
-        .session-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .session-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
 
         @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 12px; }
-            .header-actions { justify-content: center; }
-            .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-container .menu-btn { text-align: center; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
-            .link-item { flex-direction: column; align-items: stretch; }
             body { padding: 12px; }
-            .card { padding: 14px; }
-            .edit-modal .modal-content { padding: 16px; }
-            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
-            .analytics-container .analytics-header .link-selector { flex-direction: column; }
+            .header { flex-direction: column; text-align: center; }
+            .menu-container { flex-direction: column; align-items: stretch; }
+            .menu-btn { text-align: center; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .link-item { flex-direction: column; align-items: stretch; }
+            .link-item .actions { justify-content: flex-end; }
+            .edit-modal .modal-content { padding: 18px; }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <!-- HEADER -->
         <header class="header">
             <h1>⚡ Admin Panel</h1>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
-                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
-                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
+                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙 Dark</button>
+                    <button onclick="setTheme('light')" id="theme-light">☀️ Light</button>
                 </div>
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
 
+        <!-- MENU TABS -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -312,21 +272,21 @@
             <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
             <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
-            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
+            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">✂️ Short Link</button>
         </div>
 
         <!-- 1. DASHBOARD OVERVIEW SECTION -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
-                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
-                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Total Links</div></div>
+                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active Links</div></div>
+                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired Links</div></div>
             </div>
 
             <div class="card">
                 <h3>📊 Lifetime Visitor & Claim Statistics</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
                     <div class="stat-card"><div class="number" id="totalVisitors">0</div><div class="label">Total Visitors</div></div>
                     <div class="stat-card"><div class="number" id="totalClaims">0</div><div class="label">Total Claims</div></div>
                     <div class="stat-card"><div class="number" id="todayVisitors">0</div><div class="label">Today's Visitors</div></div>
@@ -334,6 +294,7 @@
                 </div>
             </div>
 
+            <!-- LIVE ACTIVITY TICKER -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
                     <span class="dot"></span> Live Visitors & Claims
@@ -355,12 +316,12 @@
                     <div class="lv-item">
                         <div class="lv-number visits-color" id="live48hrVisits">0</div>
                         <div class="lv-label">👁️ Last 24 Hours Visits</div>
-                        <div class="lv-time" id="live48hrTime">Loading...</div>
+                        <div class="lv-time" id="live48hrTime">Rolling 24 hours</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number claims-color" id="live48hrClaims">0</div>
                         <div class="lv-label">🎁 Last 24 Hours Claims</div>
-                        <div class="lv-time" id="live48hrClaimsTime">Loading...</div>
+                        <div class="lv-time" id="live48hrClaimsTime">Rolling 24 hours</div>
                     </div>
                     <div class="lv-item active-now">
                         <div class="lv-number visits-color" id="liveActiveVisits">0</div>
@@ -375,15 +336,16 @@
                 </div>
             </div>
 
+            <!-- DASHBOARD GRAPH -->
             <div class="card" style="margin-top:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="font-size:14px;margin:0;">📈 Visitor Trends</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button onclick="switchDashboardGraph('7days')" class="btn btn-primary btn-sm active" id="dashGraph7">7 Days</button>
+                <h3>
+                    <span>📈 Visitor & Claim Trends</span>
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="switchDashboardGraph('7days')" class="btn btn-outline btn-sm active" id="dashGraph7">7 Days</button>
                         <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">24 Hours</button>
                     </div>
-                </div>
-                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
+                </h3>
+                <div style="height:300px; position:relative; margin-top:10px;">
                     <canvas id="dashboardChart"></canvas>
                 </div>
             </div>
@@ -392,12 +354,12 @@
         <!-- 2. LINKS MANAGER SECTION -->
         <div class="section" id="section-links">
             <div class="card">
-                <h3>🔍 Search Links</h3>
+                <h3>🔍 Search & Manage Links</h3>
                 <div class="search-bar">
                     <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
-                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
+                    <span class="search-results-count" id="searchResultsCount" style="font-size:12px; color:var(--text-light);">Showing all links</span>
                 </div>
-                <div id="linksList"></div>
+                <div id="linksList">Loading links...</div>
             </div>
         </div>
 
@@ -406,9 +368,9 @@
             <div class="analytics-container" id="analyticsExportBox">
                 <div class="analytics-header">
                     <div class="link-selector">
-                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
+                        <label style="font-weight:700; color:var(--text-light); font-size:12px;">📌 Campaign:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter by name..." oninput="filterAnalyticsLinks()">
+                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter dropdown..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
                         <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
@@ -416,14 +378,16 @@
                     </div>
                 </div>
 
-                <div class="analytics-stats">
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Total Visits</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Total Claims</div></div>
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="stat-card"><div class="number" id="analyticsTotalVisits">0</div><div class="label">👁️ Total Visits</div></div>
+                    <div class="stat-card"><div class="number" id="analyticsTotalClaims">0</div><div class="label">🎁 Total Claims</div></div>
                 </div>
 
-                <div style="height:280px;margin-top:12px;"><canvas id="analyticsChart"></canvas></div>
+                <div style="height:300px; margin-top:14px; position:relative;">
+                    <canvas id="analyticsChart"></canvas>
+                </div>
 
-                <div style="margin-top:16px;display:flex;gap:8px;">
+                <div style="margin-top:18px; display:flex; gap:8px;">
                     <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Export PNG</button>
                     <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 Export CSV</button>
                 </div>
@@ -434,42 +398,74 @@
         <div class="section" id="section-create">
             <div class="card">
                 <h3>➕ Create Rewarded Link</h3>
-                <input type="text" id="linkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
+                <label style="font-size:12px; color:var(--text-light); font-weight:600;">Campaign Name</label>
+                <input type="text" id="linkName" placeholder="e.g. Free Fire Diamond Pass Promo">
+
                 <div class="grid-2">
-                    <input type="text" id="video" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
-                    <input type="text" id="claim" placeholder="Claim Destination URL" value="#">
-                </div>
-                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
-                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
-
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings</h4>
-                    <div class="grid-2">
-                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
-                        <input type="text" id="popupButtonText" placeholder="Popup Button Text" value="Claim Now">
+                    <div>
+                        <label style="font-size:12px; color:var(--text-light); font-weight:600;">Video URL</label>
+                        <input type="text" id="video" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
                     </div>
-                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <input type="text" id="popupImageUrl" placeholder="Image URL (16:9 ratio)">
+                    <div>
+                        <label style="font-size:12px; color:var(--text-light); font-weight:600;">Claim Destination URL</label>
+                        <input type="text" id="claim" placeholder="Claim Destination URL" value="#">
+                    </div>
                 </div>
 
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
+                <div class="grid-2">
+                    <div>
+                        <label style="font-size:12px; color:var(--text-light); font-weight:600;">Button Text</label>
+                        <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:var(--text-light); font-weight:600;">Headline Text</label>
+                        <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+                    </div>
+                </div>
+
+                <!-- ENTRANCE POPUP SETTINGS -->
+                <div style="margin-top:16px; padding:16px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+                    <h4 style="font-size:13.5px; color:var(--primary); margin-bottom:8px;">🖼️ Entrance Popup Settings</h4>
+                    <label style="font-size:12px; color:var(--text-light); font-weight:600;">Entrance Popup Image URL (16:9)</label>
+                    <input type="text" id="popupImageUrl" placeholder="https://i.ibb.co/example.jpg" oninput="previewImage('popupImageUrl', 'createImgPrev')">
+                    <div class="img-preview-box">
+                        <img id="createImgPrev" style="display:none;" alt="Preview">
+                        <span>16:9 Popup Image Preview</span>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <label style="font-size:12px; color:var(--text-light); font-weight:600;">Popup Title</label>
+                            <input type="text" id="popupTitle" value="🎁 Claim Your Reward">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:var(--text-light); font-weight:600;">Popup Button Text</label>
+                            <input type="text" id="popupButtonText" value="Claim Now">
+                        </div>
+                    </div>
+                    <label style="font-size:12px; color:var(--text-light); font-weight:600;">Popup Subtitle</label>
+                    <input type="text" id="popupSubtitle" value="Tap below to unlock your reward">
+                </div>
+
+                <!-- SCHEDULE EXPIRY -->
+                <div style="margin-top:14px; padding:16px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+                    <h4 style="font-size:13.5px; color:var(--warning); margin-bottom:6px;">📅 Schedule Expiry</h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
                         <option value="">No Expiry (Lifetime Active)</option>
-                        <option value="3">3 Days</option>
-                        <option value="7">7 Days</option>
-                        <option value="15">15 Days</option>
-                        <option value="30">30 Days</option>
+                        <option value="3">Expires in 3 Days</option>
+                        <option value="7">Expires in 7 Days</option>
+                        <option value="15">Expires in 15 Days</option>
+                        <option value="30">Expires in 30 Days</option>
                     </select>
-                    <div id="expiryDisplay" style="margin-top:4px;font-size:11px;color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
+                    <div id="expiryDisplay" style="margin-top:4px; font-size:11.5px; color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
                 </div>
 
                 <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;">🚀 Generate Link</button>
 
-                <div class="generated-link" id="generatedLink">
-                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Link Generated!</div>
-                    <div class="link-box">
-                        <input type="text" id="generatedLinkInput" readonly>
+                <div class="generated-link" id="generatedLink" style="display:none; margin-top:14px; padding:14px; background:rgba(16,185,129,0.1); border-radius:10px; border:1px dashed var(--success);">
+                    <div style="font-weight:700; color:var(--success); margin-bottom:6px;">✅ Link Generated Successfully!</div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="generatedLinkInput" readonly style="flex:1;">
                         <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
                     </div>
                 </div>
@@ -479,9 +475,9 @@
         <!-- 5. SETTINGS SECTION -->
         <div class="section" id="section-settings">
             <div class="card">
-                <h3>🖼️ UID Background Image (9:16)</h3>
+                <h3>🖼️ Global UID Background Image (9:16)</h3>
                 <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
-                <div style="display:flex;gap:8px;margin-top:8px;">
+                <div style="display:flex; gap:8px; margin-top:8px;">
                     <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
                     <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
                 </div>
@@ -493,7 +489,7 @@
                     <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
                 </div>
-                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;">Update Passcode</button>
+                <button onclick="changePasscode()" class="btn btn-warning btn-sm" style="margin-top:8px;">Update Passcode</button>
             </div>
 
             <div class="card">
@@ -502,12 +498,12 @@
             </div>
         </div>
 
-        <!-- 6. URL SHORTENER SECTION -->
+        <!-- 6. URL SHORTENER SECTION WITH DELETE -->
         <div class="section" id="section-shortener">
             <div class="card">
                 <h3>🔗 App Deep-Linking URL Shortener</h3>
                 <input type="text" id="shortOriginalUrl" placeholder="Enter destination URL (e.g. https://youtube.com/...)">
-                <input type="text" id="shortTitle" placeholder="Title (Optional)">
+                <input type="text" id="shortTitle" placeholder="Title (e.g. Telegram Channel / App Promo)">
                 <input type="text" id="shortAppScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
                 <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:10px;">🚀 Generate Short Link</button>
             </div>
@@ -518,11 +514,11 @@
         </div>
     </div>
 
-    <!-- EDIT LINK MODAL -->
+    <!-- ✏️ EDIT LINK MODAL -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeEditModal()">✕</button>
-            <h3>✏️ Edit Rewarded Link</h3>
+            <h3>✏️ Edit Rewarded Campaign</h3>
             <div id="editModalBody"></div>
         </div>
     </div>
@@ -530,7 +526,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        const csrfToken = localStorage.getItem('csrfToken') || '';
         let allLinks = [];
         let dashboardChartInstance = null;
         let analyticsChartInstance = null;
@@ -538,12 +533,13 @@
         let editingLinkId = null;
         let currentFilter = 'lifetime';
         let analyticsData = null;
+        let dashRange = '7days';
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.className = `toast ${type} show`;
-            setTimeout(() => t.className = 'toast', 3000);
+            setTimeout(() => t.className = 'toast', 3200);
         }
 
         function showSection(id) {
@@ -552,71 +548,118 @@
             document.getElementById('section-' + id).classList.add('active');
             const btn = document.querySelector(`.menu-btn[data-section="${id}"]`);
             if (btn) btn.classList.add('active');
+
             if (id === 'links') loadLinks();
             if (id === 'analytics') loadAnalyticsLinks();
             if (id === 'shortener') loadShortLinks();
             if (id === 'settings') loadBlockedDevices();
         }
 
+        function previewImage(inputId, imgId) {
+            const val = document.getElementById(inputId).value.trim();
+            const img = document.getElementById(imgId);
+            const parent = img.parentElement;
+            const span = parent.querySelector('span');
+            if (val) {
+                img.src = val;
+                img.onload = () => { img.style.display = 'block'; if (span) span.style.display = 'none'; };
+                img.onerror = () => { img.style.display = 'none'; if (span) span.style.display = 'block'; };
+            } else {
+                img.style.display = 'none';
+                if (span) span.style.display = 'block';
+            }
+        }
+
+        // ==================== DASHBOARD & STATS ====================
         async function loadStats() {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
+                if (res.status === 401) {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
                 const data = await res.json();
+                
                 if (data && data.global) {
                     const g = data.global;
-                    document.getElementById('totVisits').textContent = g.totalVisitors || 0;
-                    document.getElementById('totClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('activeLive').textContent = g.activeNow || 0;
                     document.getElementById('totalVisitors').textContent = g.totalVisitors || 0;
                     document.getElementById('totalClaims').textContent = g.totalClaims || 0;
                     document.getElementById('todayVisitors').textContent = g.todayVisitors || 0;
                     document.getElementById('todayClaims').textContent = g.todayClaims || 0;
+                    
                     document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
                     document.getElementById('live48hrVisits').textContent = g.visits24h || 0;
                     document.getElementById('live48hrClaims').textContent = g.claims24h || 0;
                     document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
                     document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
-                    renderDashboardGraph(g.dailyVisitors || {});
+
+                    renderDashboardGraph(g.dailyVisitors || {}, g.dailyClaims || {});
                 }
+
                 if (data && data.links) {
+                    allLinks = data.links;
                     document.getElementById('totalLinks').textContent = data.links.length || 0;
                     document.getElementById('activeLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
-                    document.getElementById('totalVisits').textContent = data.links.reduce((s, l) => s + (l.visits||0), 0);
-                    allLinks = data.links;
+                    document.getElementById('totalVisits').textContent = data.links.reduce((s, l) => s + (l.visits || 0), 0);
+                    document.getElementById('expiredLinks').textContent = data.links.filter(l => l.status === 'expired' || (l.expiryDate && new Date(l.expiryDate) < new Date())).length || 0;
                 }
-            } catch(e) {}
-        }
-
-        function renderDashboardGraph(dailyData) {
-            const labels = Object.keys(dailyData).slice(-7);
-            const values = labels.map(k => dailyData[k]);
-            if (dashboardChartInstance) dashboardChartInstance.destroy();
-            const ctx = document.getElementById('dashboardChart').getContext('2d');
-            dashboardChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.length ? labels : ['Today'],
-                    datasets: [{
-                        label: 'Visitors',
-                        data: values.length ? values : [0],
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99,102,241,0.15)',
-                        fill: true, tension: 0.3
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+                document.getElementById('lastRefreshTime').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+            } catch(e) {
+                console.error('Stats loading error:', e);
+            }
         }
 
         function switchDashboardGraph(mode) {
+            dashRange = mode;
             document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
             document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
             loadStats();
         }
 
+        function renderDashboardGraph(dailyData, dailyClaims = {}) {
+            const allDays = Array.from(new Set([...Object.keys(dailyData), ...Object.keys(dailyClaims)])).sort();
+            const labels = allDays.length ? (dashRange === '7days' ? allDays.slice(-7) : allDays.slice(-2)) : ['Today'];
+            const values = labels.map(k => dailyData[k] || 0);
+            const claimValues = labels.map(k => dailyClaims[k] || 0);
+
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            dashboardChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Visits',
+                            data: values,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99,102,241,0.15)',
+                            fill: true, tension: 0.35, borderWidth: 2.5
+                        },
+                        {
+                            label: 'Claims',
+                            data: claimValues,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.15)',
+                            fill: true, tension: 0.35, borderWidth: 2.5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // ==================== LINKS LIST & EDIT ====================
         async function loadLinks() {
-            const list = document.getElementById('linksList');
             const res = await fetch('/api/links', { credentials: 'include' });
             allLinks = await res.json();
             filterLinks();
@@ -626,12 +669,23 @@
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
             const filtered = q ? allLinks.filter(l => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : allLinks;
             const list = document.getElementById('linksList');
-            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
+            document.getElementById('searchResultsCount').textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
+
+            if (!filtered.length) {
+                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;padding:10px 0;">No links found.</p>';
+                return;
+            }
+
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
                     <div class="info">
                         <span class="name">${l.name}</span>
-                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></span>
+                        <div class="details">
+                            <span>Visits: <b style="color:var(--primary);">${l.visits || 0}</b></span>
+                            <span>Claims: <b style="color:var(--success);">${l.claims || 0}</b></span>
+                            <span class="status-badge status-${l.status || 'active'}">${l.status || 'active'}</span>
+                            ${l.expiryDate ? `<span style="color:var(--warning);">Expires: ${new Date(l.expiryDate).toLocaleDateString()}</span>` : ''}
+                        </div>
                     </div>
                     <div class="actions">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
@@ -659,17 +713,54 @@
             const link = allLinks.find(l => l.id === id);
             if (!link) return;
             editingLinkId = id;
+
+            const pop = link.popupSettings || {};
+            let localISODate = '';
+            if (link.expiryDate) {
+                const d = new Date(link.expiryDate);
+                localISODate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            }
+
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Name</label><input type="text" id="eName" value="${link.name}"></div>
+                <div class="form-group"><label>Campaign Name</label><input type="text" id="eName" value="${link.name || ''}"></div>
                 <div class="grid-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video}"></div>
-                    <div class="form-group"><label>Claim URL</label><input type="text" id="eClaim" value="${link.claim}"></div>
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video || ''}"></div>
+                    <div class="form-group"><label>Claim URL</label><input type="text" id="eClaim" value="${link.claim || ''}"></div>
                 </div>
-                <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline||''}"></div>
-                <div class="form-actions">
-                    <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
-                    <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
+                <div class="grid-2">
+                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}"></div>
+                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline || ''}"></div>
+                </div>
+
+                <!-- ENTRANCE POPUP EDIT -->
+                <div style="margin-top:14px; padding:14px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+                    <h4 style="font-size:13px; color:var(--primary); margin-bottom:6px;">🖼️ Entrance Popup Image & Content</h4>
+                    <label>Popup Image URL</label>
+                    <input type="text" id="ePopupImg" value="${pop.image || ''}" oninput="previewImage('ePopupImg', 'editImgPrev')">
+                    <div class="img-preview-box">
+                        <img id="editImgPrev" style="${pop.image ? 'display:block;' : 'display:none;'}" src="${pop.image || ''}" alt="Preview">
+                        <span style="${pop.image ? 'display:none;' : 'display:block;'}">16:9 Image Preview</span>
+                    </div>
+
+                    <div class="grid-2">
+                        <div><label>Popup Title</label><input type="text" id="ePopupTitle" value="${pop.title || '🎁 Claim Your Reward'}"></div>
+                        <div><label>Popup Button Text</label><input type="text" id="ePopupBtn" value="${pop.buttonText || 'Claim Now'}"></div>
+                    </div>
+                    <label>Popup Subtitle</label>
+                    <input type="text" id="ePopupSub" value="${pop.subtitle || 'Tap below to unlock your reward'}">
+                </div>
+
+                <!-- EXPIRATION SELECTOR -->
+                <div style="margin-top:14px; padding:14px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+                    <h4 style="font-size:13px; color:var(--warning); margin-bottom:6px;">📅 Link Expiration Date</h4>
+                    <input type="datetime-local" id="eExpiryDate" value="${localISODate}">
+                    <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="document.getElementById('eExpiryDate').value=''">Remove Expiry (Lifetime Active)</button>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+                    <button class="btn btn-success" onclick="saveLinkEdit()">💾 Save Changes</button>
+                    <button class="btn btn-danger" onclick="closeEditModal()">Cancel</button>
                 </div>
             `;
             document.getElementById('editModal').classList.add('show');
@@ -680,21 +771,36 @@
         }
 
         async function saveLinkEdit() {
-            const name = document.getElementById('eName').value;
-            const video = document.getElementById('eVideo').value;
-            const claim = document.getElementById('eClaim').value;
-            const headline = document.getElementById('eHead').value;
+            const expiryVal = document.getElementById('eExpiryDate').value;
+            const payload = {
+                name: document.getElementById('eName').value.trim(),
+                video: document.getElementById('eVideo').value.trim(),
+                claim: document.getElementById('eClaim').value.trim(),
+                buttonText: document.getElementById('eBtnText').value.trim(),
+                headline: document.getElementById('eHead').value.trim(),
+                expiryDate: expiryVal ? new Date(expiryVal).toISOString() : null,
+                popupSettings: {
+                    image: document.getElementById('ePopupImg').value.trim() || null,
+                    title: document.getElementById('ePopupTitle').value.trim(),
+                    buttonText: document.getElementById('ePopupBtn').value.trim(),
+                    subtitle: document.getElementById('ePopupSub').value.trim()
+                }
+            };
+
             await fetch('/api/links/' + editingLinkId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ name, video, claim, headline })
+                body: JSON.stringify(payload)
             });
-            showToast('✅ Link updated!', 'success');
+
+            showToast('✅ Link updated successfully!', 'success');
             closeEditModal();
             loadLinks();
+            loadStats();
         }
 
+        // ==================== CREATE LINK ====================
         function updateSchedulePreset() {
             const p = document.getElementById('schedulePreset').value;
             const disp = document.getElementById('expiryDisplay');
@@ -716,23 +822,34 @@
             const claim = document.getElementById('claim').value.trim();
             const buttonText = document.getElementById('buttonText').value.trim();
             const headline = document.getElementById('headline').value.trim();
+            const popupImageUrl = document.getElementById('popupImageUrl').value.trim();
+            const popupTitle = document.getElementById('popupTitle').value.trim();
+            const popupButtonText = document.getElementById('popupButtonText').value.trim();
+            const popupSubtitle = document.getElementById('popupSubtitle').value.trim();
 
             if (!name) return showToast('Please enter link name', 'error');
+
+            const payload = {
+                name, video, claim, buttonText, headline,
+                expiryDate: selectedExpiry,
+                status: 'active',
+                popupSettings: {
+                    image: popupImageUrl || null,
+                    title: popupTitle || '🎁 Claim Your Reward',
+                    buttonText: popupButtonText || 'Claim Now',
+                    subtitle: popupSubtitle || 'Tap below to unlock your reward'
+                }
+            };
 
             try {
                 const res = await fetch('/api/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        name, video, claim, buttonText, headline,
-                        expiryDate: selectedExpiry,
-                        status: 'active'
-                    })
+                    body: JSON.stringify(payload)
                 });
 
-                if (res.status === 401 || res.status === 403) {
-                    showToast('Session expired. Please login again.', 'error');
+                if (res.status === 401) {
                     window.location.href = '/admin/login.html';
                     return;
                 }
@@ -742,7 +859,7 @@
                     showToast('✅ Link Created Successfully!', 'success');
                     const fullUrl = window.location.origin + '/uid?link=' + d.id;
                     document.getElementById('generatedLinkInput').value = fullUrl;
-                    document.getElementById('generatedLink').classList.add('show');
+                    document.getElementById('generatedLink').style.display = 'block';
                     document.getElementById('linkName').value = '';
                     loadStats();
                 } else {
@@ -760,9 +877,18 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        async function loadAnalyticsLinks() {
+        // ==================== ANALYTICS & EXPORT ====================
+        function loadAnalyticsLinks() {
             const sel = document.getElementById('analyticsLinkSelect');
             sel.innerHTML = allLinks.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+            loadAnalytics();
+        }
+
+        function filterAnalyticsLinks() {
+            const q = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
+            const sel = document.getElementById('analyticsLinkSelect');
+            const filtered = allLinks.filter(l => l.name.toLowerCase().includes(q));
+            sel.innerHTML = filtered.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
             loadAnalytics();
         }
 
@@ -773,13 +899,19 @@
             analyticsData = link;
             document.getElementById('analyticsTotalVisits').textContent = link.visits || 0;
             document.getElementById('analyticsTotalClaims').textContent = link.claims || 0;
+
             const ctx = document.getElementById('analyticsChart').getContext('2d');
             if (analyticsChartInstance) analyticsChartInstance.destroy();
             analyticsChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Visits', 'Claims'],
-                    datasets: [{ label: link.name, data: [link.visits||0, link.claims||0], backgroundColor: ['#6366f1', '#22c55e'] }]
+                    datasets: [{
+                        label: link.name,
+                        data: [link.visits || 0, link.claims || 0],
+                        backgroundColor: ['#6366f1', '#10b981'],
+                        borderRadius: 8
+                    }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
@@ -792,31 +924,45 @@
         }
 
         function downloadAnalyticsImage() {
-            html2canvas(document.getElementById('analyticsExportBox')).then(c => {
-                const a = document.createElement('a'); a.download = 'analytics.png'; a.href = c.toDataURL(); a.click();
-            });
+            const box = document.getElementById('analyticsExportBox');
+            html2canvas(box, { backgroundColor: '#121520', scale: 2 }).then(canvas => {
+                const a = document.createElement('a');
+                a.download = 'analytics-report.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+                showToast('✅ Analytics PNG Exported!', 'success');
+            }).catch(() => showToast('Failed to export PNG', 'error'));
         }
 
         function downloadAnalyticsCSV() {
             if (!analyticsData) return;
-            const csv = `Link Name,Visits,Claims\n"${analyticsData.name}",${analyticsData.visits||0},${analyticsData.claims||0}`;
+            const csv = `Link Name,Link ID,Visits,Claims\n"${analyticsData.name}","${analyticsData.id}",${analyticsData.visits || 0},${analyticsData.claims || 0}`;
             const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.download = 'report.csv'; a.href = URL.createObjectURL(blob); a.click();
+            const a = document.createElement('a');
+            a.download = `${analyticsData.name.replace(/\s+/g, '_')}_analytics.csv`;
+            a.href = URL.createObjectURL(blob);
+            a.click();
+            showToast('✅ CSV Exported!', 'success');
         }
 
+        // ==================== SHORT LINKS (WITH DELETE) ====================
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links', { credentials: 'include' });
             const d = await res.json();
-            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
+            if (!d.links || !d.links.length) {
+                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;">No short links found.</p>';
+                return;
+            }
             list.innerHTML = d.links.map(l => `
                 <div class="link-item">
-                    <div>
-                        <div class="name">${l.title}</div>
-                        <div class="meta">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
+                    <div class="info">
+                        <div class="name">${l.title || 'Untitled'}</div>
+                        <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits || 0}</b></div>
                     </div>
-                    <div>
+                    <div class="actions">
                         <button class="btn btn-sm btn-success" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))">📋 Copy</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id || l.id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -826,7 +972,7 @@
             const originalUrl = document.getElementById('shortOriginalUrl').value.trim();
             const title = document.getElementById('shortTitle').value.trim();
             const appScheme = document.getElementById('shortAppScheme').value.trim();
-            if (!originalUrl) return showToast('Enter URL', 'error');
+            if (!originalUrl) return showToast('Enter destination URL', 'error');
 
             await fetch('/api/short-links', {
                 method: 'POST',
@@ -836,23 +982,34 @@
             });
             showToast('✅ Short link created!', 'success');
             document.getElementById('shortOriginalUrl').value = '';
+            document.getElementById('shortTitle').value = '';
+            document.getElementById('shortAppScheme').value = '';
             loadShortLinks();
         }
 
+        async function deleteShortLink(id) {
+            if (!confirm('Delete this short link permanently?')) return;
+            await fetch('/api/short-links/' + id, { method: 'DELETE', credentials: 'include' });
+            showToast('Short link deleted', 'info');
+            loadShortLinks();
+        }
+
+        // ==================== SETTINGS & SECURITY ====================
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
             const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
             const d = await res.json();
-            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices found.</p>';
+            if (!d.devices || !d.devices.length) {
+                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;">No blocked devices found. System is fully protected.</p>';
+                return;
+            }
             list.innerHTML = d.devices.map(dev => `
                 <div class="device-item">
                     <div class="info">
-                        <span class="name">${dev.deviceName} (${dev.ip})</span>
-                        <span class="details">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</span>
+                        <span class="name">${dev.deviceName || 'Unknown'} (${dev.ip})</span>
+                        <div class="details">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</div>
                     </div>
-                    <div>
-                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
-                    </div>
+                    <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
                 </div>
             `).join('');
         }
@@ -865,13 +1022,23 @@
 
         async function saveBackground() {
             const bg = document.getElementById('bgImageUrl').value.trim();
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
-            showToast('✅ Background updated!', 'success');
+            await fetch('/api/admin/background', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ background: bg || null })
+            });
+            showToast('✅ Background image updated!', 'success');
         }
 
         async function removeBackground() {
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
-            document.getElementById('bgImgUrl').value = '';
+            await fetch('/api/admin/background', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ background: null })
+            });
+            document.getElementById('bgImageUrl').value = '';
             showToast('Background removed', 'info');
         }
 
@@ -879,10 +1046,21 @@
             const oldP = document.getElementById('oldPasscode').value;
             const newP = document.getElementById('newPasscode').value;
             if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
+
+            const res = await fetch('/api/admin/passcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP })
+            });
             const d = await res.json();
-            if (d.success) showToast('✅ Passcode updated!', 'success');
-            else showToast('❌ ' + d.error, 'error');
+            if (d.success) {
+                showToast('✅ Passcode updated successfully!', 'success');
+                document.getElementById('oldPasscode').value = '';
+                document.getElementById('newPasscode').value = '';
+            } else {
+                showToast('❌ ' + (d.error || 'Failed'), 'error');
+            }
         }
 
         function setTheme(t) {
@@ -897,11 +1075,12 @@
         }
 
         function installApp() {
-            showToast('Use Chrome browser menu -> Add to Home screen to install app', 'info');
+            showToast('Use browser menu -> Add to Home screen to install app', 'info');
         }
 
+        // Initialize and auto-refresh
         loadStats();
-        setInterval(loadStats, 5000);
+        setInterval(loadStats, 6000);
     </script>
 </body>
 </html>
