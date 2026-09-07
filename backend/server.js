@@ -246,7 +246,7 @@ async function createSession(token, userId, csrfToken, ip, userAgent) {
     return session;
 }
 
-// Resilient Auth Middleware
+// Auth Middleware
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken || req.headers['authorization']?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'Authentication required' });
@@ -306,16 +306,14 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ✅ LINK RESOLVER (Handles popup settings, image fallback, status & expiry)
+// ✅ LINK RESOLVER (Pure 16:9 Image Extraction, No 9:16 background pollution)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
         let link = await Link.findOne({ id: rawId });
         if (!link) link = await Link.findOne({ dashboardId: rawId });
 
-        // Fallback for default or missing linkId
         if (!link && (rawId === 'default' || !rawId)) {
-            const popupSettings = await PopupSettings.findOne();
             return res.json({
                 id: 'default',
                 name: 'Welcome Bonus Reward',
@@ -324,7 +322,7 @@ app.get('/api/link/:id', async (req, res) => {
                 buttonText: 'Claim Now',
                 headline: '🎬 Watch Video & Unlock Reward',
                 status: 'active',
-                popupSettings: popupSettings || {
+                popupSettings: {
                     image: null,
                     title: '🎁 Claim Your Reward',
                     buttonText: 'Claim Now',
@@ -352,15 +350,15 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Track Visit on the specific link
+        // Track Visit on this active link
         const today = new Date().toISOString().split('T')[0];
         link.visits = (link.visits || 0) + 1;
         if (!link.dailyVisits) link.dailyVisits = new Map();
         link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
         await link.save();
 
-        const globalPopup = await PopupSettings.findOne();
-        const popupImage = link.popupSettings?.image || globalPopup?.image || null;
+        // Deliver link's dedicated 16:9 image
+        const popupImage = link.popupSettings?.image || null;
 
         res.json({
             id: link.id,
@@ -372,9 +370,9 @@ app.get('/api/link/:id', async (req, res) => {
             status: link.status || 'active',
             popupSettings: {
                 image: popupImage,
-                title: link.popupSettings?.title || globalPopup?.title || '🎁 Claim Your Reward',
-                buttonText: link.popupSettings?.buttonText || globalPopup?.buttonText || 'Claim Now',
-                subtitle: link.popupSettings?.subtitle || globalPopup?.subtitle || 'Tap below to unlock your reward'
+                title: link.popupSettings?.title || '🎁 Claim Your Reward',
+                buttonText: link.popupSettings?.buttonText || 'Claim Now',
+                subtitle: link.popupSettings?.subtitle || 'Tap below to unlock your reward'
             }
         });
     } catch (error) {
@@ -419,14 +417,13 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
+// Settings API (Background separated from popup image)
 app.get('/api/settings', async (req, res) => {
     try {
         const admin = await User.findOne();
-        const popupSettings = await PopupSettings.findOne();
         res.json({
             theme: admin?.theme || 'dark',
-            background: popupSettings?.image || null,
-            popupSettings: popupSettings || {},
+            background: admin?.background || null,
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
@@ -487,7 +484,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// Link Creation with popupSettings and expiryDate
+// Link Creation with Dedicated 16:9 Image & Expiry
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
@@ -528,7 +525,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// Full update for Rewarded Link (Image, Expiry, Texts)
+// Full update for Rewarded Link
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings, status } = req.body;
@@ -585,8 +582,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD STATS (STRICTLY ACTIVE LINKS ONLY) ====================
-// ✅ Aggregates visits and claims exclusively from active links (removes deleted links data)
+// ==================== DASHBOARD STATS (STRICTLY CURRENT ACTIVE LINKS ONLY) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const allLinks = await Link.find().sort({ created: -1 });
@@ -600,7 +596,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         let aggregatedDailyVisits = new Map();
         let aggregatedDailyClaims = new Map();
 
-        // Calculate only on active existing links
+        // Calculate metrics ONLY from existing active links
         for (const link of activeLinks) {
             totalVisits += (link.visits || 0);
             totalClaims += (link.claims || 0);
@@ -710,12 +706,14 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
+// Background strictly saved to admin document (Does NOT overwrite popupSettings)
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
-        let popup = await PopupSettings.findOne();
-        if (!popup) popup = new PopupSettings();
-        popup.image = req.body.background || null;
-        await popup.save();
+        const admin = await User.findOne();
+        if (admin) {
+            admin.background = req.body.background || null;
+            await admin.save();
+        }
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Failed' });
@@ -727,7 +725,7 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// URL Shortener & App Deep-Linking
+// URL Shortener
 app.get('/s/:code', async (req, res) => {
     try {
         const link = await ShortLink.findOne({ code: req.params.code });
@@ -770,7 +768,6 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Delete Short Link (Supports ObjectId or code)
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const targetId = req.params.id;
@@ -787,7 +784,7 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== UNIVERSAL FILE RESOLVER ====================
+// Universal File Resolver
 function sendAppFile(res, ...fileNames) {
     const searchDirs = [
         path.join(__dirname, '..'),
@@ -810,35 +807,18 @@ function sendAppFile(res, ...fileNames) {
 
 // Page Routes
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
-
-app.get('/admin/secret-gateway', (req, res) => {
-    sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html');
-});
-
-app.get('/admin/login.html', (req, res) => {
-    sendAppFile(res, 'login.html', 'admin/login.html');
-});
+app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
+app.get('/admin/login.html', (req, res) => sendAppFile(res, 'login.html', 'admin/login.html'));
 
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
-    if (!token || !verifyToken(token)) {
-        return res.redirect('/admin/login.html');
-    }
-    sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
+    if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
+    sendAppFile(res, 'admin/index.html', '668379d1.html', 'index.html');
 });
 
-app.get('/uid', (req, res) => {
-    sendAppFile(res, 'uid-checker.html');
-});
-
-app.get('/v/:id', (req, res) => {
-    sendAppFile(res, 'video-lock.html');
-});
-
-app.get('/user-dashboard/:id?', (req, res) => {
-    sendAppFile(res, 'user-dashboard.html');
-});
-
+app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
+app.get('/v/:id', (req, res) => sendAppFile(res, 'video-lock.html'));
+app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
