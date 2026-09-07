@@ -4,7 +4,7 @@ const BlockedDeviceSchema = new mongoose.Schema({
     deviceKey: {
         type: String,
         required: true,
-        unique: true // Yahan unique index pehle se hai
+        unique: true
     },
     fingerprint: {
         type: String,
@@ -20,7 +20,6 @@ const BlockedDeviceSchema = new mongoose.Schema({
     },
     deviceType: {
         type: String,
-        enum: ['attacker', 'admin', 'visitor', 'Desktop', 'Mobile', 'Tablet', 'Browser'],
         default: 'visitor'
     },
     attempts: {
@@ -39,36 +38,14 @@ const BlockedDeviceSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    permanentBlockedAt: {
-        type: Date,
-        default: null
-    },
-    unblockedAt: {
-        type: Date,
-        default: null
-    },
     lastAttempt: {
-        type: Date,
-        default: Date.now
-    },
-    loginHistory: [{
-        ip: String,
-        deviceName: String,
-        timestamp: Date,
-        success: Boolean,
-        reason: String
-    }],
-    createdAt: {
         type: Date,
         default: Date.now
     }
 });
 
-// Inhe rakhein, duplicate deviceKey hata diya gaya hai:
 BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
-BlockedDeviceSchema.index({ deviceType: 1 });
-BlockedDeviceSchema.index({ isPermanent: 1 });
 BlockedDeviceSchema.index({ blockedUntil: 1 });
 
 module.exports = mongoose.model('BlockedDevice', BlockedDeviceSchema);
