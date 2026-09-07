@@ -3,6 +3,7 @@
 <head>
     <title>UID Checker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
         (function() {
@@ -22,8 +23,10 @@
             } catch(e) {}
         })();
     </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         
         body {
@@ -181,6 +184,16 @@
             position: relative;
             overflow: hidden;
         }
+        .custom-alert-box::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.05), rgba(239,68,68,0.1));
+            z-index: -1;
+            animation: alertBorderPulse 2s ease-in-out infinite;
+        }
+        @keyframes alertBorderPulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.5; } }
         
         @keyframes alertPopIn {
             from { opacity: 0; transform: scale(0.85) translateY(30px) rotate(-2deg); }
@@ -203,8 +216,9 @@
         .custom-alert-box .alert-message .rule { display: inline-block; background: rgba(239,68,68,0.05); padding: 2px 12px; border-radius: 6px; margin: 0 2px; font-weight: 600; color: #ef4444; }
         
         .custom-alert-box .alert-btn { padding: 13px 44px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; transition: all 0.3s ease; box-shadow: 0 0 40px rgba(239,68,68,0.15); position: relative; overflow: hidden; }
-        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); }
+        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 60px rgba(239,68,68,0.25); }
         .custom-alert-box .alert-btn:active { transform: scale(0.96); }
+        .custom-alert-box .alert-btn .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none; }
         
         .error-page { display: none; padding: 20px 0; animation: fadeInUp 0.6s ease; }
         .error-page.show { display: block; }
@@ -217,6 +231,7 @@
         .error-page .error-status.expired { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
         .error-page .error-status.not_found { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
         .error-page .btn-back { padding: 12px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.3); }
         
         @media (max-width: 480px) {
             .container { padding: 28px 20px; border-radius: 20px; }
@@ -225,9 +240,21 @@
             .btn { font-size: 16px; padding: 14px; }
             .action-btn { font-size: 15px; padding: 14px; }
             .logo { font-size: 40px; }
+            .success-popup .icon { font-size: 35px; }
+            .error-page .error-icon { font-size: 45px; }
+            .error-page .error-title { font-size: 20px; }
             .custom-alert-box { padding: 24px 18px 22px; }
             .custom-alert-box .alert-title { font-size: 20px; }
             .custom-alert-box .alert-icon { font-size: 45px; }
+            .custom-alert-box .alert-btn { padding: 11px 32px; font-size: 14px; }
+            .custom-alert-box .alert-message { font-size: 13px; }
+        }
+        @media (max-width: 380px) {
+            .custom-alert-box { padding: 18px 14px; }
+            .custom-alert-box .alert-title { font-size: 17px; }
+            .custom-alert-box .alert-icon { font-size: 35px; }
+            .custom-alert-box .alert-btn { padding: 10px 24px; font-size: 13px; }
+            .custom-alert-box .alert-message { font-size: 12px; }
         }
     </style>
 </head>
@@ -333,48 +360,99 @@
             if (e.key === 'Escape') closeAlert();
         });
         
+        document.getElementById('alertBtn').addEventListener('click', function(e) {
+            var ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            var rect = this.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            this.appendChild(ripple);
+            setTimeout(function() { ripple.remove(); }, 600);
+        });
+        
         var linkData = null;
+        var errorStatus = null;
         
         async function loadLinkData() {
             var linkId = new URLSearchParams(window.location.search).get('link');
             if (linkId) {
                 try {
                     var r = await fetch('/api/link/' + linkId);
+                    
                     if (r.status === 403) {
                         var error = await r.json();
-                        showErrorPage(error.status || 'suspended');
+                        var status = error.status || 'suspended';
+                        showErrorPage(status);
                         return;
                     }
+                    
+                    if (r.status === 404) {
+                        showErrorPage('not_found');
+                        return;
+                    }
+                    
                     if (!r.ok) {
                         showErrorPage('not_found');
                         return;
                     }
+                    
                     var data = await r.json();
                     if (data && data.id) {
                         linkData = data;
+                        document.getElementById('btn1').textContent = data.button1 || 'Watch Video';
+                        document.getElementById('btn2').textContent = data.button2 || 'Get Reward';
                         document.getElementById('normalContent').style.display = 'block';
                         document.getElementById('errorPage').classList.remove('show');
                     } else {
                         showErrorPage('not_found');
                     }
                 } catch (e) {
+                    console.error('Error loading link:', e);
                     showErrorPage('not_found');
                 }
+            } else {
+                // If no link parameter provided, show normal flow so user is never blocked
+                document.getElementById('normalContent').style.display = 'block';
+                document.getElementById('errorPage').classList.remove('show');
             }
         }
         
         function showErrorPage(status) {
             document.getElementById('normalContent').style.display = 'none';
             document.getElementById('errorPage').classList.add('show');
-            var icons = { 'suspended': '⛔', 'disabled': '🚫', 'expired': '⌛', 'not_found': '🔍', 'inactive': '⚠️' };
-            var titles = { 'suspended': 'Link Suspended', 'disabled': 'Link Disabled', 'expired': 'Link Expired', 'not_found': 'Link Not Found', 'inactive': 'Link Inactive' };
+            
+            var icons = {
+                'suspended': '⛔',
+                'disabled': '🚫',
+                'expired': '⌛',
+                'not_found': '🔍',
+                'inactive': '⚠️'
+            };
+            var titles = {
+                'suspended': 'Link Suspended',
+                'disabled': 'Link Disabled',
+                'expired': 'Link Expired',
+                'not_found': 'Link Not Found',
+                'inactive': 'Link Inactive'
+            };
+            var subs = {
+                'suspended': 'This link has been temporarily suspended by the admin',
+                'disabled': 'This link has been permanently disabled',
+                'expired': 'This link has expired and is no longer active',
+                'not_found': 'The link you are looking for does not exist',
+                'inactive': 'This link is currently inactive'
+            };
+            
             document.getElementById('errorIcon').textContent = icons[status] || '🚫';
             document.getElementById('errorTitle').textContent = titles[status] || 'Link Not Available';
+            document.getElementById('errorSub').textContent = subs[status] || 'This link is not available';
             document.getElementById('errorStatus').textContent = (status || 'UNKNOWN').toUpperCase();
             document.getElementById('errorStatus').className = 'error-status ' + (status || 'disabled');
         }
         
-        function goBack() { window.history.back(); }
+        function goBack() {
+            window.history.back();
+        }
         
         function checkUID() {
             var uid = document.getElementById('uidInput').value.trim();
@@ -387,19 +465,30 @@
             localStorage.setItem('playerUID', uid);
             document.getElementById('checkBtn').style.display = 'none';
             document.getElementById('loadingContainer').classList.add('show');
+            document.getElementById('successPopup').classList.remove('show');
+            document.getElementById('buttonsContainer').classList.remove('show');
             
+            var delay = 1000 + Math.random() * 1000;
             setTimeout(function() {
                 document.getElementById('loadingContainer').classList.remove('show');
                 document.getElementById('successPopup').classList.add('show');
-                setTimeout(function() { redirectToVideoPage(); }, 800);
-            }, 1200);
+                setTimeout(function() { redirectToVideoPage(); }, 1200);
+            }, delay);
         }
         
         function redirectToVideoPage() {
-            var videoUrl = linkData ? linkData.video : 'https://youtu.be/dQw4w9WgXcQ';
-            var claimUrl = linkData ? linkData.claim : '#';
-            var buttonText = linkData ? linkData.buttonText : 'Claim Now';
-            var headline = linkData ? linkData.headline : '';
+            var videoUrl, claimUrl, buttonText, headline;
+            if (linkData) {
+                videoUrl = linkData.video || 'https://youtu.be/dQw4w9WgXcQ';
+                claimUrl = linkData.claim || '#';
+                buttonText = linkData.buttonText || 'Claim Now';
+                headline = linkData.headline || '';
+            } else {
+                videoUrl = 'https://youtu.be/dQw4w9WgXcQ';
+                claimUrl = '#';
+                buttonText = 'Claim Now';
+                headline = '';
+            }
             
             const videoEncoded = encodeURIComponent(videoUrl);
             const claimEncoded = encodeURIComponent(claimUrl);
@@ -417,7 +506,28 @@
         
         function handleButtonClick(num) {
             playTapSound();
-            redirectToVideoPage();
+            var btn = document.getElementById('btn' + num);
+            btn.classList.add('tap-effect');
+            setTimeout(function() { btn.classList.remove('tap-effect'); }, 300);
+            
+            var videoUrl, claimUrl, buttonText, headline;
+            if (linkData) {
+                videoUrl = num === 1 ? linkData.video : (linkData.video2 || linkData.video);
+                claimUrl = num === 1 ? linkData.claim : (linkData.claim2 || linkData.claim);
+                buttonText = linkData.buttonText || 'Claim Now';
+                headline = linkData.headline || '';
+            } else {
+                videoUrl = 'https://youtu.be/dQw4w9WgXcQ';
+                claimUrl = '#';
+                buttonText = 'Claim Now';
+                headline = '';
+            }
+            
+            localStorage.setItem('videoUrl', videoUrl);
+            localStorage.setItem('claimUrl', claimUrl);
+            localStorage.setItem('buttonText', buttonText);
+            localStorage.setItem('headline', headline);
+            window.location.href = '/v/' + (linkData ? linkData.id : 'default') + '?video=' + encodeURIComponent(videoUrl) + '&claim=' + encodeURIComponent(claimUrl) + '&btn=' + encodeURIComponent(buttonText) + '&headline=' + encodeURIComponent(headline);
         }
         
         function clearInput() {
