@@ -1,2742 +1,345 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Panel</title>
+    <meta charset="UTF-8">
+    <title>Admin Panel - Control Center</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    
+    <!-- ANTI-F12, DEVTOOLS & ACTIVITY TRACKING SHIELD -->
+    <script>
+        (function() {
+            'use strict';
+            // Disable context menu
+            document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
+
+            // Disable shortcut inspection keys
+            window.addEventListener('keydown', function(e) {
+                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+            }, true);
+
+            // Neutralize console logs
+            try {
+                const noop = function() {};
+                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(function(m) {
+                    window.console[m] = noop;
+                });
+            } catch(err) {}
+
+            // Anti-debugger loop trap
+            setInterval(function() {
+                const start = performance.now();
+                (function() {}['constructor']('debugger')());
+                if (performance.now() - start > 100) {
+                    document.body.innerHTML = '';
+                    window.location.replace('about:blank');
+                }
+            }, 1000);
+        })();
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
             --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
-            --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0;
-            --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --bg: #0b0d14; --card-bg: #131722; --text: #e2e8f0;
+            --text-light: #94a3b8; --border: #232838; --radius: 16px; --shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; padding: 20px; }
-        body.dark { --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0; --text-light: #94a3b8; --border: #2d3138; }
-        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
-        
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        .admin-container { max-width: 1400px; margin: 0 auto; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        body.light { --bg: #f8fafc; --card-bg: #ffffff; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; }
+
+        .admin-container { max-width: 1360px; margin: 0 auto; }
 
         .header {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            box-shadow: var(--shadow); display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
-            border: 1px solid var(--border);
+            background: var(--card-bg); padding: 16px 24px; border-radius: var(--radius);
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            border: 1px solid var(--border); box-shadow: var(--shadow); flex-wrap: wrap; gap: 12px;
         }
         .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-        .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-        .btn-logout { background: var(--danger); color: white; border: none !important; }
-        .btn-logout:hover { background: #dc2626; }
-        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
-        .btn-install.show { display: inline-block; }
-        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
-        .theme-toggle button.active { background: var(--primary); color: white; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header-actions button { padding: 8px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); transition: 0.2s; }
+        .header-actions button:hover { transform: translateY(-1px); }
+        .btn-logout { background: var(--danger) !important; color: #fff !important; border: none !important; }
 
         .menu-container {
             display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
             background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
-            border: 1px solid var(--border); align-items: center;
-        }
-        .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
-        .menu-container .menu-btn {
-            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px;
-            font-weight: 600; transition: 0.3s;
-        }
-        .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card {
-            background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
-            box-shadow: var(--shadow); text-align: center; transition: 0.3s;
             border: 1px solid var(--border);
         }
-        .stat-card:hover { transform: translateY(-3px); }
-        .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
+        .menu-btn {
+            padding: 8px 16px; border: 1px solid transparent; border-radius: 10px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
+        }
+        .menu-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+        .menu-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.3); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card {
+            background: var(--card-bg); padding: 18px 14px; border-radius: var(--radius);
+            text-align: center; border: 1px solid var(--border);
+        }
+        .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
+        .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 500; }
 
         .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+            background: var(--card-bg); border-radius: var(--radius); padding: 18px 20px;
             margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
         }
         .live-visitors .lv-title {
-            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
         }
-        .live-visitors .lv-title .dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite;
-        }
-        .live-visitors .lv-title .live-badge {
-            font-size: 10px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 10px; border-radius: 20px;
-        }
-        .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
-        
         .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
         .live-visitors .lv-item {
-            background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
-            border: 1px solid var(--border); transition: 0.3s;
+            background: var(--bg); border-radius: 12px; padding: 12px; text-align: center;
+            border: 1px solid var(--border);
         }
-        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
-        .live-visitors .lv-item .lv-number {
-            font-size: 24px; font-weight: 800; transition: 0.3s;
-        }
-        .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
-        .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
-        .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
-        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
-        .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
+        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; }
+        .live-visitors .lv-item .lv-label { font-size: 11px; color: var(--text-light); margin-top: 2px; }
 
-        .section { display: none; animation: fadeInUp 0.4s ease; }
-        .section.active { display: block; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         .card {
-            background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
-            box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
+            background: var(--card-bg); padding: 22px 24px; border-radius: var(--radius);
+            margin-bottom: 20px; border: 1px solid var(--border);
         }
-        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
-        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .card h3 { font-size: 16px; margin-bottom: 14px; font-weight: 700; color: #fff; }
         .card input, .card select, .card textarea {
-            width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); transition: 0.3s;
+            width: 100%; padding: 10px 14px; margin: 6px 0; border: 1px solid var(--border);
+            border-radius: 10px; font-size: 13px; background: var(--bg); color: var(--text); outline: none;
         }
-        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); outline: none; }
+        .card input:focus, .card select:focus { border-color: var(--primary); }
+
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
         .btn {
-            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 20px; border: none; border-radius: 10px; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
-        .btn:active { transform: scale(0.97); }
+        .btn:hover { transform: translateY(-1px); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
-        .btn-success:hover { background: #16a34a; }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-warning { background: var(--warning); color: white; }
-        .btn-warning:hover { background: #d97706; }
-        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
+        .btn-sm { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
         .btn-block { width: 100%; }
-        .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
-        .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
-        .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            background: var(--bg); padding: 12px 16px; margin: 8px 0; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
+            gap: 8px; border-left: 3px solid var(--primary);
         }
-        .link-item:hover { transform: translateX(4px); }
-        .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
-        .link-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .link-item .actions .status-dropdown { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 10px; cursor: pointer; }
-        .link-item .actions .status-dropdown option { background: var(--bg); color: var(--text); }
+        .link-item .info .name { font-weight: 700; font-size: 14px; color: var(--text); margin-right: 12px; }
+        .link-item .info .details { font-size: 12px; color: var(--text-light); }
 
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
         .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
         .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
-        .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
-
-        .edit-modal {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        .edit-modal.show { display: flex; }
-        .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
-            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
-            border: 1px solid var(--border); animation: fadeInUp 0.3s ease;
-        }
-        .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
-        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
-        .edit-modal .modal-content .modal-close:hover { color: var(--text); }
-        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
-        .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
-        .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
-            width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text); font-size: 13px;
-        }
-        .edit-modal .modal-content .form-group input:focus, .edit-modal .modal-content .form-group select:focus { border-color: var(--primary); outline: none; }
-        .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-        .edit-modal .modal-content .popup-preview-small { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; margin-top: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .edit-modal .modal-content .popup-preview-small .preview-img { max-width: 100%; max-height: 60px; border-radius: 4px; object-fit: cover; }
-        .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 11px; font-weight: 700; margin-top: 4px; }
-        .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.4); font-size: 9px; }
-        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 12px; border: none; border-radius: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 9px; font-weight: 700; cursor: default; margin-top: 4px; }
-        @media (max-width: 600px) { .edit-modal .modal-content { padding: 20px; } .edit-modal .modal-content .form-actions { flex-direction: column; } }
-
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
-        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
 
         .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
-            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 99999; max-width: 400px; font-size: 13px;
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
+            color: white; font-weight: 600; font-size: 13px; z-index: 99999;
+            transform: translateY(100px); opacity: 0; transition: all 0.3s ease;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
-        .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
-        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
-        .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
-        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
-        .analytics-container .analytics-header .link-selector .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 150px; flex: 1; }
-        .analytics-container .analytics-header .link-selector .search-input:focus { border-color: var(--primary); outline: none; }
-        .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
-        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
-        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
-        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
-        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
-        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
-        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
-        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-        .custom-date-input input[type="date"] { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
-
-        .search-results-count { font-size: 11px; color: var(--text-light); }
-
-        .generated-link { background: rgba(99,102,241,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed rgba(99,102,241,0.3); }
-        .generated-link.show { display: block; }
-        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
-
-        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
-
-        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
-        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin-bottom: 6px; }
-        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
-        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
-        .popup-preview .preview-label { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 5px; }
-
-        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
-        .search-bar input:focus { border-color: var(--primary); outline: none; }
-
-        .device-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
-        }
-        .device-item:hover { transform: translateX(4px); }
-        .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-        .device-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .device-item .actions .btn { font-size: 10px; padding: 4px 10px; }
-
-        .session-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--success); transition: 0.3s;
-        }
-        .session-item:hover { transform: translateX(4px); }
-        .session-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .session-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-        .session-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-
-        .contact-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 768px) { .contact-settings-grid { grid-template-columns: 1fr; } }
-        .contact-settings-grid .contact-field label { font-size: 10px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
-        .contact-settings-grid .contact-field input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
-        .contact-settings-grid .contact-field input:focus { border-color: var(--primary); outline: none; }
-        .contact-status { margin-top: 6px; font-size: 12px; font-weight: 500; }
-
-        @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 12px; }
-            .header-actions { justify-content: center; }
-            .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-container .menu-btn { text-align: center; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
-            .link-item { flex-direction: column; align-items: stretch; }
-            .link-item .info { flex-direction: column; align-items: flex-start; }
-            .link-item .actions { justify-content: flex-start; }
-            body { padding: 12px; }
-            .card { padding: 14px; }
-            .toast { left: 20px; right: 20px; bottom: 20px; }
-            .edit-modal .modal-content { padding: 16px; }
-            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
-            .analytics-container .analytics-header .link-selector { flex-direction: column; }
-        }
-        @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .live-visitors .lv-grid { grid-template-columns: 1fr; }
-            .analytics-container .analytics-stats { grid-template-columns: 1fr; }
-            .stat-card .number { font-size: 20px; }
-            .live-visitors .lv-item .lv-number { font-size: 18px; }
-        }
+        .toast.success { background: #16a34a; }
+        .toast.error { background: #dc2626; }
+        .toast.info { background: #4f46e5; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="admin-container">
         <header class="header">
-            <h1>⚡ Admin Panel</h1>
+            <h1>⚡ Admin Control Center</h1>
             <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
-                <div class="theme-toggle">
-                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
-                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
-                </div>
-                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                <button onclick="logout()" class="btn-logout">🚪 Logout</button>
             </div>
         </header>
 
         <div class="menu-container">
-            <span class="menu-label">📋 Menu:</span>
-            <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="menu-btn" data-section="links" onclick="showSection('links')">🔗 Links</button>
-            <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
-            <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
-            <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
-            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
+            <button class="menu-btn active" onclick="switchTab('dashboard')">📊 Overview</button>
+            <button class="menu-btn" onclick="switchTab('links')">🔗 Links Manager</button>
+            <button class="menu-btn" onclick="switchTab('create')">➕ New Link</button>
+            <button class="menu-btn" onclick="switchTab('settings')">⚙️ Settings</button>
         </div>
 
-        <div class="section active" id="section-dashboard">
+        <!-- DASHBOARD SECTION -->
+        <div class="section active" id="sec-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
-                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
-                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
+                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">Total Claims</div></div>
             </div>
 
-            <div class="card">
-                <h3>📊 Lifetime Visitor & Claim Statistics</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
-                    <div class="stat-card"><div class="number" id="totalVisitors">0</div><div class="label">Total Visitors</div></div>
-                    <div class="stat-card"><div class="number" id="totalClaims">0</div><div class="label">Total Claims</div></div>
-                    <div class="stat-card"><div class="number" id="todayVisitors">0</div><div class="label">Today's Visitors</div></div>
-                    <div class="stat-card"><div class="number" id="todayClaims">0</div><div class="label">Today's Claims</div></div>
-                </div>
-            </div>
-
-            <div class="live-visitors" id="liveVisitors">
-                <div class="lv-title">
-                    <span class="dot"></span> Live Visitors & Claims
-                    <span class="live-badge">🟢 Live</span>
-                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
-                </div>
-                
+            <div class="live-visitors">
+                <div class="lv-title">🟢 Real-Time Signal Stream (Auto-Refreshing)</div>
                 <div class="lv-grid">
-                    <div class="lv-item">
-                        <div class="lv-number visits-color" id="liveLifetimeVisits">0</div>
-                        <div class="lv-label">👁️ Lifetime Visits</div>
-                        <div class="lv-time">All time</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number claims-color" id="liveLifetimeClaims">0</div>
-                        <div class="lv-label">🎁 Lifetime Claims</div>
-                        <div class="lv-time">All time</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number visits-color" id="live48hrVisits">0</div>
-                        <div class="lv-label">👁️ Last 48 Hours Visits</div>
-                        <div class="lv-time" id="live48hrTime">Loading...</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number claims-color" id="live48hrClaims">0</div>
-                        <div class="lv-label">🎁 Last 48 Hours Claims</div>
-                        <div class="lv-time" id="live48hrClaimsTime">Loading...</div>
-                    </div>
-                    <div class="lv-item active-now">
-                        <div class="lv-number visits-color" id="liveActiveVisits">0</div>
-                        <div class="lv-label">🟢 Active Visits</div>
-                        <div class="lv-time">Watching now</div>
-                    </div>
-                    <div class="lv-item active-now" style="border-left-color: var(--warning);">
-                        <div class="lv-number claims-color" id="liveActiveClaims">0</div>
-                        <div class="lv-label">🟢 Active Claims</div>
-                        <div class="lv-time">Claiming now</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="font-size:14px;margin:0;">📈 Last 7 Days & 24 Hours</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button onclick="switchDashboardGraph('7days')" class="btn btn-primary btn-sm active" id="dashGraph7">7 Days</button>
-                        <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">24 Hours</button>
-                    </div>
-                    <div style="display:flex;gap:6px;">
-                        <button onclick="switchDashboardData('total')" class="btn btn-primary btn-sm active" id="dashDataTotal">👁️ Total</button>
-                        <button onclick="switchDashboardData('unique')" class="btn btn-outline btn-sm" id="dashDataUnique">👤 Unique</button>
-                    </div>
-                </div>
-                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
-                    <canvas id="dashboardChart"></canvas>
+                    <div class="lv-item"><div class="lv-number" id="liveLifetimeVisits" style="color:var(--primary);">0</div><div class="lv-label">Lifetime Visitors</div></div>
+                    <div class="lv-item"><div class="lv-number" id="liveLifetimeClaims" style="color:var(--warning);">0</div><div class="lv-label">Total Claims</div></div>
+                    <div class="lv-item"><div class="lv-number" id="liveActiveVisits" style="color:var(--success);">0</div><div class="lv-label">Active Users (Live)</div></div>
                 </div>
             </div>
         </div>
 
-        <div class="section" id="section-links">
+        <!-- LINKS SECTION -->
+        <div class="section" id="sec-links">
             <div class="card">
-                <h3>🔍 Search Links</h3>
-                <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
-                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
-                </div>
-                <div id="linksList"></div>
+                <h3>Managed Tracking Links</h3>
+                <div id="linksContainer">Loading links...</div>
             </div>
         </div>
 
-        <div class="section" id="section-analytics">
-            <div class="analytics-container">
-                <div class="analytics-header">
-                    <div class="link-selector">
-                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
-                        <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Search by name or ID..." oninput="filterAnalyticsLinks()">
-                    </div>
-                    <div class="time-filters">
-                        <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
-                        <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24h</button>
-                        <button class="filter-btn" data-filter="custom" onclick="setTimeFilter('custom')">Custom</button>
-                    </div>
-                </div>
-                <div class="custom-date-input" id="customDatePicker" style="display:none;">
-                    <label style="font-size:11px;color:var(--text-light);">From:</label>
-                    <input type="date" id="analyticsFromDate" onchange="loadAnalytics()">
-                    <label style="font-size:11px;color:var(--text-light);">To:</label>
-                    <input type="date" id="analyticsToDate" onchange="loadAnalytics()">
-                    <button onclick="loadAnalytics()" class="btn btn-primary btn-sm">Apply</button>
-                </div>
-                <div class="link-details" id="analyticsLinkDetails">
-                    <div class="detail-row"><span class="label">Link Name</span><span class="value" id="analyticsLinkName">Not selected</span></div>
-                    <div class="detail-row"><span class="label">Link ID</span><span class="value" id="analyticsLinkId">-</span></div>
-                    <div class="detail-row"><span class="label">Status</span><span class="value" id="analyticsLinkStatus">-</span></div>
-                    <div class="detail-row"><span class="label">Created</span><span class="value" id="analyticsLinkCreated">-</span></div>
-                </div>
-                <div class="analytics-stats" id="analyticsStats">
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Visits</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Claims</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsUniqueVisitors">0</div><div class="a-label">👤 Unique Visitors</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
-                </div>
-
-                <div class="card" style="margin-top:10px;padding:15px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                        <h3 style="font-size:14px;margin:0;">📈 Detailed Analysis</h3>
-                        <div style="display:flex;gap:6px;">
-                            <button onclick="switchAnalyticsGraph('7days')" class="btn btn-primary btn-sm active" id="anaGraph7">7 Days</button>
-                            <button onclick="switchAnalyticsGraph('24h')" class="btn btn-outline btn-sm" id="anaGraph24">24 Hours</button>
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button onclick="switchAnalyticsData('total')" class="btn btn-primary btn-sm active" id="anaDataTotal">👁️ Total</button>
-                            <button onclick="switchAnalyticsData('unique')" class="btn btn-outline btn-sm" id="anaDataUnique">👤 Unique</button>
-                        </div>
-                    </div>
-                    <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
-                        <canvas id="analyticsChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="analytics-download" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                    <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Image</button>
-                    <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 CSV</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section" id="section-create">
+        <!-- CREATE SECTION -->
+        <div class="section" id="sec-create">
             <div class="card">
-                <h3>➕ Create Link</h3>
-                <input type="text" id="linkName" placeholder="Link Name">
+                <h3>➕ Create New Rewarded Link</h3>
+                <input type="text" id="newLinkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
                 <div class="grid-2">
-                    <div>
-                        <label style="font-weight:600;color:var(--success);font-size:11px;">🎬 Video URL</label>
-                        <input type="text" id="video" placeholder="YouTube or MP4 URL" value="https://youtu.be/dQw4w9WgXcQ">
-                        <small style="color:var(--text-light);font-size:9px;">YouTube or MP4</small>
-                    </div>
-                    <div>
-                        <label style="font-weight:600;color:var(--danger);font-size:11px;">🎁 Claim URL</label>
-                        <input type="text" id="claim" placeholder="Claim URL" value="#">
-                    </div>
+                    <input type="text" id="newVideoUrl" placeholder="Video URL (YouTube embed or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="newClaimUrl" placeholder="Claim Destination URL" value="#">
                 </div>
-                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
-                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video">
-
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <label style="font-weight:600;color:var(--primary);font-size:12px;">🖼️ Popup Settings</label>
-                    <div class="grid-2">
-                        <div><label style="font-size:10px;color:var(--text-light);">Popup Title</label><input type="text" id="popupTitle" placeholder="Title" value="🎁 Claim Your Reward"></div>
-                        <div><label style="font-size:10px;color:var(--text-light);">Button Text</label><input type="text" id="popupButtonText" placeholder="Button" value="Claim Now"></div>
-                    </div>
-                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <div style="margin-top:6px;">
-                        <label style="font-size:10px;color:var(--text-light);">Popup Image URL (16:9)</label>
-                        <input type="text" id="popupImageUrl" placeholder="Enter image URL">
-                        <div class="image-preview" id="popupImagePreview">
-                            <img id="popupPreviewImg" alt="Popup Image Preview">
-                            <div class="preview-label">🖼️ Preview</div>
-                        </div>
-                    </div>
-                    <div class="popup-preview" id="popupPreviewSection">
-                        <div class="preview-image" id="popupPreviewImage"><span>🎬 16:9 Preview</span></div>
-                        <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
-                        <div class="preview-sub" id="popupPreviewSub">Tap below to unlock</div>
-                        <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
-                        <div class="preview-label">⬆️ Live Preview</div>
-                    </div>
-                </div>
-
-                <div style="margin-top:8px;">
-                    <label style="font-weight:600;color:var(--warning);font-size:11px;">📅 Schedule Expiry</label>
-                    <div class="grid-2">
-                        <select id="schedulePreset" onchange="updateSchedulePreset()" style="padding:8px 12px;font-size:12px;">
-                            <option value="">No Expiry</option>
-                            <option value="3">3 Days</option>
-                            <option value="7">7 Days</option>
-                            <option value="15">15 Days</option>
-                            <option value="30">30 Days</option>
-                            <option value="custom">Custom Date</option>
-                        </select>
-                        <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
-                    </div>
-                    <div style="margin-top:3px;font-size:11px;color:var(--text-light);" id="expiryDisplay">⏰ No expiry set</div>
-                </div>
-
-                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:12px;font-size:15px;padding:10px;">🚀 Generate Link</button>
-
-                <div class="generated-link" id="generatedLink">
-                    <div class="link-label">✅ Link Generated!</div>
-                    <div class="link-box">
-                        <input type="text" id="generatedLinkInput" readonly>
-                        <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
-                </div>
+                <input type="text" id="newHeadline" placeholder="Headline text" value="🎬 Watch Stream & Unlock Reward">
+                <button onclick="createNewLink()" class="btn btn-primary btn-block" style="margin-top:14px;">🚀 Generate Tracking Link</button>
             </div>
         </div>
 
-        <div class="section" id="section-settings">
+        <!-- SETTINGS SECTION -->
+        <div class="section" id="sec-settings">
             <div class="card">
-                <h3>🖼️ UID Background (9:16)</h3>
-                <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Background Preview">
-                    <div class="preview-label">🖼️ Preview</div>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                    <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
-                    <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
-                </div>
-                <div id="bgStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
+                <h3>🔑 Secret Gateway Passphrase</h3>
+                <input type="text" id="adminSecretKey" placeholder="Current Secret Key">
+                <button onclick="updateSecretKey()" class="btn btn-primary btn-sm" style="margin-top:10px;">Update Secret Key</button>
             </div>
-
-            <div class="card">
-                <h3>🔑 Secret Gateway Key</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key used to access the admin login page</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="currentSecretKey" placeholder="Current Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;" readonly>
-                    <input type="text" id="newSecretKey" placeholder="New Secret Key" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;">
-                </div>
-                <button onclick="changeSecretKey()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:6px 18px;">🔑 Update Secret Key</button>
-                <div id="secretKeyStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>📱 Contact & OTP Settings</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
-                <div class="contact-settings-grid">
-                    <div class="contact-field">
-                        <label>📧 Email Address</label>
-                        <input type="email" id="adminEmail" placeholder="admin@example.com">
-                    </div>
-                    <div class="contact-field">
-                        <label>📞 Phone Number (with country code)</label>
-                        <input type="text" id="adminPhone" placeholder="+919876543210">
-                    </div>
-                </div>
-                <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;padding:8px 20px;">💾 Save Contact Info</button>
-                <div id="contactStatus" class="contact-status"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔐 Admin Passcode</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change your 6-digit passcode</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="password" id="oldPasscode" placeholder="Current Passcode" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)" maxlength="6" style="flex:1;min-width:120px;padding:8px 12px;font-size:13px;">
-                </div>
-                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;padding:6px 18px;">Change Passcode</button>
-                <div id="passcodeStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔧 Device Management</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked devices and active login sessions</p>
-                
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-                    <button onclick="loadBlockedDevices()" class="btn btn-danger btn-sm">⛔ Blocked Devices</button>
-                    <button onclick="loadActiveSessions()" class="btn btn-success btn-sm">🟢 Active Sessions</button>
-                </div>
-                
-                <div id="deviceList" style="max-height:400px;overflow-y:auto;">
-                    <div class="empty-state" id="noDevices">
-                        <span class="icon">📱</span>
-                        <p>No data found</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section" id="section-shortener">
-            <div class="card">
-                <h3>📊 URL Shortener Dashboard</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
-                    <div class="stat-card"><div class="number" id="shortTotalLinks">0</div><div class="label">🔗 Total Links</div></div>
-                    <div class="stat-card"><div class="number" id="shortActiveLinks">0</div><div class="label">✅ Active</div></div>
-                    <div class="stat-card"><div class="number" id="shortTotalClicks">0</div><div class="label">👁️ Total Clicks</div></div>
-                    <div class="stat-card"><div class="number" id="shortClicks24h">0</div><div class="label">📅 24h Clicks</div></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>➕ Create Short Link</h3>
-                <input type="text" id="shortOriginalUrl" placeholder="Enter long URL (e.g., https://example.com/very/long/link)">
-                <input type="text" id="shortTitle" placeholder="Title (Optional)" style="margin-top:8px;">
-                
-                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);font-weight:500;">📱 Open in App:</label>
-                    <label class="switch" style="position:relative;display:inline-block;width:40px;height:20px;">
-                        <input type="checkbox" id="shortAppOpen" style="opacity:0;width:0;height:0;" onchange="toggleAppScheme()">
-                        <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#2d3138;transition:.4s;border-radius:20px;" id="appToggleSlider"></span>
-                        <style>
-                            .switch input:checked + span { background: #6366f1; }
-                            .switch span:before { position:absolute;content:"";height:16px;width:16px;left:2px;bottom:2px;background:white;transition:.4s;border-radius:50%; }
-                            .switch input:checked + span:before { transform:translateX(20px); }
-                        </style>
-                    </label>
-                    <span style="font-size:11px;color:var(--text-light);">(Enable to open in app instead of browser)</span>
-                </div>
-                
-                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
-                    <label style="font-size:11px;color:var(--text-light);font-weight:500;">📲 App Deep Link Scheme:</label>
-                    <input type="text" id="shortAppScheme" placeholder="e.g., myapp://, vnd.youtube://, whatsapp://" style="margin-top:4px;">
-                    <small style="color:var(--text-light);font-size:10px;">Leave empty for auto-detection (YouTube, WhatsApp, Instagram, etc.)</small>
-                    
-                    <label style="font-size:11px;color:var(--text-light);font-weight:500;margin-top:6px;display:block;">📲 App Store / Play Store Link (Fallback):</label>
-                    <input type="text" id="shortAppStoreLink" placeholder="e.g., https://play.google.com/store/apps/details?id=com.app" style="margin-top:4px;">
-                    <small style="color:var(--text-light);font-size:10px;">If app is not installed, user will be directed here</small>
-                </div>
-                
-                <div style="margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);font-weight:500;">📅 Schedule Expiry:</label>
-                    <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
-                </div>
-                
-                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:12px;">🚀 Generate Short Link</button>
-                <div class="generated-link" id="shortGeneratedLink">
-                    <div class="link-label">✅ Short Link Generated!</div>
-                    <div class="link-box">
-                        <input type="text" id="shortGeneratedLinkInput" readonly>
-                        <button onclick="copyShortLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>🔍 Manage Short Links</h3>
-                <div class="search-bar">
-                    <input type="text" id="searchShortLinksInput" placeholder="Search by title or code..." oninput="filterShortLinks()">
-                    <span class="search-results-count" id="shortSearchResultsCount">Showing all links</span>
-                </div>
-                <div id="shortLinksList"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="edit-modal" id="editModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
-            <h3>✏️ Edit Link</h3>
-            <div id="editModalBody"></div>
         </div>
     </div>
 
     <div class="toast" id="toast"></div>
 
     <script>
-        var csrfToken = window.csrfToken || localStorage.getItem('csrfToken') || '';
+        const csrfToken = localStorage.getItem('csrfToken') || '';
 
-        if (!csrfToken) {
-            window.location.href = 'login.html';
-        }
-
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var target = document.getElementById('section-' + sectionId);
-            if (target) target.classList.add('active');
-            
-            document.querySelectorAll('.menu-btn').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var btn = document.querySelector('.menu-btn[data-section="' + sectionId + '"]');
-            if (btn) btn.classList.add('active');
-
-            if (sectionId === 'analytics') {
-                loadAnalyticsLinks();
-            }
-            if (sectionId === 'links') {
-                filterLinks();
-            }
-            if (sectionId === 'settings') {
-                setTimeout(loadBlockedDevices, 500);
-                loadSecretKey();
-            }
-            if (sectionId === 'shortener') {
-                loadShortLinks();
-                loadShortLinkStats();
-            }
-        }
-
-        async function secureFetch(url, options) {
-            options = options || {};
-            try {
-                var response = await fetch(url, {
-                    ...options,
-                    headers: {
-                        ...options.headers,
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    }
-                });
-                if (response.status === 401 || response.status === 403) {
-                    showToast('❌ Session expired. Please login again.', 'error');
-                    localStorage.removeItem('csrfToken');
-                    setTimeout(function() { window.location.href = 'login.html'; }, 1500);
-                    return null;
-                }
-                return response;
-            } catch (e) {
-                showToast('❌ Network error', 'error');
-                return null;
-            }
-        }
-
-        function showToast(msg, type) {
-            type = type || 'info';
-            var t = document.getElementById('toast');
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
             t.textContent = msg;
-            t.className = 'toast ' + type + ' show';
-            clearTimeout(t._timeout);
-            t._timeout = setTimeout(function() { t.className = 'toast'; }, 4000);
+            t.className = `toast ${type} show`;
+            setTimeout(() => t.className = 'toast', 3000);
         }
 
-        function escapeHTML(str) {
-            if (!str) return '';
-            var div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        function switchTab(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`sec-${id}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if (id === 'links') fetchLinks();
         }
 
-        var deferredPrompt;
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBtn').classList.add('show');
-        });
-
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(function(result) {
-                    if (result.outcome === 'accepted') {
-                        showToast('✅ App installed!', 'success');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installBtn').classList.remove('show');
-                });
-            } else {
-                showToast('📲 Use Chrome browser to install', 'info');
-            }
-        }
-
-        async function setTheme(theme) {
-            document.body.className = theme;
-            var r = await secureFetch('/api/admin/theme', { method: 'POST', body: JSON.stringify({ theme: theme }) });
-            if (!r) return;
-            document.querySelectorAll('.theme-toggle button').forEach(function(b) { b.classList.remove('active'); });
-            document.getElementById('theme-' + theme).classList.add('active');
-        }
-
-        async function loadTheme() {
+        async function fetchStats() {
             try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data && data.theme) {
-                    document.body.className = data.theme;
-                    document.getElementById('theme-' + data.theme).classList.add('active');
-                }
-            } catch (e) {}
-        }
-
-        async function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await fetch('/api/admin/logout', { method: 'POST' });
-                } catch (e) {}
-                localStorage.removeItem('csrfToken');
-                window.location.href = 'login.html';
-            }
-        }
-
-        var liveInterval = null;
-
-        async function loadStats(updateGraphs) {
-            if (updateGraphs === undefined) updateGraphs = true;
-            try {
-                var response = await secureFetch('/api/all-stats');
-                if (!response) return;
-                if (response.ok) {
-                    var data = await response.json();
-                    
-                    var totalLinks = document.getElementById('totalLinks');
-                    var activeLinks = document.getElementById('activeLinks');
-                    var totalVisits = document.getElementById('totalVisits');
-                    var expiredLinks = document.getElementById('expiredLinks');
-                    
-                    if (data.links) {
-                        if (totalLinks) totalLinks.textContent = data.links.length || 0;
-                        if (activeLinks) activeLinks.textContent = data.links.filter(function(l) { return l.status === 'active'; }).length || 0;
-                        if (totalVisits) totalVisits.textContent = data.links.reduce(function(s, l) { return s + (l.visits || 0); }, 0) || 0;
-                        if (expiredLinks) expiredLinks.textContent = data.links.filter(function(l) { return l.expiryDate && new Date(l.expiryDate) < new Date(); }).length || 0;
-                    }
-                    
-                    var totalVisitors = document.getElementById('totalVisitors');
-                    var totalClaims = document.getElementById('totalClaims');
-                    var todayVisitors = document.getElementById('todayVisitors');
-                    var todayClaims = document.getElementById('todayClaims');
-                    
-                    if (data.global) {
-                        if (totalVisitors) totalVisitors.textContent = data.global.totalVisitors || 0;
-                        if (totalClaims) totalClaims.textContent = data.global.totalClaims || 0;
-                        if (todayVisitors) todayVisitors.textContent = data.global.todayVisitors || 0;
-                        if (todayClaims) todayClaims.textContent = data.global.todayClaims || 0;
-                    }
-                    
-                    updateLiveVisitors(data);
-                    
-                    if (updateGraphs) {
-                        updateDashboardGraph(data);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to load stats:', e);
-            }
-        }
-
-        var previousLiveData = {};
-
-        function updateLiveVisitors(data) {
-            if (!data) {
-                secureFetch('/api/all-stats').then(function(response) {
-                    if (response && response.ok) {
-                        response.json().then(function(d) {
-                            updateLiveVisitors(d);
-                        });
-                    }
-                });
-                return;
-            }
-
-            var stats = data.global || {};
-            var links = data.links || [];
-            
-            var activeVisits = stats.activeNow || 0;
-            var activeClaims = stats.activeClaims || Math.round((stats.visits60m || 0) * 0.3);
-            if (activeClaims < 0) activeClaims = 0;
-            
-            if (links && links.length > 0) {
-                var totalActiveVisits = 0;
-                var totalActiveClaims = 0;
-                var today = new Date().toISOString().split('T')[0];
-                
-                links.forEach(function(link) {
-                    if (link.dailyVisits && link.dailyVisits[today]) {
-                        var recentVisits = link.dailyVisits[today];
-                        if (recentVisits > 0) {
-                            totalActiveVisits += Math.max(1, Math.round(recentVisits * 0.15));
-                        }
-                    }
-                    if (link.dailyClaims && link.dailyClaims[today]) {
-                        var recentClaims = link.dailyClaims[today];
-                        if (recentClaims > 0) {
-                            totalActiveClaims += Math.max(0, Math.round(recentClaims * 0.15));
-                        }
-                    }
-                });
-                
-                if (totalActiveVisits > 0) activeVisits = totalActiveVisits;
-                if (totalActiveClaims > 0) activeClaims = totalActiveClaims;
-            }
-            
-            if (activeVisits < 1) activeVisits = Math.max(1, Math.round(stats.visits60m / 12));
-            if (activeClaims < 1) activeClaims = Math.round(activeVisits * 0.3);
-
-            var lifetimeVisits = document.getElementById('liveLifetimeVisits');
-            if (lifetimeVisits) {
-                var newVal = stats.totalVisitors || 0;
-                if (previousLiveData.lifetimeVisits !== newVal) {
-                    lifetimeVisits.textContent = newVal;
-                    lifetimeVisits.classList.add('pulse-update');
-                    setTimeout(function() { lifetimeVisits.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.lifetimeVisits = newVal;
-            }
-            
-            var lifetimeClaims = document.getElementById('liveLifetimeClaims');
-            if (lifetimeClaims) {
-                var newVal = stats.totalClaims || 0;
-                if (previousLiveData.lifetimeClaims !== newVal) {
-                    lifetimeClaims.textContent = newVal;
-                    lifetimeClaims.classList.add('pulse-update');
-                    setTimeout(function() { lifetimeClaims.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.lifetimeClaims = newVal;
-            }
-            
-            var live48hrVisits = document.getElementById('live48hrVisits');
-            if (live48hrVisits) {
-                var newVal24h = stats.visits24h || 0;
-                if (previousLiveData.live48hrVisits !== newVal24h) {
-                    live48hrVisits.textContent = newVal24h;
-                    live48hrVisits.classList.add('pulse-update');
-                    setTimeout(function() { live48hrVisits.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.live48hrVisits = newVal24h;
-            }
-            var live48hrTime = document.getElementById('live48hrTime');
-            if (live48hrTime) live48hrTime.textContent = 'Last 48 hours';
-            
-            var live48hrClaims = document.getElementById('live48hrClaims');
-            if (live48hrClaims) {
-                var newValClaims = stats.claims24h || 0;
-                if (previousLiveData.live48hrClaims !== newValClaims) {
-                    live48hrClaims.textContent = newValClaims;
-                    live48hrClaims.classList.add('pulse-update');
-                    setTimeout(function() { live48hrClaims.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.live48hrClaims = newValClaims;
-            }
-            var live48hrClaimsTime = document.getElementById('live48hrClaimsTime');
-            if (live48hrClaimsTime) live48hrClaimsTime.textContent = 'Last 48 hours';
-            
-            var liveActiveVisits = document.getElementById('liveActiveVisits');
-            if (liveActiveVisits) {
-                if (previousLiveData.liveActiveVisits !== activeVisits) {
-                    liveActiveVisits.textContent = activeVisits;
-                    liveActiveVisits.classList.add('pulse-update');
-                    setTimeout(function() { liveActiveVisits.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.liveActiveVisits = activeVisits;
-            }
-            
-            var liveActiveClaims = document.getElementById('liveActiveClaims');
-            if (liveActiveClaims) {
-                if (previousLiveData.liveActiveClaims !== activeClaims) {
-                    liveActiveClaims.textContent = activeClaims;
-                    liveActiveClaims.classList.add('pulse-update');
-                    setTimeout(function() { liveActiveClaims.classList.remove('pulse-update'); }, 300);
-                }
-                previousLiveData.liveActiveClaims = activeClaims;
-            }
-            
-            var refreshTime = document.getElementById('lastRefreshTime');
-            if (refreshTime) {
-                var nowTime = new Date();
-                refreshTime.textContent = 'Last updated: ' + nowTime.toLocaleTimeString();
-            }
-        }
-
-        // ✅ FIXED: Live refresh every 5 seconds (not 2 seconds)
-        function startLiveRefresh() {
-            if (liveInterval) clearInterval(liveInterval);
-            
-            loadStats(true);
-            
-            liveInterval = setInterval(async function() {
-                try {
-                    var response = await secureFetch('/api/all-stats');
-                    if (!response) return;
-                    if (response.ok) {
-                        var data = await response.json();
-                        updateLiveVisitors(data);
-                    }
-                } catch (e) {
-                    console.error('Live refresh failed:', e);
-                }
-            }, 5000);  // ✅ 5 seconds
-        }
-
-        var allLinks = [];
-
-        async function loadLinks() {
-            try {
-                var r = await secureFetch('/api/links');
-                if (!r) {
-                    document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading</div>';
+                const res = await fetch('/api/all-stats', { headers: { 'X-CSRF-Token': csrfToken } });
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = 'login.html';
                     return;
                 }
-                allLinks = await r.json();
-                filterLinks();
-            } catch (e) {
-                document.getElementById('linksList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span> Error loading links</div>';
-            }
+                const data = await res.json();
+                if (data && data.global) {
+                    document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('liveActiveVisits').textContent = Math.max(1, Math.round((data.global.totalVisitors || 0) * 0.05));
+                }
+                if (data && data.links) {
+                    document.getElementById('totLinks').textContent = data.links.length || 0;
+                }
+            } catch(e) {}
         }
 
-        function filterLinks() {
-            var query = document.getElementById('searchLinksInput').value.toLowerCase().trim();
-            var filtered = allLinks;
-            if (query) {
-                filtered = allLinks.filter(function(link) {
-                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
+        async function fetchLinks() {
+            const box = document.getElementById('linksContainer');
+            try {
+                const res = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
+                const links = await res.json();
+                if (!links || links.length === 0) {
+                    box.innerHTML = '<p style="color:#94a3b8;font-size:13px;">No active links created yet.</p>';
+                    return;
+                }
+                box.innerHTML = '';
+                links.forEach(l => {
+                    const row = document.createElement('div');
+                    row.className = 'link-item';
+                    row.innerHTML = `
+                        <div class="info">
+                            <span class="name">${l.name}</span>
+                            <span class="details">Visits: <b>${l.visits || 0}</b> | Claims: <b>${l.claims || 0}</b></span>
+                        </div>
+                        <div>
+                            <button onclick="copyLinkUrl('${l.id}')" class="btn btn-success btn-sm">📋 Copy</button>
+                            <button onclick="deleteLink('${l.id}')" class="btn btn-danger btn-sm">🗑️ Delete</button>
+                        </div>
+                    `;
+                    box.appendChild(row);
                 });
+            } catch(e) {
+                box.innerHTML = 'Error loading links';
             }
-            var c = document.getElementById('linksList');
-            var countEl = document.getElementById('searchResultsCount');
-            if (filtered.length === 0) {
-                c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
-                if (countEl) countEl.textContent = 'No results';
-                return;
-            }
-            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
-            c.innerHTML = '';
-            filtered.forEach(function(link) {
-                var sc = link.status === 'active' ? 'active' : link.status === 'suspended' ? 'suspended' : 'disabled';
-                var created = new Date(link.created).toLocaleDateString();
-                var visits = link.visits || 0;
-                var d = document.createElement('div');
-                d.className = 'link-item';
-                d.innerHTML = `
-                    <div class="info">
-                        <span class="name">${escapeHTML(link.name)}</span>
-                        <span class="details">
-                            <span>📅 ${created}</span>
-                            <span class="visits">👁️ ${visits}</span>
-                            <span class="status-badge status-${sc}">${link.status}</span>
-                        </span>
-                    </div>
-                    <div class="actions">
-                        <button onclick="openEditModal('${link.id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
-                        <button onclick="copyLinkUrl('${link.id}')" class="btn btn-success btn-sm" title="Copy">📋</button>
-                        <select onchange="handleStatusAction('${link.id}', this.value)" class="status-dropdown">
-                            <option value="">⚡ Action</option>
-                            <option value="active">✅ Activate</option>
-                            <option value="suspended">⏸️ Suspend</option>
-                            <option value="disabled">⛔ Disable</option>
-                            <option value="delete">🗑️ Delete</option>
-                        </select>
-                    </div>
-                `;
-                c.appendChild(d);
-            });
         }
 
         function copyLinkUrl(id) {
-            var url = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(url).then(function() {
-                showToast('✅ Link copied!', 'success');
-            }).catch(function() {
-                var t = document.createElement('textarea');
-                t.value = url;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                document.body.removeChild(t);
-                showToast('✅ Link copied!', 'success');
+            const fullUrl = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(fullUrl).then(() => showToast('✅ Link copied!', 'success'));
+        }
+
+        async function deleteLink(id) {
+            if (!confirm('Are you sure you want to delete this link?')) return;
+            await fetch('/api/links/' + id, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } });
+            showToast('Link deleted', 'info');
+            fetchLinks();
+            fetchStats();
+        }
+
+        async function createNewLink() {
+            const name = document.getElementById('newLinkName').value.trim();
+            const video = document.getElementById('newVideoUrl').value.trim();
+            const claim = document.getElementById('newClaimUrl').value.trim();
+            const headline = document.getElementById('newHeadline').value.trim();
+
+            if (!name) return showToast('Please enter link name', 'error');
+
+            const res = await fetch('/api/links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({ name, video, claim, headline })
             });
-        }
-
-        async function handleStatusAction(id, action) {
-            if (!action) return;
-            if (action === 'delete') {
-                if (confirm('⚠️ Delete this link permanently?')) {
-                    try {
-                        var r = await secureFetch('/api/links/' + id, { method: 'DELETE' });
-                        if (!r) return;
-                        var data = await r.json();
-                        if (data.success) {
-                            loadLinks();
-                            loadStats(false);
-                            showToast('✅ Link deleted!', 'success');
-                        }
-                    } catch (e) { showToast('❌ Failed to delete', 'error'); }
-                }
-                return;
-            }
-            try {
-                var r = await secureFetch('/api/links/' + id + '/status', {
-                    method: 'PUT',
-                    body: JSON.stringify({ status: action })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                loadLinks();
-                loadStats(false);
-                showToast('✅ Status updated to: ' + action, 'success');
-            } catch (e) { showToast('❌ Failed to update status', 'error'); }
-        }
-
-        var editingLinkId = null;
-
-        function openEditModal(linkId) {
-            var link = allLinks.find(function(l) { return l.id === linkId; });
-            if (!link) {
-                showToast('❌ Link not found', 'error');
-                return;
-            }
-            editingLinkId = linkId;
-            var body = document.getElementById('editModalBody');
-            var popup = link.popupSettings || {};
-            var expiry = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-            body.innerHTML = `
-                <div class="form-group">
-                    <label>Link Name</label>
-                    <input type="text" id="editName" value="${escapeHTML(link.name)}">
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>🎬 Video URL</label>
-                        <input type="text" id="editVideo" value="${escapeHTML(link.video)}">
-                    </div>
-                    <div class="form-group">
-                        <label>🎁 Claim URL</label>
-                        <input type="text" id="editClaim" value="${escapeHTML(link.claim)}">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Button Text</label>
-                    <input type="text" id="editButton" value="${escapeHTML(link.buttonText || 'Claim Now')}">
-                </div>
-                <div class="form-group">
-                    <label>Headline</label>
-                    <input type="text" id="editHeadline" value="${escapeHTML(link.headline || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="editStatus">
-                        <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
-                        <option value="suspended" ${link.status === 'suspended' ? 'selected' : ''}>Suspended</option>
-                        <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Expiry Date</label>
-                    <input type="datetime-local" id="editExpiry" value="${expiry}">
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <label style="font-weight:600;color:var(--primary);font-size:12px;">🖼️ Popup Settings</label>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Popup Title</label>
-                            <input type="text" id="editPopupTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
-                        </div>
-                        <div class="form-group">
-                            <label>Popup Button</label>
-                            <input type="text" id="editPopupBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Popup Subtitle</label>
-                        <input type="text" id="editPopupSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
-                    </div>
-                    <div class="form-group">
-                        <label>Popup Image URL (16:9)</label>
-                        <input type="text" id="editPopupImage" value="${escapeHTML(popup.image || '')}" placeholder="Enter image URL">
-                    </div>
-                    <div class="popup-preview-small" id="editPopupPreview">
-                        ${popup.image ? '<img src="' + escapeHTML(popup.image) + '" class="preview-img" alt="Preview">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>'}
-                        <div class="preview-text">${escapeHTML(popup.title || '🎁 Claim Your Reward')}</div>
-                        <div class="preview-sub">${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}</div>
-                        <div class="preview-btn-small">${escapeHTML(popup.buttonText || 'Claim Now')}</div>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button onclick="saveEditLink()" class="btn btn-success">💾 Save Changes</button>
-                    <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
-                </div>
-            `;
-            ['editPopupTitle', 'editPopupBtn', 'editPopupSub', 'editPopupImage'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('input', function() {
-                        updateEditPopupPreview();
-                    });
-                }
-            });
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function updateEditPopupPreview() {
-            var title = document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value || '🎁 Claim Your Reward' : '🎁 Claim Your Reward';
-            var btn = document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value || 'Claim Now' : 'Claim Now';
-            var sub = document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value || 'Tap below to unlock your reward' : 'Tap below to unlock your reward';
-            var img = document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value || '' : '';
-            var preview = document.getElementById('editPopupPreview');
-            if (!preview) return;
-            var imgHtml = img ? '<img src="' + escapeHTML(img) + '" class="preview-img">' : '<div style="color:rgba(255,255,255,0.3);font-size:10px;">No image</div>';
-            preview.innerHTML = imgHtml +
-                '<div class="preview-text">' + escapeHTML(title) + '</div>' +
-                '<div class="preview-sub">' + escapeHTML(sub) + '</div>' +
-                '<div class="preview-btn-small">' + escapeHTML(btn) + '</div>';
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.remove('show');
-            editingLinkId = null;
-        }
-
-        async function saveEditLink() {
-            if (!editingLinkId) {
-                showToast('❌ No link selected', 'error');
-                return;
-            }
-            var popupSettings = {
-                image: document.getElementById('editPopupImage') ? document.getElementById('editPopupImage').value.trim() || null : null,
-                title: document.getElementById('editPopupTitle') ? document.getElementById('editPopupTitle').value.trim() || '🎁 Claim Your Reward' : '🎁 Claim Your Reward',
-                buttonText: document.getElementById('editPopupBtn') ? document.getElementById('editPopupBtn').value.trim() || 'Claim Now' : 'Claim Now',
-                subtitle: document.getElementById('editPopupSub') ? document.getElementById('editPopupSub').value.trim() || 'Tap below to unlock your reward' : 'Tap below to unlock your reward'
-            };
-            var expiryDate = document.getElementById('editExpiry') ? document.getElementById('editExpiry').value || null : null;
-            if (expiryDate) { expiryDate = new Date(expiryDate).toISOString(); }
-            try {
-                var r = await secureFetch('/api/links/' + editingLinkId, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        name: document.getElementById('editName').value,
-                        video: document.getElementById('editVideo').value,
-                        claim: document.getElementById('editClaim').value,
-                        buttonText: document.getElementById('editButton').value,
-                        headline: document.getElementById('editHeadline').value,
-                        status: document.getElementById('editStatus').value,
-                        expiryDate: expiryDate,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.error) {
-                    showToast('❌ ' + data.error, 'error');
-                    return;
-                }
-                closeEditModal();
-                loadLinks();
-                loadStats(false);
-                showToast('✅ Link updated successfully!', 'success');
-            } catch (e) {
-                showToast('❌ Failed to update link', 'error');
+            const data = await res.json();
+            if (data && data.id) {
+                showToast('✅ Link generated successfully!', 'success');
+                document.getElementById('newLinkName').value = '';
+                fetchStats();
             }
         }
 
-        document.getElementById('editModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditModal();
-            }
-        });
-
-        var selectedExpiry = null;
-
-        function updateSchedulePreset() {
-            var preset = document.getElementById('schedulePreset').value;
-            var customInput = document.getElementById('customExpiry');
-            var display = document.getElementById('expiryDisplay');
-            if (preset === 'custom') {
-                customInput.style.display = 'block';
-                customInput.value = '';
-                display.textContent = '📅 Select custom date';
-                selectedExpiry = null;
-                return;
-            }
-            customInput.style.display = 'none';
-            if (preset) {
-                var days = parseInt(preset);
-                var date = new Date();
-                date.setDate(date.getDate() + days);
-                selectedExpiry = date.toISOString();
-                display.textContent = '📅 Expires: ' + date.toLocaleString();
-            } else {
-                selectedExpiry = null;
-                display.textContent = '⏰ No expiry set';
-            }
+        async function logout() {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            localStorage.removeItem('csrfToken');
+            window.location.href = 'login.html';
         }
 
-        function updateCustomExpiry() {
-            var val = document.getElementById('customExpiry').value;
-            if (val) {
-                var date = new Date(val);
-                selectedExpiry = date.toISOString();
-                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + date.toLocaleString();
-            } else {
-                selectedExpiry = null;
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-            }
-        }
-
-        document.getElementById('popupTitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewTitle').textContent = this.value || '🎁 Claim Your Reward';
-        });
-        document.getElementById('popupSubtitle').addEventListener('input', function() {
-            document.getElementById('popupPreviewSub').textContent = this.value || 'Tap below to unlock your reward';
-        });
-        document.getElementById('popupButtonText').addEventListener('input', function() {
-            document.getElementById('popupPreviewBtn').textContent = this.value || 'Claim Now';
-        });
-        document.getElementById('popupImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('popupImagePreview');
-            var img = document.getElementById('popupPreviewImg');
-            var previewImage = document.getElementById('popupPreviewImage');
-            if (url) {
-                img.src = url;
-                preview.classList.add('show');
-                previewImage.innerHTML = '<img src="' + url + '" alt="Popup Preview">';
-            } else {
-                preview.classList.remove('show');
-                previewImage.innerHTML = '<span>🎬 16:9 Preview</span>';
-            }
-        });
-
-        async function createLink() {
-            var name = document.getElementById('linkName').value.trim();
-            if (!name) { showToast('❌ Please enter a link name', 'error'); return; }
-            if (name.length > 100) { showToast('❌ Name too long', 'error'); return; }
-            var popupSettings = {
-                image: document.getElementById('popupImageUrl').value.trim() || null,
-                title: document.getElementById('popupTitle').value.trim() || '🎁 Claim Your Reward',
-                buttonText: document.getElementById('popupButtonText').value.trim() || 'Claim Now',
-                subtitle: document.getElementById('popupSubtitle').value.trim() || 'Tap below to unlock your reward'
-            };
-            try {
-                var r = await secureFetch('/api/links', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: name,
-                        video: document.getElementById('video').value.trim(),
-                        claim: document.getElementById('claim').value.trim(),
-                        buttonText: document.getElementById('buttonText').value.trim(),
-                        headline: document.getElementById('headline').value.trim(),
-                        expiryDate: selectedExpiry,
-                        popupSettings: popupSettings
-                    })
-                });
-                if (!r) return;
-                var link = await r.json();
-                document.getElementById('generatedLink').classList.add('show');
-                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + link.id;
-                document.getElementById('linkName').value = '';
-                document.getElementById('video').value = 'https://youtu.be/dQw4w9WgXcQ';
-                document.getElementById('claim').value = '#';
-                document.getElementById('buttonText').value = 'Claim Now';
-                document.getElementById('headline').value = '🎬 Watch Video';
-                document.getElementById('popupTitle').value = '🎁 Claim Your Reward';
-                document.getElementById('popupButtonText').value = 'Claim Now';
-                document.getElementById('popupSubtitle').value = 'Tap below to unlock your reward';
-                document.getElementById('popupImageUrl').value = '';
-                document.getElementById('popupImagePreview').classList.remove('show');
-                document.getElementById('popupPreviewImage').innerHTML = '<span>🎬 16:9 Preview</span>';
-                document.getElementById('schedulePreset').value = '';
-                document.getElementById('customExpiry').style.display = 'none';
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
-                selectedExpiry = null;
-                loadLinks();
-                loadStats(false);
-                showToast('✅ Link created!', 'success');
-            } catch (e) { showToast('❌ Failed to create link', 'error'); }
-        }
-
-        function copyLink() {
-            var i = document.getElementById('generatedLinkInput');
-            i.select();
-            document.execCommand('copy');
-            showToast('✅ Link copied!', 'success');
-        }
-
-        var analyticsLinks = [];
-        var currentFilter = 'lifetime';
-        var currentLinkId = null;
-        var analyticsData = null;
-        var filteredAnalyticsLinks = [];
-        var analyticsChartInstance = null;
-        var dashboardChartInstance = null;
-        var dashboardGraphMode = '7days';
-        var dashboardDataType = 'total';
-        var analyticsGraphMode = '7days';
-        var analyticsDataType = 'total';
-
-        async function loadAnalyticsLinks() {
-            try {
-                var r = await secureFetch('/api/links');
-                if (!r) return;
-                analyticsLinks = await r.json();
-                filteredAnalyticsLinks = analyticsLinks;
-                populateAnalyticsSelect();
-            } catch (e) {
-                console.error('Error loading analytics links:', e);
-            }
-        }
-
-        function filterAnalyticsLinks() {
-            var query = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
-            if (query) {
-                filteredAnalyticsLinks = analyticsLinks.filter(function(link) {
-                    return link.name.toLowerCase().includes(query) || link.id.toLowerCase().includes(query);
-                });
-            } else {
-                filteredAnalyticsLinks = analyticsLinks;
-            }
-            populateAnalyticsSelect();
-        }
-
-        function populateAnalyticsSelect() {
-            var select = document.getElementById('analyticsLinkSelect');
-            var currentVal = select.value;
-            select.innerHTML = '<option value="">-- Select --</option>';
-            filteredAnalyticsLinks.forEach(function(link) {
-                var opt = document.createElement('option');
-                opt.value = link.id;
-                opt.textContent = link.name + ' (' + link.id.substring(0, 12) + '...)';
-                select.appendChild(opt);
-            });
-            if (filteredAnalyticsLinks.length > 0) {
-                var exists = filteredAnalyticsLinks.some(function(l) { return l.id === currentVal; });
-                if (exists) {
-                    select.value = currentVal;
-                } else {
-                    select.value = filteredAnalyticsLinks[0].id;
-                }
-                loadAnalytics();
-            }
-        }
-
-        function setTimeFilter(filter) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(function(el) {
-                el.classList.remove('active');
-            });
-            var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
-            if (btn) btn.classList.add('active');
-            var customPicker = document.getElementById('customDatePicker');
-            if (filter === 'custom') {
-                customPicker.style.display = 'flex';
-            } else {
-                customPicker.style.display = 'none';
-            }
-            loadAnalytics();
-        }
-
-        async function loadAnalytics() {
-            var select = document.getElementById('analyticsLinkSelect');
-            var linkId = select.value;
-            if (!linkId) {
-                document.getElementById('analyticsLinkName').textContent = 'Not selected';
-                document.getElementById('analyticsChart').innerHTML = '<div style="color:var(--text-light);font-size:12px;text-align:center;padding:15px;">📊 Select a link</div>';
-                return;
-            }
-            currentLinkId = linkId;
-            try {
-                var r = await fetch('/api/visit-stats/' + linkId);
-                if (!r.ok) {
-                    showToast('❌ Failed to load analytics', 'error');
-                    return;
-                }
-                var data = await r.json();
-                analyticsData = data;
-                document.getElementById('analyticsLinkName').textContent = data.name || 'Unknown';
-                document.getElementById('analyticsLinkId').textContent = data.linkId || '-';
-                document.getElementById('analyticsLinkStatus').textContent = data.status || '-';
-                document.getElementById('analyticsLinkCreated').textContent = data.created ? new Date(data.created).toLocaleString() : '-';
-                var filteredData = getFilteredData(data);
-                document.getElementById('analyticsTotalVisits').textContent = filteredData.totalVisits || 0;
-                document.getElementById('analyticsTotalClaims').textContent = filteredData.totalClaims || 0;
-                document.getElementById('analyticsUniqueVisitors').textContent = filteredData.uniqueVisitors || 0;
-                document.getElementById('analyticsUniqueClaims').textContent = filteredData.uniqueClaims || 0;
-                renderAnalyticsChart(filteredData);
-            } catch (e) {
-                console.error('Error loading analytics:', e);
-                showToast('❌ Failed to load analytics', 'error');
-            }
-        }
-
-        function getFilteredData(data) {
-            var result = { totalVisits: 0, totalClaims: 0, uniqueVisitors: 0, uniqueClaims: 0, dailyData: {} };
-            var dailyVisits = data.dailyVisits || {};
-            var dailyClaims = data.dailyClaims || {};
-            var allDates = Object.keys(dailyVisits);
-            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-                allDates = Object.keys(dailyClaims);
-            }
-            allDates.sort();
-            if (allDates.length === 0) {
-                var today = new Date().toISOString().split('T')[0];
-                allDates.push(today);
-                dailyVisits[today] = 0;
-                dailyClaims[today] = 0;
-            }
-            var now = new Date();
-            var filteredDates = [];
-            if (currentFilter === 'lifetime') {
-                filteredDates = allDates;
-            } else if (currentFilter === '24h') {
-                var todayStart = new Date(now);
-                todayStart.setHours(0, 0, 0, 0);
-                filteredDates = allDates.filter(function(d) { 
-                    var date = new Date(d); 
-                    return date >= todayStart; 
-                });
-                if (filteredDates.length === 0) {
-                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    filteredDates = allDates.filter(function(d) { 
-                        var date = new Date(d); 
-                        return date >= oneDayAgo; 
-                    });
-                }
-            } else if (currentFilter === 'custom') {
-                var fromDate = document.getElementById('analyticsFromDate').value;
-                var toDate = document.getElementById('analyticsToDate').value;
-                if (fromDate) {
-                    var from = new Date(fromDate);
-                    filteredDates = allDates.filter(function(d) { var date = new Date(d); return date >= from; });
-                }
-                if (toDate) {
-                    var to = new Date(toDate);
-                    to.setDate(to.getDate() + 1);
-                    filteredDates = filteredDates.filter(function(d) { var date = new Date(d); return date <= to; });
-                }
-                if (!fromDate && !toDate) filteredDates = allDates;
-            }
-            if (filteredDates.length === 0) filteredDates = allDates.slice(-7);
-            filteredDates.forEach(function(date) {
-                result.totalVisits += dailyVisits[date] || 0;
-                result.totalClaims += dailyClaims[date] || 0;
-                result.dailyData[date] = { visits: dailyVisits[date] || 0, claims: dailyClaims[date] || 0 };
-            });
-            var uniqueDays = Object.keys(result.dailyData).length || 1;
-            result.uniqueVisitors = Math.round(result.totalVisits / uniqueDays * 0.6);
-            result.uniqueClaims = Math.round(result.totalClaims / uniqueDays * 0.6);
-            return result;
-        }
-
-        function renderAnalyticsChart(data) {
-            var container = document.getElementById('analyticsChart');
-            var dates = Object.keys(data.dailyData);
-            dates.sort();
-            
-            var now = new Date();
-            var filteredDates = [];
-            if (analyticsGraphMode === '7days') {
-                var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                filteredDates = dates.filter(function(d) { 
-                    var date = new Date(d); 
-                    return date >= sevenDaysAgo; 
-                });
-            } else if (analyticsGraphMode === '24h') {
-                var todayStart = new Date(now);
-                todayStart.setHours(0, 0, 0, 0);
-                filteredDates = dates.filter(function(d) { 
-                    var date = new Date(d); 
-                    return date >= todayStart; 
-                });
-                if (filteredDates.length === 0) {
-                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    filteredDates = dates.filter(function(d) { 
-                        var date = new Date(d); 
-                        return date >= oneDayAgo; 
-                    });
-                }
-            } else {
-                filteredDates = dates;
-            }
-            
-            if (filteredDates.length === 0) filteredDates = dates.slice(-7);
-            
-            var visitsData, claimsData;
-            if (analyticsDataType === 'total') {
-                visitsData = filteredDates.map(function(d) { return data.dailyData[d] ? data.dailyData[d].visits : 0; });
-                claimsData = filteredDates.map(function(d) { return data.dailyData[d] ? data.dailyData[d].claims : 0; });
-            } else {
-                visitsData = filteredDates.map(function(d) { 
-                    var v = data.dailyData[d] ? data.dailyData[d].visits : 0;
-                    return Math.round(v * 0.6);
-                });
-                claimsData = filteredDates.map(function(d) { 
-                    var c = data.dailyData[d] ? data.dailyData[d].claims : 0;
-                    return Math.round(c * 0.6);
-                });
-            }
-            
-            var labels = filteredDates.map(function(d) { 
-                if (analyticsGraphMode === '24h') {
-                    var date = new Date(d);
-                    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-                return d.substring(5); 
-            });
-            
-            var ctx = document.getElementById('analyticsChart').getContext('2d');
-            if (analyticsChartInstance) {
-                analyticsChartInstance.destroy();
-            }
-            
-            var gradient = ctx.createLinearGradient(0, 0, 0, 280);
-            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
-            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
-            
-            var gradient2 = ctx.createLinearGradient(0, 0, 0, 280);
-            gradient2.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
-            gradient2.addColorStop(0.5, 'rgba(245, 158, 11, 0.1)');
-            gradient2.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
-            
-            analyticsChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Visits',
-                            data: visitsData,
-                            borderColor: '#6366f1',
-                            backgroundColor: gradient,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: '#6366f1',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            borderWidth: 3
-                        },
-                        {
-                            label: 'Claims',
-                            data: claimsData,
-                            borderColor: '#f59e0b',
-                            backgroundColor: gradient2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: '#f59e0b',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            borderWidth: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: { 
-                                color: '#94a3b8',
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 17, 23, 0.9)',
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#94a3b8',
-                            borderColor: 'rgba(99,102,241,0.2)',
-                            borderWidth: 1,
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    var fullDate = filteredDates[context.dataIndex];
-                                    if (analyticsGraphMode === '24h') {
-                                        var date = new Date(fullDate);
-                                        return '📅 ' + date.toLocaleDateString() + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                                    }
-                                    return '📅 ' + fullDate;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { 
-                                color: '#64748b',
-                                maxTicksLimit: 15,
-                                font: { size: 10 }
-                            },
-                            grid: { 
-                                color: 'rgba(255,255,255,0.04)',
-                                drawBorder: false
-                            }
-                        },
-                        y: {
-                            ticks: { 
-                                color: '#64748b',
-                                stepSize: 1,
-                                font: { size: 10 },
-                                maxTicksLimit: 20  // ✅ Added
-                            },
-                            grid: { 
-                                color: 'rgba(255,255,255,0.04)',
-                                drawBorder: false
-                            },
-                            beginAtZero: true
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
-        }
-
-        function updateDashboardGraph(data) {
-            if (!data) return;
-            var stats = data.global || {};
-            var dailyVisitors = stats.dailyVisitors || {};
-            var dailyClaims = stats.dailyClaims || {};
-            var hourlyVisitors = stats.hourlyVisitors || {};
-            var hourlyClaims = stats.hourlyClaims || {};
-            
-            var now = new Date();
-            var displayDates = [];
-            var visitsData = [];
-            var claimsData = [];
-            
-            if (dashboardGraphMode === '7days') {
-                var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                var allDates = Object.keys(dailyVisitors);
-                if (allDates.length === 0) allDates = Object.keys(dailyClaims);
-                allDates.sort();
-                
-                displayDates = allDates.filter(function(d) { 
-                    var date = new Date(d); 
-                    return date >= sevenDaysAgo; 
-                });
-                if (displayDates.length === 0) displayDates = allDates.slice(-7);
-                
-                visitsData = displayDates.map(function(d) { return dailyVisitors[d] || 0; });
-                claimsData = displayDates.map(function(d) { return dailyClaims[d] || 0; });
-                displayDates = displayDates.map(function(d) { return d.substring(5); });
-                
-            } else {
-                var todayStart = new Date(now);
-                todayStart.setHours(0, 0, 0, 0);
-                
-                var hourKeys = Object.keys(hourlyVisitors).sort();
-                var todayHours = hourKeys.filter(function(k) {
-                    var date = new Date(k);
-                    return date >= todayStart;
-                });
-                
-                if (todayHours.length === 0) {
-                    var oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    todayHours = hourKeys.filter(function(k) {
-                        var date = new Date(k);
-                        return date >= oneDayAgo;
-                    });
-                }
-                
-                if (todayHours.length === 0) todayHours = hourKeys;
-                
-                displayDates = todayHours.map(function(k) { 
-                    var date = new Date(k);
-                    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                });
-                visitsData = todayHours.map(function(k) { return hourlyVisitors[k] || 0; });
-                claimsData = todayHours.map(function(k) { return hourlyClaims[k] || 0; });
-            }
-            
-            if (dashboardDataType === 'unique') {
-                visitsData = visitsData.map(function(v) { return Math.round(v * 0.6); });
-                claimsData = claimsData.map(function(c) { return Math.round(c * 0.6); });
-            }
-            
-            var ctx = document.getElementById('dashboardChart').getContext('2d');
-            if (dashboardChartInstance) {
-                dashboardChartInstance.destroy();
-            }
-            
-            var gradient = ctx.createLinearGradient(0, 0, 0, 280);
-            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-            gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.1)');
-            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
-            
-            var gradient2 = ctx.createLinearGradient(0, 0, 0, 280);
-            gradient2.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
-            gradient2.addColorStop(0.5, 'rgba(245, 158, 11, 0.1)');
-            gradient2.addColorStop(1, 'rgba(245, 158, 11, 0.01)');
-            
-            dashboardChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: displayDates,
-                    datasets: [
-                        {
-                            label: 'Visits',
-                            data: visitsData,
-                            borderColor: '#6366f1',
-                            backgroundColor: gradient,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: '#6366f1',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            borderWidth: 3
-                        },
-                        {
-                            label: 'Claims',
-                            data: claimsData,
-                            borderColor: '#f59e0b',
-                            backgroundColor: gradient2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: '#f59e0b',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            borderWidth: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: { 
-                                color: '#94a3b8',
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 17, 23, 0.9)',
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#94a3b8',
-                            borderColor: 'rgba(99,102,241,0.2)',
-                            borderWidth: 1,
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    var label = displayDates[context.dataIndex];
-                                    if (dashboardGraphMode === '24h') {
-                                        return '🕐 ' + label;
-                                    }
-                                    return '📅 ' + label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { 
-                                color: '#64748b',
-                                maxTicksLimit: 15,
-                                font: { size: 10 }
-                            },
-                            grid: { 
-                                color: 'rgba(255,255,255,0.04)',
-                                drawBorder: false
-                            }
-                        },
-                        y: {
-                            ticks: { 
-                                color: '#64748b',
-                                stepSize: 1,
-                                font: { size: 10 },
-                                maxTicksLimit: 20  // ✅ Added
-                            },
-                            grid: { 
-                                color: 'rgba(255,255,255,0.04)',
-                                drawBorder: false
-                            },
-                            beginAtZero: true
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
-        }
-
-        function switchDashboardGraph(mode) {
-            dashboardGraphMode = mode;
-            document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
-            document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
-            loadStats(true);
-        }
-
-        function switchDashboardData(type) {
-            dashboardDataType = type;
-            document.getElementById('dashDataTotal').classList.toggle('active', type === 'total');
-            document.getElementById('dashDataUnique').classList.toggle('active', type === 'unique');
-            loadStats(true);
-        }
-
-        function switchAnalyticsGraph(mode) {
-            analyticsGraphMode = mode;
-            document.getElementById('anaGraph7').classList.toggle('active', mode === '7days');
-            document.getElementById('anaGraph24').classList.toggle('active', mode === '24h');
-            loadAnalytics();
-        }
-
-        function switchAnalyticsData(type) {
-            analyticsDataType = type;
-            document.getElementById('anaDataTotal').classList.toggle('active', type === 'total');
-            document.getElementById('anaDataUnique').classList.toggle('active', type === 'unique');
-            loadAnalytics();
-        }
-
-        async function downloadAnalyticsImage() {
-            if (!currentLinkId) {
-                showToast('⚠️ Please select a link', 'error');
-                return;
-            }
-            var container = document.getElementById('analyticsChart');
-            var wrapper = document.createElement('div');
-            wrapper.style.cssText = 'background:#0f1117;padding:24px;border-radius:12px;min-width:700px;color:#fff;font-family:Inter,sans-serif;position:absolute;left:-9999px;top:0;z-index:9999;';
-            wrapper.innerHTML = `
-                <h2 style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">📊 Analytics Report</h2>
-                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.05);">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
-                        <div><span style="color:#94a3b8;">Link:</span> <strong>${document.getElementById('analyticsLinkName').textContent}</strong></div>
-                        <div><span style="color:#94a3b8;">ID:</span> <strong>${document.getElementById('analyticsLinkId').textContent}</strong></div>
-                        <div><span style="color:#94a3b8;">Status:</span> <strong>${document.getElementById('analyticsLinkStatus').textContent}</strong></div>
-                        <div><span style="color:#94a3b8;">Created:</span> <strong>${document.getElementById('analyticsLinkCreated').textContent}</strong></div>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-                    ${['analyticsTotalVisits','analyticsTotalClaims','analyticsUniqueVisitors','analyticsUniqueClaims'].map(function(id, i) {
-                        var labels = ['👁️ Total Visits','🎁 Total Claims','👤 Unique Visitors','🏷️ Unique Claims'];
-                        return `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(255,255,255,0.03);">
-                            <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${document.getElementById(id).textContent}</div>
-                            <div style="font-size:10px;color:#94a3b8;">${labels[i]}</div>
-                        </div>`;
-                    }).join('')}
-                </div>
-                <div style="text-align:center;margin-bottom:12px;">
-                    <span style="background:rgba(99,102,241,0.1);padding:4px 16px;border-radius:20px;font-size:11px;color:#94a3b8;">Filter: ${currentFilter}</span>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.03);">${container.innerHTML}</div>
-                <div style="text-align:center;margin-top:10px;font-size:10px;color:#4a4e57;">Generated: ${new Date().toLocaleString()}</div>
-            `;
-            document.body.appendChild(wrapper);
-            try {
-                var canvas = await html2canvas(wrapper, { scale: 2, backgroundColor: '#0f1117', allowTaint: true, useCORS: true });
-                var link = document.createElement('a');
-                link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('✅ Image downloaded!', 'success');
-            } catch (e) { console.error(e); showToast('❌ Failed to download', 'error'); }
-            document.body.removeChild(wrapper);
-        }
-
-        function downloadAnalyticsCSV() {
-            if (!currentLinkId || !analyticsData) {
-                showToast('⚠️ Please select a link', 'error');
-                return;
-            }
-            var data = analyticsData;
-            var dailyVisits = data.dailyVisits || {};
-            var dailyClaims = data.dailyClaims || {};
-            var allDates = Object.keys(dailyVisits);
-            if (allDates.length === 0 && Object.keys(dailyClaims).length > 0) {
-                allDates = Object.keys(dailyClaims);
-            }
-            allDates.sort();
-            var csv = 'Date,Visits,Claims\n';
-            allDates.forEach(function(date) {
-                csv += date + ',' + (dailyVisits[date] || 0) + ',' + (dailyClaims[date] || 0) + '\n';
-            });
-            var blob = new Blob([csv], { type: 'text/csv' });
-            var link = document.createElement('a');
-            link.download = 'analytics_' + currentLinkId + '_' + Date.now() + '.csv';
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            showToast('✅ CSV downloaded!', 'success');
-        }
-
-        document.getElementById('bgImageUrl').addEventListener('input', function() {
-            var url = this.value.trim();
-            var preview = document.getElementById('bgImagePreview');
-            var img = document.getElementById('bgPreviewImg');
-            if (url) { img.src = url; preview.classList.add('show'); } 
-            else { preview.classList.remove('show'); }
-        });
-
-        async function saveBackground() {
-            var url = document.getElementById('bgImageUrl').value.trim();
-            if (!url) { showToast('❌ Please enter an image URL', 'error'); return; }
-            try {
-                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: url }) });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('bgStatus').textContent = '✅ Background saved!';
-                    document.getElementById('bgStatus').style.color = '#22c55e';
-                    showToast('✅ Background saved!', 'success');
-                }
-            } catch (e) { showToast('❌ Failed to save background', 'error'); }
-        }
-
-        async function removeBackground() {
-            try {
-                var r = await secureFetch('/api/admin/background', { method: 'POST', body: JSON.stringify({ background: null }) });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('bgImageUrl').value = '';
-                    document.getElementById('bgImagePreview').classList.remove('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background removed';
-                    document.getElementById('bgStatus').style.color = '#22c55e';
-                    showToast('✅ Background removed', 'success');
-                }
-            } catch (e) { showToast('❌ Failed to remove background', 'error'); }
-        }
-
-        async function loadBackground() {
-            try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data && data.background) {
-                    document.getElementById('bgImageUrl').value = data.background;
-                    var preview = document.getElementById('bgImagePreview');
-                    var img = document.getElementById('bgPreviewImg');
-                    img.src = data.background;
-                    preview.classList.add('show');
-                    document.getElementById('bgStatus').textContent = '✅ Background loaded';
-                    document.getElementById('bgStatus').style.color = '#22c55e';
-                }
-            } catch (e) {}
-        }
-
-        async function loadSecretKey() {
-            try {
-                var r = await secureFetch('/api/admin/secret-key');
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('currentSecretKey').value = data.secretKey || 'admin@2024';
-                }
-            } catch (e) {
-                console.error('Failed to load secret key:', e);
-            }
-        }
-
-        async function changeSecretKey() {
-            var currentKey = document.getElementById('currentSecretKey').value.trim();
-            var newKey = document.getElementById('newSecretKey').value.trim();
-            var statusEl = document.getElementById('secretKeyStatus');
-            
-            if (!newKey || newKey.length < 4) {
-                statusEl.textContent = '❌ Secret key must be at least 4 characters';
-                statusEl.style.color = '#ef4444';
-                return;
-            }
-            
-            try {
-                var r = await secureFetch('/api/admin/secret-key', {
-                    method: 'POST',
-                    body: JSON.stringify({ currentSecretKey: currentKey, newSecretKey: newKey })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    statusEl.textContent = '✅ Secret key updated successfully! New key: ' + newKey;
-                    statusEl.style.color = '#22c55e';
-                    document.getElementById('currentSecretKey').value = newKey;
-                    document.getElementById('newSecretKey').value = '';
-                    showToast('✅ Secret key updated!', 'success');
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed to update');
-                    statusEl.style.color = '#ef4444';
-                }
-            } catch (e) {
-                statusEl.textContent = '❌ Server error';
-                statusEl.style.color = '#ef4444';
-            }
-        }
-
-        async function updateContactInfo() {
-            var email = document.getElementById('adminEmail').value.trim();
-            var phone = document.getElementById('adminPhone').value.trim();
-            var statusEl = document.getElementById('contactStatus');
-            try {
-                var r = await secureFetch('/api/admin/update-contact', {
-                    method: 'POST',
-                    body: JSON.stringify({ email, phone })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    statusEl.textContent = '✅ Contact info updated! OTP will be sent to these.';
-                    statusEl.style.color = '#22c55e';
-                    showToast('✅ Contact info updated!', 'success');
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
-                    statusEl.style.color = '#ef4444';
-                }
-            } catch (e) {
-                statusEl.textContent = '❌ Failed to update';
-                statusEl.style.color = '#ef4444';
-            }
-        }
-
-        async function loadContactInfo() {
-            try {
-                var r = await fetch('/api/settings');
-                var data = await r.json();
-                if (data) {
-                    if (data.adminEmail) document.getElementById('adminEmail').value = data.adminEmail;
-                    if (data.adminPhone) document.getElementById('adminPhone').value = data.adminPhone;
-                }
-            } catch (e) {}
-        }
-
-        async function changePasscode() {
-            var oldPasscode = document.getElementById('oldPasscode').value;
-            var newPasscode = document.getElementById('newPasscode').value;
-            var statusEl = document.getElementById('passcodeStatus');
-            if (!oldPasscode || !newPasscode) {
-                statusEl.textContent = '❌ Please fill both fields';
-                statusEl.style.color = '#ef4444';
-                return;
-            }
-            if (oldPasscode.length !== 6 || newPasscode.length !== 6) {
-                statusEl.textContent = '❌ Passcode must be 6 digits';
-                statusEl.style.color = '#ef4444';
-                return;
-            }
-            if (oldPasscode === newPasscode) {
-                statusEl.textContent = '❌ New passcode must be different';
-                statusEl.style.color = '#ef4444';
-                return;
-            }
-            try {
-                var r = await secureFetch('/api/admin/passcode', {
-                    method: 'POST',
-                    body: JSON.stringify({ oldPasscode: oldPasscode, newPasscode: newPasscode })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    statusEl.textContent = '✅ Passcode changed! Please login again with OTP.';
-                    statusEl.style.color = '#22c55e';
-                    showToast('✅ Passcode changed!', 'success');
-                    document.getElementById('oldPasscode').value = '';
-                    document.getElementById('newPasscode').value = '';
-                    setTimeout(function() { window.location.href = 'login.html'; }, 2000);
-                } else {
-                    statusEl.textContent = '❌ ' + (data.error || 'Failed');
-                    statusEl.style.color = '#ef4444';
-                }
-            } catch (e) {
-                statusEl.textContent = '❌ Server error';
-                statusEl.style.color = '#ef4444';
-            }
-        }
-
-        var currentDeviceMode = 'blocked';
-
-        async function loadBlockedDevices() {
-            currentDeviceMode = 'blocked';
-            document.getElementById('deviceList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light);">Loading blocked devices...</div>';
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices');
-                if (!r) return;
-                var data = await r.json();
-                renderDeviceList(data.devices, 'blocked');
-            } catch (e) {
-                console.error(e);
-                document.getElementById('deviceList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><p>Failed to load</p></div>';
-            }
-        }
-
-        async function loadActiveSessions() {
-            currentDeviceMode = 'active';
-            document.getElementById('deviceList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-light);">Loading active sessions...</div>';
-            try {
-                var r = await secureFetch('/api/admin/active-sessions');
-                if (!r) return;
-                var data = await r.json();
-                renderDeviceList(data.sessions, 'active');
-            } catch (e) {
-                console.error(e);
-                document.getElementById('deviceList').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><p>Failed to load</p></div>';
-            }
-        }
-
-        function renderDeviceList(items, type) {
-            var container = document.getElementById('deviceList');
-            var noDevices = document.getElementById('noDevices');
-            if (!items || items.length === 0) {
-                if (noDevices) {
-                    noDevices.style.display = 'block';
-                    container.innerHTML = '<div class="empty-state"><span class="icon">📱</span><p>No ' + type + ' devices found</p></div>';
-                } else {
-                    container.innerHTML = '<div class="empty-state"><span class="icon">📱</span><p>No ' + type + ' devices found</p></div>';
-                }
-                return;
-            }
-            if (noDevices) {
-                noDevices.style.display = 'none';
-            }
-            container.innerHTML = '';
-            items.forEach(function(item) {
-                var div = document.createElement('div');
-                if (type === 'blocked') {
-                    var isPermanent = item.isPermanent;
-                    div.className = 'device-item';
-                    div.style.borderLeftColor = isPermanent ? '#ef4444' : '#f59e0b';
-                    var remainingTime = '';
-                    if (item.blockedUntil && !isPermanent) {
-                        var mins = Math.ceil((new Date(item.blockedUntil) - new Date()) / (1000 * 60));
-                        remainingTime = mins > 0 ? mins + ' minutes' : 'Expiring soon';
-                    }
-                    var statusText = isPermanent ? '⛔ PERMANENTLY BANNED' : '⏳ ' + remainingTime;
-                    var lastAttempt = item.loginHistory && item.loginHistory.length > 0 ? new Date(item.loginHistory[item.loginHistory.length-1].timestamp).toLocaleString() : 'N/A';
-                    div.innerHTML = `
-                        <div class="info">
-                            <span class="name">${escapeHTML(item.deviceName || 'Unknown Device')}</span>
-                            <span class="details">
-                                <span>📱 ${escapeHTML(item.deviceType || 'Unknown')}</span>
-                                <span>🆔 ${item.fingerprint ? item.fingerprint.substring(0,12) + '...' : 'N/A'}</span>
-                                <span>📅 Last: ${lastAttempt}</span>
-                                <span>⚠️ ${item.attempts || 0} attempts</span>
-                                <span class="status-badge ${isPermanent ? 'status-disabled' : 'status-suspended'}">${statusText}</span>
-                            </span>
-                        </div>
-                        <div class="actions">
-                            ${!isPermanent ? `<button onclick="permanentBanDevice('${item._id}')" class="btn btn-danger btn-sm">⛔ Ban</button>` : ''}
-                            <button onclick="unblockDevice('${item._id}')" class="btn btn-success btn-sm">🔓 Unblock</button>
-                            <button onclick="deleteDeviceRecord('${item._id}')" class="btn btn-warning btn-sm">🗑️ Delete</button>
-                        </div>
-                    `;
-                } else {
-                    div.className = 'session-item';
-                    div.style.borderLeftColor = '#22c55e';
-                    var loginTime = new Date(item.lastActivity).toLocaleString();
-                    var deviceName = item.userAgent ? item.userAgent.split(' ')[0] || 'Unknown' : 'Unknown';
-                    div.innerHTML = `
-                        <div class="info">
-                            <span class="name">🟢 ${escapeHTML(deviceName)}</span>
-                            <span class="details">
-                                <span>🆔 ${item.token ? item.token.substring(0,12) + '...' : 'N/A'}</span>
-                                <span>📅 Login: ${loginTime}</span>
-                                <span>🕒 Active: ${Math.floor((Date.now() - new Date(item.lastActivity).getTime()) / 60000)} min ago</span>
-                            </span>
-                        </div>
-                        <div class="actions">
-                            <button onclick="permanentBanBySession('${item.token}')" class="btn btn-danger btn-sm">⛔ Block Device</button>
-                        </div>
-                    `;
-                }
-                container.appendChild(div);
-            });
-        }
-
-        async function permanentBanBySession(token) {
-            if (!confirm('⚠️ Permanently ban this device? This action cannot be undone!')) return;
-            try {
-                var r = await secureFetch('/api/admin/block-status');
-                if (!r) return;
-                var data = await r.json();
-                if (data.fingerprint) {
-                    await permanentBanDeviceByFingerprint(data.fingerprint);
-                } else {
-                    showToast('❌ Could not identify device', 'error');
-                }
-            } catch (e) { showToast('❌ Failed', 'error'); }
-        }
-
-        async function permanentBanDeviceByFingerprint(fingerprint) {
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices/permanent-ban-by-fingerprint', {
-                    method: 'POST',
-                    body: JSON.stringify({ fingerprint: fingerprint, reason: 'Permanent ban by admin from active session' })
-                });
-                if (r.ok) {
-                    showToast('✅ Device permanently banned!', 'success');
-                    loadActiveSessions();
-                }
-            } catch (e) { showToast('❌ Failed', 'error'); }
-        }
-
-        async function permanentBanDevice(deviceId) {
-            if (!confirm('⚠️ Are you sure you want to permanently ban this device? This action cannot be undone!')) return;
-            try {
-                var reason = prompt('Enter reason for permanent ban:', 'Unauthorized access attempts');
-                if (reason === null) return;
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/permanent-ban', {
-                    method: 'POST',
-                    body: JSON.stringify({ reason: reason || 'Permanent ban by admin' })
-                });
-                if (r && r.ok) {
-                    var data = await r.json();
-                    if (data.success) {
-                        showToast('✅ Device permanently banned!', 'success');
-                        loadBlockedDevices();
-                    }
-                }
-            } catch (e) { showToast('❌ Failed to ban device', 'error'); }
-        }
-
-        async function unblockDevice(deviceId) {
-            if (!confirm('Are you sure you want to unblock this device?')) return;
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId + '/unblock', { method: 'POST' });
-                if (r && r.ok) {
-                    var data = await r.json();
-                    if (data.success) {
-                        showToast('✅ Device unblocked successfully!', 'success');
-                        loadBlockedDevices();
-                    }
-                }
-            } catch (e) { showToast('❌ Failed to unblock device', 'error'); }
-        }
-
-        async function deleteDeviceRecord(deviceId) {
-            if (!confirm('⚠️ Are you sure you want to delete this device record?')) return;
-            try {
-                var r = await secureFetch('/api/admin/blocked-devices/' + deviceId, { method: 'DELETE' });
-                if (r && r.ok) {
-                    var data = await r.json();
-                    if (data.success) {
-                        showToast('✅ Device record deleted!', 'success');
-                        loadBlockedDevices();
-                    }
-                }
-            } catch (e) { showToast('❌ Failed to delete record', 'error'); }
-        }
-
-        var allShortLinks = [];
-
-        async function loadShortLinkStats() {
-            try {
-                var r = await secureFetch('/api/short-links/stats');
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('shortTotalLinks').textContent = data.stats.totalLinks || 0;
-                    document.getElementById('shortActiveLinks').textContent = data.stats.activeLinks || 0;
-                    document.getElementById('shortTotalClicks').textContent = data.stats.totalClicks || 0;
-                    document.getElementById('shortClicks24h').textContent = data.stats.clicks24h || 0;
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function toggleAppScheme() {
-            const checked = document.getElementById('shortAppOpen').checked;
-            document.getElementById('appSchemeContainer').style.display = checked ? 'block' : 'none';
-        }
-
-        async function createShortLink() {
-            var url = document.getElementById('shortOriginalUrl').value.trim();
-            if (!url) { showToast('❌ Please enter a URL', 'error'); return; }
-            try {
-                new URL(url);
-            } catch (e) {
-                showToast('❌ Invalid URL format', 'error');
-                return;
-            }
-            var title = document.getElementById('shortTitle').value.trim() || 'Untitled Link';
-            var appOpen = document.getElementById('shortAppOpen').checked;
-            var appScheme = document.getElementById('shortAppScheme').value.trim();
-            var appStoreLink = document.getElementById('shortAppStoreLink').value.trim();
-            var expiryDate = document.getElementById('shortExpiryDate').value;
-            
-            try {
-                var r = await secureFetch('/api/short-links', {
-                    method: 'POST',
-                    body: JSON.stringify({ 
-                        originalUrl: url, 
-                        title: title,
-                        appOpen: appOpen,
-                        appScheme: appScheme,
-                        appStoreLink: appStoreLink,
-                        expiryDate: expiryDate || null
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    document.getElementById('shortGeneratedLink').classList.add('show');
-                    document.getElementById('shortGeneratedLinkInput').value = data.shortUrl;
-                    document.getElementById('shortOriginalUrl').value = '';
-                    document.getElementById('shortTitle').value = '';
-                    document.getElementById('shortAppOpen').checked = false;
-                    document.getElementById('shortAppScheme').value = '';
-                    document.getElementById('shortAppStoreLink').value = '';
-                    document.getElementById('shortExpiryDate').value = '';
-                    document.getElementById('appSchemeContainer').style.display = 'none';
-                    loadShortLinks();
-                    loadShortLinkStats();
-                    showToast('✅ Short link created!', 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed'), 'error');
-                }
-            } catch (e) { showToast('❌ Network error', 'error'); }
-        }
-
-        function copyShortLink() {
-            var i = document.getElementById('shortGeneratedLinkInput');
-            i.select();
-            document.execCommand('copy');
-            showToast('✅ Link copied!', 'success');
-        }
-
-        function copyShortLinkUrl(code) {
-            var url = window.location.origin + '/s/' + code;
-            navigator.clipboard.writeText(url).then(function() {
-                showToast('✅ Link copied!', 'success');
-            }).catch(function() {
-                var t = document.createElement('textarea');
-                t.value = url;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand('copy');
-                document.body.removeChild(t);
-                showToast('✅ Link copied!', 'success');
-            });
-        }
-
-        async function loadShortLinks() {
-            try {
-                var r = await secureFetch('/api/short-links');
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    allShortLinks = data.links;
-                    filterShortLinks();
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function filterShortLinks() {
-            var query = document.getElementById('searchShortLinksInput').value.toLowerCase().trim();
-            var filtered = allShortLinks;
-            if (query) {
-                filtered = allShortLinks.filter(function(link) {
-                    return link.title.toLowerCase().includes(query) || link.code.toLowerCase().includes(query);
-                });
-            }
-            var c = document.getElementById('shortLinksList');
-            var countEl = document.getElementById('shortSearchResultsCount');
-            if (filtered.length === 0) {
-                c.innerHTML = '<div class="empty-state"><span class="icon">🔍</span>No links found</div>';
-                if (countEl) countEl.textContent = 'No results';
-                return;
-            }
-            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allShortLinks.length + ' links';
-            c.innerHTML = '';
-            filtered.forEach(function(link) {
-                var sc = link.status === 'active' ? 'active' : 'disabled';
-                var created = new Date(link.createdAt).toLocaleDateString();
-                var shortUrl = window.location.origin + '/s/' + link.code;
-                var d = document.createElement('div');
-                d.className = 'link-item';
-                d.innerHTML = `
-                    <div class="info">
-                        <span class="name">${escapeHTML(link.title || 'Untitled')}</span>
-                        <span class="details">
-                            <span>📅 ${created}</span>
-                            <span>🔗 ${escapeHTML(shortUrl)}</span>
-                            <span class="visits">👁️ ${link.visits || 0}</span>
-                            <span class="status-badge status-${sc}">${link.status}</span>
-                        </span>
-                    </div>
-                    <div class="actions">
-                        <button onclick="openShortLinkEdit('${link._id}')" class="btn btn-warning btn-sm" title="Edit">✏️</button>
-                        <button onclick="copyShortLinkUrl('${link.code}')" class="btn btn-success btn-sm" title="Copy">📋</button>
-                        <button onclick="viewShortLinkAnalytics('${link._id}')" class="btn btn-primary btn-sm" title="Analytics">📊</button>
-                        <select onchange="handleShortLinkAction('${link._id}', this.value)" class="status-dropdown">
-                            <option value="">⚡ Action</option>
-                            <option value="active">✅ Activate</option>
-                            <option value="disabled">⛔ Disable</option>
-                            <option value="delete">🗑️ Delete</option>
-                        </select>
-                    </div>
-                `;
-                c.appendChild(d);
-            });
-        }
-
-        async function handleShortLinkAction(id, action) {
-            if (!action) return;
-            if (action === 'delete') {
-                if (!confirm('⚠️ Delete this short link permanently?')) return;
-                try {
-                    var r = await secureFetch('/api/short-links/' + id, { method: 'DELETE' });
-                    if (!r) return;
-                    var data = await r.json();
-                    if (data.success) {
-                        loadShortLinks();
-                        loadShortLinkStats();
-                        showToast('✅ Link deleted!', 'success');
-                    }
-                } catch (e) { showToast('❌ Failed to delete', 'error'); }
-                return;
-            }
-            try {
-                var r = await secureFetch('/api/short-links/' + id, {
-                    method: 'PUT',
-                    body: JSON.stringify({ status: action })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    loadShortLinks();
-                    showToast('✅ Status updated to: ' + action, 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed'), 'error');
-                }
-            } catch (e) { showToast('❌ Failed to update status', 'error'); }
-        }
-
-        async function viewShortLinkAnalytics(id) {
-            try {
-                var r = await secureFetch('/api/short-links/' + id + '/analytics');
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    var link = data.link;
-                    var clicks = data.clicks;
-                    var totalClicks = data.totalClicks;
-                    var clicks24h = data.clicks24h;
-                    var uniqueDevices = data.uniqueDevices;
-                    var body = document.getElementById('editModalBody');
-                    body.innerHTML = `
-                        <h3>📊 Analytics: ${escapeHTML(link.title || 'Untitled')}</h3>
-                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); margin: 10px 0;">
-                            <div class="stat-card"><div class="number">${totalClicks}</div><div class="label">Total Clicks</div></div>
-                            <div class="stat-card"><div class="number">${clicks24h}</div><div class="label">24h Clicks</div></div>
-                            <div class="stat-card"><div class="number">${uniqueDevices}</div><div class="label">Unique Devices</div></div>
-                        </div>
-                        <div style="max-height:300px;overflow-y:auto;margin-top:10px;">
-                            ${clicks.length > 0 ? clicks.map(function(c) {
-                                return `
-                                    <div class="link-item" style="border-left-color:#6366f1;">
-                                        <div class="info">
-                                            <span class="name">${escapeHTML(c.deviceName || 'Unknown')}</span>
-                                            <span class="details">
-                                                <span>📱 ${escapeHTML(c.deviceType || 'Unknown')}</span>
-                                                <span>📅 ${new Date(c.timestamp).toLocaleString()}</span>
-                                                <span>🆔 ${c.ip ? c.ip.substring(0,12) + '...' : 'N/A'}</span>
-                                            </span>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('') : '<div class="empty-state"><span class="icon">📊</span><p>No clicks yet</p></div>'}
-                        </div>
-                        <div class="form-actions" style="margin-top:15px;">
-                            <button onclick="closeEditModal()" class="btn btn-primary">Close</button>
-                        </div>
-                    `;
-                    document.getElementById('editModal').classList.add('show');
-                }
-            } catch (e) { showToast('❌ Failed to load analytics', 'error'); }
-        }
-
-        function openShortLinkEdit(id) {
-            var link = allShortLinks.find(function(l) { return l._id === id; });
-            if (!link) { showToast('❌ Link not found', 'error'); return; }
-            var body = document.getElementById('editModalBody');
-            body.innerHTML = `
-                <h3>✏️ Edit Short Link</h3>
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" id="shortEditTitle" value="${escapeHTML(link.title || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="shortEditStatus">
-                        <option value="active" ${link.status === 'active' ? 'selected' : ''}>Active</option>
-                        <option value="disabled" ${link.status === 'disabled' ? 'selected' : ''}>Disabled</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📱 Open in App</label>
-                    <select id="shortEditAppOpen">
-                        <option value="true" ${link.appOpen ? 'selected' : ''}>Enabled</option>
-                        <option value="false" ${!link.appOpen ? 'selected' : ''}>Disabled</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📲 App Scheme (e.g., myapp://, vnd.youtube://)</label>
-                    <input type="text" id="shortEditAppScheme" value="${escapeHTML(link.appScheme || '')}" placeholder="Leave empty for auto-detection">
-                </div>
-                <div class="form-group">
-                    <label>📲 App Store / Play Store Link</label>
-                    <input type="text" id="shortEditAppStoreLink" value="${escapeHTML(link.appStoreLink || '')}" placeholder="Fallback if app not installed">
-                </div>
-                <div class="form-group">
-                    <label>📅 Expiry Date</label>
-                    <input type="datetime-local" id="shortEditExpiry" value="${link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0,16) : ''}">
-                </div>
-                <div class="form-actions" style="margin-top:15px;">
-                    <button onclick="saveShortLinkEdit('${link._id}')" class="btn btn-success">💾 Save Changes</button>
-                    <button onclick="closeEditModal()" class="btn btn-danger">Cancel</button>
-                </div>
-            `;
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        async function saveShortLinkEdit(id) {
-            var title = document.getElementById('shortEditTitle').value.trim() || 'Untitled Link';
-            var status = document.getElementById('shortEditStatus').value;
-            var appOpen = document.getElementById('shortEditAppOpen').value === 'true';
-            var appScheme = document.getElementById('shortEditAppScheme').value.trim();
-            var appStoreLink = document.getElementById('shortEditAppStoreLink').value.trim();
-            var expiryDate = document.getElementById('shortEditExpiry').value;
-            try {
-                var r = await secureFetch('/api/short-links/' + id, {
-                    method: 'PUT',
-                    body: JSON.stringify({ 
-                        title: title, 
-                        status: status,
-                        appOpen: appOpen,
-                        appScheme: appScheme,
-                        appStoreLink: appStoreLink,
-                        expiryDate: expiryDate || null
-                    })
-                });
-                if (!r) return;
-                var data = await r.json();
-                if (data.success) {
-                    closeEditModal();
-                    loadShortLinks();
-                    showToast('✅ Link updated!', 'success');
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed'), 'error');
-                }
-            } catch (e) { showToast('❌ Failed to update', 'error'); }
-        }
-
-        async function checkAuth() {
-            try {
-                var response = await fetch('/api/links', { headers: { 'X-CSRF-Token': csrfToken } });
-                if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('csrfToken');
-                    window.location.href = 'login.html';
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                window.location.href = 'login.html';
-                return false;
-            }
-        }
-
-        // ==================== INIT ====================
-        loadTheme();
-        loadBackground();
-        loadLinks();
-        loadStats(true);
-        loadAnalyticsLinks();
-        loadContactInfo();
-        loadBlockedDevices();
-        loadShortLinks();
-        loadShortLinkStats();
-        startLiveRefresh();
-        checkAuth();
-        loadSecretKey();
-
-        // Make functions globally accessible
-        window.showSection = showSection;
-        window.setTheme = setTheme;
-        window.logout = logout;
-        window.installApp = installApp;
-        window.loadLinks = loadLinks;
-        window.loadStats = loadStats;
-        window.loadAnalyticsLinks = loadAnalyticsLinks;
-        window.loadAnalytics = loadAnalytics;
-        window.setTimeFilter = setTimeFilter;
-        window.downloadAnalyticsImage = downloadAnalyticsImage;
-        window.downloadAnalyticsCSV = downloadAnalyticsCSV;
-        window.filterLinks = filterLinks;
-        window.filterAnalyticsLinks = filterAnalyticsLinks;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-        window.saveEditLink = saveEditLink;
-        window.handleStatusAction = handleStatusAction;
-        window.copyLinkUrl = copyLinkUrl;
-        window.createLink = createLink;
-        window.copyLink = copyLink;
-        window.saveBackground = saveBackground;
-        window.removeBackground = removeBackground;
-        window.changePasscode = changePasscode;
-        window.updateSchedulePreset = updateSchedulePreset;
-        window.updateCustomExpiry = updateCustomExpiry;
-        window.showToast = showToast;
-        window.updateContactInfo = updateContactInfo;
-        window.loadBlockedDevices = loadBlockedDevices;
-        window.loadActiveSessions = loadActiveSessions;
-        window.permanentBanDevice = permanentBanDevice;
-        window.unblockDevice = unblockDevice;
-        window.deleteDeviceRecord = deleteDeviceRecord;
-        window.switchDashboardGraph = switchDashboardGraph;
-        window.switchDashboardData = switchDashboardData;
-        window.switchAnalyticsGraph = switchAnalyticsGraph;
-        window.switchAnalyticsData = switchAnalyticsData;
-        window.loadShortLinks = loadShortLinks;
-        window.loadShortLinkStats = loadShortLinkStats;
-        window.createShortLink = createShortLink;
-        window.copyShortLink = copyShortLink;
-        window.copyShortLinkUrl = copyShortLinkUrl;
-        window.handleShortLinkAction = handleShortLinkAction;
-        window.viewShortLinkAnalytics = viewShortLinkAnalytics;
-        window.openShortLinkEdit = openShortLinkEdit;
-        window.saveShortLinkEdit = saveShortLinkEdit;
-        window.filterShortLinks = filterShortLinks;
-        window.loadSecretKey = loadSecretKey;
-        window.changeSecretKey = changeSecretKey;
-        window.toggleAppScheme = toggleAppScheme;
+        // Initialize & Live Polling
+        fetchStats();
+        setInterval(fetchStats, 5000);
     </script>
 </body>
 </html>
