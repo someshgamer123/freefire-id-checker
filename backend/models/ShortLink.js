@@ -4,7 +4,7 @@ const ShortLinkSchema = new mongoose.Schema({
     code: {
         type: String,
         required: true,
-        unique: true // Unique index automatically created
+        unique: true
     },
     originalUrl: {
         type: String,
@@ -43,22 +43,12 @@ const ShortLinkSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    createdBy: {
-        type: String,
-        default: 'admin'
-    },
     createdAt: {
         type: Date,
         default: Date.now
-    },
-    lastClicked: {
-        type: Date,
-        default: null
     }
 });
 
-// Duplicate code index hata diya gaya hai:
 ShortLinkSchema.index({ createdAt: -1 });
-ShortLinkSchema.index({ expiryDate: 1 });
 
 module.exports = mongoose.model('ShortLink', ShortLinkSchema);
