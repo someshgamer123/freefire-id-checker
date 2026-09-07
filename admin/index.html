@@ -1,13 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Admin Panel - Control Center</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    
+    <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
+    <script>
+        (function() {
+            document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
+            window.addEventListener('keydown', function(e) {
+                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+            }, true);
+            try {
+                const noop = () => {};
+                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
+            } catch(e) {}
+        })();
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         :root {
@@ -17,66 +38,205 @@
             --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
         }
         body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        body.dark { --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0; --text-light: #94a3b8; --border: #2d3138; }
+        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
         .header {
             background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            box-shadow: var(--shadow); display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
             border: 1px solid var(--border);
         }
         .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn-logout { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
+        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
+        .btn-install.show { display: inline-block; }
+        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
+        .theme-toggle button.active { background: var(--primary); color: white; }
 
         .menu-container {
             display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
             background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
+            border: 1px solid var(--border); align-items: center;
+        }
+        .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
+        .menu-container .menu-btn {
+            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px;
+            font-weight: 600; transition: 0.3s;
+        }
+        .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card {
+            background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
+            box-shadow: var(--shadow); text-align: center; transition: 0.3s;
             border: 1px solid var(--border);
         }
-        .menu-btn {
-            padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 12px; font-weight: 600;
-        }
-        .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card {
-            background: var(--card-bg); padding: 16px; border-radius: var(--radius);
-            text-align: center; border: 1px solid var(--border);
+        .live-visitors {
+            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+            margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
         }
-        .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; }
+        .live-visitors .lv-title {
+            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .live-visitors .lv-title .dot {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite;
+        }
+        .live-visitors .lv-title .live-badge {
+            font-size: 10px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 10px; border-radius: 20px;
+        }
+        .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
+        
+        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+        .live-visitors .lv-item {
+            background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
+            border: 1px solid var(--border); transition: 0.3s;
+        }
+        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; transition: 0.3s; }
+        .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
+        .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
+        .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
+        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+        .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
-        .section { display: none; }
+        .section { display: none; animation: fadeInUp 0.4s ease; }
         .section.active { display: block; }
 
         .card {
-            background: var(--card-bg); padding: 22px; border-radius: var(--radius);
-            margin-bottom: 18px; border: 1px solid var(--border);
+            background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
         }
-        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); }
-        .card input, .card select {
-            width: 100%; padding: 10px 14px; margin: 6px 0; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); outline: none;
+        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .card input, .card select, .card textarea {
+            width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); transition: 0.3s; outline: none;
         }
+        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; color: white; font-size: 13px; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 100%; }
+        .btn {
+            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
         .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
+        .btn-block { width: 100%; }
+        .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
+        .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 12px 16px; margin: 8px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
         }
-        .link-item .name { font-weight: 700; font-size: 14px; }
-        .link-item .meta { font-size: 12px; color: var(--text-light); }
+        .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
+        .link-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .link-item .actions .status-dropdown { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 10px; cursor: pointer; }
+
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
+        .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+        .edit-modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .edit-modal.show { display: flex; }
+        .edit-modal .modal-content {
+            background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
+            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
+            border: 1px solid var(--border); animation: fadeInUp 0.3s ease;
+        }
+        .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
+        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
+        .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
+        .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
+            width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg); color: var(--text); font-size: 13px; outline: none;
+        }
+        .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .edit-modal .modal-content .popup-preview-small { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; margin-top: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .edit-modal .modal-content .popup-preview-small .preview-img { max-width: 100%; max-height: 60px; border-radius: 4px; object-fit: cover; }
+        .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 11px; font-weight: 700; margin-top: 4px; }
+        .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.4); font-size: 9px; }
+        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 12px; border: none; border-radius: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 9px; font-weight: 700; margin-top: 4px; }
+
+        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+        .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+        .analytics-container .analytics-header .link-selector select, .analytics-container .analytics-header .link-selector input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
+        .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; }
+        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; }
+        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
+        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; color: #fff; }
+        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
+
+        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
+        .image-preview.show { display: block; }
+        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
+
+        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
+        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; margin-bottom: 6px; }
+        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
+        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
+        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
+            color: white; font-weight: 600; font-size: 13px; z-index: 99999;
+            transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #16a34a; }
+        .toast.error { background: #dc2626; }
+        .toast.info { background: #4f46e5; }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <header class="header">
-            <h1>⚡ Admin Control Center</h1>
-            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+            <h1>⚡ Admin Panel - Control Center</h1>
+            <div class="header-actions">
+                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
+                <div class="theme-toggle">
+                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
+                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
+                </div>
+                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+            </div>
         </header>
 
         <div class="menu-container">
@@ -85,68 +245,107 @@
             <button class="menu-btn" onclick="showSection('analytics')">📈 Analytics & Export</button>
             <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
             <button class="menu-btn" onclick="showSection('shortener')">🔗 URL Shortener</button>
-            <button class="menu-btn" onclick="showSection('devices')">📱 Device Security</button>
+            <button class="menu-btn" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- OVERVIEW TAB -->
+        <!-- 1. DASHBOARD OVERVIEW SECTION -->
         <div class="section active" id="sec-dashboard">
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">📦 Active Links</div></div>
                 <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">👁️ Total Visits</div></div>
                 <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">🎁 Total Claims</div></div>
-                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">🟢 Active Live</div></div>
+                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">🟢 Active Users (Live)</div></div>
+            </div>
+
+            <div class="live-visitors">
+                <div class="lv-title">
+                    <span class="dot"></span> Live Real-Time Stream
+                    <span class="live-badge">🟢 Live</span>
+                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
+                </div>
+                <div class="lv-grid">
+                    <div class="lv-item"><div class="lv-number visits-color" id="liveLifetimeVisits">0</div><div class="lv-label">👁️ Lifetime Visits</div></div>
+                    <div class="lv-item"><div class="lv-number claims-color" id="liveLifetimeClaims">0</div><div class="lv-label">🎁 Lifetime Claims</div></div>
+                    <div class="lv-item"><div class="lv-number visits-color" id="live24hrVisits">0</div><div class="lv-label">👁️ Last 24h Visits</div></div>
+                    <div class="lv-item"><div class="lv-number claims-color" id="live24hrClaims">0</div><div class="lv-label">🎁 Last 24h Claims</div></div>
+                </div>
             </div>
 
             <div class="card">
-                <h3>📈 Traffic Trends (Last 7 Days)</h3>
-                <div style="height:260px;">
-                    <canvas id="trafficChart"></canvas>
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <h3 style="margin:0;border:none;">📈 Visitor & Claim Analytics</h3>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="switchDashGraph('7days')" class="btn btn-outline btn-sm active" id="dg7">7 Days</button>
+                        <button onclick="switchDashGraph('24h')" class="btn btn-outline btn-sm" id="dg24">24 Hours</button>
+                    </div>
                 </div>
+                <div style="height:280px;"><canvas id="dashboardChart"></canvas></div>
             </div>
         </div>
 
-        <!-- LINKS TAB -->
+        <!-- 2. LINKS MANAGER SECTION -->
         <div class="section" id="sec-links">
             <div class="card">
-                <h3>🔗 Generated Rewarded Links</h3>
-                <div id="linksList">Loading...</div>
+                <h3>🔍 Search & Filter Links</h3>
+                <input type="text" id="searchLinksInput" placeholder="Type link name or ID to filter..." oninput="filterLinks()">
+                <div id="linksList" style="margin-top:12px;">Loading links...</div>
             </div>
         </div>
 
-        <!-- ANALYTICS TAB -->
+        <!-- 3. ANALYTICS & EXPORT SECTION -->
         <div class="section" id="sec-analytics">
-            <div class="card" id="analyticsBox">
-                <h3>📊 Performance Analytics & Reports</h3>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Export visitor reports and charts</p>
-                <div style="display:flex;gap:10px;margin-bottom:14px;">
-                    <button class="btn btn-sm" style="background:var(--success);" onclick="exportImage()">🖼️ Export Chart Image</button>
-                    <button class="btn btn-sm" style="background:var(--primary);" onclick="exportCSV()">📊 Export CSV</button>
+            <div class="analytics-container" id="analyticsExportBox">
+                <div class="analytics-header">
+                    <div class="link-selector">
+                        <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
+                    </div>
+                    <div class="time-filters">
+                        <button class="filter-btn active" onclick="setAnalyticsFilter('lifetime')">Lifetime</button>
+                        <button class="filter-btn" onclick="setAnalyticsFilter('24h')">24h</button>
+                    </div>
                 </div>
-                <div style="height:280px;"><canvas id="detailedChart"></canvas></div>
+                <div class="analytics-stats">
+                    <div class="a-stat"><div class="a-number" id="anaVisits">0</div><div class="a-label">Total Visits</div></div>
+                    <div class="a-stat"><div class="a-number" id="anaClaims">0</div><div class="a-label">Total Claims</div></div>
+                </div>
+                <div style="height:280px;margin-top:12px;"><canvas id="analyticsChart"></canvas></div>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button class="btn btn-success btn-sm" onclick="downloadAnalyticsImage()">🖼️ Export PNG</button>
+                    <button class="btn btn-primary btn-sm" onclick="downloadAnalyticsCSV()">📊 Export CSV</button>
+                </div>
             </div>
         </div>
 
-        <!-- CREATE TAB -->
+        <!-- 4. CREATE LINK SECTION -->
         <div class="section" id="sec-create">
             <div class="card">
-                <h3>➕ Create New Tracking Link</h3>
-                <input type="text" id="cName" placeholder="Link Name (e.g. YouTube Promo 1)">
+                <h3>➕ Create New Rewarded Link</h3>
+                <input type="text" id="cName" placeholder="Link Name (e.g. Free Fire Promo 1)">
                 <div class="grid-2">
-                    <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="cVideo" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
                     <input type="text" id="cClaim" placeholder="Claim Reward Destination URL" value="#">
                 </div>
-                <input type="text" id="cHead" placeholder="Headline text" value="🎬 Watch Video & Unlock Reward">
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="createLink()">Generate Tracking Link ➜</button>
+                <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+                
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings</h4>
+                    <input type="text" id="cPopTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                    <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="Claim Now">
+                    <input type="text" id="cPopImg" placeholder="Image URL (16:9 ratio)">
+                </div>
+
+                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
             </div>
         </div>
 
-        <!-- URL SHORTENER TAB -->
+        <!-- 5. URL SHORTENER & DEEP LINKING -->
         <div class="section" id="sec-shortener">
             <div class="card">
-                <h3>🔗 App Deep-Linking URL Shortener</h3>
-                <input type="text" id="sUrl" placeholder="Original Destination URL">
+                <h3>🔗 Create App Deep-Link (URL Shortener)</h3>
+                <input type="text" id="sUrl" placeholder="Original Destination URL (e.g. https://youtube.com/...)">
                 <input type="text" id="sTitle" placeholder="Link Title (Optional)">
-                <input type="text" id="sScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
+                <input type="text" id="sScheme" placeholder="App Deep-Link Scheme (e.g. vnd.youtube://, whatsapp://)">
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
             </div>
             <div class="card">
@@ -155,19 +354,58 @@
             </div>
         </div>
 
-        <!-- DEVICE SECURITY TAB -->
-        <div class="section" id="sec-devices">
+        <!-- 6. SETTINGS & DEVICE SECURITY -->
+        <div class="section" id="sec-settings">
             <div class="card">
-                <h3>⛔ Blocked Attackers & Devices</h3>
-                <div id="devicesList">Loading...</div>
+                <h3>🖼️ UID Background Image (9:16)</h3>
+                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save Background</button>
+                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Change Admin Passcode</h3>
+                <div class="grid-2">
+                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
+                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changePasscode()">Update Passcode</button>
+            </div>
+
+            <div class="card">
+                <h3>⛔ Blocked Devices & Attackers</h3>
+                <div id="devicesList">Loading devices...</div>
             </div>
         </div>
     </div>
 
+    <!-- EDIT LINK MODAL -->
+    <div class="edit-modal" id="editModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
+            <h3>✏️ Edit Rewarded Link</h3>
+            <div id="editModalBody"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
     <script>
         const csrfToken = localStorage.getItem('csrfToken') || '';
-        let trafficChartInst = null;
-        let detailedChartInst = null;
+        let allLinks = [];
+        let dashChartInst = null;
+        let anaChartInst = null;
+        let currentDashGraph = '7days';
+        let editingLinkId = null;
+
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = `toast ${type} show`;
+            setTimeout(() => t.className = 'toast', 3000);
+        }
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -175,8 +413,9 @@
             document.getElementById('sec-' + id).classList.add('active');
             event.currentTarget.classList.add('active');
             if (id === 'links') loadLinks();
+            if (id === 'analytics') loadAnalyticsLinks();
             if (id === 'shortener') loadShortLinks();
-            if (id === 'devices') loadDevices();
+            if (id === 'settings') loadDevices();
         }
 
         async function loadStats() {
@@ -184,24 +423,29 @@
                 const res = await fetch('/api/all-stats');
                 const data = await res.json();
                 if (data && data.global) {
-                    document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
-                    document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
-                    document.getElementById('activeLive').textContent = data.global.activeNow || 0;
-                    renderCharts(data.global.dailyVisitors || {});
+                    const g = data.global;
+                    document.getElementById('totVisits').textContent = g.totalVisitors || 0;
+                    document.getElementById('totClaims').textContent = g.totalClaims || 0;
+                    document.getElementById('activeLive').textContent = g.activeNow || 0;
+                    document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
+                    document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
+                    document.getElementById('live24hrVisits').textContent = g.visits24h || 0;
+                    document.getElementById('live24hrClaims').textContent = g.claims24h || 0;
+                    renderDashboardChart(g.dailyVisitors || {});
                 }
                 if (data && data.links) {
                     document.getElementById('totLinks').textContent = data.links.length || 0;
+                    allLinks = data.links;
                 }
             } catch(e) {}
         }
 
-        function renderCharts(dailyData) {
+        function renderDashboardChart(dailyData) {
             const labels = Object.keys(dailyData).slice(-7);
-            const values = labels.map(l => dailyData[l]);
-
-            if (trafficChartInst) trafficChartInst.destroy();
-            const ctx = document.getElementById('trafficChart').getContext('2d');
-            trafficChartInst = new Chart(ctx, {
+            const values = labels.map(k => dailyData[k]);
+            if (dashChartInst) dashChartInst.destroy();
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            dashChartInst = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels.length ? labels : ['Today'],
@@ -217,67 +461,170 @@
             });
         }
 
+        function switchDashGraph(mode) {
+            currentDashGraph = mode;
+            document.getElementById('dg7').classList.toggle('active', mode === '7days');
+            document.getElementById('dg24').classList.toggle('active', mode === '24h');
+            loadStats();
+        }
+
         async function loadLinks() {
             const list = document.getElementById('linksList');
             const res = await fetch('/api/links');
             const links = await res.json();
-            if (!links.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links yet.</p>';
-            list.innerHTML = links.map(l => `
+            allLinks = links;
+            filterLinks();
+        }
+
+        function filterLinks() {
+            const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
+            const filtered = q ? allLinks.filter(l => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : allLinks;
+            const list = document.getElementById('linksList');
+            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
+            list.innerHTML = filtered.map(l => `
                 <div class="link-item">
-                    <div>
-                        <div class="name">${l.name}</div>
-                        <div class="meta">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b></div>
+                    <div class="info">
+                        <span class="name">${l.name}</span>
+                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b></span>
                     </div>
-                    <div>
-                        <button class="btn btn-sm" style="background:var(--success);" onclick="copyLink('${l.id}')">📋 Copy</button>
-                        <button class="btn btn-sm" style="background:var(--danger);" onclick="delLink('${l.id}')">🗑️ Delete</button>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
+                        <button class="btn btn-sm btn-warning" onclick="openEditModal('${l.id}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLink('${l.id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function copyLink(id) {
-            const u = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(u).then(() => alert('Copied: ' + u));
+        function copyLinkUrl(id) {
+            const url = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success'));
         }
 
-        async function delLink(id) {
-            if (!confirm('Delete link?')) return;
+        async function deleteLink(id) {
+            if (!confirm('Delete link permanently?')) return;
             await fetch('/api/links/' + id, { method: 'DELETE' });
+            showToast('Link deleted', 'info');
             loadLinks();
             loadStats();
+        }
+
+        function openEditModal(id) {
+            const link = allLinks.find(l => l.id === id);
+            if (!link) return;
+            editingLinkId = id;
+            const b = document.getElementById('editModalBody');
+            b.innerHTML = `
+                <div class="form-group"><label>Name</label><input type="text" id="eName" value="${link.name}"></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video}"></div>
+                    <div class="form-group"><label>Claim URL</label><input type="text" id="eClaim" value="${link.claim}"></div>
+                </div>
+                <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline||''}"></div>
+                <div class="form-actions">
+                    <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
+                </div>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function saveLinkEdit() {
+            const name = document.getElementById('eName').value;
+            const video = document.getElementById('eVideo').value;
+            const claim = document.getElementById('eClaim').value;
+            const headline = document.getElementById('eHead').value;
+            await fetch('/api/links/' + editingLinkId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, video, claim, headline })
+            });
+            showToast('✅ Link updated!', 'success');
+            closeEditModal();
+            loadLinks();
         }
 
         async function createLink() {
             const name = document.getElementById('cName').value.trim();
             const video = document.getElementById('cVideo').value.trim();
             const claim = document.getElementById('cClaim').value.trim();
-            const headline = document.getElementById('cHead').value.trim();
-            if (!name) return alert('Enter name');
+            const headline = document.getElementById('cHeadline').value.trim();
+            const popupSettings = {
+                title: document.getElementById('cPopTitle').value,
+                subtitle: document.getElementById('cPopSub').value,
+                buttonText: document.getElementById('cPopBtn').value,
+                image: document.getElementById('cPopImg').value || null
+            };
+            if (!name) return showToast('Please enter link name', 'error');
 
             await fetch('/api/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, video, claim, headline })
+                body: JSON.stringify({ name, video, claim, headline, popupSettings })
             });
-            alert('✅ Link Created!');
+            showToast('✅ Link created successfully!', 'success');
             document.getElementById('cName').value = '';
             showSection('links');
+            loadStats();
         }
 
+        // ANALYTICS & EXPORTS
+        async function loadAnalyticsLinks() {
+            const sel = document.getElementById('analyticsLinkSelect');
+            sel.innerHTML = allLinks.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+            loadAnalytics();
+        }
+
+        function loadAnalytics() {
+            const selId = document.getElementById('analyticsLinkSelect').value;
+            const link = allLinks.find(l => l.id === selId);
+            if (!link) return;
+            document.getElementById('anaVisits').textContent = link.visits || 0;
+            document.getElementById('anaClaims').textContent = link.claims || 0;
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
+            if (anaChartInst) anaChartInst.destroy();
+            anaChartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Visits', 'Claims'],
+                    datasets: [{ label: link.name, data: [link.visits||0, link.claims||0], backgroundColor: ['#6366f1', '#22c55e'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function downloadAnalyticsImage() {
+            html2canvas(document.getElementById('analyticsExportBox')).then(c => {
+                const a = document.createElement('a'); a.download = 'analytics.png'; a.href = c.toDataURL(); a.click();
+            });
+        }
+
+        function downloadAnalyticsCSV() {
+            const selId = document.getElementById('analyticsLinkSelect').value;
+            const link = allLinks.find(l => l.id === selId);
+            if (!link) return;
+            const csv = `Link Name,Visits,Claims\n"${link.name}",${link.visits||0},${link.claims||0}`;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.download = 'report.csv'; a.href = URL.createObjectURL(blob); a.click();
+        }
+
+        // SHORTENER
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links');
-            const data = await res.json();
-            if (!data.links || !data.links.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
-            list.innerHTML = data.links.map(l => `
+            const d = await res.json();
+            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created.</p>';
+            list.innerHTML = d.links.map(l => `
                 <div class="link-item">
                     <div>
                         <div class="name">${l.title}</div>
-                        <div class="meta">Short: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
+                        <div class="meta">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
                     </div>
                     <div>
-                        <button class="btn btn-sm" style="background:var(--success);" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>alert('Copied'))">📋 Copy</button>
+                        <button class="btn btn-sm btn-success" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))">📋 Copy</button>
                     </div>
                 </div>
             `).join('');
@@ -287,57 +634,69 @@
             const originalUrl = document.getElementById('sUrl').value.trim();
             const title = document.getElementById('sTitle').value.trim();
             const appScheme = document.getElementById('sScheme').value.trim();
-            if (!originalUrl) return alert('Enter URL');
+            if (!originalUrl) return showToast('Enter URL', 'error');
 
             await fetch('/api/short-links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
             });
-            alert('✅ Short link created!');
+            showToast('✅ Short link created!', 'success');
             document.getElementById('sUrl').value = '';
             loadShortLinks();
         }
 
+        // SETTINGS & DEVICES
         async function loadDevices() {
             const list = document.getElementById('devicesList');
             const res = await fetch('/api/admin/blocked-devices');
-            const data = await res.json();
-            if (!data.devices || !data.devices.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices.</p>';
-            list.innerHTML = data.devices.map(d => `
+            const d = await res.json();
+            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices found.</p>';
+            list.innerHTML = d.devices.map(dev => `
                 <div class="link-item" style="border-left-color:var(--danger);">
                     <div>
-                        <div class="name">${d.deviceName} (${d.ip})</div>
-                        <div class="meta">Attempts: ${d.attempts} | Reason: ${d.reason}</div>
+                        <div class="name">${dev.deviceName} (${dev.ip})</div>
+                        <div class="meta">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</div>
                     </div>
                     <div>
-                        <button class="btn btn-sm" style="background:var(--success);" onclick="unblock('${d._id}')">🔓 Unblock</button>
+                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        async function unblock(id) {
+        async function unblockDev(id) {
             await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST' });
+            showToast('Device unblocked', 'info');
             loadDevices();
         }
 
-        function exportImage() {
-            html2canvas(document.getElementById('analyticsBox')).then(canvas => {
-                const a = document.createElement('a');
-                a.download = 'analytics.png';
-                a.href = canvas.toDataURL();
-                a.click();
-            });
+        async function saveBackground() {
+            const bg = document.getElementById('bgImgUrl').value.trim();
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: bg }) });
+            showToast('✅ Background updated!', 'success');
         }
 
-        function exportCSV() {
-            const csv = 'Metric,Value\nTotal Visitors,' + document.getElementById('totVisits').textContent + '\nTotal Claims,' + document.getElementById('totClaims').textContent;
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.download = 'analytics.csv';
-            a.href = URL.createObjectURL(blob);
-            a.click();
+        async function removeBackground() {
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: null }) });
+            document.getElementById('bgImgUrl').value = '';
+            showToast('Background removed', 'info');
+        }
+
+        async function changePasscode() {
+            const oldP = document.getElementById('oldPasscode').value;
+            const newP = document.getElementById('newPasscode').value;
+            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
+            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
+            const d = await res.json();
+            if (d.success) showToast('✅ Passcode changed!', 'success');
+            else showToast('❌ ' + d.error, 'error');
+        }
+
+        function setTheme(t) {
+            document.body.className = t;
+            document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
+            document.getElementById('theme-light').classList.toggle('active', t === 'light');
         }
 
         function logout() {
