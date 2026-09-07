@@ -13,7 +13,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
-// ==================== MongoDB Connection ====================
+// ==================== MongoDB Connection & Models ====================
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Link = require('./models/Link');
@@ -34,7 +34,7 @@ const Security = require('./config/security');
 
 connectDB();
 
-// ==================== Environment Variables ====================
+// ==================== Environment Variables & Settings ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
@@ -72,10 +72,12 @@ async function initializeDatabase() {
             await adminExists.save();
         }
 
-        const statsExists = await Stats.findOne();
-        if (!statsExists) await Stats.create({});
+        let statsExists = await Stats.findOne();
+        if (!statsExists) {
+            await Stats.create({});
+        }
 
-        const popupExists = await PopupSettings.findOne();
+        let popupExists = await PopupSettings.findOne();
         if (!popupExists) {
             await PopupSettings.create({
                 image: null,
@@ -85,7 +87,7 @@ async function initializeDatabase() {
             });
         }
 
-        const pricingExists = await Pricing.findOne();
+        let pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
                 pricing: {
@@ -107,7 +109,7 @@ async function initializeDatabase() {
 }
 initializeDatabase();
 
-// ==================== Security Headers ====================
+// ==================== Security & Middleware ====================
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false
@@ -306,7 +308,7 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ✅ FIXED: LINK RESOLVER (Always active, no false expiry/suspension)
+// ✅ LINK RESOLVER (Supports Entrance Popup Image, Expiry & Visits)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
@@ -315,6 +317,7 @@ app.get('/api/link/:id', async (req, res) => {
 
         // Fallback for default or missing linkId
         if (!link && (rawId === 'default' || !rawId)) {
+            const popupSettings = await PopupSettings.findOne();
             return res.json({
                 id: 'default',
                 name: 'Welcome Bonus Reward',
@@ -322,7 +325,13 @@ app.get('/api/link/:id', async (req, res) => {
                 claim: '#',
                 buttonText: 'Claim Now',
                 headline: '🎬 Watch Video & Unlock Reward',
-                status: 'active'
+                status: 'active',
+                popupSettings: {
+                    image: popupSettings?.image || null,
+                    title: popupSettings?.title || '🎁 Claim Your Reward',
+                    buttonText: popupSettings?.buttonText || 'Claim Now',
+                    subtitle: popupSettings?.subtitle || 'Tap below to unlock your reward'
+                }
             });
         }
 
@@ -346,15 +355,23 @@ app.get('/api/link/:id', async (req, res) => {
         }
 
         // Track Visit
-        const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
         if (!stats) stats = await Stats.create({});
 
         link.visits = (link.visits || 0) + 1;
+        if (!link.dailyVisits) link.dailyVisits = new Map();
+        link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
+
         stats.totalVisitors = (stats.totalVisitors || 0) + 1;
+        if (!stats.dailyVisitors) stats.dailyVisitors = new Map();
+        stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
+
         await link.save();
         await stats.save();
+
+        const globalPopup = await PopupSettings.findOne();
+        const popupImage = link.popupSettings?.image || globalPopup?.image || null;
 
         res.json({
             id: link.id,
@@ -363,19 +380,21 @@ app.get('/api/link/:id', async (req, res) => {
             claim: link.claim || '#',
             buttonText: link.buttonText || 'Claim Now',
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
-            status: 'active',
-            popupSettings: link.popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
+            status: link.status || 'active',
+            popupSettings: {
+                image: popupImage,
+                title: link.popupSettings?.title || globalPopup?.title || '🎁 Claim Your Reward',
+                buttonText: link.popupSettings?.buttonText || globalPopup?.buttonText || 'Claim Now',
+                subtitle: link.popupSettings?.subtitle || globalPopup?.subtitle || 'Tap below to unlock your reward'
             }
         });
     } catch (error) {
+        console.error('Link Resolver Error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
+// Track Claim Button Click
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne({ id: req.params.linkId });
@@ -389,9 +408,12 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
         if (!uniqueClaims.has(uniqueKey) || (Date.now() - uniqueClaims.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
             uniqueClaims.set(uniqueKey, Date.now());
             stats.totalClaims = (stats.totalClaims || 0) + 1;
+            if (!stats.dailyClaims) stats.dailyClaims = new Map();
             stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
+
             if (link) {
                 link.claims = (link.claims || 0) + 1;
+                if (!link.dailyClaims) link.dailyClaims = new Map();
                 link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
                 await link.save();
             }
@@ -408,7 +430,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         const link = await Link.findOne({ $or: [{ id: req.params.linkId }, { dashboardId: req.params.linkId }] });
         if (!link) return res.status(404).json({ error: 'Not found' });
 
-        const today = new Date().toISOString().split('T')[0];
         res.json({
             linkId: link.id,
             name: link.name,
@@ -482,7 +503,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     }
 });
 
-// Admin Links APIs
+// ==================== ADMIN LINKS APIS ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
@@ -492,7 +513,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ LINK CREATION WITH GUARANTEED ACTIVE STATUS
+// ✅ CREATE CAMPAIGN LINK WITH ENTRANCE POPUP IMAGE & EXPIRY
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
@@ -510,14 +531,19 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
         const newLink = new Link({
             id: generatedId,
-            name: name.substring(0, 100),
+            name: name.substring(0, 120),
             video: video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: claim || '#',
             buttonText: buttonText || 'Claim Now',
             headline: headline || '🎬 Watch Video & Unlock Reward',
             expiryDate: cleanExpiry,
             status: 'active',
-            popupSettings: popupSettings || {}
+            popupSettings: {
+                image: popupSettings?.image || null,
+                title: popupSettings?.title || '🎁 Claim Your Reward',
+                buttonText: popupSettings?.buttonText || 'Claim Now',
+                subtitle: popupSettings?.subtitle || 'Tap below to unlock your reward'
+            }
         });
 
         await newLink.save();
@@ -528,11 +554,42 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ FULL EDIT CAMPAIGN LINK (Supports Image, Texts, Expiry, Status)
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
-        const link = await Link.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+        const { name, video, claim, buttonText, headline, expiryDate, popupSettings, status } = req.body;
+        const updateData = {};
+
+        if (name !== undefined) updateData.name = name;
+        if (video !== undefined) updateData.video = video;
+        if (claim !== undefined) updateData.claim = claim;
+        if (buttonText !== undefined) updateData.buttonText = buttonText;
+        if (headline !== undefined) updateData.headline = headline;
+        if (status !== undefined) updateData.status = status;
+
+        if (expiryDate !== undefined) {
+            if (expiryDate && typeof expiryDate === 'string' && expiryDate.trim() !== '') {
+                const parsed = new Date(expiryDate);
+                updateData.expiryDate = !isNaN(parsed.getTime()) ? parsed : null;
+            } else {
+                updateData.expiryDate = null;
+            }
+        }
+
+        if (popupSettings !== undefined) {
+            updateData.popupSettings = {
+                image: popupSettings?.image !== undefined ? popupSettings.image : null,
+                title: popupSettings?.title || '🎁 Claim Your Reward',
+                buttonText: popupSettings?.buttonText || 'Claim Now',
+                subtitle: popupSettings?.subtitle || 'Tap below to unlock your reward'
+            };
+        }
+
+        const link = await Link.findOneAndUpdate({ id: req.params.id }, { $set: updateData }, { new: true });
+        if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
     } catch (e) {
+        console.error('Link Update Error:', e);
         res.status(500).json({ error: 'Failed to update' });
     }
 });
@@ -555,7 +612,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// Comprehensive Stats API (For Chart.js & Live Counters)
+// ==================== ALL STATS API (FOR CHARTS & DASHBOARD) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -593,10 +650,15 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             links: links.map(l => ({
                 id: l.id,
                 name: l.name,
+                video: l.video || '',
+                claim: l.claim || '#',
+                buttonText: l.buttonText || 'Claim Now',
+                headline: l.headline || '',
                 visits: l.visits || 0,
                 claims: l.claims || 0,
                 status: l.status || 'active',
                 expiryDate: l.expiryDate || null,
+                popupSettings: l.popupSettings || {},
                 dailyVisits: Object.fromEntries(l.dailyVisits || new Map()),
                 dailyClaims: Object.fromEntries(l.dailyClaims || new Map())
             }))
@@ -606,7 +668,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// Device Management APIs
+// ==================== DEVICE MANAGEMENT ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find().sort({ lastAttempt: -1 });
@@ -639,7 +701,7 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
     }
 });
 
-// Settings APIs
+// ==================== SETTINGS APIS ====================
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -659,11 +721,10 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
 
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
-        const popup = await PopupSettings.findOne();
-        if (popup) {
-            popup.image = req.body.background || null;
-            await popup.save();
-        }
+        let popup = await PopupSettings.findOne();
+        if (!popup) popup = new PopupSettings();
+        popup.image = req.body.background || null;
+        await popup.save();
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Failed' });
@@ -675,7 +736,7 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// URL Shortener
+// ==================== URL SHORTENER & APP DEEP-LINKING ====================
 app.get('/s/:code', async (req, res) => {
     try {
         const link = await ShortLink.findOne({ code: req.params.code });
@@ -718,12 +779,20 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ DELETE SHORT LINK (Supports both MongoDB _id and custom code)
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
-        await ShortLink.findByIdAndDelete(req.params.id);
+        const targetId = req.params.id;
+        let deleted = null;
+        if (targetId.match(/^[0-9a-fA-F]{24}$/)) {
+            deleted = await ShortLink.findByIdAndDelete(targetId);
+        }
+        if (!deleted) {
+            deleted = await ShortLink.findOneAndDelete({ code: targetId });
+        }
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+        res.status(500).json({ error: 'Failed to delete short link' });
     }
 });
 
@@ -748,7 +817,7 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-// Page Routes
+// ==================== ROUTES & VIEWS ====================
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 app.get('/admin/secret-gateway', (req, res) => {
@@ -759,7 +828,7 @@ app.get('/admin/login.html', (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-// Automatically checks admin/index.html OR 668379d1.html
+// Admin Panel Access Route
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
     if (!token || !verifyToken(token)) {
@@ -768,14 +837,17 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
 
+// UID Checker
 app.get('/uid', (req, res) => {
     sendAppFile(res, 'uid-checker.html');
 });
 
+// Video Lock Page
 app.get('/v/:id', (req, res) => {
     sendAppFile(res, 'video-lock.html');
 });
 
+// User Dashboard
 app.get('/user-dashboard/:id?', (req, res) => {
     sendAppFile(res, 'user-dashboard.html');
 });
@@ -783,6 +855,7 @@ app.get('/user-dashboard/:id?', (req, res) => {
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
+// Start Server
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Secure Server running on port ${port}`);
+    console.log(`🚀 Production Ready Server running on port ${port}`);
 });
