@@ -2,122 +2,181 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Control Panel</title>
+    <title>Admin Panel - Control Center</title>
+    <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <script>
-        document.addEventListener('contextmenu', e => e.preventDefault(), true);
-        window.addEventListener('keydown', e => {
-            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
-                e.preventDefault();
-            }
-        }, true);
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         :root {
-            --primary: #6366f1; --secondary: #8b5cf6; --success: #22c55e;
-            --danger: #ef4444; --bg: #090a0f; --card-bg: #131722;
-            --text: #f8fafc; --text-light: #94a3b8; --border: #232838;
+            --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
+            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+            --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0;
+            --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
         }
         body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
-
-        .admin-wrap { max-width: 1200px; margin: 0 auto; }
+        .admin-container { max-width: 1400px; margin: 0 auto; }
 
         .header {
-            background: var(--card-bg); padding: 18px 24px; border-radius: 16px;
+            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
             border: 1px solid var(--border);
         }
         .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn-logout { background: var(--danger); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .btn-logout { background: var(--danger); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
-        .menu-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .menu-container {
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+            background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
         .menu-btn {
-            padding: 10px 18px; border: 1px solid transparent; border-radius: 12px;
-            background: var(--card-bg); color: var(--text-light); cursor: pointer; font-size: 13px; font-weight: 700;
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 12px; font-weight: 600;
         }
-        .menu-btn.active { background: var(--primary); color: #fff; }
+        .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
-        .stat-card .num { font-size: 28px; font-weight: 800; color: #fff; }
-        .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 600; }
-
-        .card { background: var(--card-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 20px; }
-        .card h3 { font-size: 17px; margin-bottom: 16px; }
-        .card input {
-            width: 100%; padding: 12px 16px; margin-bottom: 12px; background: #090a0f;
-            border: 1px solid var(--border); border-radius: 10px; color: #fff; outline: none;
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card {
+            background: var(--card-bg); padding: 16px; border-radius: var(--radius);
+            text-align: center; border: 1px solid var(--border);
         }
-        .card input:focus { border-color: var(--primary); }
+        .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
+        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; }
 
-        .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; color: #fff; }
-        .btn-primary { background: var(--primary); width: 100%; font-size: 15px; }
+        .section { display: none; }
+        .section.active { display: block; }
 
-        .link-row {
-            background: #090a0f; border: 1px solid var(--border); border-radius: 12px;
-            padding: 14px 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        .card {
+            background: var(--card-bg); padding: 22px; border-radius: var(--radius);
+            margin-bottom: 18px; border: 1px solid var(--border);
         }
-        .link-row .title { font-weight: 700; font-size: 14px; }
-        .link-row .meta { font-size: 12px; color: var(--text-light); margin-top: 3px; }
-        .btn-copy { background: var(--success); padding: 6px 14px; font-size: 12px; border-radius: 8px; }
-        .btn-del { background: var(--danger); padding: 6px 14px; font-size: 12px; border-radius: 8px; margin-left: 6px; }
+        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); }
+        .card input, .card select {
+            width: 100%; padding: 10px 14px; margin: 6px 0; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); outline: none;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        .tab-section { display: none; }
-        .tab-section.active { display: block; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; color: white; font-size: 13px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 100%; }
+        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
+
+        .link-item {
+            background: var(--bg); padding: 12px 16px; margin: 8px 0; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
+        }
+        .link-item .name { font-weight: 700; font-size: 14px; }
+        .link-item .meta { font-size: 12px; color: var(--text-light); }
     </style>
 </head>
 <body>
-    <div class="admin-wrap">
-        <div class="header">
+    <div class="admin-container">
+        <header class="header">
             <h1>⚡ Admin Control Center</h1>
-            <button onclick="logout()" class="btn-logout">Logout</button>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </header>
+
+        <div class="menu-container">
+            <button class="menu-btn active" onclick="showSection('dashboard')">📊 Overview</button>
+            <button class="menu-btn" onclick="showSection('links')">🔗 Links Manager</button>
+            <button class="menu-btn" onclick="showSection('analytics')">📈 Analytics & Export</button>
+            <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
+            <button class="menu-btn" onclick="showSection('shortener')">🔗 URL Shortener</button>
+            <button class="menu-btn" onclick="showSection('devices')">📱 Device Security</button>
         </div>
 
-        <div class="menu-bar">
-            <button class="menu-btn active" onclick="showTab('dash')">📊 Overview</button>
-            <button class="menu-btn" onclick="showTab('links')">🔗 Links Manager</button>
-            <button class="menu-btn" onclick="showTab('create')">➕ Create Link</button>
-        </div>
-
-        <!-- DASHBOARD TAB -->
-        <div class="tab-section active" id="tab-dash">
+        <!-- OVERVIEW TAB -->
+        <div class="section active" id="sec-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="num" id="statTotLinks">0</div><div class="label">Total Links</div></div>
-                <div class="stat-card"><div class="num" id="statTotVisits">0</div><div class="label">Total Visits</div></div>
-                <div class="stat-card"><div class="num" id="statTotClaims">0</div><div class="label">Total Claims</div></div>
+                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">📦 Active Links</div></div>
+                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">👁️ Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">🎁 Total Claims</div></div>
+                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">🟢 Active Live</div></div>
+            </div>
+
+            <div class="card">
+                <h3>📈 Traffic Trends (Last 7 Days)</h3>
+                <div style="height:260px;">
+                    <canvas id="trafficChart"></canvas>
+                </div>
             </div>
         </div>
 
         <!-- LINKS TAB -->
-        <div class="tab-section" id="tab-links">
+        <div class="section" id="sec-links">
             <div class="card">
-                <h3>Active Tracking Links</h3>
-                <div id="linksList">Loading links...</div>
+                <h3>🔗 Generated Rewarded Links</h3>
+                <div id="linksList">Loading...</div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS TAB -->
+        <div class="section" id="sec-analytics">
+            <div class="card" id="analyticsBox">
+                <h3>📊 Performance Analytics & Reports</h3>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Export visitor reports and charts</p>
+                <div style="display:flex;gap:10px;margin-bottom:14px;">
+                    <button class="btn btn-sm" style="background:var(--success);" onclick="exportImage()">🖼️ Export Chart Image</button>
+                    <button class="btn btn-sm" style="background:var(--primary);" onclick="exportCSV()">📊 Export CSV</button>
+                </div>
+                <div style="height:280px;"><canvas id="detailedChart"></canvas></div>
             </div>
         </div>
 
         <!-- CREATE TAB -->
-        <div class="card tab-section" id="tab-create">
-            <h3>➕ Generate New Rewarded Link</h3>
-            <input type="text" id="linkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
-            <input type="text" id="videoUrl" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
-            <input type="text" id="claimUrl" placeholder="Claim Destination URL (Reward URL)" value="#">
-            <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Stream & Unlock Reward">
-            <button class="btn btn-primary" onclick="createLink()">Generate Tracking Link ➜</button>
+        <div class="section" id="sec-create">
+            <div class="card">
+                <h3>➕ Create New Tracking Link</h3>
+                <input type="text" id="cName" placeholder="Link Name (e.g. YouTube Promo 1)">
+                <div class="grid-2">
+                    <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="cClaim" placeholder="Claim Reward Destination URL" value="#">
+                </div>
+                <input type="text" id="cHead" placeholder="Headline text" value="🎬 Watch Video & Unlock Reward">
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="createLink()">Generate Tracking Link ➜</button>
+            </div>
+        </div>
+
+        <!-- URL SHORTENER TAB -->
+        <div class="section" id="sec-shortener">
+            <div class="card">
+                <h3>🔗 App Deep-Linking URL Shortener</h3>
+                <input type="text" id="sUrl" placeholder="Original Destination URL">
+                <input type="text" id="sTitle" placeholder="Link Title (Optional)">
+                <input type="text" id="sScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
+            </div>
+            <div class="card">
+                <h3>Active Short Links</h3>
+                <div id="shortLinksList">Loading...</div>
+            </div>
+        </div>
+
+        <!-- DEVICE SECURITY TAB -->
+        <div class="section" id="sec-devices">
+            <div class="card">
+                <h3>⛔ Blocked Attackers & Devices</h3>
+                <div id="devicesList">Loading...</div>
+            </div>
         </div>
     </div>
 
     <script>
         const csrfToken = localStorage.getItem('csrfToken') || '';
+        let trafficChartInst = null;
+        let detailedChartInst = null;
 
-        function showTab(id) {
-            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
+            document.getElementById('sec-' + id).classList.add('active');
             event.currentTarget.classList.add('active');
             if (id === 'links') loadLinks();
+            if (id === 'shortener') loadShortLinks();
+            if (id === 'devices') loadDevices();
         }
 
         async function loadStats() {
@@ -125,77 +184,160 @@
                 const res = await fetch('/api/all-stats');
                 const data = await res.json();
                 if (data && data.global) {
-                    document.getElementById('statTotVisits').textContent = data.global.totalVisitors || 0;
-                    document.getElementById('statTotClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('activeLive').textContent = data.global.activeNow || 0;
+                    renderCharts(data.global.dailyVisitors || {});
                 }
                 if (data && data.links) {
-                    document.getElementById('statTotLinks').textContent = data.links.length || 0;
+                    document.getElementById('totLinks').textContent = data.links.length || 0;
                 }
             } catch(e) {}
         }
 
+        function renderCharts(dailyData) {
+            const labels = Object.keys(dailyData).slice(-7);
+            const values = labels.map(l => dailyData[l]);
+
+            if (trafficChartInst) trafficChartInst.destroy();
+            const ctx = document.getElementById('trafficChart').getContext('2d');
+            trafficChartInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length ? labels : ['Today'],
+                    datasets: [{
+                        label: 'Visitors',
+                        data: values.length ? values : [0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.15)',
+                        fill: true, tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
         async function loadLinks() {
             const list = document.getElementById('linksList');
-            try {
-                const res = await fetch('/api/links');
-                const links = await res.json();
-                if (!links || links.length === 0) {
-                    list.innerHTML = '<p style="color:#94a3b8;font-size:13px;">No links created yet.</p>';
-                    return;
-                }
-                list.innerHTML = '';
-                links.forEach(l => {
-                    const row = document.createElement('div');
-                    row.className = 'link-row';
-                    row.innerHTML = `
-                        <div>
-                            <div class="title">${l.name}</div>
-                            <div class="meta">Visits: <b>${l.visits || 0}</b> | Claims: <b>${l.claims || 0}</b></div>
-                        </div>
-                        <div>
-                            <button class="btn btn-copy" onclick="copyLink('${l.id}')">📋 Copy</button>
-                            <button class="btn btn-del" onclick="deleteLink('${l.id}')">🗑️ Delete</button>
-                        </div>
-                    `;
-                    list.appendChild(row);
-                });
-            } catch(e) {
-                list.innerHTML = 'Error loading links';
-            }
+            const res = await fetch('/api/links');
+            const links = await res.json();
+            if (!links.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links yet.</p>';
+            list.innerHTML = links.map(l => `
+                <div class="link-item">
+                    <div>
+                        <div class="name">${l.name}</div>
+                        <div class="meta">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b></div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm" style="background:var(--success);" onclick="copyLink('${l.id}')">📋 Copy</button>
+                        <button class="btn btn-sm" style="background:var(--danger);" onclick="delLink('${l.id}')">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function copyLink(id) {
-            const full = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(full).then(() => alert('✅ Link copied: ' + full));
+            const u = window.location.origin + '/uid?link=' + id;
+            navigator.clipboard.writeText(u).then(() => alert('Copied: ' + u));
         }
 
-        async function deleteLink(id) {
-            if (!confirm('Delete this link?')) return;
+        async function delLink(id) {
+            if (!confirm('Delete link?')) return;
             await fetch('/api/links/' + id, { method: 'DELETE' });
             loadLinks();
             loadStats();
         }
 
         async function createLink() {
-            const name = document.getElementById('linkName').value.trim();
-            const video = document.getElementById('videoUrl').value.trim();
-            const claim = document.getElementById('claimUrl').value.trim();
-            const headline = document.getElementById('headline').value.trim();
+            const name = document.getElementById('cName').value.trim();
+            const video = document.getElementById('cVideo').value.trim();
+            const claim = document.getElementById('cClaim').value.trim();
+            const headline = document.getElementById('cHead').value.trim();
+            if (!name) return alert('Enter name');
 
-            if (!name) return alert('Enter link name');
-
-            const res = await fetch('/api/links', {
+            await fetch('/api/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, video, claim, headline })
             });
-            const d = await res.json();
-            if (d && d.id) {
-                alert('✅ Link Created! You can copy it from Links Manager.');
-                document.getElementById('linkName').value = '';
-                loadStats();
-                showTab('links');
-            }
+            alert('✅ Link Created!');
+            document.getElementById('cName').value = '';
+            showSection('links');
+        }
+
+        async function loadShortLinks() {
+            const list = document.getElementById('shortLinksList');
+            const res = await fetch('/api/short-links');
+            const data = await res.json();
+            if (!data.links || !data.links.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
+            list.innerHTML = data.links.map(l => `
+                <div class="link-item">
+                    <div>
+                        <div class="name">${l.title}</div>
+                        <div class="meta">Short: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm" style="background:var(--success);" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>alert('Copied'))">📋 Copy</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createShortLink() {
+            const originalUrl = document.getElementById('sUrl').value.trim();
+            const title = document.getElementById('sTitle').value.trim();
+            const appScheme = document.getElementById('sScheme').value.trim();
+            if (!originalUrl) return alert('Enter URL');
+
+            await fetch('/api/short-links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
+            });
+            alert('✅ Short link created!');
+            document.getElementById('sUrl').value = '';
+            loadShortLinks();
+        }
+
+        async function loadDevices() {
+            const list = document.getElementById('devicesList');
+            const res = await fetch('/api/admin/blocked-devices');
+            const data = await res.json();
+            if (!data.devices || !data.devices.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices.</p>';
+            list.innerHTML = data.devices.map(d => `
+                <div class="link-item" style="border-left-color:var(--danger);">
+                    <div>
+                        <div class="name">${d.deviceName} (${d.ip})</div>
+                        <div class="meta">Attempts: ${d.attempts} | Reason: ${d.reason}</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm" style="background:var(--success);" onclick="unblock('${d._id}')">🔓 Unblock</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function unblock(id) {
+            await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST' });
+            loadDevices();
+        }
+
+        function exportImage() {
+            html2canvas(document.getElementById('analyticsBox')).then(canvas => {
+                const a = document.createElement('a');
+                a.download = 'analytics.png';
+                a.href = canvas.toDataURL();
+                a.click();
+            });
+        }
+
+        function exportCSV() {
+            const csv = 'Metric,Value\nTotal Visitors,' + document.getElementById('totVisits').textContent + '\nTotal Claims,' + document.getElementById('totClaims').textContent;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.download = 'analytics.csv';
+            a.href = URL.createObjectURL(blob);
+            a.click();
         }
 
         function logout() {
