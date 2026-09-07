@@ -4,77 +4,36 @@
     <meta charset="UTF-8">
     <title>Stream Rewards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- ANTI-F12 & DEVTOOLS ACTIVITY SHIELD -->
     <script>
-        (function() {
-            'use strict';
-            // 1. Disable Right-Click Context Menu
-            document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
-
-            // 2. Block Inspection Keyboard Shortcuts
-            window.addEventListener('keydown', function(e) {
-                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
-            }, true);
-
-            // 3. Neutralize & Silence Console
-            try {
-                const noop = () => {};
-                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
-            } catch(e) {}
-
-            // 4. Anti-Debugger Protection
-            setInterval(function() {
-                const start = performance.now();
-                (function() {}['constructor']('debugger')());
-                if (performance.now() - start > 100) {
-                    document.body.innerHTML = '';
-                    window.location.replace('about:blank');
-                }
-            }, 1000);
-        })();
+        document.addEventListener('contextmenu', e => e.preventDefault(), true);
+        window.addEventListener('keydown', e => {
+            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+            }
+        }, true);
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
             background: #090a0f;
             color: #f1f5f9;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 12px;
+            padding: 16px;
             user-select: none;
         }
 
-        .ambient-glow {
-            position: fixed;
-            top: 20%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70vw;
-            height: 70vw;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 65%);
-            z-index: 0;
-            pointer-events: none;
-            filter: blur(40px);
-        }
-
         .player-card {
-            position: relative;
-            z-index: 2;
             width: 100%;
-            max-width: 780px;
+            max-width: 760px;
             margin: 0 auto;
-            background: rgba(18, 20, 29, 0.7);
+            background: #131722;
             border-radius: 20px;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
         }
 
         .video-box {
@@ -84,7 +43,6 @@
             background: #000;
             border-radius: 14px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .video-box iframe, .video-box video {
@@ -92,23 +50,17 @@
             top: 0; left: 0; width: 100%; height: 100%; border: none;
         }
 
-        .header-meta {
-            text-align: center;
-            margin: 10px 0 6px;
-        }
-
         .headline {
             font-size: 16px;
             font-weight: 700;
-            background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 0.3px;
+            text-align: center;
+            margin: 14px 0 10px;
+            color: #e2e8f0;
         }
 
         .btn-claim {
             width: 100%;
-            padding: 13px 24px;
+            padding: 14px 24px;
             border-radius: 14px;
             border: none;
             cursor: pointer;
@@ -116,32 +68,22 @@
             color: #fff;
             font-size: 16px;
             font-weight: 700;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            transition: 0.2s;
         }
-
-        .btn-claim:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45); }
         .btn-claim:active { transform: scale(0.98); }
 
-        /* Modern Chat Feed */
         .chat-wrap {
-            position: relative;
-            z-index: 2;
             flex: 1;
             width: 100%;
-            max-width: 780px;
-            margin: 10px auto 0;
-            background: rgba(18, 20, 29, 0.5);
+            max-width: 760px;
+            margin: 12px auto 0;
+            background: #131722;
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
             overflow: hidden;
-            backdrop-filter: blur(8px);
             display: flex;
             flex-direction: column;
+            min-height: 200px;
         }
 
         .chat-scroll {
@@ -160,96 +102,33 @@
             background: rgba(255, 255, 255, 0.02);
             padding: 8px 12px;
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            animation: fadeIn 0.3s ease;
+            font-size: 12px;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-        .chat-avatar {
-            width: 28px; height: 28px; border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            display: flex; align-items: center; justify-content: center; font-size: 13px;
-        }
-
-        .chat-user { font-size: 12px; font-weight: 600; color: #cbd5e1; }
-        .chat-text { font-size: 12px; color: #94a3b8; flex: 1; }
-
-        /* Popup Overlay */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(4, 5, 8, 0.85);
-            backdrop-filter: blur(16px);
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-        .modal-card {
-            width: 100%;
-            max-width: 360px;
-            background: #141722;
-            border-radius: 22px;
-            padding: 24px;
-            border: 1px solid rgba(99, 102, 241, 0.25);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            text-align: center;
-            transform: scale(0.92);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.active .modal-card { transform: scale(1); }
-        .modal-icon { font-size: 48px; margin-bottom: 12px; }
-        .modal-title { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
-        .modal-sub { font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
+        .chat-user { font-weight: 700; color: #818cf8; }
+        .chat-text { color: #cbd5e1; }
     </style>
 </head>
 <body>
-    <div class="ambient-glow"></div>
-
     <div class="player-card">
         <div class="video-box" id="videoContainer">
             <div id="videoPlayer"></div>
         </div>
-        <div class="header-meta">
-            <div class="headline" id="headline">🎬 Watch Stream & Unlock</div>
-        </div>
-        <button class="btn-claim" id="claimBtn">🎁 Claim Reward</button>
+        <div class="headline" id="headline">🎬 Watch Stream & Unlock Reward</div>
+        <button class="btn-claim" id="claimBtn" onclick="handleClaim()">🎁 Claim Reward Now</button>
     </div>
 
     <div class="chat-wrap">
         <div class="chat-scroll" id="chatScroll"></div>
     </div>
 
-    <!-- Entrance Popup -->
-    <div class="modal-overlay" id="popupOverlay">
-        <div class="modal-card">
-            <div class="modal-icon">🎁</div>
-            <h3 class="modal-title" id="popupTitle">Claim Special Reward</h3>
-            <p class="modal-sub" id="popupSub">Tap unlock below to access your streaming session and reward.</p>
-            <button class="btn-claim" id="popupClaimBtn">🔓 Unlock Now</button>
-        </div>
-    </div>
-
     <script>
         const pathParts = window.location.pathname.split('/');
         const linkId = pathParts[pathParts.length - 1] || 'default';
-        const urlParams = new URLSearchParams(window.location.search);
-        let videoUrl = urlParams.get('video') || 'https://youtu.be/dQw4w9WgXcQ';
-        let claimUrl = urlParams.get('claim') || '#';
-        const headlineText = urlParams.get('headline') || '🎬 Watch Stream & Unlock';
-
-        document.getElementById('headline').textContent = headlineText;
+        let claimDestination = '#';
 
         function sanitizeYt(url) {
+            if (!url) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
             if (url.includes('youtube.com/watch?v=')) {
                 return 'https://www.youtube.com/embed/' + url.split('v=').split('&')[0];
             }
@@ -259,47 +138,41 @@
             return url;
         }
 
-        function loadVideoFrame() {
-            const container = document.getElementById('videoPlayer');
-            const cleanUrl = sanitizeYt(videoUrl);
-            container.innerHTML = `<iframe src="${cleanUrl}?autoplay=1&mute=0&playsinline=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-        }
+        fetch('/api/link/' + linkId)
+            .then(r => r.json())
+            .then(data => {
+                const videoUrl = sanitizeYt(data.video);
+                claimDestination = data.claim || '#';
+                if (data.headline) document.getElementById('headline').textContent = data.headline;
+                document.getElementById('videoPlayer').innerHTML = `<iframe src="${videoUrl}?autoplay=1&mute=0&playsinline=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+            })
+            .catch(() => {
+                document.getElementById('videoPlayer').innerHTML = `<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            });
 
-        // Popup logic
-        const overlay = document.getElementById('popupOverlay');
-        setTimeout(() => overlay.classList.add('active'), 250);
-
-        document.getElementById('popupClaimBtn').addEventListener('click', () => {
-            overlay.classList.remove('active');
-            loadVideoFrame();
-        });
-
-        // Claim button logic
-        document.getElementById('claimBtn').addEventListener('click', () => {
-            fetch(`/api/track-claim/${linkId}`, { method: 'POST' }).catch(() => {});
-            if (claimUrl && claimUrl !== '#') {
-                window.location.href = claimUrl;
+        function handleClaim() {
+            fetch('/api/track-claim/' + linkId, { method: 'POST' }).catch(() => {});
+            if (claimDestination && claimDestination !== '#') {
+                window.location.href = claimDestination;
             } else {
-                alert('🎉 Reward verified successfully!');
+                alert('🎉 Reward verified successfully for UID: ' + (localStorage.getItem('playerUID') || 'Player'));
             }
-        });
-
-        // Chat stream simulation
-        const sampleNames = ['Shadow', 'RiderX', 'NeonGamer', 'Alpha', 'Viper', 'Ghost', 'Nova'];
-        const sampleMsgs = ['Received 500 code!', 'Thanks bro working!', 'Smooth stream', 'Redeemed successfully 🔥'];
-        const chatScroll = document.getElementById('chatScroll');
-
-        function pushChat() {
-            const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
-            const msg = sampleMsgs[Math.floor(Math.random() * sampleMsgs.length)];
-            const row = document.createElement('div');
-            row.className = 'chat-row';
-            row.innerHTML = `<div class="chat-avatar">⚡</div><div><span class="chat-user">${name}: </span><span class="chat-text">${msg}</span></div>`;
-            chatScroll.appendChild(row);
-            chatScroll.scrollTop = chatScroll.scrollHeight;
-            if (chatScroll.children.length > 20) chatScroll.removeChild(chatScroll.firstChild);
         }
-        setInterval(pushChat, 2200);
+
+        const names = ['DemonKing', 'Phoenix', 'DarkKnight', 'StarGamer', 'SniperPro', 'GhostRider'];
+        const msgs = ['Redeem code working!', 'Got 500₹ successfully!', 'Thanks bhai code mil gaya', 'Superb stream!', 'Redeemed!'];
+        const chatBox = document.getElementById('chatScroll');
+
+        setInterval(() => {
+            const n = names[Math.floor(Math.random() * names.length)];
+            const m = msgs[Math.floor(Math.random() * msgs.length)];
+            const div = document.createElement('div');
+            div.className = 'chat-row';
+            div.innerHTML = `<span class="chat-user">${n}:</span> <span class="chat-text">${m}</span>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            if (chatBox.children.length > 15) chatBox.removeChild(chatBox.firstChild);
+        }, 2000);
     </script>
 </body>
 </html>
