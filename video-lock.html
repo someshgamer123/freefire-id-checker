@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video Lock</title>
+    <title>Reward Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
         (function() {
@@ -23,60 +24,53 @@
             } catch(e) {}
         })();
     </script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
 
         body {
-            background: #0b0f19;
+            background: #080c16;
             color: #f8fafc;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             display: flex;
             flex-direction: column;
-            padding: 12px;
+            padding: 14px;
             user-select: none;
             -webkit-user-select: none;
         }
 
-        .bg-glow {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85vw;
-            height: 85vw;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
-            z-index: 0;
-            animation: pulseGlow 3.5s ease-in-out infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        /* Ambient Dynamic Lighting Background */
+        .ambient-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 50% 10%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 15% 70%, rgba(16, 185, 129, 0.06) 0%, transparent 45%);
+            z-index: 0; pointer-events: none;
         }
 
         .top-section {
-            position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 800px; margin: 0 auto; padding: 0 0 6px 0;
+            position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 820px; margin: 0 auto;
         }
 
+        /* Studio Video Frame */
         .video-wrapper {
-            background: rgba(18, 26, 45, 0.75);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            padding: 8px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            animation: fadeInUp 0.8s ease;
+            background: rgba(16, 23, 41, 0.78);
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            padding: 10px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            animation: fadeInDown 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px) scale(0.97); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
@@ -85,89 +79,95 @@
             width: 100%;
             padding-bottom: 56.25%;
             background: #000;
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
             cursor: pointer;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
         }
-
         .video-container iframe, .video-container video {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;
         }
         .video-container iframe { z-index: 5; }
-        .video-container::before {
-            content: '';
-            position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.25));
-            z-index: -1;
-            animation: borderGlow 3s ease-in-out infinite;
+
+        .video-badge-live {
+            position: absolute; top: 12px; left: 12px; z-index: 8;
+            background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px;
+            padding: 4px 10px; font-size: 11px; font-weight: 800; color: #fff;
+            display: flex; align-items: center; gap: 6px; pointer-events: none;
         }
-        @keyframes borderGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+        .video-badge-live .live-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;
+            animation: pulseLive 1.4s infinite;
+        }
+        @keyframes pulseLive { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
 
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: transparent;
-            pointer-events: none !important;
+            background: transparent; pointer-events: none !important;
         }
 
         .headline {
-            text-align: center; margin: 10px 0 4px; font-size: 16.5px; font-weight: 700;
-            color: #f1f5f9; letter-spacing: 0.3px; opacity: 0; transition: opacity 0.5s ease;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
+            text-align: center; margin: 12px 0 6px; font-size: 17px; font-weight: 800;
+            color: #ffffff; letter-spacing: -0.2px; opacity: 0; transition: opacity 0.5s ease;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .headline.show { opacity: 1; }
 
         .claim-btn-wrapper {
-            display: flex; justify-content: center; margin-top: 4px; animation: fadeIn 1.2s ease;
-            opacity: 0; transition: opacity 0.5s ease;
+            display: flex; justify-content: center; margin-top: 4px; opacity: 0; transition: opacity 0.5s ease;
         }
         .claim-btn-wrapper.show { opacity: 1; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ✨ GLOWING & SHINING CLAIM BUTTON ✨ */
+        /* ✨ LUXURY GLOWING & SHINING CLAIM BUTTON ✨ */
         .claim-btn {
-            padding: 15px 50px; border: none; border-radius: 50px; font-size: 17.5px; font-weight: 800;
-            cursor: pointer; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; letter-spacing: 0.5px;
-            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.35), 0 0 20px rgba(124, 58, 237, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            width: 100%; max-width: 420px;
-            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-            z-index: 20; overflow: hidden;
+            position: relative;
+            padding: 16px 54px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 12px 35px rgba(79, 70, 229, 0.45), 0 0 25px rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 20;
         }
-        .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 15px 40px rgba(79, 70, 229, 0.5); }
+        .claim-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 18px 45px rgba(79, 70, 229, 0.6), 0 0 35px rgba(124, 58, 237, 0.45);
+        }
         .claim-btn:active { transform: scale(0.97); }
-        .claim-btn::before {
-            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
-            border-radius: 54px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(139, 92, 246, 0.4), rgba(99, 102, 241, 0.4));
-            z-index: -1; animation: btnGlow 2s ease-in-out infinite; filter: blur(10px);
-        }
-        @keyframes btnGlow { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.04); } }
 
-        /* Continuous Diagonal Shimmer Sweep */
+        /* Continuous Holographic Shimmer Sweep */
         .claim-btn::after, .popup-claim-btn::after {
             content: '';
             position: absolute;
             top: -50%;
             left: -160%;
-            width: 75%;
+            width: 70%;
             height: 200%;
             background: linear-gradient(
                 90deg,
                 transparent,
-                rgba(255, 255, 255, 0.08) 20%,
+                rgba(255, 255, 255, 0.1) 20%,
                 rgba(255, 255, 255, 0.85) 50%,
-                rgba(255, 255, 255, 0.08) 80%,
+                rgba(255, 255, 255, 0.1) 80%,
                 transparent
             );
             transform: rotate(25deg);
             animation: shineSweep 2.8s infinite ease-in-out;
             pointer-events: none;
         }
-
         @keyframes shineSweep {
             0% { left: -160%; }
             35% { left: 160%; }
@@ -175,96 +175,118 @@
         }
 
         .claim-btn .ripple, .popup-claim-btn .ripple {
-            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.35);
+            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.4);
             transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        /* 🖼️ ENTRANCE POPUP MODAL */
+        /* ==================== ✨ PERFECT 16:9 ENTRANCE POPUP ✨ ==================== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-            background: rgba(4, 6, 11, 0.85);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
+            background: rgba(4, 7, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex; justify-content: center; align-items: center;
             opacity: 0; visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
             pointer-events: none !important;
         }
-        .popup-overlay.show {
-            opacity: 1; visibility: visible;
-            pointer-events: all !important;
-        }
-        .popup-overlay.hidden {
-            opacity: 0; visibility: hidden;
-            pointer-events: none !important;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
+        .popup-overlay.show { opacity: 1; visibility: visible; pointer-events: all !important; }
+        .popup-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none !important; }
 
         .popup-card {
-            background: rgba(18, 26, 45, 0.96);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border-radius: 26px;
-            padding: 24px;
-            max-width: 390px;
+            background: rgba(17, 25, 44, 0.96);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 28px;
+            padding: 24px 22px 26px;
+            max-width: 420px;
             width: 92%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.2);
             animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative; overflow: hidden;
-            cursor: pointer;
+            cursor: pointer; text-align: center;
             pointer-events: all !important;
-            text-align: center;
         }
         .popup-card::before {
             content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 28px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(139, 92, 246, 0.35), rgba(99, 102, 241, 0.35));
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4), rgba(236, 72, 153, 0.3));
             z-index: -1; animation: borderPulse 3s ease-in-out infinite;
         }
-        @keyframes borderPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+        @keyframes borderPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
         @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.8) translateY(40px) rotate(-2deg); }
-            100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+            0% { opacity: 0; transform: scale(0.85) translateY(30px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        .popup-card .popup-image {
-            width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden;
-            background: #0b0f19; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 16px; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: none !important;
-        }
-        .popup-card .popup-image img {
-            width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none !important;
-        }
-        .popup-card .popup-image .placeholder {
-            width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 44px; color: rgba(255, 255, 255, 0.2); gap: 4px;
-            background: linear-gradient(135deg, #0b0f19, #141b2b);
-            pointer-events: none !important;
-        }
-        .popup-card .popup-image .placeholder span { font-size: 11.5px; color: #94a3b8; font-weight: 600; }
-
-        .popup-card .popup-title {
-            text-align: center; font-size: 21px; font-weight: 800; color: #fff; margin-bottom: 4px;
-            letter-spacing: -0.3px;
-        }
-        .popup-card .popup-sub {
-            text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 16px; font-weight: 500;
+        /* 16:9 CONTAINER WITH ZERO-CROP DYNAMIC AMBIENT FIT */
+        .popup-image-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #090d16;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 18px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
         }
 
-        .popup-card .popup-claim-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 16.5px; font-weight: 800;
-            cursor: pointer; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
-            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35); border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: 0.25s ease; position: relative; overflow: hidden;
-            pointer-events: all !important;
+        /* Blurred background clone so there are no empty black bars */
+        .popup-blur-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            filter: blur(14px) brightness(0.45); transform: scale(1.15);
+            z-index: 1; pointer-events: none;
         }
-        .popup-card .popup-claim-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(79, 70, 229, 0.5); }
-        .popup-card .popup-claim-btn:active { transform: scale(0.97); }
 
-        /* CONFETTI ENGINE (BURST + PARTICLES) */
+        /* Primary Image: 100% visible, never cut or cropped */
+        .popup-main-img {
+            position: relative; z-index: 2;
+            width: 100%; height: 100%;
+            object-fit: contain !important; /* Fixes cropped text */
+            display: block; pointer-events: none !important;
+        }
+
+        .popup-placeholder {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 46px; color: rgba(255, 255, 255, 0.2); gap: 6px;
+        }
+        .popup-placeholder span { font-size: 12px; color: #94a3b8; font-weight: 700; }
+
+        .popup-pill-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(99, 102, 241, 0.14); border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800;
+            color: #818cf8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .popup-pill-tag .tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+
+        .popup-title {
+            font-size: 22px; font-weight: 900; color: #ffffff; margin-bottom: 4px;
+            letter-spacing: -0.4px;
+        }
+        .popup-sub {
+            font-size: 13.5px; color: #94a3b8; margin-bottom: 18px; font-weight: 500;
+        }
+
+        .popup-claim-btn {
+            width: 100%; padding: 15px; border: none; border-radius: 16px; font-size: 17px; font-weight: 900;
+            cursor: pointer; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff;
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.25s ease; position: relative; overflow: hidden;
+            pointer-events: all !important; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .popup-claim-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(79, 70, 229, 0.55); }
+        .popup-claim-btn:active { transform: scale(0.97); }
+
+        /* CONFETTI ENGINE (3D BURST & FALLING PARTICLES) */
         .confetti-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
             pointer-events: none; overflow: hidden;
@@ -272,96 +294,88 @@
         .confetti-container.active { pointer-events: none; }
 
         .confetti-piece {
-            position: absolute;
-            width: 6px; height: 9px;
-            animation: confettiFall 1.8s linear forwards;
-            pointer-events: none; opacity: 0;
+            position: absolute; width: 8px; height: 12px;
+            animation: confettiFall 2.2s linear forwards; pointer-events: none; opacity: 0;
             will-change: transform, opacity;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            transform: translateZ(0);
         }
-
-        @media (min-width: 768px) {
-            .confetti-piece { width: 10px; height: 14px; animation-duration: 2.5s; }
-        }
-
         @keyframes confettiFall {
             0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
-            25% { opacity: 1; transform: translateY(25vh) rotate(90deg) scale(1.1); }
-            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.2); }
-            75% { opacity: 0.9; transform: translateY(75vh) rotate(270deg) scale(1.0); }
+            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.1); }
             100% { opacity: 0; transform: translateY(100vh) rotate(360deg) scale(0.4); }
         }
 
         .confetti-burst-piece {
-            position: absolute;
-            width: 5px; height: 8px;
-            animation: confettiBurst 1s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+            position: absolute; width: 6px; height: 10px;
+            animation: confettiBurst 1.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
             pointer-events: none; opacity: 0;
-            will-change: transform, opacity;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            transform: translateZ(0);
         }
-
-        @media (min-width: 768px) {
-            .confetti-burst-piece { width: 8px; height: 12px; animation-duration: 1.4s; }
-        }
-
         @keyframes confettiBurst {
-            0% { opacity: 1; transform: translate(0, 0) scale(0.3) rotate(0deg); }
+            0% { opacity: 1; transform: translate(0, 0) scale(0.3); }
             40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(200deg); }
-            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.8) rotate(320deg); }
             100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.2) rotate(400deg); }
         }
 
         .sound-toggle {
-            position: fixed; bottom: 80px; right: 20px; z-index: 1001;
-            background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%; width: 40px; height: 40px;
+            position: fixed; bottom: 85px; right: 20px; z-index: 1001;
+            background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 42px; height: 42px;
             display: flex; align-items: center; justify-content: center; font-size: 18px;
-            cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; color: #e2e8f0;
+            cursor: pointer; backdrop-filter: blur(12px); transition: 0.3s; color: #e2e8f0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
         }
-        .sound-toggle:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        .sound-toggle:hover { background: rgba(99, 102, 241, 0.3); transform: scale(1.08); }
 
-        /* 💬 CHAT SECTION WITH DYNAMIC RELATIVE TIMESTAMPS */
+        /* ==================== 💬 STREAM-GRADE LIVE CHAT ==================== */
         .chat-section {
-            position: relative; z-index: 1; flex: 1; width: 100%; max-width: 800px; margin: 0 auto;
-            min-height: 0; overflow: hidden; border-radius: 18px;
-            background: rgba(18, 26, 45, 0.65); border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(12px); animation: fadeInUp 1s ease; margin-top: 4px;
-            opacity: 0; transition: opacity 0.5s ease;
+            position: relative; z-index: 1; flex: 1; width: 100%; max-width: 820px; margin: 8px auto 0;
+            min-height: 0; overflow: hidden; border-radius: 20px;
+            background: rgba(16, 23, 41, 0.68); border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px); animation: fadeInUp 1s ease;
+            opacity: 0; transition: opacity 0.5s ease; display: flex; flex-direction: column;
         }
         .chat-section.show { opacity: 1; }
 
+        .chat-header-bar {
+            padding: 8px 16px; background: rgba(11, 15, 25, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .chat-header-bar .chat-title {
+            font-size: 12.5px; font-weight: 800; color: #cbd5e1; display: flex; align-items: center; gap: 6px;
+        }
+        .chat-header-bar .online-badge {
+            font-size: 11px; color: #10b981; font-weight: 800; display: flex; align-items: center; gap: 5px;
+        }
+        .chat-header-bar .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulseDot 1.5s infinite; }
+        @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
         .chat-section::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 35px;
-            background: linear-gradient(to bottom, #0b0f19, transparent); z-index: 10; pointer-events: none;
+            content: ''; position: absolute; top: 32px; left: 0; right: 0; height: 35px;
+            background: linear-gradient(to bottom, #080c16, transparent); z-index: 10; pointer-events: none;
         }
         .chat-section::after {
             content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 35px;
-            background: linear-gradient(to top, #0b0f19, transparent); z-index: 10; pointer-events: none;
+            background: linear-gradient(to top, #080c16, transparent); z-index: 10; pointer-events: none;
         }
 
         .chat-container {
             width: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden;
-            padding: 8px 14px; padding-top: 25px; padding-bottom: 20px; scroll-behavior: smooth;
+            padding: 8px 14px 20px; scroll-behavior: smooth;
         }
-        .chat-messages { display: flex; flex-direction: column; gap: 7px; padding-bottom: 8px; }
+        .chat-messages { display: flex; flex-direction: column; gap: 7px; padding-top: 15px; }
 
         .chat-message {
-            display: flex; align-items: center; gap: 10px; padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.035); border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+            background: rgba(255, 255, 255, 0.035); border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-left: 3px solid #6366f1;
-            font-size: 13px; opacity: 0; transform: translateY(15px) scale(0.95);
-            animation: fadeInUpChat 0.4s ease forwards;
+            font-size: 13px; opacity: 0; transform: translateY(12px) scale(0.97);
+            animation: fadeInUpChat 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             transition: opacity 0.6s ease, transform 0.6s ease;
             will-change: transform, opacity;
         }
         @keyframes fadeInUpChat {
-            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .chat-message.fade-out {
@@ -369,99 +383,87 @@
             pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;
         }
         .chat-message .avatar {
-            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 13px; flex-shrink: 0; background: linear-gradient(135deg, rgba(79, 70, 229, 0.25), rgba(124, 58, 237, 0.3));
-            border: 1px solid rgba(255,255,255,0.1);
+            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0; background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(124, 58, 237, 0.35));
+            border: 1px solid rgba(255,255,255,0.12);
         }
-        .chat-message .username { font-weight: 700; color: #f1f5f9; font-size: 12px; white-space: nowrap; }
-        .chat-message .text { color: #cbd5e1; font-size: 12.5px; font-weight: 400; word-break: break-word; flex: 1; }
-        .chat-message .time { color: #64748b; font-size: 10.5px; margin-left: auto; white-space: nowrap; font-weight: 500; }
+        .chat-message .vip-tag {
+            font-size: 9.5px; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15);
+            padding: 1px 6px; border-radius: 6px; text-transform: uppercase;
+        }
+        .chat-message .username { font-weight: 800; color: #f1f5f9; font-size: 12.5px; white-space: nowrap; }
+        .chat-message .text { color: #cbd5e1; font-size: 13px; font-weight: 500; word-break: break-word; flex: 1; }
+        .chat-message .time { color: #64748b; font-size: 10.5px; margin-left: auto; white-space: nowrap; font-weight: 600; }
 
         .emoji-picker-wrapper {
             position: sticky; bottom: 8px; z-index: 20; display: flex; justify-content: flex-end;
             padding-right: 6px; margin-top: auto;
         }
         .emoji-picker-btn {
-            background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%; width: 42px; height: 42px; font-size: 19px; cursor: pointer;
+            background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
             transition: 0.25s; display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            backdrop-filter: blur(12px); box-shadow: 0 6px 20px rgba(0,0,0,0.5);
             color: #e2e8f0; position: relative;
         }
-        .emoji-picker-btn:hover { transform: scale(1.1); background: rgba(99, 102, 241, 0.3); }
+        .emoji-picker-btn:hover { transform: scale(1.1); background: rgba(99, 102, 241, 0.35); }
         .emoji-picker-btn .emoji-list {
-            position: absolute; bottom: 52px; right: 0;
-            background: #121a2d; border-radius: 14px; padding: 8px;
-            display: none; gap: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 170px; justify-content: center;
+            position: absolute; bottom: 56px; right: 0;
+            background: #111726; border-radius: 16px; padding: 8px 10px;
+            display: none; gap: 6px; border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.7); width: 180px; justify-content: center;
         }
         .emoji-picker-btn .emoji-list.open { display: flex; }
         .emoji-picker-btn .emoji-list span {
-            font-size: 22px; cursor: pointer; padding: 4px; border-radius: 8px; transition: 0.2s;
+            font-size: 22px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: 0.2s;
         }
         .emoji-picker-btn .emoji-list span:hover { background: rgba(99, 102, 241, 0.25); transform: scale(1.2); }
 
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.25); border-radius: 4px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.25); border-radius: 6px; }
 
         .flying-reaction {
-            position: fixed; font-size: 28px; z-index: 4; pointer-events: none;
+            position: fixed; font-size: 30px; z-index: 4; pointer-events: none;
             animation: flyUpSmooth 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
             will-change: transform, opacity;
         }
         @keyframes flyUpSmooth {
             0% { opacity: 0; transform: translateY(0) scale(0.3) rotate(0deg); }
             15% { opacity: 1; transform: translateY(-30px) scale(1.2) rotate(8deg); }
-            40% { opacity: 1; transform: translateY(-100px) scale(1.0) rotate(-5deg); }
-            70% { opacity: 0.8; transform: translateY(-200px) scale(0.8) rotate(10deg); }
-            100% { opacity: 0; transform: translateY(-320px) scale(0.4) rotate(-8deg); }
+            40% { opacity: 1; transform: translateY(-110px) scale(1.0) rotate(-5deg); }
+            70% { opacity: 0.85; transform: translateY(-220px) scale(0.85) rotate(10deg); }
+            100% { opacity: 0; transform: translateY(-340px) scale(0.4) rotate(-8deg); }
         }
-        .flying-reaction.type-1 { animation-duration: 2.5s; }
-        .flying-reaction.type-2 { animation-duration: 3.2s; }
-        .flying-reaction.type-3 { animation-duration: 2.8s; }
 
         @media (max-width: 600px) {
             body { padding: 8px; }
-            .video-wrapper { padding: 5px; border-radius: 14px; }
-            .headline { font-size: 14px; margin: 6px 0 3px; }
-            .claim-btn { padding: 13px 25px; font-size: 15px; max-width: 100%; }
-            .popup-card { padding: 18px 16px; max-width: 340px; }
-            .popup-card .popup-title { font-size: 18px; }
-            .popup-card .popup-claim-btn { font-size: 15px; padding: 12px; }
-            .chat-section { border-radius: 12px; margin-top: 2px; }
-            .chat-message { padding: 6px 10px; font-size: 11.5px; gap: 6px; }
-            .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
-            .chat-message .username { font-size: 11px; }
-            .chat-message .text { font-size: 11px; }
-            .chat-message .time { font-size: 9px; }
-            .chat-container { padding: 6px 10px; padding-top: 20px; padding-bottom: 15px; }
-            .flying-reaction { font-size: 22px; }
-            .emoji-picker-btn { width: 38px; height: 38px; font-size: 16px; }
-            .emoji-picker-btn .emoji-list { width: 140px; bottom: 48px; }
-            .sound-toggle { width: 34px; height: 34px; font-size: 15px; bottom: 70px; right: 14px; }
-        }
-        @media (max-width: 400px) {
-            .headline { font-size: 12px; }
-            .claim-btn { padding: 11px 20px; font-size: 14px; }
-            .popup-card { padding: 14px 12px 18px; max-width: 300px; }
-            .popup-card .popup-title { font-size: 16px; }
-            .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
-            .popup-card .popup-sub { font-size: 11px; }
-            .sound-toggle { width: 30px; height: 30px; font-size: 13px; bottom: 60px; right: 10px; }
+            .video-wrapper { padding: 6px; border-radius: 16px; }
+            .headline { font-size: 14.5px; margin: 8px 0 4px; }
+            .claim-btn { padding: 14px 28px; font-size: 16px; max-width: 100%; }
+            .popup-card { padding: 20px 16px; max-width: 350px; }
+            .popup-title { font-size: 19px; }
+            .popup-claim-btn { font-size: 15.5px; padding: 13px; }
+            .chat-section { border-radius: 14px; margin-top: 4px; }
+            .chat-message { padding: 7px 10px; font-size: 12px; gap: 6px; }
+            .chat-message .avatar { width: 28px; height: 28px; font-size: 12px; }
+            .sound-toggle { width: 36px; height: 36px; font-size: 16px; bottom: 75px; right: 14px; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-glow"></div>
+    <div class="ambient-glow"></div>
 
     <div class="top-section">
         <div class="video-wrapper">
             <div class="video-container" id="videoContainer">
+                <div class="video-badge-live">
+                    <span class="live-dot"></span> HD 1080P
+                </div>
                 <div id="videoPlayer"></div>
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
-            <div class="headline" id="headline">🎬 Watch Video</div>
+            <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
                 <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
@@ -470,6 +472,10 @@
 
     <!-- Live Chat Section -->
     <div class="chat-section" id="chatSection">
+        <div class="chat-header-bar">
+            <span class="chat-title">💬 Live Activity Chat</span>
+            <span class="online-badge"><span class="online-dot"></span> 1.8k Online</span>
+        </div>
         <div class="chat-container" id="chatContainer">
             <div class="chat-messages" id="chatMessages"></div>
             <div class="emoji-picker-wrapper">
@@ -479,27 +485,35 @@
                         <span onclick="triggerReaction('🥳', event)">🥳</span>
                         <span onclick="triggerReaction('🤩', event)">🤩</span>
                         <span onclick="triggerReaction('😍', event)">😍</span>
-                        <span onclick="triggerReaction('😎', event)">😎</span>
-                        <span onclick="triggerReaction('😮', event)">😮</span>
+                        <span onclick="triggerReaction('🔥', event)">🔥</span>
+                        <span onclick="triggerReaction('💎', event)">💎</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Entrance Popup Modal -->
+    <!-- ==================== ✨ PERFECT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <div class="popup-image" id="popupImage">
-                <div class="placeholder" id="popupPlaceholder">
+            <!-- 16:9 Image container with zero cropping -->
+            <div class="popup-image-container" id="popupImageContainer">
+                <div class="popup-blur-bg" id="popupBlurBg"></div>
+                <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
-                    <span>Reward Preview</span>
+                    <span>Special Video Reward</span>
                 </div>
-                <img id="popupImg" style="display:none;" alt="Popup Image">
+                <img id="popupImg" class="popup-main-img" style="display:none;" alt="Reward Banner">
+            </div>
+
+            <div class="popup-pill-tag">
+                <span class="tag-dot"></span> Special Reward Unlocked
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap anywhere to unlock</div>
-            <button class="popup-claim-btn" id="popupClaimBtn">🔓 Unlock Now</button>
+            <div class="popup-sub" id="popupSub">Tap below to unlock your reward</div>
+            <button class="popup-claim-btn" id="popupClaimBtn">
+                <span>🔓 Unlock Now</span> <span>➜</span>
+            </button>
         </div>
     </div>
 
@@ -514,7 +528,7 @@
         let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
         let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
         const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
-        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
+        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video & Unlock Reward';
 
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Now';
@@ -582,7 +596,7 @@
             }
         }, true);
 
-        // ==================== SOUND TOGGLE & AUDIO SYNTHESIS ====================
+        // ==================== SOUND & WEB AUDIO SYNTHESIZER ====================
         function toggleSound() {
             isSoundEnabled = !isSoundEnabled;
             document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
@@ -621,7 +635,7 @@
             } catch(e) {}
         }
 
-        // ==================== CONFETTI ENGINE (BURST + FALL) ====================
+        // ==================== CONFETTI ENGINE (3D BURST + FALL) ====================
         function triggerCelebration() {
             if (isCelebrationActive) return;
             isCelebrationActive = true;
@@ -629,7 +643,7 @@
             container.innerHTML = ''; container.classList.add('active');
             playCelebrationSound();
 
-            const colors = ['#6366f1', '#8b5cf6', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316'];
+            const colors = ['#6366f1', '#8b5cf6', '#10b981', '#3b82f6', '#f59e0b', '#f43f5e', '#ec4899', '#14b8a6', '#f97316'];
             const burstCount = isMobile ? 35 : 60;
             const fallCount = isMobile ? 50 : 80;
 
@@ -645,10 +659,8 @@
                 const angle = Math.random() * 2 * Math.PI;
                 const dist = isMobile ? 80 + Math.random() * 200 : 150 + Math.random() * 400;
                 const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - (isMobile ? 50 : 100);
-                const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - (isMobile ? 30 : 50);
                 const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - (isMobile ? 15 : 20);
                 el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
-                el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
                 el.style.left = (50 + Math.random() * 6 - 3) + '%';
                 el.style.top = (45 + Math.random() * 10 - 5) + '%';
@@ -681,7 +693,7 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== POPUP SYSTEM ====================
+        // ==================== POPUP DATA & IMAGE FIT ====================
         async function loadPopupData() {
             let imageLoaded = false;
             try {
@@ -691,19 +703,11 @@
                     const popup = data.popupSettings || {};
                     if (popup.title) document.getElementById('popupTitle').textContent = popup.title;
                     if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
-                    if (popup.buttonText) document.getElementById('popupClaimBtn').textContent = popup.buttonText;
+                    if (popup.buttonText) document.getElementById('popupClaimBtn').querySelector('span').textContent = '🔓 ' + popup.buttonText;
                     
                     const imgUrl = popup.image || data.image;
                     if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim().length > 4) {
-                        const img = document.getElementById('popupImg');
-                        img.src = imgUrl;
-                        img.onload = () => {
-                            img.style.display = 'block';
-                            document.getElementById('popupPlaceholder').style.display = 'none';
-                        };
-                        img.onerror = () => {
-                            tryFallbackImage();
-                        };
+                        applyImageToPopup(imgUrl);
                         imageLoaded = true;
                     }
                 }
@@ -714,23 +718,35 @@
             }
         }
 
+        function applyImageToPopup(imgUrl) {
+            const img = document.getElementById('popupImg');
+            const blurBg = document.getElementById('popupBlurBg');
+            img.src = imgUrl;
+            blurBg.style.backgroundImage = `url('${imgUrl}')`;
+            
+            img.onload = () => {
+                img.style.display = 'block';
+                blurBg.style.display = 'block';
+                document.getElementById('popupPlaceholder').style.display = 'none';
+            };
+            img.onerror = () => {
+                tryFallbackImage();
+            };
+        }
+
         async function tryFallbackImage() {
             try {
                 const setRes = await fetch('/api/settings');
                 if (setRes.ok) {
                     const setData = await setRes.json();
                     if (setData && setData.background) {
-                        const img = document.getElementById('popupImg');
-                        img.src = setData.background;
-                        img.onload = () => {
-                            img.style.display = 'block';
-                            document.getElementById('popupPlaceholder').style.display = 'none';
-                        };
+                        applyImageToPopup(setData.background);
                         return;
                     }
                 }
             } catch(e) {}
             document.getElementById('popupImg').style.display = 'none';
+            document.getElementById('popupBlurBg').style.display = 'none';
             document.getElementById('popupPlaceholder').style.display = 'flex';
         }
 
@@ -789,9 +805,9 @@
             }
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                setTimeout(() => { window.location.replace(claimUrl); }, 500);
+                setTimeout(() => { window.location.replace(claimUrl); }, 400);
             } else {
-                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 500);
+                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 400);
             }
         }
 
@@ -883,18 +899,15 @@
             if (picker && !picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
         });
 
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
+        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '🔥', '🤑', '👑'];
         function createFlyingReaction(emoji) {
             const el = document.createElement('div');
             el.className = 'flying-reaction';
             el.textContent = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
             el.style.left = (10 + Math.random() * 80) + '%';
             el.style.top = (55 + Math.random() * 35) + '%';
-            el.style.fontSize = (24 + Math.random() * 32) + 'px';
-            const type = Math.floor(Math.random() * 3) + 1;
-            el.classList.add('type-' + type);
             document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3200);
         }
 
         function triggerReaction(emoji, event) {
@@ -902,22 +915,22 @@
             createFlyingReaction(emoji);
         }
 
-        // ==================== ALL 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
+        // ==================== 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
         const users = [
-            { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
-            { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
-            { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' }, { name: 'DarkKnight', emoji: '🦇' },
-            { name: 'StarGamer', emoji: '⭐' }, { name: 'ThunderX', emoji: '⚡' }, { name: 'IceQueen', emoji: '❄️' },
-            { name: 'FireLord', emoji: '🔥' }, { name: 'CryptoKing', emoji: '💰' }, { name: 'GhostRider', emoji: '👻' },
-            { name: 'Venom', emoji: '🕷️' }, { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
-            { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
+            { name: 'GamerPro', emoji: '🎮', vip: true }, { name: 'KingSlayer', emoji: '👑', vip: true }, { name: 'NightWolf', emoji: '🐺', vip: false },
+            { name: 'ShadowX', emoji: '🌙', vip: false }, { name: 'BlazeIt', emoji: '🔥', vip: true }, { name: 'SniperPro', emoji: '🎯', vip: false },
+            { name: 'DemonKing', emoji: '😈', vip: true }, { name: 'Phoenix', emoji: '🐦', vip: false }, { name: 'DarkKnight', emoji: '🦇', vip: true },
+            { name: 'StarGamer', emoji: '⭐', vip: false }, { name: 'ThunderX', emoji: '⚡', vip: true }, { name: 'IceQueen', emoji: '❄️', vip: false },
+            { name: 'FireLord', emoji: '🔥', vip: true }, { name: 'CryptoKing', emoji: '💰', vip: true }, { name: 'GhostRider', emoji: '👻', vip: false },
+            { name: 'Venom', emoji: '🕷️', vip: false }, { name: 'WizardX', emoji: '🧙', vip: true }, { name: 'NinjaPro', emoji: '🥷', vip: false },
+            { name: 'DragonSlayer', emoji: '🐉', vip: true }, { name: 'MysticMoon', emoji: '🌙', vip: false }
         ];
         const messages = [
-            'Thanks bhai!', 'Redeem code mil gaya!', '1000₹ ka redeem code!',
-            'Best website ever!', 'Bro thanks a lot!', 'Redeem code working!',
-            'Amazing!', 'Got 500₹!', 'Love this!', 'Best app!',
-            'Thank you!', 'Working perfectly!', 'Awesome!', 'Great!',
-            'Superb!', 'Thanks team!', 'Nice!', 'Love it!', 'Working!', 'Super!'
+            'Thanks bhai! 500₹ ka code mil gaya!', 'Redeem code working 100%!', '1000₹ ka redeem code instant!',
+            'Best website ever bro!', 'Got my diamond bundle, superb!', 'Bro thanks a lot for the code!',
+            'Amazing! 100% trusted!', 'Got 500₹ Google play card!', 'Love this reward!', 'Best app for gamers!',
+            'Working perfectly bhai!', 'Awesome experience!', 'Claimed successfully!', 'Super fast reward!',
+            'Thanks team!', 'Nice! Working 100%!', 'Love it, instant delivery!', 'Booyah! Got the skin!'
         ];
         const chatContainer = document.getElementById('chatMessages');
         let activeChatList = [];
@@ -946,6 +959,7 @@
             el.innerHTML = `
                 <span class="avatar">${user.emoji}</span>
                 <span class="username">${user.name}</span>
+                ${user.vip ? '<span class="vip-tag">VIP</span>' : ''}
                 <span class="text">${msg}</span>
                 <span class="time">just now</span>
             `;
@@ -965,7 +979,7 @@
             const msgs = chatContainer.querySelectorAll('.chat-message');
             const total = msgs.length;
             msgs.forEach((msg, index) => {
-                if (index >= total - 3) {
+                if (index >= total - 4) {
                     msg.classList.remove('fade-out');
                     msg.style.opacity = '1';
                 } else if (index >= total - 8) {
@@ -977,13 +991,12 @@
             });
         }
 
-        // Starter messages
         for (let i = 0; i < 3; i++) {
             setTimeout(addChat, i * 400);
         }
         setInterval(addChat, 2200);
         setInterval(updateChatTimes, 1000);
-        setInterval(() => { if (Math.random() > 0.6) createFlyingReaction(); }, 3500);
+        setInterval(() => { if (Math.random() > 0.5) createFlyingReaction(); }, 3500);
 
         // ==================== FULLSCREEN & WAKELOCK ====================
         async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
