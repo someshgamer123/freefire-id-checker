@@ -4,7 +4,7 @@ const LoginAttemptSchema = new mongoose.Schema({
     ip: {
         type: String,
         required: true,
-        unique: true
+        unique: true // Yahan index automatically ban jata hai
     },
     attempts: {
         type: Number,
@@ -24,7 +24,7 @@ const LoginAttemptSchema = new mongoose.Schema({
     }
 });
 
-LoginAttemptSchema.index({ ip: 1 });
+// Sirf lockedUntil par index rakhein, ip hata dein
 LoginAttemptSchema.index({ lockedUntil: 1 });
 
 module.exports = mongoose.model('LoginAttempt', LoginAttemptSchema);
