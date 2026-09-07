@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -29,7 +30,7 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// ==================== Security Module ====================
+// Security Module
 const Security = require('./config/security');
 
 // Connect to MongoDB
@@ -51,10 +52,7 @@ let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: {
-            user: EMAIL_USER,
-            pass: EMAIL_PASS
-        }
+        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
     });
 }
 
@@ -74,9 +72,7 @@ async function initializeDatabase() {
         }
 
         const statsExists = await Stats.findOne();
-        if (!statsExists) {
-            await Stats.create({});
-        }
+        if (!statsExists) await Stats.create({});
 
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
@@ -92,13 +88,8 @@ async function initializeDatabase() {
         if (!pricingExists) {
             await Pricing.create({
                 pricing: {
-                    '3days': 50,
-                    '7days': 100,
-                    '15days': 200,
-                    '1month': 500,
-                    '3months': 1200,
-                    '6months': 2000,
-                    '12months': 3500
+                    '3days': 50, '7days': 100, '15days': 200, '1month': 500,
+                    '3months': 1200, '6months': 2000, '12months': 3500
                 },
                 paymentSettings: {
                     method: 'UPI',
@@ -125,7 +116,7 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
             connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-            frameSrc: ["'self'", "https://www.youtube.com", "https://*.image2url.com", "*"],
+            frameSrc: ["'self'", "https://www.youtube.com", "*"],
             mediaSrc: ["'self'", "https:", "http:", "*"],
             objectSrc: ["'none'"]
         }
@@ -145,29 +136,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// ==================== Sensitive File Protection ====================
-// Block direct access to server-side code and databases
+// Protect sensitive backend files
 app.use((req, res, next) => {
-    const blockedExtensions = ['.js', '.json', '.env', '.lock', '.md', '.log'];
-    const lowerPath = req.path.toLowerCase();
-    
-    // Allow legitimate root client assets
-    if (lowerPath === '/sw.js' || lowerPath === '/manifest.json') {
-        return next();
-    }
-    
-    for (let ext of blockedExtensions) {
-        if (lowerPath.endsWith(ext)) {
-            return res.status(403).send('Access Denied');
-        }
-    }
-    if (lowerPath.includes('/config/') || lowerPath.includes('/models/') || lowerPath.includes('/backend/')) {
-        return res.status(403).send('Access Denied');
+    const blocked = ['.env', '.log', '.json', '.md'];
+    const p = req.path.toLowerCase();
+    if (p === '/manifest.json') return next();
+    for (let ext of blocked) {
+        if (p.endsWith(ext)) return res.status(403).send('Forbidden');
     }
     next();
 });
 
-// ==================== Rate Limiting ====================
+// Rate limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 600,
@@ -183,14 +163,14 @@ const deviceAuthLimiter = rateLimit({
         const userAgent = req.headers['user-agent'] || 'unknown';
         return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     },
-    message: { error: 'Too many login attempts. Please wait 15 minutes.' }
+    message: { error: 'Too many attempts. Please try again after 15 minutes.' }
 });
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ==================== JWT & Auth Helper ====================
+// ==================== JWT & Token Helpers ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -221,68 +201,36 @@ function getDeviceKey(fingerprint, ip) {
     return crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
 }
 
-function getDeviceDetails(req) {
-    const userAgent = req.headers['user-agent'] || 'Unknown';
-    let deviceName = 'Browser';
-    let deviceType = 'Desktop';
-    if (/android/i.test(userAgent)) { deviceName = 'Android'; deviceType = 'Mobile'; }
-    else if (/iphone|ipad|ipod/i.test(userAgent)) { deviceName = 'iOS Device'; deviceType = 'Mobile'; }
-    else if (/windows/i.test(userAgent)) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
-    else if (/macintosh/i.test(userAgent)) { deviceName = 'Mac'; deviceType = 'Desktop'; }
-    else if (/linux/i.test(userAgent)) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
-    return { deviceName, deviceType };
-}
-
-async function logAdminAction(userId, action, details = {}, req = null) {
-    try {
-        const ip = req?.ip || req?.connection?.remoteAddress || null;
-        const userAgent = req?.headers?.['user-agent'] || null;
-        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
-    } catch (error) {}
-}
-
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const deviceKey = getDeviceKey(fingerprint, ip);
     const admin = await User.findOne();
-    if (admin && fingerprint === admin.fingerprint && ip === admin.ip) {
-        return null;
-    }
+    if (admin && fingerprint === admin.fingerprint && ip === admin.ip) return null;
     return await BlockedDevice.findOne({
-        deviceKey: deviceKey,
-        $or: [
-            { blockedUntil: { $gt: new Date() } },
-            { isPermanent: true }
-        ]
+        deviceKey,
+        $or: [{ blockedUntil: { $gt: new Date() } }, { isPermanent: true }]
     });
 }
 
 async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 48 * 60) {
     const { fingerprint, ip } = getDeviceId(req);
-    const { deviceName, deviceType } = getDeviceDetails(req);
     const deviceKey = getDeviceKey(fingerprint, ip);
     const admin = await User.findOne();
     if (admin && fingerprint === admin.fingerprint && ip === admin.ip) return null;
 
-    let record = await BlockedDevice.findOne({ deviceKey: deviceKey });
+    let record = await BlockedDevice.findOne({ deviceKey });
     if (record) {
         record.attempts = (record.attempts || 0) + 1;
         record.lastAttempt = new Date();
-        if (record.attempts >= 4) {
-            record.isPermanent = true;
-            record.permanentBlockedAt = new Date();
-            record.reason = 'Permanent ban due to repeated suspicious attempts';
-            record.blockedUntil = null;
-        } else {
-            record.blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
-            record.reason = reason;
-        }
+        record.blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+        record.reason = reason;
         await record.save();
         return record;
     } else {
         const newRecord = new BlockedDevice({
-            deviceKey, fingerprint, ip, deviceName, deviceType,
-            attempts: 1, reason, blockedUntil: new Date(Date.now() + durationMinutes * 60 * 1000),
+            deviceKey, fingerprint, ip,
+            attempts: 1, reason,
+            blockedUntil: new Date(Date.now() + durationMinutes * 60 * 1000),
             lastAttempt: new Date()
         });
         await newRecord.save();
@@ -290,7 +238,7 @@ async function blockDevice(req, reason = 'Too many failed attempts', durationMin
     }
 }
 
-async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
+async function createSession(token, userId, csrfToken, ip, userAgent) {
     const session = new Session({
         token, userId, csrfToken, ip, userAgent,
         expiresAt: new Date(Date.now() + SESSION_TIMEOUT * 60 * 1000),
@@ -309,52 +257,31 @@ async function validateSession(token) {
     return session;
 }
 
-// ==================== Auth Middleware ====================
+// Auth Middleware
 async function authMiddleware(req, res, next) {
     const blocked = await isDeviceBlocked(req);
-    if (blocked) {
-        return res.status(403).json({ error: 'Device is blocked due to security violations.' });
-    }
-    
+    if (blocked) return res.status(403).json({ error: 'Device is blocked.' });
+
     const token = req.cookies?.adminToken;
     const csrfToken = req.headers['x-csrf-token'];
-    
+
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-    
+
     const session = await validateSession(token);
     if (!session) {
         res.clearCookie('adminToken');
         return res.status(401).json({ error: 'Session expired' });
     }
-    
+
     if (csrfToken && csrfToken !== session.csrfToken) {
         return res.status(403).json({ error: 'Invalid CSRF token' });
     }
-    
+
     req.user = decoded;
     req.session = session;
     next();
-}
-
-function generateOTP() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-async function sendOTPEmail(email, otp) {
-    if (!transporter) return false;
-    try {
-        await transporter.sendMail({
-            from: EMAIL_USER,
-            to: email,
-            subject: 'Admin Login Security OTP',
-            html: `<h3>Your Security OTP: <b>${otp}</b></h3><p>Valid for 5 minutes only.</p>`
-        });
-        return true;
-    } catch (e) {
-        return false;
-    }
 }
 
 // ==================== PUBLIC APIS ====================
@@ -362,7 +289,7 @@ app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
         res.json({ number: pricing?.whatsappNumber || '916372923348' });
-    } catch (error) {
+    } catch (e) {
         res.json({ number: '916372923348' });
     }
 });
@@ -375,21 +302,20 @@ app.get('/api/pricing', async (req, res) => {
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
     }
 });
 
 app.get('/api/link/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        const link = await Link.findOne({ id });
+        const link = await Link.findOne({ id: req.params.id });
         if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
         if (link.status !== 'active') {
-            return res.status(403).json({ error: link.status, message: `Link is ${link.status}`, status: link.status });
+            return res.status(403).json({ error: link.status, message: `Link is ${link.status}` });
         }
         if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
-            return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
+            return res.status(403).json({ error: 'expired', message: 'Link expired' });
         }
 
         const { fingerprint } = getDeviceId(req);
@@ -418,15 +344,14 @@ app.get('/api/link/:id', async (req, res) => {
             status: link.status,
             popupSettings: link.popupSettings
         });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch link' });
     }
 });
 
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
-        const { linkId } = req.params;
-        const link = await Link.findOne({ id: linkId });
+        const link = await Link.findOne({ id: req.params.linkId });
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
         const { fingerprint } = getDeviceId(req);
@@ -446,15 +371,14 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             await stats.save();
         }
         res.json({ success: true, claims: stats.totalClaims || 0 });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to track claim' });
     }
 });
 
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
-        const { linkId } = req.params;
-        let link = await Link.findOne({ $or: [{ id: linkId }, { dashboardId: linkId }] });
+        const link = await Link.findOne({ $or: [{ id: req.params.linkId }, { dashboardId: req.params.linkId }] });
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
         const today = new Date().toISOString().split('T')[0];
@@ -468,7 +392,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             status: link.status,
             expiryDate: link.expiryDate || null
         });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
@@ -482,12 +406,11 @@ app.get('/api/settings', async (req, res) => {
             background: popupSettings?.image || null,
             popupSettings: popupSettings || {}
         });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Settings error' });
     }
 });
 
-// Secret Gateway Verification
 app.get('/api/admin/public-secret-key', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -507,7 +430,7 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-// Admin Login Route
+// Admin Login
 app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
@@ -515,7 +438,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
 
         if (!passcode) return res.status(400).json({ error: 'Passcode required' });
         const admin = await User.findOne();
-        if (!admin) return res.status(500).json({ error: 'Admin user not found' });
+        if (!admin) return res.status(500).json({ error: 'Admin not found' });
 
         const isValid = bcrypt.compareSync(passcode, admin.passcode);
         if (!isValid) {
@@ -533,62 +456,44 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
 
         res.cookie('adminToken', jwtToken, {
             httpOnly: true,
-            secure: false, // Set to true if running on HTTPS
+            secure: true,
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        res.json({
-            success: true,
-            csrfToken: csrfToken,
-            step: 'complete'
-        });
-    } catch (error) {
+        res.json({ success: true, csrfToken, step: 'complete' });
+    } catch (e) {
         res.status(500).json({ error: 'Login failed' });
     }
 });
 
-// Admin Links CRUD & Operations
+// Admin Links API
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().sort({ created: -1 });
         res.json(links);
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to fetch links' });
     }
 });
 
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
-        const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
-        if (!name) return res.status(400).json({ error: 'Link name is required' });
+        const { name, video, claim, headline } = req.body;
+        if (!name) return res.status(400).json({ error: 'Name required' });
 
         const newLink = new Link({
             id: 'link_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             name: name.substring(0, 100),
             video: video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: claim || '#',
-            buttonText: buttonText || 'Claim Now',
             headline: headline || '🎬 Watch Video',
-            expiryDate: expiryDate || null,
-            status: 'active',
-            popupSettings: popupSettings || {}
+            status: 'active'
         });
         await newLink.save();
         res.json(newLink);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create link' });
-    }
-});
-
-app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        const link = await Link.findOneAndUpdate({ id }, { status }, { new: true });
-        res.json(link);
     } catch (e) {
-        res.status(500).json({ error: 'Failed to update status' });
+        res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
@@ -610,27 +515,66 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 totalVisitors: stats?.totalVisitors || 0,
                 totalClaims: stats?.totalClaims || 0
             },
-            links: links
+            links
         });
     } catch (e) {
-        res.status(500).json({ error: 'Stats error' });
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 
-// ==================== Page Routing ====================
-const ROOT_DIR = path.resolve(__dirname);
+// ==================== SMART PATH RESOLVER ====================
+// Yeh function automatically file ko root me ya admin me dhundh lega
+function resolvePagePath(...relativeOptions) {
+    const basePaths = [
+        path.join(__dirname, '..'), // Project root (agar server backend/ me hai)
+        __dirname                   // Current dir
+    ];
+    for (const base of basePaths) {
+        for (const rel of relativeOptions) {
+            const candidate = path.join(base, rel);
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+        }
+    }
+    // Fallback: Pehla option use karo
+    return path.join(__dirname, '..', relativeOptions[0]);
+}
 
+// Pages Routes
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
-app.get('/admin/secret-gateway', (req, res) => res.sendFile(path.join(ROOT_DIR, 'secret-gateway.html')));
-app.get('/admin/login.html', (req, res) => res.sendFile(path.join(ROOT_DIR, 'login.html')));
-app.get('/admin/index.html', (req, res) => res.sendFile(path.join(ROOT_DIR, '668379d1.html')));
-app.get('/admin/668379d1.html', (req, res) => res.sendFile(path.join(ROOT_DIR, '668379d1.html')));
 
-app.get('/uid', (req, res) => res.sendFile(path.join(ROOT_DIR, 'uid-checker.html')));
-app.get('/v/:id', (req, res) => res.sendFile(path.join(ROOT_DIR, 'video-lock.html')));
-app.get('/user-dashboard/:id?', (req, res) => res.sendFile(path.join(ROOT_DIR, 'user-dashboard.html')));
-app.get('/manifest.json', (req, res) => res.sendFile(path.join(ROOT_DIR, 'manifest.json')));
-app.get('/sw.js', (req, res) => res.sendFile(path.join(ROOT_DIR, 'sw.js')));
+app.get('/admin/secret-gateway', (req, res) => {
+    res.sendFile(resolvePagePath('admin/secret-gateway.html', 'secret-gateway.html'));
+});
+
+app.get('/admin/login.html', (req, res) => {
+    res.sendFile(resolvePagePath('admin/login.html', 'login.html'));
+});
+
+app.get('/admin/index.html', (req, res) => {
+    res.sendFile(resolvePagePath('admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html'));
+});
+
+app.get('/uid', (req, res) => {
+    res.sendFile(resolvePagePath('uid-checker.html', 'admin/uid-checker.html'));
+});
+
+app.get('/v/:id', (req, res) => {
+    res.sendFile(resolvePagePath('video-lock.html', 'admin/video-lock.html'));
+});
+
+app.get('/user-dashboard/:id?', (req, res) => {
+    res.sendFile(resolvePagePath('user-dashboard.html', 'admin/user-dashboard.html'));
+});
+
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(resolvePagePath('manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+    res.sendFile(resolvePagePath('sw.js'));
+});
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Secure Server running on port ${port}`);
