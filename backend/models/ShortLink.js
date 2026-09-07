@@ -4,7 +4,7 @@ const ShortLinkSchema = new mongoose.Schema({
     code: {
         type: String,
         required: true,
-        unique: true
+        unique: true // Unique index automatically created
     },
     originalUrl: {
         type: String,
@@ -27,22 +27,18 @@ const ShortLinkSchema = new mongoose.Schema({
         enum: ['active', 'disabled'],
         default: 'active'
     },
-    // ✅ App Open Mode
     appOpen: {
         type: Boolean,
         default: false
     },
-    // ✅ Custom App Scheme
     appScheme: {
         type: String,
         default: ''
     },
-    // ✅ App Store / Play Store Link (Fallback)
     appStoreLink: {
         type: String,
         default: ''
     },
-    // ✅ Schedule Expiry
     expiryDate: {
         type: Date,
         default: null
@@ -61,7 +57,7 @@ const ShortLinkSchema = new mongoose.Schema({
     }
 });
 
-ShortLinkSchema.index({ code: 1 }, { unique: true });
+// Duplicate code index hata diya gaya hai:
 ShortLinkSchema.index({ createdAt: -1 });
 ShortLinkSchema.index({ expiryDate: 1 });
 
