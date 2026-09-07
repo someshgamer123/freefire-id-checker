@@ -13,7 +13,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
-// ==================== MongoDB Connection & Models ====================
+// ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Link = require('./models/Link');
@@ -34,7 +34,7 @@ const Security = require('./config/security');
 
 connectDB();
 
-// ==================== Environment Variables & Settings ====================
+// ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
@@ -72,12 +72,10 @@ async function initializeDatabase() {
             await adminExists.save();
         }
 
-        let statsExists = await Stats.findOne();
-        if (!statsExists) {
-            await Stats.create({});
-        }
+        const statsExists = await Stats.findOne();
+        if (!statsExists) await Stats.create({});
 
-        let popupExists = await PopupSettings.findOne();
+        const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
             await PopupSettings.create({
                 image: null,
@@ -87,7 +85,7 @@ async function initializeDatabase() {
             });
         }
 
-        let pricingExists = await Pricing.findOne();
+        const pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
                 pricing: {
@@ -109,7 +107,7 @@ async function initializeDatabase() {
 }
 initializeDatabase();
 
-// ==================== Security & Middleware ====================
+// ==================== Security Headers ====================
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false
@@ -308,7 +306,7 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ✅ LINK RESOLVER (Supports Entrance Popup Image, Expiry & Visits)
+// ✅ LINK RESOLVER (Handles popup settings, image fallback, status & expiry)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
@@ -326,11 +324,11 @@ app.get('/api/link/:id', async (req, res) => {
                 buttonText: 'Claim Now',
                 headline: '🎬 Watch Video & Unlock Reward',
                 status: 'active',
-                popupSettings: {
-                    image: popupSettings?.image || null,
-                    title: popupSettings?.title || '🎁 Claim Your Reward',
-                    buttonText: popupSettings?.buttonText || 'Claim Now',
-                    subtitle: popupSettings?.subtitle || 'Tap below to unlock your reward'
+                popupSettings: popupSettings || {
+                    image: null,
+                    title: '🎁 Claim Your Reward',
+                    buttonText: 'Claim Now',
+                    subtitle: 'Tap below to unlock your reward'
                 }
             });
         }
@@ -346,7 +344,7 @@ app.get('/api/link/:id', async (req, res) => {
             return res.status(403).json({ error: 'disabled', message: 'Link disabled', status: 'disabled' });
         }
 
-        // Expiry check: only trigger if expiryDate is genuinely a valid date in the past
+        // Expiry check
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
@@ -354,21 +352,12 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Track Visit
+        // Track Visit on the specific link
         const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
-
         link.visits = (link.visits || 0) + 1;
         if (!link.dailyVisits) link.dailyVisits = new Map();
         link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
-
-        stats.totalVisitors = (stats.totalVisitors || 0) + 1;
-        if (!stats.dailyVisitors) stats.dailyVisitors = new Map();
-        stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
-
         await link.save();
-        await stats.save();
 
         const globalPopup = await PopupSettings.findOne();
         const popupImage = link.popupSettings?.image || globalPopup?.image || null;
@@ -389,37 +378,22 @@ app.get('/api/link/:id', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Link Resolver Error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// Track Claim Button Click
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne({ id: req.params.linkId });
-        const { fingerprint } = getDeviceId(req);
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
         const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
+        link.claims = (link.claims || 0) + 1;
+        if (!link.dailyClaims) link.dailyClaims = new Map();
+        link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
+        await link.save();
 
-        const uniqueKey = fingerprint + '_' + today;
-        const uniqueClaims = stats.uniqueClaims || new Map();
-        if (!uniqueClaims.has(uniqueKey) || (Date.now() - uniqueClaims.get(uniqueKey) > 48 * 60 * 60 * 1000)) {
-            uniqueClaims.set(uniqueKey, Date.now());
-            stats.totalClaims = (stats.totalClaims || 0) + 1;
-            if (!stats.dailyClaims) stats.dailyClaims = new Map();
-            stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
-
-            if (link) {
-                link.claims = (link.claims || 0) + 1;
-                if (!link.dailyClaims) link.dailyClaims = new Map();
-                link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
-                await link.save();
-            }
-            await stats.save();
-        }
-        res.json({ success: true, claims: stats.totalClaims || 0 });
+        res.json({ success: true, claims: link.claims });
     } catch (error) {
         res.status(500).json({ error: 'Failed to track claim' });
     }
@@ -513,7 +487,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ CREATE CAMPAIGN LINK WITH ENTRANCE POPUP IMAGE & EXPIRY
+// Link Creation with popupSettings and expiryDate
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
@@ -554,7 +528,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ FULL EDIT CAMPAIGN LINK (Supports Image, Texts, Expiry, Status)
+// Full update for Rewarded Link (Image, Expiry, Texts)
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings, status } = req.body;
@@ -589,7 +563,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
     } catch (e) {
-        console.error('Link Update Error:', e);
         res.status(500).json({ error: 'Failed to update' });
     }
 });
@@ -612,42 +585,60 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== ALL STATS API (FOR CHARTS & DASHBOARD) ====================
+// ==================== DASHBOARD STATS (STRICTLY ACTIVE LINKS ONLY) ====================
+// ✅ Aggregates visits and claims exclusively from active links (removes deleted links data)
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
-        const links = await Link.find();
-        const stats = await Stats.findOne();
+        const allLinks = await Link.find().sort({ created: -1 });
+        const activeLinks = allLinks.filter(l => l.status === 'active');
         const today = new Date().toISOString().split('T')[0];
-        const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        const dailyVisitorsGlobal = stats?.dailyVisitors || new Map();
-        const dailyClaimsGlobal = stats?.dailyClaims || new Map();
+        let totalVisits = 0;
+        let totalClaims = 0;
+        let todayVisitors = 0;
+        let todayClaims = 0;
+        let aggregatedDailyVisits = new Map();
+        let aggregatedDailyClaims = new Map();
 
-        let globalVisits24h = 0;
-        let globalClaims24h = 0;
+        // Calculate only on active existing links
+        for (const link of activeLinks) {
+            totalVisits += (link.visits || 0);
+            totalClaims += (link.claims || 0);
 
-        for (const [date, count] of dailyVisitorsGlobal) {
-            if (new Date(date) >= oneDayAgo) globalVisits24h += count;
+            if (link.dailyVisits) {
+                const dv = link.dailyVisits instanceof Map ? link.dailyVisits : new Map(Object.entries(link.dailyVisits));
+                for (const [date, count] of dv.entries()) {
+                    aggregatedDailyVisits.set(date, (aggregatedDailyVisits.get(date) || 0) + count);
+                    if (date === today) todayVisitors += count;
+                }
+            }
+
+            if (link.dailyClaims) {
+                const dc = link.dailyClaims instanceof Map ? link.dailyClaims : new Map(Object.entries(link.dailyClaims));
+                for (const [date, count] of dc.entries()) {
+                    aggregatedDailyClaims.set(date, (aggregatedDailyClaims.get(date) || 0) + count);
+                    if (date === today) todayClaims += count;
+                }
+            }
         }
-        for (const [date, count] of dailyClaimsGlobal) {
-            if (new Date(date) >= oneDayAgo) globalClaims24h += count;
-        }
+
+        const visits24h = todayVisitors;
+        const claims24h = todayClaims;
 
         res.json({
             global: {
-                totalVisitors: stats?.totalVisitors || 0,
-                totalClaims: stats?.totalClaims || 0,
-                todayVisitors: dailyVisitorsGlobal.get(today) || 0,
-                todayClaims: dailyClaimsGlobal.get(today) || 0,
-                visits24h: globalVisits24h,
-                claims24h: globalClaims24h,
-                activeNow: Math.max(1, Math.round((stats?.totalVisitors || 0) * 0.04)),
-                activeClaims: Math.max(0, Math.round((stats?.totalClaims || 0) * 0.03)),
-                dailyVisitors: Object.fromEntries(dailyVisitorsGlobal),
-                dailyClaims: Object.fromEntries(dailyClaimsGlobal)
+                totalVisitors: totalVisits,
+                totalClaims: totalClaims,
+                todayVisitors: todayVisitors,
+                todayClaims: todayClaims,
+                visits24h: visits24h,
+                claims24h: claims24h,
+                activeNow: Math.min(totalVisits, Math.max(0, Math.round(todayVisitors * 0.4))),
+                activeClaims: Math.min(totalClaims, Math.max(0, Math.round(todayClaims * 0.3))),
+                dailyVisitors: Object.fromEntries(aggregatedDailyVisits),
+                dailyClaims: Object.fromEntries(aggregatedDailyClaims)
             },
-            links: links.map(l => ({
+            links: allLinks.map(l => ({
                 id: l.id,
                 name: l.name,
                 video: l.video || '',
@@ -668,7 +659,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DEVICE MANAGEMENT ====================
+// Device Management APIs
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find().sort({ lastAttempt: -1 });
@@ -701,7 +692,7 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
     }
 });
 
-// ==================== SETTINGS APIS ====================
+// Settings APIs
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -736,7 +727,7 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== URL SHORTENER & APP DEEP-LINKING ====================
+// URL Shortener & App Deep-Linking
 app.get('/s/:code', async (req, res) => {
     try {
         const link = await ShortLink.findOne({ code: req.params.code });
@@ -779,7 +770,7 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ DELETE SHORT LINK (Supports both MongoDB _id and custom code)
+// ✅ Delete Short Link (Supports ObjectId or code)
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const targetId = req.params.id;
@@ -817,7 +808,7 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-// ==================== ROUTES & VIEWS ====================
+// Page Routes
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 app.get('/admin/secret-gateway', (req, res) => {
@@ -828,7 +819,6 @@ app.get('/admin/login.html', (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-// Admin Panel Access Route
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
     if (!token || !verifyToken(token)) {
@@ -837,17 +827,14 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
 
-// UID Checker
 app.get('/uid', (req, res) => {
     sendAppFile(res, 'uid-checker.html');
 });
 
-// Video Lock Page
 app.get('/v/:id', (req, res) => {
     sendAppFile(res, 'video-lock.html');
 });
 
-// User Dashboard
 app.get('/user-dashboard/:id?', (req, res) => {
     sendAppFile(res, 'user-dashboard.html');
 });
@@ -855,7 +842,6 @@ app.get('/user-dashboard/:id?', (req, res) => {
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-// Start Server
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Production Ready Server running on port ${port}`);
+    console.log(`🚀 Secure Server running on port ${port}`);
 });
