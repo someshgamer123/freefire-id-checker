@@ -1,12 +1,10 @@
 {
     "name": "freefire-id-checker",
     "version": "1.0.0",
-    "description": "Free Fire ID Checker - Secure Admin Panel with MongoDB",
+    "description": "Secure Portal & Dashboard",
     "main": "backend/server.js",
     "scripts": {
-        "start": "node backend/server.js",
-        "dev": "nodemon backend/server.js",
-        "secure": "NODE_ENV=production node backend/server.js"
+        "start": "node backend/server.js"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
@@ -21,9 +19,6 @@
         "nodemailer": "^9.0.5",
         "qrcode": "^1.5.3",
         "speakeasy": "^2.0.0"
-    },
-    "devDependencies": {
-        "nodemon": "^3.0.3"
     },
     "engines": {
         "node": ">=16.0.0"
