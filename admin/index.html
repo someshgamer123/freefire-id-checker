@@ -30,6 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
@@ -57,6 +58,7 @@
         .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
         .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
+        .btn-logout:hover { background: #dc2626; }
         .btn-install { background: var(--success); color: white; border: none !important; display: none; }
         .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
@@ -109,7 +111,9 @@
             border: 1px solid var(--border); transition: 0.3s;
         }
         .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
-        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; transition: 0.3s; }
+        .live-visitors .lv-item .lv-number {
+            font-size: 24px; font-weight: 800; transition: 0.3s;
+        }
         .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
         .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
         .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
@@ -125,6 +129,7 @@
             background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
             box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
         }
+        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
         .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
         .card input, .card select, .card textarea {
             width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
@@ -139,13 +144,18 @@
             font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
         }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .btn:active { transform: scale(0.97); }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #16a34a; }
         .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
         .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
         .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
         .btn-block { width: 100%; }
         .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
@@ -153,6 +163,7 @@
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
             gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
         }
+        .link-item:hover { transform: translateX(4px); }
         .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
         .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
         .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
@@ -178,51 +189,110 @@
         }
         .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
         .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
+        .edit-modal .modal-content .modal-close:hover { color: var(--text); }
         .edit-modal .modal-content .form-group { margin-bottom: 10px; }
         .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
         .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
             width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
             background: var(--bg); color: var(--text); font-size: 13px; outline: none;
         }
+        .edit-modal .modal-content .form-group input:focus, .edit-modal .modal-content .form-group select:focus { border-color: var(--primary); }
         .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
         .edit-modal .modal-content .popup-preview-small { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; margin-top: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
         .edit-modal .modal-content .popup-preview-small .preview-img { max-width: 100%; max-height: 60px; border-radius: 4px; object-fit: cover; }
         .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 11px; font-weight: 700; margin-top: 4px; }
         .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.4); font-size: 9px; }
-        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 12px; border: none; border-radius: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 9px; font-weight: 700; margin-top: 4px; }
+        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 12px; border: none; border-radius: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 9px; font-weight: 700; cursor: default; margin-top: 4px; }
+
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
+            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+            z-index: 99999; max-width: 400px; font-size: 13px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
+        .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
         .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
         .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
-        .analytics-container .analytics-header .link-selector select, .analytics-container .analytics-header .link-selector input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
+        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
+        .analytics-container .analytics-header .link-selector .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 150px; flex: 1; }
         .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; }
-        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; }
+        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
+        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
+        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
         .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
-        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; color: #fff; }
-        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
+        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
+        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
+        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
+        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
+        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .custom-date-input input[type="date"] { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
+
+        .search-results-count { font-size: 11px; color: var(--text-light); }
+
+        .generated-link { background: rgba(99,102,241,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed rgba(99,102,241,0.3); }
+        .generated-link.show { display: block; }
+        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
 
         .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
         .image-preview.show { display: block; }
         .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
+        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
 
         .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
-        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; margin-bottom: 6px; }
+        .popup-preview .preview-image { max-width: 100%; border-radius: 6px; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin-bottom: 6px; }
         .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
         .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
         .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; }
+        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
 
-        .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
-            color: white; font-weight: 600; font-size: 13px; z-index: 99999;
-            transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
+        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
+
+        .device-item {
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
         }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: #16a34a; }
-        .toast.error { background: #dc2626; }
-        .toast.info { background: #4f46e5; }
+        .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+
+        .session-item {
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 8px; border-left: 3px solid var(--success); transition: 0.3s;
+        }
+        .session-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .session-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; padding: 12px; }
+            .header-actions { justify-content: center; }
+            .menu-container { flex-direction: column; align-items: stretch; }
+            .menu-container .menu-btn { text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
+            .link-item { flex-direction: column; align-items: stretch; }
+            body { padding: 12px; }
+            .card { padding: 14px; }
+            .edit-modal .modal-content { padding: 16px; }
+            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
+            .analytics-container .analytics-header .link-selector { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
@@ -240,128 +310,184 @@
         </header>
 
         <div class="menu-container">
-            <button class="menu-btn active" onclick="showSection('dashboard')">📊 Overview</button>
-            <button class="menu-btn" onclick="showSection('links')">🔗 Links Manager</button>
-            <button class="menu-btn" onclick="showSection('analytics')">📈 Analytics & Export</button>
-            <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
-            <button class="menu-btn" onclick="showSection('shortener')">🔗 URL Shortener</button>
-            <button class="menu-btn" onclick="showSection('settings')">⚙️ Settings</button>
+            <span class="menu-label">📋 Menu:</span>
+            <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button class="menu-btn" data-section="links" onclick="showSection('links')">🔗 Links</button>
+            <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
+            <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
+            <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
+            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
         </div>
 
-        <!-- 1. DASHBOARD OVERVIEW SECTION -->
-        <div class="section active" id="sec-dashboard">
+        <!-- 1. DASHBOARD SECTION -->
+        <div class="section active" id="section-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">📦 Active Links</div></div>
-                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">👁️ Total Visits</div></div>
-                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">🎁 Total Claims</div></div>
-                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">🟢 Active Users (Live)</div></div>
-            </div>
-
-            <div class="live-visitors">
-                <div class="lv-title">
-                    <span class="dot"></span> Live Real-Time Stream
-                    <span class="live-badge">🟢 Live</span>
-                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
-                </div>
-                <div class="lv-grid">
-                    <div class="lv-item"><div class="lv-number visits-color" id="liveLifetimeVisits">0</div><div class="lv-label">👁️ Lifetime Visits</div></div>
-                    <div class="lv-item"><div class="lv-number claims-color" id="liveLifetimeClaims">0</div><div class="lv-label">🎁 Lifetime Claims</div></div>
-                    <div class="lv-item"><div class="lv-number visits-color" id="live24hrVisits">0</div><div class="lv-label">👁️ Last 24h Visits</div></div>
-                    <div class="lv-item"><div class="lv-number claims-color" id="live24hrClaims">0</div><div class="lv-label">🎁 Last 24h Claims</div></div>
-                </div>
+                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
+                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
+                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
+                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
             </div>
 
             <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="margin:0;border:none;">📈 Visitor & Claim Analytics</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button onclick="switchDashGraph('7days')" class="btn btn-outline btn-sm active" id="dg7">7 Days</button>
-                        <button onclick="switchDashGraph('24h')" class="btn btn-outline btn-sm" id="dg24">24 Hours</button>
+                <h3>📊 Lifetime Visitor & Claim Statistics</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                    <div class="stat-card"><div class="number" id="totalVisitors">0</div><div class="label">Total Visitors</div></div>
+                    <div class="stat-card"><div class="number" id="totalClaims">0</div><div class="label">Total Claims</div></div>
+                    <div class="stat-card"><div class="number" id="todayVisitors">0</div><div class="label">Today's Visitors</div></div>
+                    <div class="stat-card"><div class="number" id="todayClaims">0</div><div class="label">Today's Claims</div></div>
+                </div>
+            </div>
+
+            <div class="live-visitors" id="liveVisitors">
+                <div class="lv-title">
+                    <span class="dot"></span> Live Visitors & Claims
+                    <span class="live-badge">🟢 Live</span>
+                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
+                </div>
+                
+                <div class="lv-grid">
+                    <div class="lv-item">
+                        <div class="lv-number visits-color" id="liveLifetimeVisits">0</div>
+                        <div class="lv-label">👁️ Lifetime Visits</div>
+                        <div class="lv-time">All time</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number claims-color" id="liveLifetimeClaims">0</div>
+                        <div class="lv-label">🎁 Lifetime Claims</div>
+                        <div class="lv-time">All time</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number visits-color" id="live48hrVisits">0</div>
+                        <div class="lv-label">👁️ Last 24 Hours Visits</div>
+                        <div class="lv-time">Last 24 hours</div>
+                    </div>
+                    <div class="lv-item">
+                        <div class="lv-number claims-color" id="live48hrClaims">0</div>
+                        <div class="lv-label">🎁 Last 24 Hours Claims</div>
+                        <div class="lv-time">Last 24 hours</div>
+                    </div>
+                    <div class="lv-item active-now">
+                        <div class="lv-number visits-color" id="liveActiveVisits">0</div>
+                        <div class="lv-label">🟢 Active Visits</div>
+                        <div class="lv-time">Watching now</div>
+                    </div>
+                    <div class="lv-item active-now" style="border-left-color: var(--warning);">
+                        <div class="lv-number claims-color" id="liveActiveClaims">0</div>
+                        <div class="lv-label">🟢 Active Claims</div>
+                        <div class="lv-time">Claiming now</div>
                     </div>
                 </div>
-                <div style="height:280px;"><canvas id="dashboardChart"></canvas></div>
+            </div>
+
+            <div class="card" style="margin-top:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <h3 style="font-size:14px;margin:0;">📈 Visitor Trends</h3>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="switchDashboardGraph('7days')" class="btn btn-primary btn-sm active" id="dashGraph7">7 Days</button>
+                        <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">24 Hours</button>
+                    </div>
+                </div>
+                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
             </div>
         </div>
 
         <!-- 2. LINKS MANAGER SECTION -->
-        <div class="section" id="sec-links">
+        <div class="section" id="section-links">
             <div class="card">
-                <h3>🔍 Search & Filter Links</h3>
-                <input type="text" id="searchLinksInput" placeholder="Type link name or ID to filter..." oninput="filterLinks()">
-                <div id="linksList" style="margin-top:12px;">Loading links...</div>
+                <h3>🔍 Search Links</h3>
+                <div class="search-bar">
+                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
+                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
+                </div>
+                <div id="linksList"></div>
             </div>
         </div>
 
         <!-- 3. ANALYTICS & EXPORT SECTION -->
-        <div class="section" id="sec-analytics">
+        <div class="section" id="section-analytics">
             <div class="analytics-container" id="analyticsExportBox">
                 <div class="analytics-header">
                     <div class="link-selector">
+                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
+                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter by name..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
-                        <button class="filter-btn active" onclick="setAnalyticsFilter('lifetime')">Lifetime</button>
-                        <button class="filter-btn" onclick="setAnalyticsFilter('24h')">24h</button>
+                        <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
+                        <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24h</button>
                     </div>
                 </div>
+
                 <div class="analytics-stats">
-                    <div class="a-stat"><div class="a-number" id="anaVisits">0</div><div class="a-label">Total Visits</div></div>
-                    <div class="a-stat"><div class="a-number" id="anaClaims">0</div><div class="a-label">Total Claims</div></div>
+                    <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Total Visits</div></div>
+                    <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Total Claims</div></div>
                 </div>
+
                 <div style="height:280px;margin-top:12px;"><canvas id="analyticsChart"></canvas></div>
-                <div style="display:flex;gap:10px;margin-top:16px;">
-                    <button class="btn btn-success btn-sm" onclick="downloadAnalyticsImage()">🖼️ Export PNG</button>
-                    <button class="btn btn-primary btn-sm" onclick="downloadAnalyticsCSV()">📊 Export CSV</button>
+
+                <div style="margin-top:16px;display:flex;gap:8px;">
+                    <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Export PNG</button>
+                    <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 Export CSV</button>
                 </div>
             </div>
         </div>
 
         <!-- 4. CREATE LINK SECTION -->
-        <div class="section" id="sec-create">
+        <div class="section" id="section-create">
             <div class="card">
-                <h3>➕ Create New Rewarded Link</h3>
-                <input type="text" id="cName" placeholder="Link Name (e.g. Free Fire Promo 1)">
+                <h3>➕ Create Rewarded Link</h3>
+                <input type="text" id="linkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
                 <div class="grid-2">
-                    <input type="text" id="cVideo" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
-                    <input type="text" id="cClaim" placeholder="Claim Reward Destination URL" value="#">
+                    <input type="text" id="video" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="claim" placeholder="Claim Destination URL" value="#">
                 </div>
-                <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
-                
+                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
+                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings</h4>
-                    <input type="text" id="cPopTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
-                    <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="Claim Now">
-                    <input type="text" id="cPopImg" placeholder="Image URL (16:9 ratio)">
+                    <div class="grid-2">
+                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                        <input type="text" id="popupButtonText" placeholder="Popup Button Text" value="Claim Now">
+                    </div>
+                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    <input type="text" id="popupImageUrl" placeholder="Image URL (16:9 ratio)">
                 </div>
 
-                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
+                    <select id="schedulePreset" onchange="updateSchedulePreset()">
+                        <option value="">No Expiry (Lifetime Active)</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days</option>
+                        <option value="15">15 Days</option>
+                        <option value="30">30 Days</option>
+                    </select>
+                    <div id="expiryDisplay" style="margin-top:4px;font-size:11px;color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
+                </div>
+
+                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;">🚀 Generate Link</button>
+
+                <div class="generated-link" id="generatedLink">
+                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Link Generated!</div>
+                    <div class="link-box">
+                        <input type="text" id="generatedLinkInput" readonly>
+                        <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 5. URL SHORTENER & DEEP LINKING -->
-        <div class="section" id="sec-shortener">
-            <div class="card">
-                <h3>🔗 Create App Deep-Link (URL Shortener)</h3>
-                <input type="text" id="sUrl" placeholder="Original Destination URL (e.g. https://youtube.com/...)">
-                <input type="text" id="sTitle" placeholder="Link Title (Optional)">
-                <input type="text" id="sScheme" placeholder="App Deep-Link Scheme (e.g. vnd.youtube://, whatsapp://)">
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
-            </div>
-            <div class="card">
-                <h3>Active Short Links</h3>
-                <div id="shortLinksList">Loading...</div>
-            </div>
-        </div>
-
-        <!-- 6. SETTINGS & DEVICE SECURITY -->
-        <div class="section" id="sec-settings">
+        <!-- 5. SETTINGS SECTION -->
+        <div class="section" id="section-settings">
             <div class="card">
                 <h3>🖼️ UID Background Image (9:16)</h3>
-                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
+                <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
                 <div style="display:flex;gap:8px;margin-top:8px;">
-                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save Background</button>
-                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
+                    <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
+                    <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
                 </div>
             </div>
 
@@ -371,12 +497,27 @@
                     <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
                 </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changePasscode()">Update Passcode</button>
+                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;">Update Passcode</button>
             </div>
 
             <div class="card">
-                <h3>⛔ Blocked Devices & Attackers</h3>
-                <div id="devicesList">Loading devices...</div>
+                <h3>⛔ Device Security & Blocked Attackers</h3>
+                <div id="deviceList">Loading devices...</div>
+            </div>
+        </div>
+
+        <!-- 6. URL SHORTENER SECTION -->
+        <div class="section" id="section-shortener">
+            <div class="card">
+                <h3>🔗 App Deep-Linking URL Shortener</h3>
+                <input type="text" id="shortOriginalUrl" placeholder="Enter destination URL (e.g. https://youtube.com/...)">
+                <input type="text" id="shortTitle" placeholder="Title (Optional)">
+                <input type="text" id="shortAppScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
+                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:10px;">🚀 Generate Short Link</button>
+            </div>
+            <div class="card">
+                <h3>Active Short Links</h3>
+                <div id="shortLinksList">Loading...</div>
             </div>
         </div>
     </div>
@@ -395,10 +536,12 @@
     <script>
         const csrfToken = localStorage.getItem('csrfToken') || '';
         let allLinks = [];
-        let dashChartInst = null;
-        let anaChartInst = null;
-        let currentDashGraph = '7days';
+        let dashboardChartInstance = null;
+        let analyticsChartInstance = null;
+        let selectedExpiry = null;
         let editingLinkId = null;
+        let currentFilter = 'lifetime';
+        let analyticsData = null;
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
@@ -410,12 +553,13 @@
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('sec-' + id).classList.add('active');
-            event.currentTarget.classList.add('active');
+            document.getElementById('section-' + id).classList.add('active');
+            const btn = document.querySelector(`.menu-btn[data-section="${id}"]`);
+            if (btn) btn.classList.add('active');
             if (id === 'links') loadLinks();
             if (id === 'analytics') loadAnalyticsLinks();
             if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') loadDevices();
+            if (id === 'settings') loadBlockedDevices();
         }
 
         async function loadStats() {
@@ -427,25 +571,33 @@
                     document.getElementById('totVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('totClaims').textContent = g.totalClaims || 0;
                     document.getElementById('activeLive').textContent = g.activeNow || 0;
+                    document.getElementById('totalVisitors').textContent = g.totalVisitors || 0;
+                    document.getElementById('totalClaims').textContent = g.totalClaims || 0;
+                    document.getElementById('todayVisitors').textContent = g.todayVisitors || 0;
+                    document.getElementById('todayClaims').textContent = g.todayClaims || 0;
                     document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('live24hrVisits').textContent = g.visits24h || 0;
-                    document.getElementById('live24hrClaims').textContent = g.claims24h || 0;
-                    renderDashboardChart(g.dailyVisitors || {});
+                    document.getElementById('live48hrVisits').textContent = g.visits24h || 0;
+                    document.getElementById('live48hrClaims').textContent = g.claims24h || 0;
+                    document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
+                    document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
+                    renderDashboardGraph(g.dailyVisitors || {});
                 }
                 if (data && data.links) {
-                    document.getElementById('totLinks').textContent = data.links.length || 0;
+                    document.getElementById('totalLinks').textContent = data.links.length || 0;
+                    document.getElementById('activeLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
+                    document.getElementById('totalVisits').textContent = data.links.reduce((s, l) => s + (l.visits||0), 0);
                     allLinks = data.links;
                 }
             } catch(e) {}
         }
 
-        function renderDashboardChart(dailyData) {
+        function renderDashboardGraph(dailyData) {
             const labels = Object.keys(dailyData).slice(-7);
             const values = labels.map(k => dailyData[k]);
-            if (dashChartInst) dashChartInst.destroy();
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
             const ctx = document.getElementById('dashboardChart').getContext('2d');
-            dashChartInst = new Chart(ctx, {
+            dashboardChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels.length ? labels : ['Today'],
@@ -461,18 +613,16 @@
             });
         }
 
-        function switchDashGraph(mode) {
-            currentDashGraph = mode;
-            document.getElementById('dg7').classList.toggle('active', mode === '7days');
-            document.getElementById('dg24').classList.toggle('active', mode === '24h');
+        function switchDashboardGraph(mode) {
+            document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
+            document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
             loadStats();
         }
 
         async function loadLinks() {
             const list = document.getElementById('linksList');
             const res = await fetch('/api/links');
-            const links = await res.json();
-            allLinks = links;
+            allLinks = await res.json();
             filterLinks();
         }
 
@@ -485,7 +635,7 @@
                 <div class="link-item">
                     <div class="info">
                         <span class="name">${l.name}</span>
-                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b></span>
+                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></span>
                     </div>
                     <div class="actions">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
@@ -523,6 +673,7 @@
                 <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline||''}"></div>
                 <div class="form-actions">
                     <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
+                    <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
                 </div>
             `;
             document.getElementById('editModal').classList.add('show');
@@ -547,31 +698,64 @@
             loadLinks();
         }
 
-        async function createLink() {
-            const name = document.getElementById('cName').value.trim();
-            const video = document.getElementById('cVideo').value.trim();
-            const claim = document.getElementById('cClaim').value.trim();
-            const headline = document.getElementById('cHeadline').value.trim();
-            const popupSettings = {
-                title: document.getElementById('cPopTitle').value,
-                subtitle: document.getElementById('cPopSub').value,
-                buttonText: document.getElementById('cPopBtn').value,
-                image: document.getElementById('cPopImg').value || null
-            };
-            if (!name) return showToast('Please enter link name', 'error');
-
-            await fetch('/api/links', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, video, claim, headline, popupSettings })
-            });
-            showToast('✅ Link created successfully!', 'success');
-            document.getElementById('cName').value = '';
-            showSection('links');
-            loadStats();
+        // ✅ FIXED: LINK EXPIRY PRESET & GENERATOR
+        function updateSchedulePreset() {
+            const p = document.getElementById('schedulePreset').value;
+            const disp = document.getElementById('expiryDisplay');
+            if (p) {
+                const days = parseInt(p);
+                const d = new Date();
+                d.setDate(d.getDate() + days);
+                selectedExpiry = d.toISOString();
+                disp.textContent = '📅 Expires: ' + d.toLocaleDateString();
+            } else {
+                selectedExpiry = null;
+                disp.textContent = '⏰ No expiry set (Lifetime Active)';
+            }
         }
 
-        // ANALYTICS & EXPORTS
+        async function createLink() {
+            const name = document.getElementById('linkName').value.trim();
+            const video = document.getElementById('video').value.trim();
+            const claim = document.getElementById('claim').value.trim();
+            const buttonText = document.getElementById('buttonText').value.trim();
+            const headline = document.getElementById('headline').value.trim();
+            const popupSettings = {
+                title: document.getElementById('popupTitle').value,
+                subtitle: document.getElementById('popupSubtitle').value,
+                buttonText: document.getElementById('popupButtonText').value,
+                image: document.getElementById('popupImageUrl').value || null
+            };
+
+            if (!name) return showToast('Please enter link name', 'error');
+
+            const res = await fetch('/api/links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name, video, claim, buttonText, headline,
+                    expiryDate: selectedExpiry,
+                    popupSettings
+                })
+            });
+            const d = await res.json();
+            if (d && d.id) {
+                showToast('✅ Link Created Successfully!', 'success');
+                document.getElementById('generatedLink').classList.add('show');
+                document.getElementById('generatedLinkInput').value = window.location.origin + '/uid?link=' + d.id;
+                document.getElementById('linkName').value = '';
+                loadStats();
+            }
+        }
+
+        function copyLink() {
+            const inp = document.getElementById('generatedLinkInput');
+            inp.select();
+            document.execCommand('copy');
+            showToast('✅ Copied to clipboard!', 'success');
+        }
+
+        // ANALYTICS & EXPORT
         async function loadAnalyticsLinks() {
             const sel = document.getElementById('analyticsLinkSelect');
             sel.innerHTML = allLinks.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
@@ -582,11 +766,12 @@
             const selId = document.getElementById('analyticsLinkSelect').value;
             const link = allLinks.find(l => l.id === selId);
             if (!link) return;
-            document.getElementById('anaVisits').textContent = link.visits || 0;
-            document.getElementById('anaClaims').textContent = link.claims || 0;
+            analyticsData = link;
+            document.getElementById('analyticsTotalVisits').textContent = link.visits || 0;
+            document.getElementById('analyticsTotalClaims').textContent = link.claims || 0;
             const ctx = document.getElementById('analyticsChart').getContext('2d');
-            if (anaChartInst) anaChartInst.destroy();
-            anaChartInst = new Chart(ctx, {
+            if (analyticsChartInstance) analyticsChartInstance.destroy();
+            analyticsChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Visits', 'Claims'],
@@ -596,6 +781,12 @@
             });
         }
 
+        function setTimeFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+            loadAnalytics();
+        }
+
         function downloadAnalyticsImage() {
             html2canvas(document.getElementById('analyticsExportBox')).then(c => {
                 const a = document.createElement('a'); a.download = 'analytics.png'; a.href = c.toDataURL(); a.click();
@@ -603,10 +794,8 @@
         }
 
         function downloadAnalyticsCSV() {
-            const selId = document.getElementById('analyticsLinkSelect').value;
-            const link = allLinks.find(l => l.id === selId);
-            if (!link) return;
-            const csv = `Link Name,Visits,Claims\n"${link.name}",${link.visits||0},${link.claims||0}`;
+            if (!analyticsData) return;
+            const csv = `Link Name,Visits,Claims\n"${analyticsData.name}",${analyticsData.visits||0},${analyticsData.claims||0}`;
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a'); a.download = 'report.csv'; a.href = URL.createObjectURL(blob); a.click();
         }
@@ -616,7 +805,7 @@
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links');
             const d = await res.json();
-            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created.</p>';
+            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
             list.innerHTML = d.links.map(l => `
                 <div class="link-item">
                     <div>
@@ -631,9 +820,9 @@
         }
 
         async function createShortLink() {
-            const originalUrl = document.getElementById('sUrl').value.trim();
-            const title = document.getElementById('sTitle').value.trim();
-            const appScheme = document.getElementById('sScheme').value.trim();
+            const originalUrl = document.getElementById('shortOriginalUrl').value.trim();
+            const title = document.getElementById('shortTitle').value.trim();
+            const appScheme = document.getElementById('shortAppScheme').value.trim();
             if (!originalUrl) return showToast('Enter URL', 'error');
 
             await fetch('/api/short-links', {
@@ -642,21 +831,21 @@
                 body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
             });
             showToast('✅ Short link created!', 'success');
-            document.getElementById('sUrl').value = '';
+            document.getElementById('shortOriginalUrl').value = '';
             loadShortLinks();
         }
 
         // SETTINGS & DEVICES
-        async function loadDevices() {
-            const list = document.getElementById('devicesList');
+        async function loadBlockedDevices() {
+            const list = document.getElementById('deviceList');
             const res = await fetch('/api/admin/blocked-devices');
             const d = await res.json();
             if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices found.</p>';
             list.innerHTML = d.devices.map(dev => `
-                <div class="link-item" style="border-left-color:var(--danger);">
-                    <div>
-                        <div class="name">${dev.deviceName} (${dev.ip})</div>
-                        <div class="meta">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</div>
+                <div class="device-item">
+                    <div class="info">
+                        <span class="name">${dev.deviceName} (${dev.ip})</span>
+                        <span class="details">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</span>
                     </div>
                     <div>
                         <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
@@ -668,18 +857,18 @@
         async function unblockDev(id) {
             await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST' });
             showToast('Device unblocked', 'info');
-            loadDevices();
+            loadBlockedDevices();
         }
 
         async function saveBackground() {
-            const bg = document.getElementById('bgImgUrl').value.trim();
+            const bg = document.getElementById('bgImageUrl').value.trim();
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: bg }) });
             showToast('✅ Background updated!', 'success');
         }
 
         async function removeBackground() {
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: null }) });
-            document.getElementById('bgImgUrl').value = '';
+            document.getElementById('bgImageUrl').value = '';
             showToast('Background removed', 'info');
         }
 
@@ -689,7 +878,7 @@
             if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
             const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
             const d = await res.json();
-            if (d.success) showToast('✅ Passcode changed!', 'success');
+            if (d.success) showToast('✅ Passcode updated!', 'success');
             else showToast('❌ ' + d.error, 'error');
         }
 
@@ -705,6 +894,11 @@
             window.location.href = '/admin/login.html';
         }
 
+        function installApp() {
+            showToast('Use Chrome browser menu -> Add to Home screen to install app', 'info');
+        }
+
+        // Init
         loadStats();
         setInterval(loadStats, 5000);
     </script>
