@@ -1,11 +1,10 @@
 const mongoose = require('mongoose');
 
 const BlockedDeviceSchema = new mongoose.Schema({
-    // ✅ Combined Key: fingerprint + ip (unique combination)
     deviceKey: {
         type: String,
         required: true,
-        unique: true
+        unique: true // Yahan unique index pehle se hai
     },
     fingerprint: {
         type: String,
@@ -65,8 +64,7 @@ const BlockedDeviceSchema = new mongoose.Schema({
     }
 });
 
-// ✅ Indexes - Unique deviceKey
-BlockedDeviceSchema.index({ deviceKey: 1 }, { unique: true });
+// Inhe rakhein, duplicate deviceKey hata diya gaya hai:
 BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
 BlockedDeviceSchema.index({ deviceType: 1 });
