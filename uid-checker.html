@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>UID Checker</title>
+    <meta charset="UTF-8">
+    <title>UID Checker & Verification</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
@@ -25,9 +26,9 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         
         body {
             min-height: 100vh;
@@ -35,7 +36,8 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            background: #0f1117;
+            background: #0b0f19;
+            color: #f8fafc;
             position: relative;
             overflow: hidden;
             user-select: none;
@@ -46,215 +48,186 @@
             top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
         }
         .bg-container img {
-            width: 100%; height: 100%; object-fit: cover; filter: blur(12px) brightness(0.3); transform: scale(1.1);
+            width: 100%; height: 100%; object-fit: cover; filter: blur(14px) brightness(0.28); transform: scale(1.1);
         }
         .bg-container .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,17,23,0.6);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 30%, rgba(79, 70, 229, 0.12) 0%, rgba(11, 15, 25, 0.85) 75%);
         }
         
         .container {
             position: relative; z-index: 1;
-            background: rgba(26, 28, 35, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 40px 35px;
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            background: rgba(18, 26, 45, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            padding: 42px 34px;
+            border-radius: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.1);
             max-width: 420px;
             width: 100%;
             text-align: center;
-            animation: fadeInUp 0.8s ease;
+            animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            from { opacity: 0; transform: translateY(25px) scale(0.96); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
-        .logo { font-size: 50px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .logo { font-size: 52px; margin-bottom: 12px; animation: float 3.2s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
         
-        .container h2 { color: #e2e8f0; font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .container .sub-title { color: #94a3b8; font-size: 13px; font-weight: 400; margin-bottom: 25px; }
+        .container h2 { color: #ffffff; font-size: 23px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
+        .container .sub-title { color: #94a3b8; font-size: 13.5px; font-weight: 500; margin-bottom: 26px; }
         
-        .uid-input-wrapper { position: relative; margin-bottom: 15px; }
+        .uid-input-wrapper { position: relative; margin-bottom: 16px; }
         .uid-input-wrapper input {
             width: 100%; padding: 16px 20px; padding-right: 50px;
-            border: 1px solid #2d3138; border-radius: 12px; font-size: 18px; font-weight: 500;
-            text-align: center; letter-spacing: 3px; background: rgba(15,17,23,0.8); color: #e2e8f0;
-            transition: all 0.3s ease; outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; font-size: 19px; font-weight: 700;
+            text-align: center; letter-spacing: 3px; background: rgba(11, 15, 25, 0.85); color: #f8fafc;
+            transition: all 0.25s ease; outline: none;
         }
-        .uid-input-wrapper input::placeholder { color: #4a4e57; letter-spacing: 1px; font-weight: 400; }
-        .uid-input-wrapper input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); background: rgba(15,17,23,1); }
+        .uid-input-wrapper input::placeholder { color: #475569; letter-spacing: 1px; font-weight: 500; }
+        .uid-input-wrapper input:focus {
+            border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); background: rgba(11, 15, 25, 1);
+        }
         .uid-input-wrapper input.error-input {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+            border-color: #f43f5e;
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.2);
             animation: shakeInput 0.5s ease;
         }
         @keyframes shakeInput {
             0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-10px); }
-            40% { transform: translateX(10px); }
-            60% { transform: translateX(-6px); }
-            80% { transform: translateX(6px); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
         }
         .uid-input-wrapper .clear-btn {
             position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; color: #4a4e57; font-size: 20px; cursor: pointer; display: none; transition: 0.3s;
+            background: none; border: none; color: #64748b; font-size: 19px; cursor: pointer; display: none; transition: 0.2s;
         }
         .uid-input-wrapper .clear-btn.show { display: block; }
-        .uid-input-wrapper .clear-btn:hover { color: #e2e8f0; }
+        .uid-input-wrapper .clear-btn:hover { color: #f8fafc; }
         
         .btn {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 16px;
-            border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
-            transition: all 0.3s ease; letter-spacing: 0.5px; position: relative; overflow: hidden;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: none; padding: 16px;
+            border-radius: 14px; font-size: 17px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); letter-spacing: 0.5px; position: relative; overflow: hidden;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35);
         }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(99,102,241,0.3); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(79, 70, 229, 0.5); }
         .btn:active { transform: scale(0.97); }
         .btn .ripple {
-            position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0);
+            position: absolute; border-radius: 50%; background: rgba(255,255,255,0.35); transform: scale(0);
             animation: rippleAnim 0.6s linear; pointer-events: none;
         }
         @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
         
-        .loading-container { display: none; margin: 30px 0 20px; padding: 20px; }
-        .loading-container.show { display: block; animation: fadeIn 0.4s ease; }
+        .loading-container { display: none; margin: 26px 0 16px; padding: 16px; }
+        .loading-container.show { display: block; animation: fadeIn 0.35s ease; }
         .spinner {
-            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #6366f1;
+            width: 38px; height: 38px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid #6366f1;
             border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading-container p { color: #94a3b8; margin-top: 15px; font-size: 14px; font-weight: 400; }
+        .loading-container p { color: #94a3b8; margin-top: 14px; font-size: 14px; font-weight: 500; }
         
         .success-popup {
-            display: none; margin: 20px 0; padding: 25px;
-            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 16px;
-            animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: none; margin: 20px 0; padding: 22px;
+            background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 16px;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         .success-popup.show { display: block; }
-        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .success-popup .icon { font-size: 40px; display: block; margin-bottom: 8px; }
-        .success-popup .label { color: #22c55e; font-size: 18px; font-weight: 700; }
-        .success-popup .sub-label { color: #94a3b8; font-size: 13px; font-weight: 400; }
+        @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .success-popup .icon { font-size: 38px; display: block; margin-bottom: 6px; }
+        .success-popup .label { color: #10b981; font-size: 18px; font-weight: 800; }
+        .success-popup .sub-label { color: #94a3b8; font-size: 13px; font-weight: 500; margin-top: 2px; }
         
-        .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.5s ease; }
+        .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.4s ease; }
         .buttons-container.show { display: flex; flex-direction: column; }
         .action-btn {
-            padding: 16px; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer;
-            transition: all 0.3s ease; width: 100%; color: #fff; letter-spacing: 0.5px; position: relative; overflow: hidden;
+            padding: 15px; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer;
+            transition: all 0.25s ease; width: 100%; color: #fff; letter-spacing: 0.5px; position: relative; overflow: hidden;
         }
         .action-btn:active { transform: scale(0.97); }
-        .action-btn.btn-1 { background: linear-gradient(135deg, #22c55e, #16a34a); }
-        .action-btn.btn-1:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(34,197,94,0.3); }
-        .action-btn.btn-2 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-        .action-btn.btn-2:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(59,130,246,0.3); }
+        .action-btn.btn-1 { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); }
+        .action-btn.btn-1:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(16, 185, 129, 0.45); }
+        .action-btn.btn-2 { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3); }
+        .action-btn.btn-2:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(59, 130, 246, 0.45); }
         .action-btn.tap-effect { animation: tapPulse 0.3s ease; }
-        @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+        @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.96); } 100% { transform: scale(1); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         .custom-alert-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15,17,23,0.8);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 6, 11, 0.85);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             z-index: 9999;
-            display: none;
-            justify-content: center;
-            align-items: center;
+            display: none; justify-content: center; align-items: center;
             animation: fadeInOverlay 0.3s ease;
         }
         .custom-alert-overlay.show { display: flex; }
         @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
         
         .custom-alert-box {
-            background: rgba(26, 28, 35, 0.95);
+            background: #121a2d;
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border-radius: 24px;
-            padding: 34px 30px 30px;
-            max-width: 380px;
-            width: 92%;
+            padding: 32px 28px 26px;
+            max-width: 380px; width: 92%;
             text-align: center;
-            border: 1px solid rgba(239,68,68,0.2);
-            box-shadow: 0 0 80px rgba(239,68,68,0.05);
-            animation: alertPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
+            border: 1px solid rgba(244, 63, 94, 0.25);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            animation: alertPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative; overflow: hidden;
         }
-        .custom-alert-box::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 26px;
-            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.05), rgba(239,68,68,0.1));
-            z-index: -1;
-            animation: alertBorderPulse 2s ease-in-out infinite;
-        }
-        @keyframes alertBorderPulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.5; } }
-        
         @keyframes alertPopIn {
-            from { opacity: 0; transform: scale(0.85) translateY(30px) rotate(-2deg); }
-            to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+            from { opacity: 0; transform: scale(0.88) translateY(25px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
         
-        .custom-alert-box .alert-icon { font-size: 56px; display: block; margin-bottom: 8px; animation: alertShake 0.6s ease; }
-        @keyframes alertShake {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            15% { transform: rotate(-15deg) scale(1.1); }
-            30% { transform: rotate(15deg) scale(1.1); }
-            45% { transform: rotate(-10deg) scale(1.05); }
-            60% { transform: rotate(10deg) scale(1.05); }
-            80% { transform: rotate(-5deg) scale(1); }
+        .custom-alert-box .alert-icon { font-size: 50px; display: block; margin-bottom: 8px; }
+        .custom-alert-box .alert-title { font-size: 22px; font-weight: 800; color: #f43f5e; margin-bottom: 6px; }
+        .custom-alert-box .alert-message { font-size: 13.5px; color: #94a3b8; margin-bottom: 22px; line-height: 1.6; }
+        .custom-alert-box .alert-message strong { color: #f43f5e; font-weight: 700; }
+        .custom-alert-box .alert-message .rule { display: inline-block; background: rgba(244, 63, 94, 0.1); padding: 2px 10px; border-radius: 6px; font-weight: 700; color: #f43f5e; }
+        
+        .custom-alert-box .alert-btn {
+            padding: 13px 36px; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer;
+            background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff; transition: all 0.25s ease;
+            box-shadow: 0 10px 25px rgba(244, 63, 94, 0.35); position: relative; overflow: hidden;
         }
+        .custom-alert-box .alert-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(244, 63, 94, 0.45); }
+        .custom-alert-box .alert-btn:active { transform: scale(0.97); }
         
-        .custom-alert-box .alert-title { font-size: 24px; font-weight: 800; color: #ef4444; margin-bottom: 6px; }
-        .custom-alert-box .alert-message { font-size: 14px; color: #94a3b8; margin-bottom: 22px; line-height: 1.7; }
-        .custom-alert-box .alert-message strong { color: #ef4444; font-weight: 700; }
-        .custom-alert-box .alert-message .rule { display: inline-block; background: rgba(239,68,68,0.05); padding: 2px 12px; border-radius: 6px; margin: 0 2px; font-weight: 600; color: #ef4444; }
-        
-        .custom-alert-box .alert-btn { padding: 13px 44px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; transition: all 0.3s ease; box-shadow: 0 0 40px rgba(239,68,68,0.15); position: relative; overflow: hidden; }
-        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 0 60px rgba(239,68,68,0.25); }
-        .custom-alert-box .alert-btn:active { transform: scale(0.96); }
-        .custom-alert-box .alert-btn .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none; }
-        
-        .error-page { display: none; padding: 20px 0; animation: fadeInUp 0.6s ease; }
+        .error-page { display: none; padding: 20px 0; animation: fadeInUp 0.5s ease; }
         .error-page.show { display: block; }
-        .error-page .error-icon { font-size: 60px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
-        .error-page .error-title { font-size: 24px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px; }
-        .error-page .error-sub { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
-        .error-page .error-status { display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 15px; }
-        .error-page .error-status.suspended { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.15); }
-        .error-page .error-status.disabled { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
-        .error-page .error-status.expired { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
-        .error-page .error-status.not_found { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
-        .error-page .btn-back { padding: 12px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.3); }
+        .error-page .error-icon { font-size: 58px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        .error-page .error-title { font-size: 22px; font-weight: 800; color: #ffffff; margin-bottom: 6px; }
+        .error-page .error-sub { font-size: 13.5px; color: #94a3b8; margin-bottom: 20px; }
+        .error-page .error-status { display: inline-block; padding: 6px 18px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; }
+        .error-page .error-status.suspended { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+        .error-page .error-status.disabled { background: rgba(244,63,94,0.15); color: #f43f5e; border: 1px solid rgba(244,63,94,0.25); }
+        .error-page .error-status.expired { background: rgba(244,63,94,0.15); color: #f43f5e; border: 1px solid rgba(244,63,94,0.25); }
+        .error-page .error-status.not_found { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); }
+        .error-page .btn-back {
+            padding: 12px 34px; border: none; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.25s; margin-top: 10px;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35);
+        }
+        .error-page .btn-back:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(79, 70, 229, 0.45); }
         
         @media (max-width: 480px) {
-            .container { padding: 28px 20px; border-radius: 20px; }
-            .container h2 { font-size: 19px; }
-            .uid-input-wrapper input { font-size: 16px; padding: 14px 16px; padding-right: 45px; }
+            .container { padding: 30px 22px; border-radius: 22px; }
+            .container h2 { font-size: 20px; }
+            .uid-input-wrapper input { font-size: 17px; padding: 14px 16px; padding-right: 45px; }
             .btn { font-size: 16px; padding: 14px; }
             .action-btn { font-size: 15px; padding: 14px; }
-            .logo { font-size: 40px; }
-            .success-popup .icon { font-size: 35px; }
-            .error-page .error-icon { font-size: 45px; }
-            .error-page .error-title { font-size: 20px; }
-            .custom-alert-box { padding: 24px 18px 22px; }
-            .custom-alert-box .alert-title { font-size: 20px; }
-            .custom-alert-box .alert-icon { font-size: 45px; }
-            .custom-alert-box .alert-btn { padding: 11px 32px; font-size: 14px; }
-            .custom-alert-box .alert-message { font-size: 13px; }
-        }
-        @media (max-width: 380px) {
-            .custom-alert-box { padding: 18px 14px; }
-            .custom-alert-box .alert-title { font-size: 17px; }
-            .custom-alert-box .alert-icon { font-size: 35px; }
-            .custom-alert-box .alert-btn { padding: 10px 24px; font-size: 13px; }
-            .custom-alert-box .alert-message { font-size: 12px; }
+            .logo { font-size: 42px; }
         }
     </style>
 </head>
@@ -266,25 +239,25 @@
     
     <div class="container">
         <div class="logo">🎮</div>
-        <h2>Enter Your UID</h2>
-        <p class="sub-title">Enter your Free Fire UID to continue</p>
+        <h2>Enter Player UID</h2>
+        <p class="sub-title">Enter your Free Fire UID to verify and continue</p>
         
         <div id="normalContent">
             <div class="uid-input-wrapper">
                 <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus inputmode="numeric">
                 <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
             </div>
-            <button onclick="checkUID()" class="btn" id="checkBtn">➜ Process</button>
+            <button onclick="checkUID()" class="btn" id="checkBtn">➜ Process UID</button>
             
             <div class="loading-container" id="loadingContainer">
                 <div class="spinner"></div>
-                <p>⏳ Verifying UID...</p>
+                <p>⏳ Verifying UID on Server...</p>
             </div>
             
             <div class="success-popup" id="successPopup">
                 <span class="icon">✅</span>
                 <div class="label">UID Verified!</div>
-                <div class="sub-label">Redirecting to video page...</div>
+                <div class="sub-label">Redirecting to reward video page...</div>
             </div>
             
             <div class="buttons-container" id="buttonsContainer">
@@ -303,6 +276,7 @@
         </div>
     </div>
 
+    <!-- CUSTOM ALERT OVERLAY -->
     <div class="custom-alert-overlay" id="customAlert">
         <div class="custom-alert-box">
             <span class="alert-icon">❌</span>
@@ -310,7 +284,7 @@
             <div class="alert-message">
                 Please enter a valid <strong>8-12 digit</strong> UID.<br>
                 Only <span class="rule">numbers</span> are allowed.<br>
-                <span style="font-size:12px;color:#4a4e57;">Example: 1234567890</span>
+                <span style="font-size:12px; color:#64748b; margin-top:4px; display:inline-block;">Example: 1234567890</span>
             </div>
             <button class="alert-btn" id="alertBtn" onclick="closeAlert()">OK, Got it! ✅</button>
         </div>
@@ -333,7 +307,6 @@
                     document.getElementById('bgImage').src = data.background;
                 } else {
                     document.getElementById('bgImage').style.display = 'none';
-                    document.querySelector('.bg-container').style.background = 'linear-gradient(135deg, #0f1117 0%, #1a1c23 50%, #0f1117 100%)';
                 }
             } catch (e) {}
         }
@@ -371,7 +344,6 @@
         });
         
         var linkData = null;
-        var errorStatus = null;
         
         async function loadLinkData() {
             var linkId = new URLSearchParams(window.location.search).get('link');
@@ -386,12 +358,7 @@
                         return;
                     }
                     
-                    if (r.status === 404) {
-                        showErrorPage('not_found');
-                        return;
-                    }
-                    
-                    if (!r.ok) {
+                    if (r.status === 404 || !r.ok) {
                         showErrorPage('not_found');
                         return;
                     }
@@ -407,11 +374,9 @@
                         showErrorPage('not_found');
                     }
                 } catch (e) {
-                    console.error('Error loading link:', e);
                     showErrorPage('not_found');
                 }
             } else {
-                // If no link parameter provided, show normal flow so user is never blocked
                 document.getElementById('normalContent').style.display = 'block';
                 document.getElementById('errorPage').classList.remove('show');
             }
@@ -468,7 +433,7 @@
             document.getElementById('successPopup').classList.remove('show');
             document.getElementById('buttonsContainer').classList.remove('show');
             
-            var delay = 1000 + Math.random() * 1000;
+            var delay = 1000 + Math.random() * 800;
             setTimeout(function() {
                 document.getElementById('loadingContainer').classList.remove('show');
                 document.getElementById('successPopup').classList.add('show');
