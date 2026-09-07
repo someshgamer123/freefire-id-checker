@@ -1,271 +1,916 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Stream Rewards</title>
+    <title>Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
-        document.addEventListener('contextmenu', e => e.preventDefault(), true);
-        window.addEventListener('keydown', e => {
-            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
-                e.preventDefault();
-            }
-        }, true);
+        (function() {
+            document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
+            window.addEventListener('keydown', function(e) {
+                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+            }, true);
+            try {
+                const noop = () => {};
+                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
+            } catch(e) {}
+        })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
         body {
-            background: #090a0f;
-            color: #f1f5f9;
-            min-height: 100vh;
+            background: #0f1117;
+            color: #e2e8f0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
             display: flex;
             flex-direction: column;
-            padding: 16px;
-            user-select: none;
-            overflow-x: hidden;
-        }
-
-        .player-card {
-            width: 100%;
-            max-width: 760px;
-            margin: 0 auto;
-            background: #131722;
-            border-radius: 20px;
             padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-            position: relative;
-            z-index: 2;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .video-box {
+        .bg-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+            z-index: 0;
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        }
+
+        .top-section {
+            position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 800px; margin: 0 auto; padding: 0 0 6px 0;
+        }
+
+        .video-wrapper {
+            background: rgba(26, 28, 35, 0.6);
+            border-radius: 16px;
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.04);
+            padding: 8px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .video-container {
             position: relative;
             width: 100%;
             padding-bottom: 56.25%;
             background: #000;
-            border-radius: 14px;
+            border-radius: 12px;
             overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
             cursor: pointer;
         }
 
-        .video-box iframe, .video-box video {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%; border: none;
+        .video-container iframe, .video-container video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;
+        }
+        .video-container iframe { z-index: 5; }
+        .video-container::before {
+            content: '';
+            position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.15));
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+        @keyframes borderGlow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+
+        .video-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            background: transparent;
+            pointer-events: none !important;
         }
 
         .headline {
-            font-size: 16px;
-            font-weight: 700;
-            text-align: center;
-            margin: 14px 0 10px;
-            color: #e2e8f0;
+            text-align: center; margin: 10px 0 4px; font-size: 17px; font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: fadeIn 1s ease; letter-spacing: 0.5px; opacity: 0; transition: opacity 0.5s ease;
         }
+        .headline.show { opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        .btn-claim {
-            width: 100%;
-            padding: 14px 24px;
-            border-radius: 14px;
-            border: none;
-            cursor: pointer;
-            background: linear-gradient(135deg, #6366f1, #9333ea);
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            transition: 0.2s;
-            box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+        .claim-btn-wrapper {
+            display: flex; justify-content: center; margin-top: 4px; animation: fadeIn 1.2s ease;
+            opacity: 0; transition: opacity 0.5s ease;
         }
-        .btn-claim:active { transform: scale(0.98); }
+        .claim-btn-wrapper.show { opacity: 1; }
 
-        .chat-wrap {
-            flex: 1;
-            width: 100%;
-            max-width: 760px;
-            margin: 12px auto 0;
-            background: #131722;
+        .claim-btn {
+            padding: 14px 60px; border: none; border-radius: 50px; font-size: 18px; font-weight: 700;
+            cursor: pointer; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+            transition: all 0.3s ease; position: relative; letter-spacing: 1px;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 200px;
-            position: relative;
-            z-index: 2;
+            width: 100%; max-width: 400px;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            z-index: 20;
+        }
+        .claim-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(99, 102, 241, 0.25); }
+        .claim-btn:active { transform: scale(0.97); }
+        .claim-btn::before {
+            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: 54px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3));
+            z-index: -1; animation: btnGlow 2s ease-in-out infinite; filter: blur(10px);
+        }
+        @keyframes btnGlow { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.04); } }
+        .claim-btn .ripple {
+            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3);
+            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
+        }
+        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
+            background: rgba(15, 17, 23, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            pointer-events: none !important;
+        }
+        .popup-overlay.show {
+            opacity: 1; visibility: visible;
+            pointer-events: all !important;
+        }
+        .popup-overlay.hidden {
+            opacity: 0; visibility: hidden;
+            pointer-events: none !important;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
-        .chat-scroll {
-            flex: 1;
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .chat-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 12px;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-        .chat-user { font-weight: 700; color: #818cf8; }
-        .chat-text { color: #cbd5e1; }
-
-        /* Sound Button */
-        .sound-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #1e2433;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .popup-card {
+            background: rgba(26, 28, 35, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 28px;
+            padding: 24px 20px 28px;
+            max-width: 380px;
+            width: 92%;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 80px rgba(99, 102, 241, 0.1), inset 0 0 80px rgba(99, 102, 241, 0.02);
+            animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative; overflow: hidden;
             cursor: pointer;
-            z-index: 999;
+            pointer-events: all !important;
+        }
+        .popup-card::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3));
+            z-index: -1; animation: borderPulse 3s ease-in-out infinite;
+        }
+        @keyframes borderPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(40px) rotate(-3deg); }
+            60% { opacity: 1; transform: scale(1.02) translateY(-5px) rotate(0.5deg); }
+            100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
         }
 
-        /* Floating Reaction Emojis */
-        .flying-emoji {
-            position: fixed;
-            font-size: 26px;
-            pointer-events: none;
-            animation: flyUp 2.8s forwards;
-            z-index: 999;
+        .popup-card .popup-image {
+            width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden;
+            background: #1a1c23; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 16px; position: relative;
+            pointer-events: none !important;
         }
-        @keyframes flyUp {
-            0% { opacity: 1; transform: translateY(0) scale(0.5); }
-            50% { transform: translateY(-120px) scale(1.1); }
-            100% { opacity: 0; transform: translateY(-240px) scale(0.6); }
+        .popup-card .popup-image img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none !important; }
+        .popup-card .popup-image .placeholder {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 48px; color: rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, #1a1c23, #2d3138);
+            pointer-events: none !important;
+        }
+
+        .popup-card .popup-title {
+            text-align: center; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .popup-card .popup-sub {
+            text-align: center; font-size: 13px; color: #94a3b8; margin-bottom: 16px;
+        }
+
+        .popup-card .popup-claim-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 18px; font-weight: 700;
+            cursor: pointer; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
+            transition: all 0.3s ease; position: relative; box-shadow: 0 0 40px rgba(99, 102, 241, 0.15);
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            z-index: 10;
+            pointer-events: all !important;
+        }
+        .popup-card .popup-claim-btn:hover { transform: translateY(-3px); box-shadow: 0 0 60px rgba(99, 102, 241, 0.25); }
+        .popup-card .popup-claim-btn:active { transform: scale(0.97); }
+        .popup-card .popup-claim-btn .ripple {
+            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.3);
+            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
+        }
+
+        .confetti-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
+            pointer-events: none; overflow: hidden;
+        }
+        .confetti-container.active { pointer-events: none; }
+
+        .confetti-piece {
+            position: absolute;
+            width: 6px;
+            height: 9px;
+            animation: confettiFall 1.8s linear forwards;
+            pointer-events: none;
+            opacity: 0;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        @media (min-width: 768px) {
+            .confetti-piece { width: 10px; height: 14px; animation-duration: 2.5s; }
+        }
+
+        @keyframes confettiFall {
+            0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
+            25% { opacity: 1; transform: translateY(25vh) rotate(90deg) scale(1.1); }
+            50% { opacity: 1; transform: translateY(50vh) rotate(180deg) scale(1.2); }
+            75% { opacity: 0.9; transform: translateY(75vh) rotate(270deg) scale(1.0); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(360deg) scale(0.4); }
+        }
+
+        .confetti-burst-piece {
+            position: absolute;
+            width: 5px;
+            height: 8px;
+            animation: confettiBurst 1s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+            pointer-events: none;
+            opacity: 0;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        @media (min-width: 768px) {
+            .confetti-burst-piece { width: 8px; height: 12px; animation-duration: 1.4s; }
+        }
+
+        @keyframes confettiBurst {
+            0% { opacity: 1; transform: translate(0, 0) scale(0.3) rotate(0deg); }
+            40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(200deg); }
+            70% { opacity: 0.8; transform: translate(var(--tx2), var(--ty2)) scale(0.8) rotate(320deg); }
+            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.2) rotate(400deg); }
+        }
+
+        .sound-toggle {
+            position: fixed; bottom: 80px; right: 20px; z-index: 1001;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+            cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; color: #e2e8f0;
+        }
+        .sound-toggle:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+
+        .chat-section {
+            position: relative; z-index: 1; flex: 1; width: 100%; max-width: 800px; margin: 0 auto;
+            min-height: 0; overflow: hidden; border-radius: 12px;
+            background: rgba(26, 28, 35, 0.4); border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px); animation: fadeInUp 1s ease; margin-top: 4px;
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+        .chat-section.show { opacity: 1; }
+
+        .chat-section::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40px;
+            background: linear-gradient(to bottom, #0f1117, transparent); z-index: 10; pointer-events: none;
+        }
+        .chat-section::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            background: linear-gradient(to top, #0f1117, transparent); z-index: 10; pointer-events: none;
+        }
+
+        .chat-container {
+            width: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden;
+            padding: 8px 14px; padding-top: 30px; padding-bottom: 20px; scroll-behavior: smooth;
+        }
+        .chat-messages { display: flex; flex-direction: column; gap: 5px; padding-bottom: 8px; }
+
+        .chat-message {
+            display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+            background: rgba(255, 255, 255, 0.03); border-radius: 10px;
+            border-left: 3px solid rgba(99, 102, 241, 0.15);
+            font-size: 13px; opacity: 0; transform: translateY(15px) scale(0.95);
+            animation: fadeInUpChat 0.4s ease forwards;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            will-change: transform, opacity;
+        }
+        @keyframes fadeInUpChat {
+            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .chat-message.fade-out {
+            opacity: 0 !important; transform: translateY(-20px) scale(0.9) !important;
+            pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .chat-message .avatar {
+            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff; font-weight: 700; text-transform: uppercase;
+        }
+        .chat-message .username { font-weight: 600; color: #e2e8f0; font-size: 12px; white-space: nowrap; min-width: 50px; }
+        .chat-message .text { color: #94a3b8; font-size: 12px; font-weight: 400; word-break: break-word; flex: 1; }
+        .chat-message .time { color: #4a4e57; font-size: 9px; margin-left: 4px; white-space: nowrap; font-weight: 400; }
+
+        .emoji-picker-wrapper {
+            position: sticky; bottom: 8px; z-index: 20; display: flex; justify-content: flex-end;
+            padding-right: 6px; margin-top: auto;
+        }
+        .emoji-picker-btn {
+            background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
+            transition: 0.3s; display: flex; align-items: center; justify-content: center;
+            color: #e2e8f0; backdrop-filter: blur(10px); position: relative;
+        }
+        .emoji-picker-btn:hover { background: rgba(99, 102, 241, 0.25); transform: scale(1.1); }
+        .emoji-picker-btn .emoji-list {
+            position: absolute; bottom: 55px; right: 0;
+            background: rgba(26, 28, 35, 0.95); border-radius: 12px; padding: 8px;
+            display: none; gap: 4px; border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px); flex-wrap: wrap; width: 160px; justify-content: center;
+        }
+        .emoji-picker-btn .emoji-list.open { display: flex; }
+        .emoji-picker-btn .emoji-list span {
+            font-size: 24px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: 0.3s;
+        }
+        .emoji-picker-btn .emoji-list span:hover { background: rgba(99, 102, 241, 0.2); transform: scale(1.2); }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 4px; }
+
+        .flying-reaction {
+            position: fixed; font-size: 28px; z-index: 4; pointer-events: none;
+            animation: flyUpSmooth 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+            will-change: transform, opacity;
+        }
+        @keyframes flyUpSmooth {
+            0% { opacity: 0; transform: translateY(0) scale(0.3) rotate(0deg); }
+            15% { opacity: 1; transform: translateY(-30px) scale(1.2) rotate(8deg); }
+            40% { opacity: 1; transform: translateY(-100px) scale(1.0) rotate(-5deg); }
+            70% { opacity: 0.8; transform: translateY(-200px) scale(0.8) rotate(10deg); }
+            100% { opacity: 0; transform: translateY(-320px) scale(0.4) rotate(-8deg); }
+        }
+        .flying-reaction.type-1 { animation-duration: 2.5s; }
+        .flying-reaction.type-2 { animation-duration: 3.2s; }
+        .flying-reaction.type-3 { animation-duration: 2.8s; }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .video-wrapper { padding: 5px; border-radius: 12px; }
+            .video-container { border-radius: 8px; }
+            .headline { font-size: 14px; margin: 6px 0 3px; }
+            .claim-btn { padding: 12px 40px; font-size: 16px; max-width: 100%; }
+            .popup-card { padding: 18px 16px 22px; max-width: 340px; }
+            .popup-card .popup-title { font-size: 17px; }
+            .popup-card .popup-claim-btn { font-size: 16px; padding: 12px; }
+            .chat-section { border-radius: 8px; margin-top: 2px; }
+            .chat-message { padding: 5px 10px; font-size: 11px; gap: 6px; }
+            .chat-message .avatar { width: 26px; height: 26px; font-size: 11px; }
+            .chat-message .username { font-size: 10px; min-width: 40px; }
+            .chat-message .text { font-size: 10px; }
+            .chat-message .time { font-size: 8px; }
+            .chat-container { padding: 6px 10px; padding-top: 25px; padding-bottom: 15px; }
+            .flying-reaction { font-size: 22px; }
+            .emoji-picker-btn { width: 38px; height: 38px; font-size: 16px; }
+            .emoji-picker-btn .emoji-list { width: 140px; bottom: 48px; }
+            .sound-toggle { width: 34px; height: 34px; font-size: 15px; bottom: 70px; right: 14px; }
+        }
+        @media (max-width: 400px) {
+            .headline { font-size: 12px; }
+            .claim-btn { padding: 10px 30px; font-size: 14px; max-width: 100%; }
+            .popup-card { padding: 14px 12px 18px; max-width: 300px; }
+            .popup-card .popup-title { font-size: 15px; }
+            .popup-card .popup-claim-btn { font-size: 14px; padding: 10px; }
+            .popup-card .popup-sub { font-size: 11px; }
+            .sound-toggle { width: 30px; height: 30px; font-size: 13px; bottom: 60px; right: 10px; }
         }
     </style>
 </head>
 <body>
-    <div class="player-card">
-        <div class="video-box" id="videoContainer" onclick="toggleFullscreen()">
-            <div id="videoPlayer"></div>
+    <div class="bg-glow"></div>
+
+    <div class="top-section">
+        <div class="video-wrapper">
+            <div class="video-container" id="videoContainer">
+                <div id="videoPlayer"></div>
+                <div class="video-overlay" id="videoOverlay"></div>
+            </div>
+            <div class="headline" id="headline">🎬 Watch Video</div>
+            <div class="claim-btn-wrapper" id="claimBtnWrapper">
+                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
+            </div>
         </div>
-        <div class="headline" id="headline">🎬 Watch Stream & Unlock Reward</div>
-        <button class="btn-claim" id="claimBtn" onclick="handleClaim()">🎁 Claim Reward Now</button>
     </div>
 
-    <div class="chat-wrap">
-        <div class="chat-scroll" id="chatScroll"></div>
+    <div class="chat-section" id="chatSection">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="emoji-picker-wrapper">
+                <div class="emoji-picker-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker()">
+                    😊
+                    <div class="emoji-list" id="emojiList">
+                        <span onclick="triggerReaction('🥳', event)">🥳</span>
+                        <span onclick="triggerReaction('🤩', event)">🤩</span>
+                        <span onclick="triggerReaction('😍', event)">😍</span>
+                        <span onclick="triggerReaction('😎', event)">😎</span>
+                        <span onclick="triggerReaction('😮', event)">😮</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-card" id="popupCard">
+            <div class="popup-image" id="popupImage">
+                <div class="placeholder" id="popupPlaceholder">🎬</div>
+                <img id="popupImg" style="display:none;" alt="Popup Image">
+            </div>
+            <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
+            <div class="popup-sub" id="popupSub">Tap anywhere to unlock</div>
+            <button class="popup-claim-btn" id="popupClaimBtn">🔓 Unlock Now</button>
+        </div>
+    </div>
+
+    <div class="confetti-container" id="confettiContainer"></div>
+    <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
-        const pathParts = window.location.pathname.split('/');
-        const linkId = pathParts[pathParts.length - 1] || 'default';
-        let claimDestination = '#';
-        let soundEnabled = true;
+        // ==================== CONFIG ====================
+        const pathSegments = window.location.pathname.split('/');
+        const linkId = pathSegments[pathSegments.length - 1] || 'default';
+        const urlParams = new URLSearchParams(window.location.search);
+        let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
+        let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
+        const buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
+        const headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video';
 
-        function sanitizeYt(url) {
-            if (!url) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+        document.getElementById('headline').textContent = headline;
+        document.getElementById('claimBtn').textContent = buttonText || '🎁 Claim Now';
+
+        function fixYouTubeUrl(url) {
+            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
             if (url.includes('youtube.com/watch?v=')) {
-                return 'https://www.youtube.com/embed/' + url.split('v=').split('&')[0];
+                const videoId = url.split('v=').split('&')[0];
+                return 'https://youtu.be/' + videoId;
             }
-            if (url.includes('youtu.be/')) {
-                return 'https://www.youtube.com/embed/' + url.split('youtu.be/').split('?')[0];
-            }
+            if (url.includes('youtu.be/')) return url;
+            if (url.includes('youtube.com/embed/')) return url;
+            if (url.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + url;
             return url;
         }
+        videoUrl = fixYouTubeUrl(videoUrl);
 
-        // Web Audio Synthesizer Chime
-        function playChime() {
-            if (!soundEnabled) return;
+        // ==================== STATE ====================
+        let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
+        let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
+        let pageLoadTime = Date.now();
+        let isPopupClickProcessed = false;
+        let isRedirecting = false;
+        let isClaimTracked = false;
+
+        const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        // ==================== EXIT SYSTEM ====================
+        function trackVideoPlay() {
+            if (isVideoPlaying) return;
+            videoPlayCount++;
+            isVideoPlaying = true;
+            if (videoPlayCount >= 2) { isUnlocked = true; }
+        }
+
+        function handleBackPress() {
+            if (isExiting) return true;
+            const timeElapsed = (Date.now() - pageLoadTime) / 1000;
+            if (isUnlocked || timeElapsed >= 180) {
+                isExiting = true;
+                document.body.innerHTML = '';
+                window.location.href = 'about:blank';
+                return true;
+            }
+            backPressCount++;
+            if (backPressCount >= 4) {
+                isExiting = true;
+                document.body.innerHTML = '';
+                window.location.href = 'about:blank';
+                return true;
+            }
+            history.pushState(null, null, window.location.href);
+            return false;
+        }
+
+        history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', () => handleBackPress());
+
+        document.addEventListener('keydown', function(e) {
+            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
+                e.preventDefault(); e.stopPropagation();
+                if (!isUnlocked) handleBackPress();
+                else { isExiting = true; document.body.innerHTML = ''; window.location.href = 'about:blank'; }
+                return false;
+            }
+        }, true);
+
+        // ==================== SOUND TOGGLE ====================
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            document.getElementById('soundToggle').textContent = isSoundEnabled ? '🔊' : '🔇';
+        }
+
+        function playCelebrationSound() {
+            if (!isSoundEnabled) return;
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
                     setTimeout(() => {
-                        const osc = ctx.createOscillator();
-                        const g = ctx.createGain();
-                        osc.connect(g); g.connect(ctx.destination);
-                        osc.frequency.value = f;
-                        g.gain.setValueAtTime(0.08, ctx.currentTime);
-                        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-                        osc.start(); osc.stop(ctx.currentTime + 0.3);
-                    }, i * 90);
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.frequency.value = freq; osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.35);
+                    }, index * 120);
                 });
+                setTimeout(() => {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((freq, i) => {
+                        setTimeout(() => {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.connect(gain); gain.connect(audioCtx.destination);
+                            osc.frequency.value = freq; osc.type = 'sine';
+                            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.6);
+                        }, i * 80);
+                    });
+                }, 550);
             } catch(e) {}
         }
 
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
-        }
+        // ==================== CONFETTI ENGINE ====================
+        function triggerCelebration() {
+            if (isCelebrationActive) return;
+            isCelebrationActive = true;
+            const container = document.getElementById('confettiContainer');
+            container.innerHTML = ''; container.classList.add('active');
+            playCelebrationSound();
 
-        function toggleFullscreen() {
-            const el = document.documentElement;
-            if (!document.fullscreenElement) {
-                if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+            const colors = ['#6366f1', '#8b5cf6', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
+            const burstCount = isMobile ? 35 : 60;
+            const fallCount = isMobile ? 50 : 80;
+
+            for (let i = 0; i < burstCount; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti-burst-piece';
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
+                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
+                el.style.width = w + 'px'; el.style.height = h + 'px';
+                el.style.background = color;
+                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = isMobile ? 80 + Math.random() * 200 : 150 + Math.random() * 400;
+                const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - (isMobile ? 50 : 100);
+                const tx2 = Math.cos(angle + 0.5) * (dist * 0.6), ty2 = Math.sin(angle + 0.5) * (dist * 0.6) - (isMobile ? 30 : 50);
+                const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - (isMobile ? 15 : 20);
+                el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
+                el.style.setProperty('--tx2', tx2 + 'px'); el.style.setProperty('--ty2', ty2 + 'px');
+                el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
+                el.style.left = (50 + Math.random() * 6 - 3) + '%';
+                el.style.top = (45 + Math.random() * 10 - 5) + '%';
+                el.style.animationDelay = (Math.random() * 0.15) + 's';
+                el.style.transform = `rotate(${Math.random() * 360}deg)`;
+                container.appendChild(el);
             }
+
+            for (let i = 0; i < fallCount; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti-piece';
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
+                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
+                el.style.width = w + 'px'; el.style.height = h + 'px';
+                el.style.background = color;
+                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                el.style.left = Math.random() * 100 + '%';
+                el.style.top = '-10%';
+                const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
+                el.style.animationDuration = duration + 's';
+                el.style.animationDelay = (Math.random() * 0.4) + 's';
+                container.appendChild(el);
+            }
+
+            setTimeout(() => { 
+                container.innerHTML = ''; 
+                container.classList.remove('active'); 
+                isCelebrationActive = false; 
+            }, isMobile ? 1800 : 2500);
         }
 
-        // Fetch link data from server
-        fetch('/api/link/' + linkId)
-            .then(r => r.json())
-            .then(data => {
-                const videoUrl = sanitizeYt(data.video);
-                claimDestination = data.claim || '#';
-                if (data.headline) document.getElementById('headline').textContent = data.headline;
-                document.getElementById('videoPlayer').innerHTML = `<iframe src="${videoUrl}?autoplay=1&mute=0&playsinline=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-                playChime();
-            })
-            .catch(() => {
-                document.getElementById('videoPlayer').innerHTML = `<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-            });
+        // ==================== POPUP SYSTEM ====================
+        async function loadPopupData() {
+            try {
+                const response = await fetch(`/api/link/${linkId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const popup = data.popupSettings || {};
+                    if (popup.title) document.getElementById('popupTitle').textContent = popup.title;
+                    if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
+                    if (popup.buttonText) document.getElementById('popupClaimBtn').textContent = popup.buttonText;
+                    if (popup.image) {
+                        const img = document.getElementById('popupImg');
+                        img.src = popup.image; img.style.display = 'block';
+                        document.getElementById('popupPlaceholder').style.display = 'none';
+                    }
+                }
+            } catch (e) {}
+        }
 
-        function handleClaim() {
-            fetch('/api/track-claim/' + linkId, { method: 'POST' }).catch(() => {});
-            playChime();
-            if (claimDestination && claimDestination !== '#') {
-                window.location.href = claimDestination;
+        function showPopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hidePopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('show');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // ==================== UNLOCK & PLAY ====================
+        function unlockAndPlay() {
+            if (isPopupClaimed) return;
+            isPopupClaimed = true;
+            hidePopup();
+            
+            if (!isCelebrationActive) triggerCelebration();
+            
+            setTimeout(() => {
+                document.getElementById('headline').classList.add('show');
+                document.getElementById('claimBtnWrapper').classList.add('show');
+                document.getElementById('chatSection').classList.add('show');
+                loadVideo();
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) forcePlayVideo(iframe);
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(() => {});
+                }, 500);
+            }, 300);
+            isUnlocked = true;
+        }
+
+        function trackClaimOnce() {
+            if (isClaimTracked) return;
+            isClaimTracked = true;
+            fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+        }
+
+        function handleClaimClick() {
+            if (isRedirecting) return;
+            isRedirecting = true;
+            trackClaimOnce();
+            
+            if (!isPopupClaimed) {
+                isPopupClaimed = true;
+                if (!isCelebrationActive) triggerCelebration();
+                isUnlocked = true;
+            }
+            
+            if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
+                setTimeout(() => { window.location.replace(claimUrl); }, 500);
             } else {
-                alert('🎉 Reward verified successfully for UID: ' + (localStorage.getItem('playerUID') || 'Player'));
+                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 500);
             }
         }
 
-        // Real-time Chat Feed Simulation
-        const names = ['DemonKing', 'Phoenix', 'DarkKnight', 'StarGamer', 'SniperPro', 'GhostRider', 'Viper'];
-        const msgs = ['Redeem code working!', 'Got 500₹ successfully!', 'Thanks bhai code mil gaya', 'Superb stream!', 'Working!'];
-        const chatBox = document.getElementById('chatScroll');
+        function addRipple(e, btn) {
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            const rect = btn.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
 
-        setInterval(() => {
-            const n = names[Math.floor(Math.random() * names.length)];
-            const m = msgs[Math.floor(Math.random() * msgs.length)];
-            const div = document.createElement('div');
-            div.className = 'chat-row';
-            div.innerHTML = `<span class="chat-user">${n}:</span> <span class="chat-text">${m}</span>`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            if (chatBox.children.length > 18) chatBox.removeChild(chatBox.firstChild);
-        }, 2200);
+        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
+            e.stopPropagation(); e.preventDefault();
+            if (isPopupClaimed || isPopupClickProcessed) return;
+            isPopupClickProcessed = true;
+            addRipple(e, this);
+            unlockAndPlay();
+        });
 
-        // Random Flying Reactions
-        const emojis = ['🎁', '💎', '🔥', '❤️', '⚡'];
-        setInterval(() => {
-            const em = document.createElement('div');
-            em.className = 'flying-emoji';
-            em.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            em.style.left = (15 + Math.random() * 70) + '%';
-            em.style.top = (60 + Math.random() * 25) + '%';
-            document.body.appendChild(em);
-            setTimeout(() => em.remove(), 2800);
-        }, 3200);
+        document.getElementById('popupCard').addEventListener('click', function(e) {
+            if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
+            isPopupClickProcessed = true;
+            if (!isCelebrationActive) triggerCelebration();
+            unlockAndPlay();
+        });
+
+        document.getElementById('claimBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            addRipple(e, this);
+            handleClaimClick();
+        });
+
+        // ==================== VIDEO PLAYBACK ====================
+        function forcePlayVideo(iframe) {
+            try {
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
+            } catch(e) {}
+        }
+
+        function loadVideo() {
+            const container = document.getElementById('videoPlayer');
+            container.innerHTML = '';
+            const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (ytId) {
+                const videoId = ytId;
+                const iframe = document.createElement('iframe');
+                iframe.id = 'ytPlayer';
+                iframe.src = 'https://www.youtube.com/embed/' + videoId +
+                    '?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=1&playlist=' + videoId +
+                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
+                container.appendChild(iframe);
+                iframe.onload = function() {
+                    forcePlayVideo(iframe);
+                    setTimeout(() => forcePlayVideo(iframe), 400);
+                    trackVideoPlay();
+                };
+                return;
+            }
+
+            const video = document.createElement('video');
+            video.muted = false;
+            video.playsInline = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.controls = true;
+            video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
+            const source = document.createElement('source');
+            source.src = videoUrl;
+            video.appendChild(source);
+            container.appendChild(video);
+            video.play().then(() => trackVideoPlay()).catch(() => {});
+        }
+
+        // ==================== EMOJI PICKER & REACTIONS ====================
+        function toggleEmojiPicker() {
+            document.getElementById('emojiList').classList.toggle('open');
+        }
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPickerBtn');
+            if (picker && !picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
+        });
+
+        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '😮', '🤑', '😱'];
+        function createFlyingReaction(emoji) {
+            const el = document.createElement('div');
+            el.className = 'flying-reaction';
+            el.textContent = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
+            el.style.left = (10 + Math.random() * 80) + '%';
+            el.style.top = (55 + Math.random() * 35) + '%';
+            el.style.fontSize = (24 + Math.random() * 32) + 'px';
+            const type = Math.floor(Math.random() * 3) + 1;
+            el.classList.add('type-' + type);
+            document.body.appendChild(el);
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+        }
+
+        function triggerReaction(emoji, event) {
+            document.getElementById('emojiList').classList.remove('open');
+            createFlyingReaction(emoji);
+        }
+
+        // ==================== 20 GAMERS LIVE CHAT TICKER ====================
+        const users = [
+            { name: 'GamerPro', emoji: '🎮' }, { name: 'KingSlayer', emoji: '👑' }, { name: 'NightWolf', emoji: '🐺' },
+            { name: 'ShadowX', emoji: '🌙' }, { name: 'BlazeIt', emoji: '🔥' }, { name: 'SniperPro', emoji: '🎯' },
+            { name: 'DemonKing', emoji: '😈' }, { name: 'Phoenix', emoji: '🐦' }, { name: 'DarkKnight', emoji: '🦇' },
+            { name: 'StarGamer', emoji: '⭐' }, { name: 'ThunderX', emoji: '⚡' }, { name: 'IceQueen', emoji: '❄️' },
+            { name: 'FireLord', emoji: '🔥' }, { name: 'CryptoKing', emoji: '💰' }, { name: 'GhostRider', emoji: '👻' },
+            { name: 'Venom', emoji: '🕷️' }, { name: 'WizardX', emoji: '🧙' }, { name: 'NinjaPro', emoji: '🥷' },
+            { name: 'DragonSlayer', emoji: '🐉' }, { name: 'MysticMoon', emoji: '🌙' }
+        ];
+        const messages = [
+            'Thanks bhai!', 'Redeem code mil gaya!', '1000₹ ka redeem code!',
+            'Best website ever!', 'Bro thanks a lot!', 'Redeem code working!',
+            'Amazing!', 'Got 500₹!', 'Love this!', 'Best app!',
+            'Thank you!', 'Working perfectly!', 'Awesome!', 'Great!',
+            'Superb!', 'Thanks team!', 'Nice!', 'Love it!', 'Working!', 'Super!'
+        ];
+        const chatContainer = document.getElementById('chatMessages');
+
+        function addChat() {
+            const user = users[Math.floor(Math.random() * users.length)];
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            const m = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            const s = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+            const el = document.createElement('div');
+            el.className = 'chat-message';
+            el.innerHTML = `
+                <span class="avatar">${user.emoji}</span>
+                <span class="username">${user.name}</span>
+                <span class="text">${msg}</span>
+                <span class="time">${m}:${s}</span>
+            `;
+            chatContainer.appendChild(el);
+            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+            while (chatContainer.children.length > 25) chatContainer.removeChild(chatContainer.firstChild);
+            applyFadeEffect();
+        }
+
+        function applyFadeEffect() {
+            const msgs = chatContainer.querySelectorAll('.chat-message');
+            const total = msgs.length;
+            msgs.forEach((msg, index) => {
+                if (index >= total - 3) {
+                    msg.classList.remove('fade-out');
+                    msg.style.opacity = '1';
+                } else if (index >= total - 8) {
+                    msg.classList.remove('fade-out');
+                    msg.style.opacity = '0.7';
+                } else {
+                    msg.classList.add('fade-out');
+                }
+            });
+        }
+
+        setInterval(addChat, 2000);
+        setInterval(() => { if (Math.random() > 0.6) createFlyingReaction(); }, 3500);
+
+        // ==================== FULLSCREEN & WAKELOCK ====================
+        async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
+        keepAwake();
+
+        document.getElementById('videoContainer').addEventListener('click', function() {
+            const elem = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+            }
+        });
+
+        // ==================== INIT ====================
+        async function init() {
+            await loadPopupData();
+            showPopup();
+        }
+        init();
     </script>
 </body>
 </html>
