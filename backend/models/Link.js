@@ -21,13 +21,11 @@ const LinkSchema = new mongoose.Schema({
     },
     buttonText: {
         type: String,
-        default: 'Claim Now',
-        maxlength: 50
+        default: 'Claim Now'
     },
     headline: {
         type: String,
-        default: '🎬 Watch Video',
-        maxlength: 200
+        default: '🎬 Watch Video'
     },
     status: {
         type: String,
@@ -49,22 +47,6 @@ const LinkSchema = new mongoose.Schema({
     claims: {
         type: Number,
         default: 0
-    },
-    dailyVisits: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    dailyClaims: {
-        type: Map,
-        of: Number,
-        default: {}
-    },
-    popupSettings: {
-        image: { type: String, default: null },
-        title: { type: String, default: '🎁 Claim Your Reward' },
-        buttonText: { type: String, default: 'Claim Now' },
-        subtitle: { type: String, default: 'Tap below to unlock your reward' }
     },
     created: {
         type: Date,
