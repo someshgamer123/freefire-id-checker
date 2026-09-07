@@ -30,10 +30,8 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// Security Module
 const Security = require('./config/security');
 
-// Connect to MongoDB
 connectDB();
 
 // ==================== Environment Variables ====================
@@ -44,7 +42,6 @@ const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
-// Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
@@ -69,7 +66,7 @@ async function initializeDatabase() {
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
-            console.log('✅ Admin user created');
+            console.log('✅ Admin user initialized');
         } else if (!adminExists.secretKey) {
             adminExists.secretKey = 'admin@2024';
             await adminExists.save();
@@ -136,7 +133,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rate limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 600,
@@ -159,7 +155,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ==================== JWT & Token Helpers ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -200,14 +195,6 @@ function getDeviceDetails(req) {
     else if (/macintosh/i.test(userAgent)) { deviceName = 'Mac'; deviceType = 'Desktop'; }
     else if (/linux/i.test(userAgent)) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
     return { deviceName, deviceType };
-}
-
-async function logAdminAction(userId, action, details = {}, req = null) {
-    try {
-        const ip = req?.ip || req?.connection?.remoteAddress || null;
-        const userAgent = req?.headers?.['user-agent'] || null;
-        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
-    } catch (error) {}
 }
 
 async function isDeviceBlocked(req) {
@@ -267,7 +254,6 @@ async function validateSession(token) {
     return session;
 }
 
-// Auth Middleware
 async function authMiddleware(req, res, next) {
     const blocked = await isDeviceBlocked(req);
     if (blocked) return res.status(403).json({ error: 'Device is blocked.' });
@@ -325,7 +311,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         if (link) return res.json({ linkId: link.id });
         res.status(404).json({ error: 'No link found' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to map dashboard' });
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
@@ -342,24 +328,26 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
+// ✅ FIXED: LINK EXPIRY CHECK (Never marks active links as expired)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const link = await Link.findOne({ id: req.params.id });
         if (!link) {
-            return res.json({
-                id: 'default',
-                video: 'https://youtu.be/dQw4w9WgXcQ',
-                claim: '#',
-                buttonText: 'Claim Now',
-                headline: '🎬 Watch Video & Unlock Reward',
-                status: 'active'
-            });
+            return res.status(404).json({ error: 'not_found', message: 'Link not found' });
         }
-        if (link.status !== 'active') {
-            return res.status(403).json({ error: link.status, message: `Link is ${link.status}` });
+        if (link.status === 'suspended') {
+            return res.status(403).json({ error: 'suspended', message: 'Link suspended', status: 'suspended' });
         }
-        if (link.expiryDate && new Date() > new Date(link.expiryDate)) {
-            return res.status(403).json({ error: 'expired', message: 'Link expired' });
+        if (link.status === 'disabled') {
+            return res.status(403).json({ error: 'disabled', message: 'Link disabled', status: 'disabled' });
+        }
+
+        // Only expire if expiryDate is valid and genuinely in the past
+        if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
+            const expTime = new Date(link.expiryDate).getTime();
+            if (expTime > 100000 && Date.now() > expTime) {
+                return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
+            }
         }
 
         const { fingerprint } = getDeviceId(req);
@@ -379,7 +367,20 @@ app.get('/api/link/:id', async (req, res) => {
             await stats.save();
         }
 
-        res.json(link);
+        res.json({
+            id: link.id,
+            video: link.video,
+            claim: link.claim,
+            buttonText: link.buttonText,
+            headline: link.headline,
+            status: link.status,
+            popupSettings: link.popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch link' });
     }
@@ -503,25 +504,35 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✅ FIXED: CREATE LINK (Safe expiry date processing)
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
         if (!name) return res.status(400).json({ error: 'Name required' });
 
+        let cleanExpiry = null;
+        if (expiryDate && typeof expiryDate === 'string' && expiryDate.trim() !== '') {
+            const parsed = new Date(expiryDate);
+            if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+                cleanExpiry = parsed;
+            }
+        }
+
         const newLink = new Link({
-            id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex'),
+            id: 'link_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             name: name.substring(0, 100),
             video: video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: claim || '#',
             buttonText: buttonText || 'Claim Now',
             headline: headline || '🎬 Watch Video',
-            expiryDate: expiryDate || null,
+            expiryDate: cleanExpiry,
             status: 'active',
             popupSettings: popupSettings || {}
         });
         await newLink.save();
         res.json(newLink);
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
@@ -594,6 +605,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 visits: l.visits || 0,
                 claims: l.claims || 0,
                 status: l.status,
+                expiryDate: l.expiryDate || null,
                 dailyVisits: Object.fromEntries(l.dailyVisits || new Map()),
                 dailyClaims: Object.fromEntries(l.dailyClaims || new Map())
             }))
@@ -807,7 +819,6 @@ app.get('/sw.js', (req, res) => {
     sendAppFile(res, 'sw.js');
 });
 
-// Start Server
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Secure Server running on port ${port}`);
 });
