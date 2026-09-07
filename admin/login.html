@@ -5,15 +5,12 @@
     <title>Admin Authentication</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        (function() {
-            document.addEventListener('contextmenu', e => e.preventDefault(), true);
-            window.addEventListener('keydown', e => {
-                if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
-                    e.preventDefault();
-                }
-            }, true);
-            try { ['log', 'debug', 'info', 'warn', 'error'].forEach(m => window.console[m] = () => {}); } catch(e) {}
-        })();
+        document.addEventListener('contextmenu', e => e.preventDefault(), true);
+        window.addEventListener('keydown', e => {
+            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+            }
+        }, true);
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -31,7 +28,7 @@
         .login-card {
             width: 100%;
             max-width: 380px;
-            background: rgba(18, 21, 31, 0.85);
+            background: #131722;
             border-radius: 22px;
             padding: 34px 28px;
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -39,27 +36,31 @@
             text-align: center;
         }
 
+        .icon { font-size: 40px; margin-bottom: 10px; }
+        h2 { font-size: 22px; font-weight: 800; }
+        p.sub { color: #94a3b8; font-size: 13px; margin: 4px 0 20px; }
+
         .pin-inputs {
             display: flex;
             justify-content: center;
             gap: 8px;
-            margin: 22px 0;
+            margin-bottom: 22px;
         }
 
         .pin-inputs input {
             width: 44px;
             height: 52px;
-            background: #0c0e15;
+            background: #090a0f;
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             color: #fff;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             text-align: center;
             outline: none;
+            transition: 0.2s;
         }
-
-        .pin-inputs input:focus { border-color: #6366f1; }
+        .pin-inputs input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
 
         .btn-submit {
             width: 100%;
@@ -71,50 +72,64 @@
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
+            transition: 0.2s;
         }
+        .btn-submit:active { transform: scale(0.98); }
 
-        .msg-box { margin-top: 14px; font-size: 13px; color: #ef4444; min-height: 18px; }
+        .status-msg {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #ef4444;
+            min-height: 18px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>Admin Portal</h2>
-        <p style="color:#94a3b8;font-size:13px;margin-top:4px;">Enter your 6-digit passcode to authenticate</p>
+        <div class="icon">🔐</div>
+        <h2>Admin Authentication</h2>
+        <p class="sub">Enter 6-digit passcode to open dashboard</p>
 
         <div class="pin-inputs" id="pinGroup">
-            <input type="password" maxlength="1" autofocus>
-            <input type="password" maxlength="1">
-            <input type="password" maxlength="1">
-            <input type="password" maxlength="1">
-            <input type="password" maxlength="1">
-            <input type="password" maxlength="1">
+            <input type="password" maxlength="1" autofocus inputmode="numeric">
+            <input type="password" maxlength="1" inputmode="numeric">
+            <input type="password" maxlength="1" inputmode="numeric">
+            <input type="password" maxlength="1" inputmode="numeric">
+            <input type="password" maxlength="1" inputmode="numeric">
+            <input type="password" maxlength="1" inputmode="numeric">
         </div>
 
-        <button class="btn-submit" onclick="submitPasscode()">Sign In ➜</button>
-        <div class="msg-box" id="statusMsg"></div>
+        <button class="btn-submit" id="loginBtn" onclick="submitPasscode()">Sign In ➜</button>
+        <div class="status-msg" id="statusMsg"></div>
     </div>
 
     <script>
         const inputs = Array.from(document.querySelectorAll('.pin-inputs input'));
+        const btn = document.getElementById('loginBtn');
+        const status = document.getElementById('statusMsg');
 
         inputs.forEach((inp, i) => {
-            inp.addEventListener('input', e => {
+            inp.addEventListener('input', () => {
                 if (inp.value.length === 1 && i < 5) inputs[i + 1].focus();
                 if (inputs.every(x => x.value.length === 1)) submitPasscode();
             });
-            inp.addEventListener('keydown', e => {
+            inp.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus();
+                if (e.key === 'Enter') submitPasscode();
             });
         });
 
         async function submitPasscode() {
             const passcode = inputs.map(x => x.value).join('');
-            const status = document.getElementById('statusMsg');
-
             if (passcode.length !== 6) {
-                status.textContent = 'Enter all 6 digits';
+                status.textContent = '❌ Enter all 6 digits';
                 return;
             }
+
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            status.textContent = '';
 
             try {
                 const res = await fetch('/api/admin/login', {
@@ -127,10 +142,16 @@
                     localStorage.setItem('csrfToken', data.csrfToken);
                     window.location.href = '/admin/index.html';
                 } else {
-                    status.textContent = data.error || 'Authentication failed';
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In ➜';
+                    status.textContent = '❌ ' + (data.error || 'Incorrect Passcode');
+                    inputs.forEach(x => x.value = '');
+                    inputs[0].focus();
                 }
             } catch (e) {
-                status.textContent = 'Server connection error';
+                btn.disabled = false;
+                btn.textContent = 'Sign In ➜';
+                status.textContent = '❌ Connection error';
             }
         }
     </script>
