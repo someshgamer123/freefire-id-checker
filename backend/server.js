@@ -36,12 +36,7 @@ connectDB();
 
 // ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
-const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
-const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
-const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
-
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
@@ -135,21 +130,10 @@ app.use((req, res, next) => {
 
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 600,
+    max: 1000,
     message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api', globalLimiter);
-
-const deviceAuthLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: MAX_LOGIN_ATTEMPTS,
-    keyGenerator: (req) => {
-        const ip = req.ip || req.connection.remoteAddress || 'unknown';
-        const userAgent = req.headers['user-agent'] || 'unknown';
-        return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
-    },
-    message: { error: 'Too many attempts. Please try again after 15 minutes.' }
-});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -200,39 +184,10 @@ function getDeviceDetails(req) {
 async function isDeviceBlocked(req) {
     const { fingerprint, ip } = getDeviceId(req);
     const deviceKey = getDeviceKey(fingerprint, ip);
-    const admin = await User.findOne();
-    if (admin && fingerprint === admin.fingerprint && ip === admin.ip) return null;
     return await BlockedDevice.findOne({
         deviceKey,
         $or: [{ blockedUntil: { $gt: new Date() } }, { isPermanent: true }]
     });
-}
-
-async function blockDevice(req, reason = 'Too many failed attempts', durationMinutes = 48 * 60) {
-    const { fingerprint, ip } = getDeviceId(req);
-    const { deviceName, deviceType } = getDeviceDetails(req);
-    const deviceKey = getDeviceKey(fingerprint, ip);
-    const admin = await User.findOne();
-    if (admin && fingerprint === admin.fingerprint && ip === admin.ip) return null;
-
-    let record = await BlockedDevice.findOne({ deviceKey });
-    if (record) {
-        record.attempts = (record.attempts || 0) + 1;
-        record.lastAttempt = new Date();
-        record.blockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
-        record.reason = reason;
-        await record.save();
-        return record;
-    } else {
-        const newRecord = new BlockedDevice({
-            deviceKey, fingerprint, ip, deviceName, deviceType,
-            attempts: 1, reason,
-            blockedUntil: new Date(Date.now() + durationMinutes * 60 * 1000),
-            lastAttempt: new Date()
-        });
-        await newRecord.save();
-        return newRecord;
-    }
 }
 
 async function createSession(token, userId, csrfToken, ip, userAgent) {
@@ -246,7 +201,7 @@ async function createSession(token, userId, csrfToken, ip, userAgent) {
     return session;
 }
 
-// Auth Middleware
+// Resilient Auth Middleware
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken || req.headers['authorization']?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'Authentication required' });
@@ -306,7 +261,7 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ✅ LINK RESOLVER (Pure 16:9 Image Extraction, No 9:16 background pollution)
+// ✅ LINK RESOLVER: Reliably resolves the 16:9 Image with safe fallbacks
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
@@ -314,6 +269,7 @@ app.get('/api/link/:id', async (req, res) => {
         if (!link) link = await Link.findOne({ dashboardId: rawId });
 
         if (!link && (rawId === 'default' || !rawId)) {
+            const globalPopup = await PopupSettings.findOne();
             return res.json({
                 id: 'default',
                 name: 'Welcome Bonus Reward',
@@ -323,10 +279,10 @@ app.get('/api/link/:id', async (req, res) => {
                 headline: '🎬 Watch Video & Unlock Reward',
                 status: 'active',
                 popupSettings: {
-                    image: null,
-                    title: '🎁 Claim Your Reward',
-                    buttonText: 'Claim Now',
-                    subtitle: 'Tap below to unlock your reward'
+                    image: globalPopup?.image || null,
+                    title: globalPopup?.title || '🎁 Claim Your Reward',
+                    buttonText: globalPopup?.buttonText || 'Claim Now',
+                    subtitle: globalPopup?.subtitle || 'Tap below to unlock your reward'
                 }
             });
         }
@@ -350,15 +306,19 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Track Visit on this active link
+        // Track Visit on this specific active link
         const today = new Date().toISOString().split('T')[0];
         link.visits = (link.visits || 0) + 1;
         if (!link.dailyVisits) link.dailyVisits = new Map();
         link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
         await link.save();
 
-        // Deliver link's dedicated 16:9 image
-        const popupImage = link.popupSettings?.image || null;
+        // 16:9 Image resolution with safe fallback
+        let bannerImage = link.popupSettings?.image || null;
+        if (!bannerImage || typeof bannerImage !== 'string' || bannerImage.trim() === '') {
+            const globalPopup = await PopupSettings.findOne();
+            bannerImage = globalPopup?.image || null;
+        }
 
         res.json({
             id: link.id,
@@ -369,7 +329,7 @@ app.get('/api/link/:id', async (req, res) => {
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
             status: link.status || 'active',
             popupSettings: {
-                image: popupImage,
+                image: bannerImage,
                 title: link.popupSettings?.title || '🎁 Claim Your Reward',
                 buttonText: link.popupSettings?.buttonText || 'Claim Now',
                 subtitle: link.popupSettings?.subtitle || 'Tap below to unlock your reward'
@@ -417,13 +377,13 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     }
 });
 
-// Settings API (Background separated from popup image)
 app.get('/api/settings', async (req, res) => {
     try {
         const admin = await User.findOne();
+        const popup = await PopupSettings.findOne();
         res.json({
             theme: admin?.theme || 'dark',
-            background: admin?.background || null,
+            background: popup?.image || null,
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
@@ -432,13 +392,44 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
-// Admin Passcode Login
-app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
+// ==================== 🔐 3-TIER ESCALATING LOCKOUT LOGIN ====================
+// 3 Wrong: 24 Hours Lockout -> 3 Wrong Again: 7 Days Lockout -> 3 Wrong Again: PERMANENT BAN
+app.post('/api/admin/login', async (req, res) => {
     try {
         const { passcode } = req.body;
         const { ip, userAgent, fingerprint } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
+        const deviceKey = getDeviceKey(fingerprint, ip);
 
         if (!passcode) return res.status(400).json({ error: 'Passcode required' });
+
+        // 1. Check if device is blocked
+        let record = await BlockedDevice.findOne({ deviceKey });
+
+        if (record) {
+            // Permanent Ban Check
+            if (record.isPermanent) {
+                return res.status(403).json({
+                    error: 'permanent_ban',
+                    message: '⛔ Your device has been PERMANENTLY BANNED due to repeated failed attempts. Contact admin to unblock.'
+                });
+            }
+
+            // Timed Lockout Check
+            if (record.blockedUntil && new Date(record.blockedUntil) > new Date()) {
+                const diffMs = new Date(record.blockedUntil) - new Date();
+                const hoursLeft = Math.ceil(diffMs / (1000 * 60 * 60));
+                const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                const timeMsg = daysLeft > 1 ? `${daysLeft} days` : `${hoursLeft} hours`;
+
+                return res.status(403).json({
+                    error: 'device_locked',
+                    message: `⛔ Device locked due to failed attempts. Try again in ${timeMsg}, or ask admin to unblock.`
+                });
+            }
+        }
+
+        // 2. Validate passcode
         const admin = await User.findOne();
         let isValid = false;
         if (admin && admin.passcode) {
@@ -446,9 +437,71 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
         }
         if (!isValid && passcode === '951753') isValid = true;
 
+        // 3. Handle WRONG Passcode (3-Strike Escalation)
         if (!isValid) {
-            await blockDevice(req, 'Invalid passcode attempt', 120);
-            return res.status(401).json({ error: 'Invalid passcode' });
+            if (!record) {
+                record = new BlockedDevice({
+                    deviceKey, fingerprint, ip, deviceName, deviceType,
+                    attempts: 0,
+                    strikeStage: 0,
+                    lastAttempt: new Date()
+                });
+            }
+
+            record.attempts = (record.attempts || 0) + 1;
+            record.lastAttempt = new Date();
+
+            // Trigger Lockout when consecutive attempts reach 3
+            if (record.attempts >= 3) {
+                record.strikeStage = (record.strikeStage || 0) + 1;
+                record.attempts = 0; // Reset streak for next tier
+
+                if (record.strikeStage === 1) {
+                    // Tier 1: 24 Hours Lockout
+                    record.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                    record.reason = 'Failed 3 consecutive attempts (24 Hours Lockout)';
+                    await record.save();
+
+                    return res.status(403).json({
+                        error: 'locked_24h',
+                        message: '❌ 3 failed attempts! Your device is locked for 24 Hours.'
+                    });
+                } else if (record.strikeStage === 2) {
+                    // Tier 2: 7 Days Lockout
+                    record.blockedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                    record.reason = 'Failed 3 attempts again (7 Days Lockout)';
+                    await record.save();
+
+                    return res.status(403).json({
+                        error: 'locked_7d',
+                        message: '❌ 3 failed attempts again! Your device is locked for 7 Days.'
+                    });
+                } else {
+                    // Tier 3: PERMANENT BAN
+                    record.isPermanent = true;
+                    record.blockedUntil = null;
+                    record.reason = 'Permanently banned after 3 lockout violations';
+                    await record.save();
+
+                    return res.status(403).json({
+                        error: 'permanent_ban',
+                        message: '🚫 Maximum lockout violations reached! Your device is PERMANENTLY BANNED. You cannot log in until unblocked from the admin panel.'
+                    });
+                }
+            } else {
+                const remaining = 3 - record.attempts;
+                await record.save();
+                return res.status(401).json({
+                    error: 'invalid_passcode',
+                    message: `❌ Invalid passcode! You have ${remaining} attempt(s) remaining before a 24-hour lockout.`
+                });
+            }
+        }
+
+        // 4. Handle CORRECT Passcode (Successful Login)
+        if (record) {
+            record.attempts = 0; // Reset consecutive attempts on success
+            await record.save();
         }
 
         if (admin) {
@@ -470,6 +523,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
 
         res.json({ success: true, csrfToken, token: jwtToken });
     } catch (e) {
+        console.error('Login Error:', e);
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -484,7 +538,6 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// Link Creation with Dedicated 16:9 Image & Expiry
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
@@ -520,12 +573,10 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         await newLink.save();
         res.json(newLink);
     } catch (e) {
-        console.error('Link Creation Error:', e);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
-// Full update for Rewarded Link
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings, status } = req.body;
@@ -582,7 +633,7 @@ app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== DASHBOARD STATS (STRICTLY CURRENT ACTIVE LINKS ONLY) ====================
+// ==================== DASHBOARD STATS (ACTIVE ONLY) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const allLinks = await Link.find().sort({ created: -1 });
@@ -596,7 +647,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         let aggregatedDailyVisits = new Map();
         let aggregatedDailyClaims = new Map();
 
-        // Calculate metrics ONLY from existing active links
         for (const link of activeLinks) {
             totalVisits += (link.visits || 0);
             totalClaims += (link.claims || 0);
@@ -655,7 +705,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// Device Management APIs
+// Device Security APIs
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find().sort({ lastAttempt: -1 });
@@ -665,12 +715,13 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     }
 });
 
+// Unblock Device (Clears lockout, strike stages, and permanent bans)
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true });
     } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+        res.status(500).json({ error: 'Failed to unblock device' });
     }
 });
 
@@ -706,14 +757,12 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     }
 });
 
-// Background strictly saved to admin document (Does NOT overwrite popupSettings)
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
-        const admin = await User.findOne();
-        if (admin) {
-            admin.background = req.body.background || null;
-            await admin.save();
-        }
+        let popup = await PopupSettings.findOne();
+        if (!popup) popup = new PopupSettings();
+        popup.image = req.body.background || null;
+        await popup.save();
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Failed' });
@@ -807,8 +856,14 @@ function sendAppFile(res, ...fileNames) {
 
 // Page Routes
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
-app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
-app.get('/admin/login.html', (req, res) => sendAppFile(res, 'login.html', 'admin/login.html'));
+
+app.get('/admin/secret-gateway', (req, res) => {
+    sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html');
+});
+
+app.get('/admin/login.html', (req, res) => {
+    sendAppFile(res, 'login.html', 'admin/login.html');
+});
 
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
@@ -823,5 +878,5 @@ app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Secure Server running on port ${port}`);
+    console.log(`🚀 Production Server running on port ${port}`);
 });
