@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel</title>
+    <title>Admin Panel - Studio</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     
@@ -35,37 +35,47 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         
         :root {
-            /* Premium Human SaaS Color System */
+            /* Ultra-Clean Modern SaaS Palette */
             --primary: #4f46e5;
             --primary-light: #6366f1;
-            --primary-dark: #4338ca;
+            --primary-hover: #4338ca;
             --secondary: #8b5cf6;
             --success: #10b981;
             --danger: #f43f5e;
             --warning: #f59e0b;
-            --bg: #0b0f19;
-            --card-bg: #121a2d;
-            --card-inner: #18223a;
+            --bg: #090d16;
+            --card-bg: #111726;
+            --card-sub: #162035;
+            --card-input: #0c121e;
             --text: #f8fafc;
             --text-light: #94a3b8;
+            --text-muted: #64748b;
             --border: rgba(255, 255, 255, 0.08);
-            --border-hover: rgba(99, 102, 241, 0.35);
-            --radius: 16px;
-            --shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.55);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
         }
         
         body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; transition: all 0.3s ease; }
-        body.dark { --bg: #0b0f19; --card-bg: #121a2d; --card-inner: #18223a; --text: #f8fafc; --text-light: #94a3b8; --border: rgba(255,255,255,0.08); }
-        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --card-inner: #f8fafc; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; --shadow: 0 8px 25px rgba(0,0,0,0.04); }
+        body.dark { --bg: #090d16; --card-bg: #111726; --card-sub: #162035; --card-input: #0c121e; --text: #f8fafc; --text-light: #94a3b8; --border: rgba(255,255,255,0.08); }
+        body.light { --bg: #f8fafc; --card-bg: #ffffff; --card-sub: #f1f5f9; --card-input: #ffffff; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; --shadow: 0 8px 30px rgba(0,0,0,0.05); }
         
+        /* Custom Smooth Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.4); }
+
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.3); } }
         
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
-        /* HEADER */
+        /* TOP NAVBAR */
         .header {
-            background: var(--card-bg); padding: 16px 26px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 16px 26px; border-radius: var(--radius-lg);
             box-shadow: var(--shadow); display: flex; justify-content: space-between;
             align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 14px;
             border: 1px solid var(--border);
@@ -95,12 +105,12 @@
         /* MENU TABS */
         .menu-container {
             display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
-            background: var(--card-bg); padding: 8px 14px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 8px 14px; border-radius: var(--radius-lg);
             border: 1px solid var(--border); align-items: center; box-shadow: var(--shadow);
         }
         .menu-container .menu-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-right: 6px; }
         .menu-container .menu-btn {
-            padding: 9px 18px; border: 1px solid transparent; border-radius: 12px;
+            padding: 10px 18px; border: 1px solid transparent; border-radius: 12px;
             background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px;
             font-weight: 700; transition: all 0.2s ease;
         }
@@ -110,20 +120,20 @@
             box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
         }
 
-        /* STATS GRID */
+        /* METRICS STATS GRID */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card {
-            background: var(--card-bg); padding: 20px 18px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 20px 18px; border-radius: var(--radius-md);
             box-shadow: var(--shadow); text-align: center; transition: transform 0.25s ease;
             border: 1px solid var(--border);
         }
-        .stat-card:hover { transform: translateY(-3px); border-color: var(--border-hover); }
+        .stat-card:hover { transform: translateY(-3px); border-color: rgba(99, 102, 241, 0.4); }
         .stat-card .number { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; }
         .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* LIVE BAR */
         .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius); padding: 20px 24px;
+            background: var(--card-bg); border-radius: var(--radius-lg); padding: 20px 24px;
             margin-bottom: 24px; border: 1px solid var(--border); border-left: 5px solid var(--success);
             box-shadow: var(--shadow);
         }
@@ -156,7 +166,7 @@
         .section.active { display: block; animation: fadeInUp 0.3s ease; }
 
         .card {
-            background: var(--card-bg); padding: 24px 28px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 26px 28px; border-radius: var(--radius-lg);
             box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--border);
         }
         .card h3 {
@@ -165,17 +175,17 @@
             padding-bottom: 12px; border-bottom: 1px solid var(--border);
         }
         .card input, .card select, .card textarea {
-            width: 100%; padding: 12px 16px; margin: 6px 0 14px; border: 1px solid var(--border);
-            border-radius: 12px; font-size: 14px; font-weight: 500; background: var(--bg); color: var(--text);
+            width: 100%; padding: 13px 16px; margin: 6px 0 14px; border: 1px solid var(--border);
+            border-radius: 12px; font-size: 14px; font-weight: 500; background: var(--card-input); color: var(--text);
             transition: 0.2s ease; outline: none;
         }
         .card input:focus, .card select:focus, .card textarea:focus {
-            border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+            border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
         }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
         .btn {
-            padding: 10px 20px; border: none; border-radius: 12px; font-size: 13.5px;
+            padding: 11px 22px; border: none; border-radius: 12px; font-size: 13.5px;
             font-weight: 700; cursor: pointer; transition: 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
@@ -192,12 +202,12 @@
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 16px 20px; margin-bottom: 10px; border-radius: 12px;
+            background: var(--bg); padding: 16px 20px; margin-bottom: 10px; border-radius: 14px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
             gap: 12px; border-left: 4px solid var(--primary); border: 1px solid var(--border);
             transition: 0.2s ease;
         }
-        .link-item:hover { transform: translateX(3px); border-color: var(--border-hover); }
+        .link-item:hover { transform: translateX(3px); border-color: rgba(99, 102, 241, 0.4); }
         .link-item .info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; flex: 1; }
         .link-item .info .name { font-weight: 800; font-size: 15px; color: var(--text); min-width: 140px; }
         .link-item .info .details { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-light); }
@@ -208,40 +218,92 @@
         .status-disabled { background: rgba(244,63,94,0.15); color: var(--danger); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
 
-        /* ✨ REDESIGNED HUMAN EDIT MODAL (REPLACING SCREENSHOT 8) ✨ */
+        /* ==================== ✨ ULTRA-CLEAN EDIT MODAL ✨ ==================== */
         .edit-modal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(4, 6, 11, 0.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            background: rgba(4, 7, 13, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             z-index: 10000; justify-content: center; align-items: center; padding: 20px;
         }
         .edit-modal.show { display: flex; }
         .edit-modal .modal-content {
-            background: #121a2d; border-radius: 24px; padding: 32px;
-            max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 60px rgba(0,0,0,0.8);
-            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: var(--card-bg); border-radius: 24px; padding: 32px 34px;
+            max-width: 740px; width: 100%; max-height: 90vh; overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 70px rgba(0,0,0,0.85);
+            animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes modalPop { from { opacity: 0; transform: scale(0.96) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .edit-modal .modal-content h3 {
-            margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
-            color: var(--text); font-size: 19px; font-weight: 800;
+        @keyframes modalAppear {
+            from { opacity: 0; transform: scale(0.96) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
-        .edit-modal label { font-size: 12.5px; color: var(--text-light); display: block; margin-top: 8px; margin-bottom: 2px; font-weight: 700; }
         
-        .form-section-box {
-            margin-top: 16px; padding: 18px; background: var(--bg);
-            border-radius: 14px; border: 1px solid var(--border);
+        .modal-head-title {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
         }
-        .form-section-box h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+        .modal-head-title h3 { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+        .modal-head-title .modal-close {
+            width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border); color: var(--text-light); font-size: 18px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s ease;
+        }
+        .modal-head-title .modal-close:hover { background: rgba(244, 63, 94, 0.15); color: var(--danger); }
+
+        .edit-modal label {
+            font-size: 13px; color: var(--text-light); display: block; margin-bottom: 6px; font-weight: 700;
+        }
+        .edit-modal input, .edit-modal select {
+            width: 100%; padding: 13px 16px; border: 1px solid var(--border); border-radius: 12px;
+            background: var(--card-input); color: var(--text); font-size: 14px; font-weight: 500;
+            outline: none; transition: 0.2s ease; margin-bottom: 16px;
+        }
+        .edit-modal input:focus {
+            border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); background: #0f1728;
+        }
+
+        /* Grouped Sections inside Edit Modal */
+        .modal-section-card {
+            background: var(--card-sub); border: 1px solid var(--border); border-radius: 16px;
+            padding: 20px; margin-top: 18px; margin-bottom: 8px;
+        }
+        .modal-section-card h4 {
+            font-size: 14.5px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        }
 
         .img-preview-box {
-            width: 100%; height: 160px; border-radius: 14px; background: #0b0f19;
-            border: 1px dashed rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center;
-            overflow: hidden; margin: 8px 0 16px;
+            width: 100%; height: 160px; border-radius: 14px; background: #090e18;
+            border: 1px dashed rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center;
+            overflow: hidden; margin: 6px 0 16px; position: relative;
         }
         .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .img-preview-box span { color: var(--text-light); font-size: 12px; font-weight: 600; }
+        .img-preview-box span { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+
+        .preset-pill-group {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+        }
+        .preset-pill {
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border: 1px solid var(--border);
+            cursor: pointer; transition: 0.2s;
+        }
+        .preset-pill:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .expiry-row-box {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .expiry-row-box input[type="datetime-local"] {
+            flex: 1; min-width: 220px; margin-bottom: 0;
+        }
+        .btn-clear-expiry {
+            padding: 12px 18px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
+            background: rgba(244, 63, 94, 0.12); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.25);
+            cursor: pointer; transition: 0.2s; white-space: nowrap;
+        }
+        .btn-clear-expiry:hover { background: var(--danger); color: #fff; }
+
+        .modal-action-footer {
+            display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;
+            padding-top: 18px; border-top: 1px solid var(--border);
+        }
 
         .toast {
             position: fixed; bottom: 30px; right: 30px; padding: 14px 24px; border-radius: 14px;
@@ -254,7 +316,7 @@
         .toast.error { background: var(--danger); }
         .toast.info { background: var(--primary); }
 
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .analytics-container { background: var(--card-bg); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
         .analytics-container .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
         .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -262,7 +324,7 @@
         .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 14px; }
+        .search-bar input { flex: 1; min-width: 200px; padding: 13px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 14px; }
 
         .device-item {
             background: var(--bg); padding: 14px 18px; margin-bottom: 10px; border-radius: 12px;
@@ -275,11 +337,11 @@
             body { padding: 14px; }
             .header { flex-direction: column; text-align: center; }
             .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-container .menu-btn { text-align: center; }
+            .menu-btn { text-align: center; }
             .grid-2 { grid-template-columns: 1fr; }
             .link-item { flex-direction: column; align-items: stretch; }
             .link-item .actions { justify-content: flex-end; }
-            .edit-modal .modal-content { padding: 20px; }
+            .edit-modal .modal-content { padding: 22px 18px; }
         }
     </style>
 </head>
@@ -287,7 +349,7 @@
     <div class="admin-container">
         <!-- HEADER -->
         <header class="header">
-            <h1>⚡ Admin Panel</h1>
+            <h1>⚡ Admin Studio</h1>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install App</button>
                 <div class="theme-toggle">
@@ -309,13 +371,13 @@
             <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">✂️ Short Link</button>
         </div>
 
-        <!-- 1. DASHBOARD OVERVIEW SECTION (SHOWS ONLY ACTIVE LINKS DATA) -->
+        <!-- 1. DASHBOARD OVERVIEW SECTION (CURRENT ACTIVE LINKS DATA) -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">Active Links</div></div>
+                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">Active Campaigns</div></div>
                 <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Verified Active</div></div>
-                <div class="stat-card"><div class="number" id="totalVisits" style="color:#818cf8;">0</div><div class="label">Total Visits</div></div>
-                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">Expired Links</div></div>
+                <div class="stat-card"><div class="number" id="totalVisits" style="color:#818cf8;">0</div><div class="label">Active Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">Expired Campaigns</div></div>
             </div>
 
             <div class="card">
@@ -331,7 +393,7 @@
             <!-- LIVE ACTIVITY BAR -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
-                    <span class="dot"></span> Live Visitors & Claims (Active Links Only)
+                    <span class="dot"></span> Live Network Activity (Active Links Only)
                     <span class="live-badge">🟢 Live</span>
                     <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
                 </div>
@@ -339,13 +401,13 @@
                 <div class="lv-grid">
                     <div class="lv-item">
                         <div class="lv-number visits-color" id="liveLifetimeVisits">0</div>
-                        <div class="lv-label">Lifetime Visits</div>
-                        <div class="lv-time">Active links</div>
+                        <div class="lv-label">Active Lifetime Visits</div>
+                        <div class="lv-time">Active links only</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number claims-color" id="liveLifetimeClaims">0</div>
-                        <div class="lv-label">Lifetime Claims</div>
-                        <div class="lv-time">Active links</div>
+                        <div class="lv-label">Active Lifetime Claims</div>
+                        <div class="lv-time">Active links only</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number visits-color" id="live48hrVisits">0</div>
@@ -373,7 +435,7 @@
             <!-- DASHBOARD GRAPH -->
             <div class="card">
                 <h3>
-                    <span>📈 Active Campaign Visitor Trends</span>
+                    <span>📈 Active Campaign Visitor & Claim Trends</span>
                     <div style="display:flex; gap:6px;">
                         <button onclick="switchDashboardGraph('7days')" class="btn btn-outline btn-sm active" id="dashGraph7">7 Days</button>
                         <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">Today (24h)</button>
@@ -388,9 +450,9 @@
         <!-- 2. LINKS MANAGER SECTION -->
         <div class="section" id="section-links">
             <div class="card">
-                <h3>🔍 Search & Manage Links</h3>
+                <h3>🔍 Search & Manage Rewarded Campaigns</h3>
                 <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
+                    <input type="text" id="searchLinksInput" placeholder="Search by link title or ID..." oninput="filterLinks()">
                     <span class="search-results-count" id="searchResultsCount" style="font-size:12.5px; color:var(--text-light);">Showing active links</span>
                 </div>
                 <div id="linksList">Loading links...</div>
@@ -402,9 +464,9 @@
             <div class="analytics-container" id="analyticsExportBox">
                 <div class="analytics-header">
                     <div class="link-selector">
-                        <label style="font-weight:700; color:var(--text-light); font-size:12.5px;">📌 Campaign:</label>
+                        <label style="font-weight:700; color:var(--text-light); font-size:12.5px;">📌 Select Campaign:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter dropdown..." oninput="filterAnalyticsLinks()">
+                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter dropdown list..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
                         <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
@@ -431,10 +493,10 @@
         <!-- 4. CREATE LINK SECTION -->
         <div class="section" id="section-create">
             <div class="card">
-                <h3>➕ Create Rewarded Campaign</h3>
+                <h3>➕ Create New Rewarded Campaign</h3>
                 
                 <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Campaign Title</label>
-                <input type="text" id="linkName" placeholder="e.g. Free Fire Diamond Pass Promo">
+                <input type="text" id="linkName" placeholder="e.g. Free Fire Diamond Pass Promotion">
 
                 <div class="grid-2">
                     <div>
@@ -458,8 +520,8 @@
                     </div>
                 </div>
 
-                <!-- ENTRANCE POPUP SETTINGS -->
-                <div class="form-section-box">
+                <!-- ENTRANCE POPUP CONFIGURATION -->
+                <div class="modal-section-card">
                     <h4 style="color:#818cf8;">🖼️ Entrance Popup Image & Text</h4>
                     
                     <label>Popup Image URL (16:9 Aspect Ratio)</label>
@@ -483,8 +545,8 @@
                     <input type="text" id="popupSubtitle" value="Tap below to unlock your reward">
                 </div>
 
-                <!-- SCHEDULE EXPIRY -->
-                <div class="form-section-box">
+                <!-- SCHEDULE EXPIRY PRESETS -->
+                <div class="modal-section-card">
                     <h4 style="color:var(--warning);">📅 Schedule Expiry</h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
                         <option value="">Never Expire (Lifetime Active)</option>
@@ -550,11 +612,13 @@
         </div>
     </div>
 
-    <!-- ✨ REDESIGNED EDIT MODAL ✨ -->
+    <!-- ==================== ✨ ULTRA-CLEAN EDIT MODAL ✨ ==================== -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
-            <h3>✏️ Edit Rewarded Campaign</h3>
+            <div class="modal-head-title">
+                <h3>✏️ Edit Rewarded Campaign</h3>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
             <div id="editModalBody"></div>
         </div>
     </div>
@@ -748,6 +812,7 @@
             loadStats();
         }
 
+        // ==================== ✨ REDESIGNED EDIT MODAL POPULATOR ✨ ====================
         function openEditModal(id) {
             const link = allLinks.find(l => l.id === id);
             if (!link) return;
@@ -762,50 +827,77 @@
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Campaign Name</label><input type="text" id="eName" value="${link.name || ''}"></div>
-                <div class="grid-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video || ''}"></div>
-                    <div class="form-group"><label>Claim URL</label><input type="text" id="eClaim" value="${link.claim || ''}"></div>
+                <!-- 1. CAMPAIGN DETAILS -->
+                <div>
+                    <label>Campaign Title</label>
+                    <input type="text" id="eName" value="${link.name || ''}">
                 </div>
                 <div class="grid-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline || ''}"></div>
+                    <div>
+                        <label>Video URL (YouTube or MP4)</label>
+                        <input type="text" id="eVideo" value="${link.video || ''}">
+                    </div>
+                    <div>
+                        <label>Claim Destination URL</label>
+                        <input type="text" id="eClaim" value="${link.claim || ''}">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <label>Button Text</label>
+                        <input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}">
+                    </div>
+                    <div>
+                        <label>Headline</label>
+                        <input type="text" id="eHead" value="${link.headline || ''}">
+                    </div>
                 </div>
 
-                <!-- ENTRANCE POPUP EDIT -->
-                <div class="form-section-box">
+                <!-- 2. ENTRANCE POPUP SECTION -->
+                <div class="modal-section-card">
                     <h4 style="color:#818cf8;">🖼️ Entrance Popup Image & Content</h4>
-                    <label>Popup Image URL (16:9)</label>
+                    <label>Popup Image URL (16:9 Aspect Ratio)</label>
                     <input type="text" id="ePopupImg" value="${pop.image || ''}" oninput="previewImage('ePopupImg', 'editImgPrev')">
+                    
                     <div class="img-preview-box">
                         <img id="editImgPrev" style="${pop.image ? 'display:block;' : 'display:none;'}" src="${pop.image || ''}" alt="Preview">
-                        <span style="${pop.image ? 'display:none;' : 'display:block;'}">16:9 Image Preview</span>
+                        <span style="${pop.image ? 'display:none;' : 'display:block;'}">🖼️ 16:9 Image Preview Will Appear Here</span>
                     </div>
 
                     <div class="grid-2">
-                        <div><label>Popup Title</label><input type="text" id="ePopupTitle" value="${pop.title || '🎁 Claim Your Reward'}"></div>
-                        <div><label>Popup Button Text</label><input type="text" id="ePopupBtn" value="${pop.buttonText || 'Claim Now'}"></div>
+                        <div>
+                            <label>Popup Title</label>
+                            <input type="text" id="ePopupTitle" value="${pop.title || '🎁 Claim Your Reward'}">
+                        </div>
+                        <div>
+                            <label>Popup Button Text</label>
+                            <input type="text" id="ePopupBtn" value="${pop.buttonText || 'Claim Now'}">
+                        </div>
                     </div>
-                    <label>Popup Subtitle</label>
-                    <input type="text" id="ePopupSub" value="${pop.subtitle || 'Tap below to unlock your reward'}">
+                    <div>
+                        <label>Popup Subtitle</label>
+                        <input type="text" id="ePopupSub" value="${pop.subtitle || 'Tap below to unlock your reward'}">
+                    </div>
                 </div>
 
-                <!-- EXPIRATION SELECTOR -->
-                <div class="form-section-box">
-                    <h4 style="color:var(--warning);">📅 Link Expiration Date</h4>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-                        <button type="button" class="btn btn-sm btn-outline" onclick="setEditPreset(3)">+3 Days</button>
-                        <button type="button" class="btn btn-sm btn-outline" onclick="setEditPreset(7)">+7 Days</button>
-                        <button type="button" class="btn btn-sm btn-outline" onclick="setEditPreset(15)">+15 Days</button>
-                        <button type="button" class="btn btn-sm btn-outline" onclick="setEditPreset(30)">+30 Days</button>
+                <!-- 3. EXPIRATION SCHEDULE -->
+                <div class="modal-section-card">
+                    <h4 style="color:var(--warning);">📅 Schedule Expiration</h4>
+                    <div class="preset-pill-group">
+                        <button type="button" class="preset-pill" onclick="setEditPreset(3)">+3 Days</button>
+                        <button type="button" class="preset-pill" onclick="setEditPreset(7)">+7 Days</button>
+                        <button type="button" class="preset-pill" onclick="setEditPreset(15)">+15 Days</button>
+                        <button type="button" class="preset-pill" onclick="setEditPreset(30)">+30 Days</button>
                     </div>
-                    <input type="datetime-local" id="eExpiryDate" value="${localISODate}">
-                    <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="document.getElementById('eExpiryDate').value=''">Remove Expiry (Never Expire)</button>
+                    <div class="expiry-row-box">
+                        <input type="datetime-local" id="eExpiryDate" value="${localISODate}">
+                        <button type="button" class="btn-clear-expiry" onclick="document.getElementById('eExpiryDate').value=''">Remove Expiry (Never Expire)</button>
+                    </div>
                 </div>
 
-                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                    <button class="btn btn-success" onclick="saveLinkEdit()">💾 Save Changes</button>
+                <div class="modal-action-footer">
                     <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                    <button class="btn btn-success" onclick="saveLinkEdit()">💾 Save Changes</button>
                 </div>
             `;
             document.getElementById('editModal').classList.add('show');
@@ -839,7 +931,7 @@
                 body: JSON.stringify(payload)
             });
 
-            showToast('✅ Link updated successfully!', 'success');
+            showToast('✅ Campaign updated successfully!', 'success');
             closeEditModal();
             loadLinks();
             loadStats();
@@ -975,7 +1067,7 @@
 
         function downloadAnalyticsImage() {
             const box = document.getElementById('analyticsExportBox');
-            html2canvas(box, { backgroundColor: '#121a2d', scale: 2 }).then(canvas => {
+            html2canvas(box, { backgroundColor: '#111726', scale: 2 }).then(canvas => {
                 const a = document.createElement('a');
                 a.download = 'analytics-report.png';
                 a.href = canvas.toDataURL('image/png');
