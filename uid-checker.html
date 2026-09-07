@@ -2,27 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Verification Portal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- ANTI-F12 & DEVTOOLS SHIELD -->
+    <title>Reward Verification</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        (function() {
-            'use strict';
-            document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
-            window.addEventListener('keydown', function(e) {
-                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && ['U','S'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
-            }, true);
-            try { ['log', 'debug', 'info', 'warn', 'error'].forEach(m => window.console[m] = () => {}); } catch(e) {}
-        })();
+        document.addEventListener('contextmenu', e => e.preventDefault(), true);
+        window.addEventListener('keydown', e => {
+            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase()))) {
+                e.preventDefault();
+            }
+        }, true);
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
             min-height: 100vh;
-            background: #0a0c13;
+            background: #090a0f;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -33,55 +28,33 @@
         .auth-card {
             width: 100%;
             max-width: 400px;
-            background: rgba(18, 22, 34, 0.85);
+            background: #131722;
             border-radius: 24px;
-            padding: 36px 30px;
+            padding: 36px 28px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(16px);
             text-align: center;
         }
 
-        .badge-icon {
-            width: 58px;
-            height: 58px;
-            margin: 0 auto 16px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-        }
-
-        h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .badge-icon { font-size: 44px; margin-bottom: 12px; }
+        h2 { font-size: 22px; font-weight: 800; }
         p.sub { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 18px;
-        }
 
         .input-group input {
             width: 100%;
             padding: 15px;
-            background: rgba(10, 12, 19, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #090a0f;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
             color: #fff;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             text-align: center;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 18px;
         }
-
-        .input-group input:focus {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-        }
+        .input-group input:focus { border-color: #6366f1; }
 
         .btn-proceed {
             width: 100%;
@@ -93,33 +66,30 @@
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-            transition: transform 0.2s ease;
+            transition: 0.2s;
         }
-
-        .btn-proceed:hover { transform: translateY(-2px); }
         .btn-proceed:active { transform: scale(0.98); }
 
         .status-box {
             display: none;
-            margin-top: 18px;
+            margin-top: 16px;
             padding: 12px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 600;
         }
-        .status-box.error { display: block; background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-        .status-box.loading { display: block; background: rgba(99, 102, 241, 0.12); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); }
+        .status-box.error { display: block; background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .status-box.loading { display: block; background: rgba(99, 102, 241, 0.12); color: #818cf8; }
     </style>
 </head>
 <body>
     <div class="auth-card">
         <div class="badge-icon">🎮</div>
         <h2>Verify Free Fire UID</h2>
-        <p class="sub">Enter your 8-12 digit gaming ID to unlock rewards</p>
+        <p class="sub">Enter your gaming UID to unlock video rewards</p>
 
         <div class="input-group">
-            <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus>
+            <input type="text" id="uidInput" placeholder="Enter UID" maxlength="12" autofocus inputmode="numeric">
         </div>
 
         <button class="btn-proceed" id="submitBtn" onclick="verifyAndProceed()">Continue ➜</button>
@@ -127,19 +97,16 @@
     </div>
 
     <script>
-        let linkData = null;
-        const linkParam = new URLSearchParams(window.location.search).get('link');
+        const linkParam = new URLSearchParams(window.location.search).get('link') || 'default';
 
-        if (linkParam) {
-            fetch('/api/link/' + linkParam)
-                .then(r => r.json())
-                .then(data => { if (data && data.id) linkData = data; })
-                .catch(() => {});
-        }
+        document.getElementById('uidInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyAndProceed();
+        });
 
         function verifyAndProceed() {
             const uid = document.getElementById('uidInput').value.trim();
             const status = document.getElementById('statusMsg');
+            const btn = document.getElementById('submitBtn');
 
             if (!/^\d{8,12}$/.test(uid)) {
                 status.className = 'status-box error';
@@ -147,16 +114,14 @@
                 return;
             }
 
+            localStorage.setItem('playerUID', uid);
+            btn.disabled = true;
             status.className = 'status-box loading';
-            status.textContent = '⏳ Verifying ID with servers...';
+            status.textContent = '⏳ Verifying UID... Opening Video Page';
 
             setTimeout(() => {
-                const targetId = linkData ? linkData.id : 'default';
-                const video = encodeURIComponent(linkData ? linkData.video : 'https://youtu.be/dQw4w9WgXcQ');
-                const claim = encodeURIComponent(linkData ? linkData.claim : '#');
-                const head = encodeURIComponent(linkData ? linkData.headline : '🎬 Watch Stream');
-                window.location.href = `/v/${targetId}?video=${video}&claim=${claim}&headline=${head}`;
-            }, 1000);
+                window.location.href = `/v/${linkParam}`;
+            }, 500);
         }
     </script>
 </body>
