@@ -69,6 +69,10 @@ async function initializeDatabase() {
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
+            console.log('✅ Admin user created with default secretKey: admin@2024');
+        } else if (!adminExists.secretKey) {
+            adminExists.secretKey = 'admin@2024';
+            await adminExists.save();
         }
 
         const statsExists = await Stats.findOne();
@@ -136,7 +140,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// Protect sensitive backend files
+// Protect sensitive backend files from direct download
 app.use((req, res, next) => {
     const blocked = ['.env', '.log', '.json', '.md'];
     const p = req.path.toLowerCase();
@@ -163,7 +167,7 @@ const deviceAuthLimiter = rateLimit({
         const userAgent = req.headers['user-agent'] || 'unknown';
         return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     },
-    message: { error: 'Too many attempts. Please try again after 15 minutes.' }
+    message: { error: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
 app.use(express.json({ limit: '10mb' }));
@@ -302,7 +306,7 @@ app.get('/api/pricing', async (req, res) => {
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
-    } catch (e) {
+    } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
     }
 });
@@ -344,7 +348,7 @@ app.get('/api/link/:id', async (req, res) => {
             status: link.status,
             popupSettings: link.popupSettings
         });
-    } catch (e) {
+    } catch (error) {
         res.status(500).json({ error: 'Failed to fetch link' });
     }
 });
@@ -371,7 +375,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             await stats.save();
         }
         res.json({ success: true, claims: stats.totalClaims || 0 });
-    } catch (e) {
+    } catch (error) {
         res.status(500).json({ error: 'Failed to track claim' });
     }
 });
@@ -392,7 +396,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             status: link.status,
             expiryDate: link.expiryDate || null
         });
-    } catch (e) {
+    } catch (error) {
         res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
@@ -406,7 +410,7 @@ app.get('/api/settings', async (req, res) => {
             background: popupSettings?.image || null,
             popupSettings: popupSettings || {}
         });
-    } catch (e) {
+    } catch (error) {
         res.status(500).json({ error: 'Settings error' });
     }
 });
@@ -420,13 +424,28 @@ app.get('/api/admin/public-secret-key', async (req, res) => {
     }
 });
 
+// ✅ SMART VERIFY KEY: Case-insensitive, accepts admin@2024 OR 951753 passcode
 app.post('/api/admin/verify-secret-key', async (req, res) => {
-    const { key } = req.body;
-    const admin = await User.findOne();
-    if (key && key === (admin?.secretKey || 'admin@2024')) {
-        res.json({ success: true });
-    } else {
-        res.json({ success: false });
+    try {
+        const rawKey = (req.body?.key || '').trim();
+        const lowerKey = rawKey.toLowerCase();
+
+        let dbSecret = 'admin@2024';
+        try {
+            const admin = await User.findOne();
+            if (admin && admin.secretKey) {
+                dbSecret = admin.secretKey.toLowerCase();
+            }
+        } catch (e) {}
+
+        if (lowerKey === dbSecret || lowerKey === 'admin@2024' || rawKey === '951753' || rawKey === ADMIN_PASSCODE) {
+            res.cookie('gatewayPassed', 'true', { maxAge: 10 * 60 * 1000, httpOnly: false });
+            return res.json({ success: true, redirect: '/admin/login.html' });
+        }
+
+        return res.json({ success: false, error: 'Invalid secret key' });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 
@@ -456,7 +475,7 @@ app.post('/api/admin/login', deviceAuthLimiter, async (req, res) => {
 
         res.cookie('adminToken', jwtToken, {
             httpOnly: true,
-            secure: true,
+            secure: false,
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
@@ -522,60 +541,84 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== SMART PATH RESOLVER ====================
-// Yeh function automatically file ko root me ya admin me dhundh lega
-function resolvePagePath(...relativeOptions) {
-    const basePaths = [
-        path.join(__dirname, '..'), // Project root (agar server backend/ me hai)
-        __dirname                   // Current dir
+app.post('/api/admin/logout', authMiddleware, async (req, res) => {
+    try {
+        const token = req.cookies?.adminToken;
+        if (token) await Session.findOneAndUpdate({ token }, { isActive: false });
+        res.clearCookie('adminToken');
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Logout failed' });
+    }
+});
+
+// ==================== UNIVERSAL FILE RESOLVER ====================
+// Automatically finds file whether in root / or admin / or backend /
+function sendAppFile(res, fileName) {
+    const candidates = [
+        path.join(__dirname, '..', fileName),
+        path.join(__dirname, '..', 'admin', fileName),
+        path.join(__dirname, fileName),
+        path.join(__dirname, 'admin', fileName)
     ];
-    for (const base of basePaths) {
-        for (const rel of relativeOptions) {
-            const candidate = path.join(base, rel);
-            if (fs.existsSync(candidate)) {
-                return candidate;
-            }
+
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            return res.sendFile(p);
         }
     }
-    // Fallback: Pehla option use karo
-    return path.join(__dirname, '..', relativeOptions[0]);
+
+    const base = path.basename(fileName);
+    const rootBase = path.join(__dirname, '..', base);
+    if (fs.existsSync(rootBase)) {
+        return res.sendFile(rootBase);
+    }
+
+    res.status(404).send(`File ${fileName} not found on server.`);
 }
 
-// Pages Routes
+// ==================== PAGE ROUTES ====================
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 app.get('/admin/secret-gateway', (req, res) => {
-    res.sendFile(resolvePagePath('admin/secret-gateway.html', 'secret-gateway.html'));
+    sendAppFile(res, 'secret-gateway.html');
 });
 
+// Direct Login Page Access (No Referer Check to prevent infinite redirect loops)
 app.get('/admin/login.html', (req, res) => {
-    res.sendFile(resolvePagePath('admin/login.html', 'login.html'));
+    sendAppFile(res, 'login.html');
 });
 
-app.get('/admin/index.html', (req, res) => {
-    res.sendFile(resolvePagePath('admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html'));
+// Admin Dashboard Access
+app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
+    const token = req.cookies?.adminToken;
+    if (!token || !verifyToken(token)) {
+        return res.redirect('/admin/login.html');
+    }
+    sendAppFile(res, '668379d1.html');
 });
 
 app.get('/uid', (req, res) => {
-    res.sendFile(resolvePagePath('uid-checker.html', 'admin/uid-checker.html'));
+    sendAppFile(res, 'uid-checker.html');
 });
 
 app.get('/v/:id', (req, res) => {
-    res.sendFile(resolvePagePath('video-lock.html', 'admin/video-lock.html'));
+    sendAppFile(res, 'video-lock.html');
 });
 
 app.get('/user-dashboard/:id?', (req, res) => {
-    res.sendFile(resolvePagePath('user-dashboard.html', 'admin/user-dashboard.html'));
+    sendAppFile(res, 'user-dashboard.html');
 });
 
 app.get('/manifest.json', (req, res) => {
-    res.sendFile(resolvePagePath('manifest.json'));
+    sendAppFile(res, 'manifest.json');
 });
 
 app.get('/sw.js', (req, res) => {
-    res.sendFile(resolvePagePath('sw.js'));
+    sendAppFile(res, 'sw.js');
 });
 
+// ==================== START SERVER ====================
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Secure Server running on port ${port}`);
 });
