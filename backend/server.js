@@ -246,19 +246,8 @@ async function createSession(token, userId, csrfToken, ip, userAgent) {
     return session;
 }
 
-async function validateSession(token) {
-    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
-    if (!session) return null;
-    session.lastActivity = new Date();
-    await session.save();
-    return session;
-}
-
 // Resilient Auth Middleware
 async function authMiddleware(req, res, next) {
-    const blocked = await isDeviceBlocked(req);
-    if (blocked) return res.status(403).json({ error: 'Device is blocked.' });
-
     const token = req.cookies?.adminToken || req.headers['authorization']?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'Authentication required' });
 
@@ -317,7 +306,7 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
-// ✅ LINK RESOLVER (Always active, no false expiry/suspension)
+// ✅ FIXED: LINK RESOLVER (Always active, no false expiry/suspension)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
@@ -348,7 +337,7 @@ app.get('/api/link/:id', async (req, res) => {
             return res.status(403).json({ error: 'disabled', message: 'Link disabled', status: 'disabled' });
         }
 
-        // Only expire if expiryDate is genuinely a valid date in the past
+        // Expiry check: only trigger if expiryDate is genuinely a valid date in the past
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
@@ -770,6 +759,7 @@ app.get('/admin/login.html', (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
+// Automatically checks admin/index.html OR 668379d1.html
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
     if (!token || !verifyToken(token)) {
