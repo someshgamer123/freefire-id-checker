@@ -4,71 +4,118 @@
     <meta charset="UTF-8">
     <title>Admin Authentication</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SAFE ANTI-F12 SHIELD -->
+
+    <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
         (function() {
             document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
             window.addEventListener('keydown', function(e) {
                 if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
             }, true);
-            try { ['log', 'debug', 'info', 'warn', 'error'].forEach(m => window.console[m] = () => {}); } catch(e) {}
+            try {
+                const noop = () => {};
+                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
+            } catch(e) {}
         })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body {
-            background: #090a0f;
+            background: #090a10;
             color: #f8fafc;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 65%);
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(50px);
         }
 
         .login-card {
+            position: relative;
+            z-index: 2;
             width: 100%;
-            max-width: 380px;
-            background: #131722;
-            border-radius: 22px;
-            padding: 34px 28px;
+            max-width: 400px;
+            background: rgba(19, 23, 34, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 38px 30px;
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
             text-align: center;
+            animation: popIn 0.4s ease;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        .icon { font-size: 40px; margin-bottom: 10px; }
-        h2 { font-size: 22px; font-weight: 800; }
-        p.sub { color: #94a3b8; font-size: 13px; margin: 4px 0 20px; }
+        .card-icon {
+            font-size: 44px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
 
-        .pin-inputs {
+        h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #fff; }
+        p.sub-desc { color: #94a3b8; font-size: 13px; margin-bottom: 24px; }
+
+        .pin-group {
             display: flex;
             justify-content: center;
-            gap: 8px;
-            margin-bottom: 22px;
+            gap: 10px;
+            margin-bottom: 24px;
         }
 
-        .pin-inputs input {
-            width: 44px;
-            height: 52px;
+        .pin-group input {
+            width: 46px;
+            height: 56px;
             background: #090a0f;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 12px;
             color: #fff;
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 800;
             text-align: center;
             outline: none;
-            transition: 0.2s;
+            transition: all 0.2s ease;
         }
-        .pin-inputs input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+        .pin-group input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+            background: #11141f;
+        }
 
         .btn-submit {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             border: none;
             border-radius: 12px;
@@ -76,38 +123,45 @@
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
         }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(99, 102, 241, 0.55); }
         .btn-submit:active { transform: scale(0.98); }
 
         .status-msg {
-            margin-top: 14px;
+            margin-top: 16px;
             font-size: 13px;
             color: #ef4444;
-            min-height: 18px;
+            min-height: 20px;
             font-weight: 600;
+            line-height: 1.5;
         }
 
         .blocked-banner {
             display: none;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            padding: 14px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 14px;
+            padding: 16px;
             color: #f87171;
             font-size: 13px;
             font-weight: 700;
-            margin-top: 14px;
+            margin-top: 16px;
+            line-height: 1.5;
+            animation: popIn 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <div class="icon" id="cardIcon">🔐</div>
-        <h2 id="cardTitle">Admin Authentication</h2>
-        <p class="sub" id="cardSub">Enter 6-digit passcode to open dashboard</p>
+    <div class="ambient-glow"></div>
 
-        <div class="pin-inputs" id="pinGroup">
+    <div class="login-card" id="loginCard">
+        <div class="card-icon" id="cardIcon">🔐</div>
+        <h2 id="cardTitle">Admin Authentication</h2>
+        <p class="sub-desc" id="cardSub">Enter your 6-digit passcode to access the control panel</p>
+
+        <div class="pin-group" id="pinGroup">
             <input type="password" maxlength="1" autofocus inputmode="numeric">
             <input type="password" maxlength="1" inputmode="numeric">
             <input type="password" maxlength="1" inputmode="numeric">
@@ -118,14 +172,26 @@
 
         <button class="btn-submit" id="loginBtn" onclick="submitPasscode()">Sign In ➜</button>
         <div class="status-msg" id="statusMsg"></div>
+
         <div class="blocked-banner" id="blockedBanner">
             ⛔ YOUR DEVICE IS PERMANENTLY BLOCKED!
-            <span style="display:block;font-size:11px;font-weight:400;margin-top:4px;color:#cbd5e1;">Banned due to 3 failed passcode attempts. Contact administrator to unblock.</span>
+            <span style="display:block;font-size:11px;font-weight:400;margin-top:6px;color:#cbd5e1;">
+                Banned due to 3 failed passcode attempts.<br>
+                Refreshing will not bypass this ban. Contact administrator to unblock.
+            </span>
         </div>
     </div>
 
     <script>
-        const inputs = Array.from(document.querySelectorAll('.pin-inputs input'));
+        // Persistent Client Device Identifier (Prevents unblock on refresh)
+        let deviceId = localStorage.getItem('adminDevId');
+        if (!deviceId) {
+            deviceId = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+            localStorage.setItem('adminDevId', deviceId);
+        }
+        document.cookie = `devId=${deviceId}; path=/; max-age=31536000; SameSite=Lax`;
+
+        const inputs = Array.from(document.querySelectorAll('.pin-group input'));
         const btn = document.getElementById('loginBtn');
         const status = document.getElementById('statusMsg');
         const banner = document.getElementById('blockedBanner');
@@ -133,9 +199,11 @@
         // Check if device is banned on load
         async function checkInitialBlock() {
             try {
-                const res = await fetch('/api/admin/block-status');
+                const res = await fetch('/api/admin/block-status', { credentials: 'include' });
                 const data = await res.json();
-                if (data.blocked) lockDeviceUI(data.reason);
+                if (data.blocked) {
+                    lockDeviceUI(data.reason);
+                }
             } catch(e) {}
         }
         checkInitialBlock();
@@ -145,6 +213,7 @@
             inputs.forEach(i => { i.disabled = true; i.value = ''; });
             btn.disabled = true;
             btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
             status.textContent = '';
             document.getElementById('cardIcon').textContent = '⛔';
             document.getElementById('cardTitle').textContent = 'Access Banned';
@@ -165,7 +234,7 @@
         async function submitPasscode() {
             const passcode = inputs.map(x => x.value).join('');
             if (passcode.length !== 6) {
-                status.textContent = '❌ Enter all 6 digits';
+                status.textContent = '❌ Please enter all 6 digits';
                 return;
             }
 
@@ -177,6 +246,7 @@
                 const res = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ passcode })
                 });
                 const data = await res.json();
@@ -198,7 +268,7 @@
             } catch (e) {
                 btn.disabled = false;
                 btn.textContent = 'Sign In ➜';
-                status.textContent = '❌ Connection error';
+                status.textContent = '❌ Network or server error';
             }
         }
     </script>
