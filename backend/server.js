@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 
 // ==================== MongoDB Connection ====================
 const connectDB = require('./config/db');
@@ -138,6 +139,16 @@ async function initializeDatabase() {
 }
 
 initializeDatabase();
+
+// ==================== Helper: Safe Link Query (Prevents CastError) ====================
+function getLinkQuery(rawId) {
+    const cleanId = (rawId || '').toString().trim();
+    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
+    if (mongoose.Types.ObjectId.isValid(cleanId)) {
+        orConditions.push({ _id: cleanId });
+    }
+    return { $or: orConditions };
+}
 
 // ==================== Security Headers ====================
 app.use(helmet({
@@ -356,8 +367,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         const { linkId } = req.params;
-        let link = await Link.findOne({ id: linkId });
-        if (!link) link = await Link.findOne({ dashboardId: linkId });
+        let link = await Link.findOne(getLinkQuery(linkId));
         if (!link) {
             return res.status(404).json({ error: 'Link not found', message: 'No link found with this ID' });
         }
@@ -430,11 +440,21 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH REAL-TIME DATA - NO CACHING)
 app.get('/api/link/:id', async (req, res) => {
     try {
-        const rawId = (req.params.id || '').trim();
-        let link = await Link.findOne({ $or: [{ id: rawId }, { dashboardId: rawId }] });
+        // Prevent browser and proxy caching so edits reflect immediately
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
+
+        let rawId = (req.params.id || '').trim();
+        if (rawId.includes('?')) rawId = rawId.split('?')[0];
+        if (rawId.endsWith('/')) rawId = rawId.slice(0, -1);
+        if (rawId.endsWith('.html')) rawId = rawId.replace('.html', '');
+
+        let link = await Link.findOne(getLinkQuery(rawId));
 
         if (!link && (rawId === 'default' || !rawId)) {
             return res.json({
@@ -444,7 +464,13 @@ app.get('/api/link/:id', async (req, res) => {
                 claim: '#',
                 buttonText: 'Claim Now',
                 headline: '🎬 Watch Video & Unlock Reward',
-                status: 'active'
+                status: 'active',
+                popupSettings: {
+                    image: null,
+                    title: '🎁 Claim Your Reward',
+                    buttonText: 'Claim Now',
+                    subtitle: 'Tap below to unlock your reward'
+                }
             });
         }
 
@@ -455,8 +481,8 @@ app.get('/api/link/:id', async (req, res) => {
         if (link.status === 'suspended') {
             return res.status(403).json({ error: 'suspended', message: 'Link suspended', status: 'suspended' });
         }
-        if (link.status === 'disabled') {
-            return res.status(403).json({ error: 'disabled', message: 'Link disabled', status: 'disabled' });
+        if (link.status === 'disabled' || link.status === 'inactive') {
+            return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
         }
 
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
@@ -487,7 +513,7 @@ app.get('/api/link/:id', async (req, res) => {
             claim: link.claim || '#',
             buttonText: link.buttonText || 'Claim Now',
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
-            status: 'active',
+            status: link.status || 'active',
             popupSettings: link.popupSettings || {
                 image: null,
                 title: '🎁 Claim Your Reward',
@@ -496,13 +522,14 @@ app.get('/api/link/:id', async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('❌ Error resolving link:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
-        const link = await Link.findOne({ $or: [{ id: req.params.linkId }, { dashboardId: req.params.linkId }] });
+        const link = await Link.findOne(getLinkQuery(req.params.linkId));
         const today = new Date().toISOString().split('T')[0];
         if (link) {
             link.claims = (link.claims || 0) + 1;
@@ -676,7 +703,7 @@ app.post('/api/user/link-details', async (req, res) => {
         if (searchId.includes('?link=')) searchId = searchId.split('?link=').split('&')[0];
         else if (searchId.includes('/v/')) searchId = searchId.split('/v/').split('?')[0];
 
-        let link = await Link.findOne({ $or: [{ id: searchId }, { dashboardId: searchId }] });
+        let link = await Link.findOne(getLinkQuery(searchId));
         if (!link) return res.status(404).json({ error: 'No link found with this ID' });
 
         if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
@@ -768,7 +795,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
                 return res.status(400).json({ error: '❌ Invalid UPI UTR / Reference Number! It must be exactly 12 digits.' });
             }
 
-            const link = await Link.findOne({ $or: [{ id: linkId }, { dashboardId: linkId }] });
+            const link = await Link.findOne(getLinkQuery(linkId));
             if (link) {
                 const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
                 curExpiry.setDate(curExpiry.getDate() + parseInt(days));
@@ -856,7 +883,7 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
         if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
 
-        const link = await Link.findOne({ $or: [{ id: reqDoc.linkId }, { dashboardId: reqDoc.linkId }] });
+        const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
         if (link) {
             const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
             curExpiry.setDate(curExpiry.getDate() + reqDoc.days);
@@ -897,7 +924,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
         if (!request) return res.status(404).json({ error: 'Request not found' });
-        const link = await Link.findOne({ $or: [{ id: request.linkId }, { dashboardId: request.linkId }] });
+        const link = await Link.findOne(getLinkQuery(request.linkId));
         if (link) {
             const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
             const newExpiry = new Date(currentExpiry);
@@ -1104,72 +1131,143 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== ADMIN: LINKS CRUD & EDIT FIX ====================
+// ==================== ADMIN: LINKS CRUD (FULLY FIXED & COMPATIBLE) ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const links = await Link.find().sort({ created: -1 });
     res.json(links);
 });
 
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
-        const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
-        let cleanExpiry = (expiryDate && new Date(expiryDate) > Date.now()) ? new Date(expiryDate) : null;
+        const {
+            name, title,
+            video, videoUrl, url, youtubeUrl,
+            claim, claimUrl, claimLink, rewardUrl, targetUrl,
+            buttonText, btnText,
+            headline, heading,
+            expiryDate,
+            popupSettings
+        } = req.body;
+
+        const cleanName = (name || title || 'Untitled Link').trim();
+        const cleanVideo = (video || videoUrl || url || youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ').trim();
+        const cleanClaim = (claim || claimUrl || claimLink || rewardUrl || targetUrl || '#').trim();
+        const cleanButtonText = (buttonText || btnText || 'Claim Now').trim();
+        const cleanHeadline = (headline || heading || '🎬 Watch Video & Unlock Reward').trim();
+
+        let cleanExpiry = (expiryDate && new Date(expiryDate).getTime() > Date.now()) ? new Date(expiryDate) : null;
+
+        let parsedPopup = popupSettings;
+        if (typeof parsedPopup === 'string') {
+            try { parsedPopup = JSON.parse(parsedPopup); } catch (e) { parsedPopup = null; }
+        }
+        parsedPopup = parsedPopup || {};
+
+        const finalPopup = {
+            title: parsedPopup.title || req.body.popupTitle || '🎁 Claim Your Reward',
+            subtitle: parsedPopup.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
+            buttonText: parsedPopup.buttonText || req.body.popupButtonText || 'Claim Now',
+            image: parsedPopup.image !== undefined ? parsedPopup.image : (req.body.popupImage || null)
+        };
+
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-            name: name || 'Untitled Link',
-            video: video || 'https://youtu.be/dQw4w9WgXcQ',
-            claim: claim || '#',
-            buttonText: buttonText || 'Claim Now',
-            headline: headline || '🎬 Watch Video & Unlock Reward',
+            name: cleanName,
+            video: cleanVideo,
+            claim: cleanClaim,
+            buttonText: cleanButtonText,
+            headline: cleanHeadline,
             expiryDate: cleanExpiry,
             status: 'active',
-            popupSettings: popupSettings || {}
+            popupSettings: finalPopup
         });
         await newLink.save();
         res.json(newLink);
     } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+        console.error('❌ Error creating link:', e);
+        res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
-        const link = await Link.findOne({ $or: [{ id: req.params.id }, { _id: req.params.id }] });
+        const query = getLinkQuery(req.params.id);
+        const link = await Link.findOne(query);
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
-        const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
+        const {
+            name, title,
+            video, videoUrl, url, youtubeUrl,
+            claim, claimUrl, claimLink, rewardUrl, targetUrl,
+            buttonText, btnText,
+            headline, heading,
+            status,
+            expiryDate,
+            popupSettings
+        } = req.body;
 
+        // Flexible field updating
         if (name !== undefined) link.name = name.trim();
+        else if (title !== undefined) link.name = title.trim();
+
         if (video !== undefined) link.video = video.trim();
+        else if (videoUrl !== undefined) link.video = videoUrl.trim();
+        else if (url !== undefined) link.video = url.trim();
+        else if (youtubeUrl !== undefined) link.video = youtubeUrl.trim();
+
         if (claim !== undefined) link.claim = claim.trim();
+        else if (claimUrl !== undefined) link.claim = claimUrl.trim();
+        else if (claimLink !== undefined) link.claim = claimLink.trim();
+        else if (rewardUrl !== undefined) link.claim = rewardUrl.trim();
+        else if (targetUrl !== undefined) link.claim = targetUrl.trim();
+
         if (buttonText !== undefined) link.buttonText = buttonText.trim();
+        else if (btnText !== undefined) link.buttonText = btnText.trim();
+
         if (headline !== undefined) link.headline = headline.trim();
+        else if (heading !== undefined) link.headline = heading.trim();
+
         if (status !== undefined) link.status = status;
 
         if (expiryDate !== undefined) {
-            link.expiryDate = (expiryDate && new Date(expiryDate) > Date.now()) ? new Date(expiryDate) : null;
+            link.expiryDate = (expiryDate && new Date(expiryDate).getTime() > Date.now()) ? new Date(expiryDate) : null;
         }
 
-        if (popupSettings !== undefined) {
-            link.popupSettings = {
-                title: popupSettings.title || link.popupSettings?.title || '🎁 Claim Your Reward',
-                subtitle: popupSettings.subtitle || link.popupSettings?.subtitle || 'Tap below to unlock your reward',
-                buttonText: popupSettings.buttonText || link.popupSettings?.buttonText || 'Claim Now',
-                image: popupSettings.image || link.popupSettings?.image || null
-            };
+        // Handle popupSettings (JSON string or object or flat keys)
+        let parsedPopup = popupSettings;
+        if (typeof parsedPopup === 'string') {
+            try { parsedPopup = JSON.parse(parsedPopup); } catch (e) { parsedPopup = null; }
+        }
+
+        const newPopupTitle = parsedPopup?.title !== undefined ? parsedPopup.title : req.body.popupTitle;
+        const newPopupSubtitle = parsedPopup?.subtitle !== undefined ? parsedPopup.subtitle : req.body.popupSubtitle;
+        const newPopupButtonText = parsedPopup?.buttonText !== undefined ? parsedPopup.buttonText : req.body.popupButtonText;
+        const newPopupImage = parsedPopup?.image !== undefined ? parsedPopup.image : req.body.popupImage;
+
+        if (parsedPopup !== undefined || newPopupTitle !== undefined || newPopupSubtitle !== undefined || newPopupButtonText !== undefined || newPopupImage !== undefined) {
+            if (!link.popupSettings) link.popupSettings = {};
+            if (newPopupTitle !== undefined) link.popupSettings.title = newPopupTitle;
+            if (newPopupSubtitle !== undefined) link.popupSettings.subtitle = newPopupSubtitle;
+            if (newPopupButtonText !== undefined) link.popupSettings.buttonText = newPopupButtonText;
+            if (newPopupImage !== undefined) link.popupSettings.image = newPopupImage;
+            link.markModified('popupSettings');
         }
 
         await link.save();
         res.json({ success: true, link });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to update link' });
+        console.error('❌ Error updating link:', e);
+        res.status(500).json({ error: 'Failed to update link', details: e.message });
     }
 });
 
 app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        const link = await Link.findOneAndUpdate({ $or: [{ id: req.params.id }, { _id: req.params.id }] }, { status }, { new: true });
+        const query = getLinkQuery(req.params.id);
+        const link = await Link.findOneAndUpdate(query, { status }, { new: true });
+        if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status' });
@@ -1177,8 +1275,13 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
 });
 
 app.delete('/api/links/:id', authMiddleware, async (req, res) => {
-    await Link.findOneAndDelete({ $or: [{ id: req.params.id }, { _id: req.params.id }] });
-    res.json({ success: true });
+    try {
+        const query = getLinkQuery(req.params.id);
+        await Link.findOneAndDelete(query);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete link' });
+    }
 });
 
 app.get('/api/search-links', authMiddleware, async (req, res) => {
@@ -1198,7 +1301,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
-        const link = await Link.findOne({ $or: [{ id: linkId }, { dashboardId: linkId }] });
+        const link = await Link.findOne(getLinkQuery(linkId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
         link.dashboardId = dashboardId;
@@ -1269,6 +1372,7 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
 
 // Short links
 app.get('/s/:code', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
     if (!link) return res.status(404).send('Not found');
     link.visits = (link.visits || 0) + 1;
@@ -1381,7 +1485,12 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
 app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
-app.get('/v/:id', (req, res) => sendAppFile(res, 'video-lock.html'));
+app.get('/v/:id', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    sendAppFile(res, 'video-lock.html');
+});
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
