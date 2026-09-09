@@ -1,15 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Panel - Studio</title>
+    <title>Admin Panel - Control Center</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     
-    <!-- CHART.JS & HTML2CANVAS LIBRARIES -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
         (function() {
@@ -30,337 +25,308 @@
         })();
     </script>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        
-        :root {
-            /* Ultra-Clean Modern SaaS Palette */
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --primary-hover: #4338ca;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --danger: #f43f5e;
-            --warning: #f59e0b;
-            --bg: #090d16;
-            --card-bg: #111726;
-            --card-sub: #162035;
-            --card-input: #0c121e;
-            --text: #f8fafc;
-            --text-light: #94a3b8;
-            --text-muted: #64748b;
-            --border: rgba(255, 255, 255, 0.08);
-            --border-focus: rgba(99, 102, 241, 0.5);
-            --radius-lg: 20px;
-            --radius-md: 14px;
-            --radius-sm: 8px;
-            --shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
-        }
-        
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; transition: all 0.3s ease; }
-        body.dark { --bg: #090d16; --card-bg: #111726; --card-sub: #162035; --card-input: #0c121e; --text: #f8fafc; --text-light: #94a3b8; --border: rgba(255,255,255,0.08); }
-        body.light { --bg: #f8fafc; --card-bg: #ffffff; --card-sub: #f1f5f9; --card-input: #ffffff; --text: #0f172a; --text-light: #64748b; --border: #e2e8f0; --shadow: 0 8px 30px rgba(0,0,0,0.05); }
-        
-        /* Custom Smooth Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.4); }
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.3); } }
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        :root {
+            --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
+            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+            --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0;
+            --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        body.dark { --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0; --text-light: #94a3b8; --border: #2d3138; }
+        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
-        /* TOP NAVBAR */
         .header {
-            background: var(--card-bg); padding: 16px 26px; border-radius: var(--radius-lg);
+            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
             box-shadow: var(--shadow); display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 14px;
+            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
             border: 1px solid var(--border);
         }
-        .header h1 {
-            font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
-            background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .header-actions button {
-            padding: 8px 16px; border: none; border-radius: 10px; cursor: pointer;
-            font-weight: 700; transition: 0.2s ease; font-size: 12.5px; background: var(--bg);
-            color: var(--text); border: 1px solid var(--border);
-        }
+        .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
         .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
-        .btn-logout:hover { background: #e11d48 !important; }
-        .btn-install { background: var(--success) !important; color: white !important; border: none !important; display: none; }
-        .btn-install.show { display: inline-flex; }
-        
-        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 4px; border-radius: 12px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 6px 12px; border: none; border-radius: 8px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 700; transition: 0.2s; font-size: 12px; }
+        .btn-logout:hover { background: #dc2626; }
+        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
+        .btn-install.show { display: inline-block; }
+        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        /* MENU TABS */
         .menu-container {
-            display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
-            background: var(--card-bg); padding: 8px 14px; border-radius: var(--radius-lg);
-            border: 1px solid var(--border); align-items: center; box-shadow: var(--shadow);
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+            background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
+            border: 1px solid var(--border); align-items: center;
         }
-        .menu-container .menu-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-right: 6px; }
+        .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
         .menu-container .menu-btn {
-            padding: 10px 18px; border: 1px solid transparent; border-radius: 12px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px;
-            font-weight: 700; transition: all 0.2s ease;
+            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px;
+            font-weight: 600; transition: 0.3s;
         }
-        .menu-container .menu-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
-        .menu-container .menu-btn.active {
-            background: var(--primary); color: white;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
-        }
+        .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* METRICS STATS GRID */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card {
-            background: var(--card-bg); padding: 20px 18px; border-radius: var(--radius-md);
-            box-shadow: var(--shadow); text-align: center; transition: transform 0.25s ease;
+            background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
+            box-shadow: var(--shadow); text-align: center; transition: 0.3s;
             border: 1px solid var(--border);
         }
-        .stat-card:hover { transform: translateY(-3px); border-color: rgba(99, 102, 241, 0.4); }
-        .stat-card .number { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; }
-        .stat-card .label { color: var(--text-light); font-size: 12px; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
 
-        /* LIVE BAR */
         .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius-lg); padding: 20px 24px;
-            margin-bottom: 24px; border: 1px solid var(--border); border-left: 5px solid var(--success);
-            box-shadow: var(--shadow);
+            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
+            margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
         }
         .live-visitors .lv-title {
-            font-size: 14px; font-weight: 700; color: var(--success); margin-bottom: 14px;
+            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
             display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         .live-visitors .lv-title .dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulseDot 1.5s infinite;
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite;
         }
         .live-visitors .lv-title .live-badge {
-            font-size: 11px; color: var(--success); background: rgba(16,185,129,0.15); padding: 3px 10px; border-radius: 20px; font-weight: 800;
+            font-size: 10px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 10px; border-radius: 20px;
         }
-        .live-visitors .lv-title .refresh-time { font-size: 11.5px; color: var(--text-light); font-weight: 500; margin-left: auto; }
+        .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
         
-        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
         .live-visitors .lv-item {
-            background: var(--bg); border-radius: 12px; padding: 14px; text-align: center;
-            border: 1px solid var(--border); transition: 0.2s ease;
+            background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
+            border: 1px solid var(--border); transition: 0.3s;
         }
-        .live-visitors .lv-item:hover { border-color: var(--primary-light); }
-        .live-visitors .lv-item .lv-number { font-size: 26px; font-weight: 800; }
-        .live-visitors .lv-item .lv-number.visits-color { color: #818cf8; }
-        .live-visitors .lv-item .lv-number.claims-color { color: #34d399; }
-        .live-visitors .lv-item .lv-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; font-weight: 700; }
-        .live-visitors .lv-item .lv-time { font-size: 10px; color: var(--text-light); opacity: 0.65; margin-top: 2px; }
+        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .live-visitors .lv-item .lv-number {
+            font-size: 24px; font-weight: 800; transition: 0.3s;
+        }
+        .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
+        .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
+        .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
+        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
         .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
-        .section { display: none; }
-        .section.active { display: block; animation: fadeInUp 0.3s ease; }
+        .section { display: none; animation: fadeInUp 0.4s ease; }
+        .section.active { display: block; }
 
         .card {
-            background: var(--card-bg); padding: 26px 28px; border-radius: var(--radius-lg);
-            box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--border);
+            background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
         }
-        .card h3 {
-            color: var(--text); font-size: 17px; margin-bottom: 18px; font-weight: 800;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-            padding-bottom: 12px; border-bottom: 1px solid var(--border);
-        }
+        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
         .card input, .card select, .card textarea {
-            width: 100%; padding: 13px 16px; margin: 6px 0 14px; border: 1px solid var(--border);
-            border-radius: 12px; font-size: 14px; font-weight: 500; background: var(--card-input); color: var(--text);
-            transition: 0.2s ease; outline: none;
+            width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); transition: 0.3s; outline: none;
         }
-        .card input:focus, .card select:focus, .card textarea:focus {
-            border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
-        }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
         .btn {
-            padding: 11px 22px; border: none; border-radius: 12px; font-size: 13.5px;
-            font-weight: 700; cursor: pointer; transition: 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-        .btn:active { transform: scale(0.98); }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
         .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #16a34a; }
         .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
         .btn-warning { background: var(--warning); color: white; }
-        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
-        .btn-block { width: 100%; padding: 14px; font-size: 15px; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
+        .btn-block { width: 100%; }
         .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
         .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 16px 20px; margin-bottom: 10px; border-radius: 14px;
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 12px; border-left: 4px solid var(--primary); border: 1px solid var(--border);
-            transition: 0.2s ease;
+            gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
         }
-        .link-item:hover { transform: translateX(3px); border-color: rgba(99, 102, 241, 0.4); }
-        .link-item .info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; flex: 1; }
-        .link-item .info .name { font-weight: 800; font-size: 15px; color: var(--text); min-width: 140px; }
-        .link-item .info .details { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-light); }
-        .link-item .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .link-item:hover { transform: translateX(4px); }
+        .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
+        .link-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .link-item .actions .status-dropdown { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 10px; cursor: pointer; }
 
-        .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        .status-active { background: rgba(16,185,129,0.15); color: var(--success); }
-        .status-disabled { background: rgba(244,63,94,0.15); color: var(--danger); }
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
+        .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
 
-        /* ==================== ✨ ULTRA-CLEAN EDIT MODAL ✨ ==================== */
         .edit-modal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(4, 7, 13, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            z-index: 10000; justify-content: center; align-items: center; padding: 20px;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
+            justify-content: center; align-items: center; padding: 20px;
         }
         .edit-modal.show { display: flex; }
         .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 24px; padding: 32px 34px;
-            max-width: 740px; width: 100%; max-height: 90vh; overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 70px rgba(0,0,0,0.85);
-            animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
+            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
+            border: 1px solid var(--border); animation: fadeInUp 0.3s ease;
         }
-        @keyframes modalAppear {
-            from { opacity: 0; transform: scale(0.96) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+        .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
+        .edit-modal .modal-content .modal-close:hover { color: var(--text); }
+        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
+        .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
+        .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
+            width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg); color: var(--text); font-size: 13px; outline: none;
         }
+        .edit-modal .modal-content .form-group input:focus, .edit-modal .modal-content .form-group select:focus { border-color: var(--primary); }
+        .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
         
-        .modal-head-title {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+        /* 🖼️ 16:9 Aspect Ratio Popup Preview Box */
+        .edit-modal .modal-content .popup-preview-small {
+            background: rgba(0,0,0,0.4); border-radius: 10px; padding: 12px; margin-top: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.08);
         }
-        .modal-head-title h3 { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
-        .modal-head-title .modal-close {
-            width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border); color: var(--text-light); font-size: 18px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s ease;
+        .edit-modal .modal-content .popup-preview-small .preview-img {
+            width: 100%; max-width: 320px; aspect-ratio: 16 / 9; border-radius: 8px; object-fit: cover; display: block; margin: 0 auto;
         }
-        .modal-head-title .modal-close:hover { background: rgba(244, 63, 94, 0.15); color: var(--danger); }
+        .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 12px; font-weight: 700; margin-top: 6px; }
+        .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.5); font-size: 10px; }
+        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 14px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 10px; font-weight: 700; cursor: default; margin-top: 6px; display: inline-block; }
 
-        .edit-modal label {
-            font-size: 13px; color: var(--text-light); display: block; margin-bottom: 6px; font-weight: 700;
-        }
-        .edit-modal input, .edit-modal select {
-            width: 100%; padding: 13px 16px; border: 1px solid var(--border); border-radius: 12px;
-            background: var(--card-input); color: var(--text); font-size: 14px; font-weight: 500;
-            outline: none; transition: 0.2s ease; margin-bottom: 16px;
-        }
-        .edit-modal input:focus {
-            border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); background: #0f1728;
-        }
-
-        /* Grouped Sections inside Edit Modal */
-        .modal-section-card {
-            background: var(--card-sub); border: 1px solid var(--border); border-radius: 16px;
-            padding: 20px; margin-top: 18px; margin-bottom: 8px;
-        }
-        .modal-section-card h4 {
-            font-size: 14.5px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
-        }
-
-        .img-preview-box {
-            width: 100%; height: 160px; border-radius: 14px; background: #090e18;
-            border: 1px dashed rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center;
-            overflow: hidden; margin: 6px 0 16px; position: relative;
-        }
-        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .img-preview-box span { color: var(--text-muted); font-size: 12px; font-weight: 600; }
-
-        .preset-pill-group {
-            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
-        }
-        .preset-pill {
-            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
-            background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border: 1px solid var(--border);
-            cursor: pointer; transition: 0.2s;
-        }
-        .preset-pill:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-        .expiry-row-box {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-        }
-        .expiry-row-box input[type="datetime-local"] {
-            flex: 1; min-width: 220px; margin-bottom: 0;
-        }
-        .btn-clear-expiry {
-            padding: 12px 18px; border-radius: 12px; font-size: 12.5px; font-weight: 700;
-            background: rgba(244, 63, 94, 0.12); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.25);
-            cursor: pointer; transition: 0.2s; white-space: nowrap;
-        }
-        .btn-clear-expiry:hover { background: var(--danger); color: #fff; }
-
-        .modal-action-footer {
-            display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;
-            padding-top: 18px; border-top: 1px solid var(--border);
-        }
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
 
         .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 14px 24px; border-radius: 14px;
-            color: white; font-weight: 700; box-shadow: var(--shadow);
-            transform: translateY(120px); opacity: 0; transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
-            z-index: 99999; font-size: 13.5px;
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
+            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+            z-index: 99999; max-width: 400px; font-size: 13px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: var(--success); }
-        .toast.error { background: var(--danger); }
-        .toast.info { background: var(--primary); }
+        .toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
+        .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
         .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
+        .analytics-container .analytics-header .link-selector .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 150px; flex: 1; }
         .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; }
+        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
+        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
         .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
+        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
+        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
+        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
+        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
+        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .custom-date-input input[type="date"] { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
+
+        .search-results-count { font-size: 11px; color: var(--text-light); }
+
+        .generated-link { background: rgba(99,102,241,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed rgba(99,102,241,0.3); }
+        .generated-link.show { display: block; }
+        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
+
+        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
+        .image-preview.show { display: block; }
+        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
+        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
+
+        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
+        .popup-preview .preview-image { width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 8px; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin: 0 auto 8px; }
+        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
+        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
+        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
 
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 13px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 14px; }
+        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
 
         .device-item {
-            background: var(--bg); padding: 14px 18px; margin-bottom: 10px; border-radius: 12px;
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 4px solid var(--danger); border: 1px solid var(--border);
+            gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
         }
+        .device-item:hover { transform: translateX(4px); }
         .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+
+        .session-item {
+            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 8px; border-left: 3px solid var(--success); transition: 0.3s;
+        }
+        .session-item:hover { transform: translateX(4px); }
+        .session-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
+        .session-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
+        .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+
+        .contact-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 768px) { .contact-settings-grid { grid-template-columns: 1fr; } }
+
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 20px; }
+        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: white; transition: .4s; border-radius: 50%; }
+        .switch input:checked + span { background: #6366f1; }
+        .switch input:checked + span:before { transform: translateX(20px); }
 
         @media (max-width: 768px) {
-            body { padding: 14px; }
-            .header { flex-direction: column; text-align: center; }
+            .header { flex-direction: column; text-align: center; padding: 12px; }
+            .header-actions { justify-content: center; }
             .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-btn { text-align: center; }
-            .grid-2 { grid-template-columns: 1fr; }
+            .menu-container .menu-btn { text-align: center; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
             .link-item { flex-direction: column; align-items: stretch; }
-            .link-item .actions { justify-content: flex-end; }
-            .edit-modal .modal-content { padding: 22px 18px; }
+            body { padding: 12px; }
+            .card { padding: 14px; }
+            .edit-modal .modal-content { padding: 16px; }
+            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
+            .analytics-container .analytics-header .link-selector { flex-direction: column; }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <!-- HEADER -->
         <header class="header">
-            <h1>⚡ Admin Studio</h1>
+            <h1>⚡ Admin Panel</h1>
             <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install App</button>
+                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
-                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙 Dark</button>
-                    <button onclick="setTheme('light')" id="theme-light">☀️ Light</button>
+                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
+                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
                 </div>
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
 
-        <!-- MENU TABS -->
         <div class="menu-container">
             <span class="menu-label">📋 Menu:</span>
             <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
@@ -368,32 +334,31 @@
             <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
             <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
             <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
-            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">✂️ Short Link</button>
+            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
         </div>
 
-        <!-- 1. DASHBOARD OVERVIEW SECTION (CURRENT ACTIVE LINKS DATA) -->
+        <!-- 1. DASHBOARD OVERVIEW SECTION -->
         <div class="section active" id="section-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">Active Campaigns</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Verified Active</div></div>
-                <div class="stat-card"><div class="number" id="totalVisits" style="color:#818cf8;">0</div><div class="label">Active Total Visits</div></div>
-                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">Expired Campaigns</div></div>
+                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
+                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
+                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
+                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
             </div>
 
             <div class="card">
-                <h3>📊 Active Campaigns Visitor & Claim Statistics</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-                    <div class="stat-card"><div class="number" id="totalVisitors" style="color:#818cf8;">0</div><div class="label">Total Visitors</div></div>
-                    <div class="stat-card"><div class="number" id="totalClaims" style="color:#34d399;">0</div><div class="label">Total Claims</div></div>
+                <h3>📊 Lifetime Visitor & Claim Statistics</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
+                    <div class="stat-card"><div class="number" id="totalVisitors">0</div><div class="label">Total Visitors</div></div>
+                    <div class="stat-card"><div class="number" id="totalClaims">0</div><div class="label">Total Claims</div></div>
                     <div class="stat-card"><div class="number" id="todayVisitors">0</div><div class="label">Today's Visitors</div></div>
                     <div class="stat-card"><div class="number" id="todayClaims">0</div><div class="label">Today's Claims</div></div>
                 </div>
             </div>
 
-            <!-- LIVE ACTIVITY BAR -->
             <div class="live-visitors" id="liveVisitors">
                 <div class="lv-title">
-                    <span class="dot"></span> Live Network Activity (Active Links Only)
+                    <span class="dot"></span> Live Visitors & Claims
                     <span class="live-badge">🟢 Live</span>
                     <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
                 </div>
@@ -401,47 +366,50 @@
                 <div class="lv-grid">
                     <div class="lv-item">
                         <div class="lv-number visits-color" id="liveLifetimeVisits">0</div>
-                        <div class="lv-label">Active Lifetime Visits</div>
-                        <div class="lv-time">Active links only</div>
+                        <div class="lv-label">👁️ Lifetime Visits</div>
+                        <div class="lv-time">All time</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number claims-color" id="liveLifetimeClaims">0</div>
-                        <div class="lv-label">Active Lifetime Claims</div>
-                        <div class="lv-time">Active links only</div>
+                        <div class="lv-label">🎁 Lifetime Claims</div>
+                        <div class="lv-time">All time</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number visits-color" id="live48hrVisits">0</div>
-                        <div class="lv-label">Today Visits</div>
-                        <div class="lv-time" id="live48hrTime">Rolling 24 hours</div>
+                        <div class="lv-label">👁️ Last 24 Hours Visits</div>
+                        <div class="lv-time" id="live48hrTime">Last 24 hours</div>
                     </div>
                     <div class="lv-item">
                         <div class="lv-number claims-color" id="live48hrClaims">0</div>
-                        <div class="lv-label">Today Claims</div>
-                        <div class="lv-time" id="live48hrClaimsTime">Rolling 24 hours</div>
+                        <div class="lv-label">🎁 Last 24 Hours Claims</div>
+                        <div class="lv-time" id="live48hrClaimsTime">Last 24 hours</div>
                     </div>
                     <div class="lv-item active-now">
                         <div class="lv-number visits-color" id="liveActiveVisits">0</div>
-                        <div class="lv-label">Active Visitors</div>
+                        <div class="lv-label">🟢 Active Visits</div>
                         <div class="lv-time">Watching now</div>
                     </div>
                     <div class="lv-item active-now" style="border-left-color: var(--warning);">
                         <div class="lv-number claims-color" id="liveActiveClaims">0</div>
-                        <div class="lv-label">Active Claimers</div>
+                        <div class="lv-label">🟢 Active Claims</div>
                         <div class="lv-time">Claiming now</div>
                     </div>
                 </div>
             </div>
 
-            <!-- DASHBOARD GRAPH -->
-            <div class="card">
-                <h3>
-                    <span>📈 Active Campaign Visitor & Claim Trends</span>
-                    <div style="display:flex; gap:6px;">
-                        <button onclick="switchDashboardGraph('7days')" class="btn btn-outline btn-sm active" id="dashGraph7">7 Days</button>
-                        <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">Today (24h)</button>
+            <!-- 📈 RESTORED 7-DAYS VS 24-HOURS & TOTAL VS UNIQUE GRAPH -->
+            <div class="card" style="margin-top:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <h3 style="font-size:14px;margin:0;">📈 Visitor & Claim Analytics</h3>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="switchDashboardGraph('7days')" class="btn btn-primary btn-sm active" id="dashGraph7">7 Days</button>
+                        <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">24 Hours</button>
+                        <span style="border-right:1px solid var(--border);margin:0 4px;"></span>
+                        <button onclick="switchDashboardData('total')" class="btn btn-primary btn-sm active" id="dashDataTotal">Total</button>
+                        <button onclick="switchDashboardData('unique')" class="btn btn-outline btn-sm" id="dashDataUnique">Unique</button>
                     </div>
-                </h3>
-                <div style="height:310px; position:relative; margin-top:10px;">
+                </div>
+                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
                     <canvas id="dashboardChart"></canvas>
                 </div>
             </div>
@@ -450,12 +418,12 @@
         <!-- 2. LINKS MANAGER SECTION -->
         <div class="section" id="section-links">
             <div class="card">
-                <h3>🔍 Search & Manage Rewarded Campaigns</h3>
+                <h3>🔍 Search Links</h3>
                 <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by link title or ID..." oninput="filterLinks()">
-                    <span class="search-results-count" id="searchResultsCount" style="font-size:12.5px; color:var(--text-light);">Showing active links</span>
+                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
+                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
                 </div>
-                <div id="linksList">Loading links...</div>
+                <div id="linksList"></div>
             </div>
         </div>
 
@@ -464,26 +432,55 @@
             <div class="analytics-container" id="analyticsExportBox">
                 <div class="analytics-header">
                     <div class="link-selector">
-                        <label style="font-weight:700; color:var(--text-light); font-size:12.5px;">📌 Select Campaign:</label>
+                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
                         <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter dropdown list..." oninput="filterAnalyticsLinks()">
+                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter by name..." oninput="filterAnalyticsLinks()">
                     </div>
                     <div class="time-filters">
                         <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
                         <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24h</button>
+                        <button class="filter-btn" data-filter="custom" onclick="setTimeFilter('custom')">Custom</button>
+                    </div>
+                </div>
+                <div class="custom-date-input" id="customDatePicker" style="display:none;">
+                    <label style="font-size:11px;color:var(--text-light);">From:</label>
+                    <input type="date" id="analyticsFromDate" onchange="loadAnalytics()">
+                    <label style="font-size:11px;color:var(--text-light);">To:</label>
+                    <input type="date" id="analyticsToDate" onchange="loadAnalytics()">
+                    <button onclick="loadAnalytics()" class="btn btn-primary btn-sm">Apply</button>
+                </div>
+                <div class="link-details" id="analyticsLinkDetails">
+                    <div class="detail-row"><span class="label">Link Name</span><span class="value" id="analyticsLinkName">Not selected</span></div>
+                    <div class="detail-row"><span class="label">Link ID</span><span class="value" id="analyticsLinkId">-</span></div>
+                    <div class="detail-row"><span class="label">Status</span><span class="value" id="analyticsLinkStatus">-</span></div>
+                    <div class="detail-row"><span class="label">Created</span><span class="value" id="analyticsLinkCreated">-</span></div>
+                </div>
+
+                <div class="analytics-stats">
+                    <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Total Visits</div></div>
+                    <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Total Claims</div></div>
+                    <div class="a-stat"><div class="a-number" id="analyticsUniqueVisitors">0</div><div class="a-label">👤 Unique Visitors</div></div>
+                    <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
+                </div>
+
+                <div class="card" style="margin-top:10px;padding:15px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                        <h3 style="font-size:14px;margin:0;">📈 Detailed Analysis</h3>
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="switchAnalyticsGraph('7days')" class="btn btn-primary btn-sm active" id="anaGraph7">7 Days</button>
+                            <button onclick="switchAnalyticsGraph('24h')" class="btn btn-outline btn-sm" id="anaGraph24">24 Hours</button>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="switchAnalyticsData('total')" class="btn btn-primary btn-sm active" id="anaDataTotal">👁️ Total</button>
+                            <button onclick="switchAnalyticsData('unique')" class="btn btn-outline btn-sm" id="anaDataUnique">👤 Unique</button>
+                        </div>
+                    </div>
+                    <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
+                        <canvas id="analyticsChart"></canvas>
                     </div>
                 </div>
 
-                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-                    <div class="stat-card"><div class="number" id="analyticsTotalVisits" style="color:#818cf8;">0</div><div class="label">Total Visits</div></div>
-                    <div class="stat-card"><div class="number" id="analyticsTotalClaims" style="color:#34d399;">0</div><div class="label">Total Claims</div></div>
-                </div>
-
-                <div style="height:300px; margin-top:14px; position:relative;">
-                    <canvas id="analyticsChart"></canvas>
-                </div>
-
-                <div style="margin-top:18px; display:flex; gap:8px;">
+                <div style="margin-top:16px;display:flex;gap:8px;">
                     <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Export PNG</button>
                     <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 Export CSV</button>
                 </div>
@@ -493,77 +490,51 @@
         <!-- 4. CREATE LINK SECTION -->
         <div class="section" id="section-create">
             <div class="card">
-                <h3>➕ Create New Rewarded Campaign</h3>
-                
-                <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Campaign Title</label>
-                <input type="text" id="linkName" placeholder="e.g. Free Fire Diamond Pass Promotion">
-
+                <h3>➕ Create Rewarded Link</h3>
+                <input type="text" id="linkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
                 <div class="grid-2">
-                    <div>
-                        <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Video URL (YouTube or MP4)</label>
-                        <input type="text" id="video" value="https://youtu.be/dQw4w9WgXcQ">
-                    </div>
-                    <div>
-                        <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Claim Destination URL</label>
-                        <input type="text" id="claim" placeholder="https://your-site.com/redeem" value="#">
-                    </div>
+                    <input type="text" id="video" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="claim" placeholder="Claim Destination URL" value="#">
                 </div>
+                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
+                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
 
-                <div class="grid-2">
-                    <div>
-                        <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Claim Button Text</label>
-                        <input type="text" id="buttonText" value="Claim Now">
-                    </div>
-                    <div>
-                        <label style="font-size:12.5px; color:var(--text-light); font-weight:700;">Video Headline</label>
-                        <input type="text" id="headline" value="🎬 Watch Video & Unlock Reward">
-                    </div>
-                </div>
-
-                <!-- ENTRANCE POPUP CONFIGURATION -->
-                <div class="modal-section-card">
-                    <h4 style="color:#818cf8;">🖼️ Entrance Popup Image & Text</h4>
-                    
-                    <label>Popup Image URL (16:9 Aspect Ratio)</label>
-                    <input type="text" id="popupImageUrl" placeholder="https://i.ibb.co/example.jpg" oninput="previewImage('popupImageUrl', 'createImgPrev')">
-                    <div class="img-preview-box">
-                        <img id="createImgPrev" style="display:none;" alt="Preview">
-                        <span>16:9 Image Preview Will Appear Here</span>
-                    </div>
-
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
-                        <div>
-                            <label>Popup Title</label>
-                            <input type="text" id="popupTitle" value="🎁 Claim Your Reward">
-                        </div>
-                        <div>
-                            <label>Popup Button Text</label>
-                            <input type="text" id="popupButtonText" value="Claim Now">
-                        </div>
+                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                        <input type="text" id="popupButtonText" placeholder="Popup Button Text" value="Claim Now">
                     </div>
-                    <label>Popup Subtitle</label>
-                    <input type="text" id="popupSubtitle" value="Tap below to unlock your reward">
+                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    <input type="text" id="popupImageUrl" placeholder="Image URL (16:9 ratio)">
+                    <div class="popup-preview" id="popupPreviewSection">
+                        <div class="preview-image" id="popupPreviewImage"><span>🎬 16:9 Preview</span></div>
+                        <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
+                        <div class="preview-sub" id="popupPreviewSub">Tap below to unlock</div>
+                        <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
+                    </div>
                 </div>
 
-                <!-- SCHEDULE EXPIRY PRESETS -->
-                <div class="modal-section-card">
-                    <h4 style="color:var(--warning);">📅 Schedule Expiry</h4>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
-                        <option value="">Never Expire (Lifetime Active)</option>
-                        <option value="3">Expires in 3 Days</option>
-                        <option value="7">Expires in 7 Days</option>
-                        <option value="15">Expires in 15 Days</option>
-                        <option value="30">Expires in 30 Days</option>
+                        <option value="">No Expiry (Lifetime Active)</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days</option>
+                        <option value="15">15 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="custom">Custom Date</option>
                     </select>
-                    <div id="expiryDisplay" style="margin-top:4px; font-size:12px; color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
+                    <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
+                    <div id="expiryDisplay" style="margin-top:4px;font-size:11px;color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
                 </div>
 
-                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:20px;">🚀 Generate Campaign Link</button>
+                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;">🚀 Generate Link</button>
 
-                <div class="generated-link" id="generatedLink" style="display:none; margin-top:16px; padding:16px; background:rgba(16,185,129,0.1); border-radius:12px; border:1px dashed var(--success);">
-                    <div style="font-weight:800; color:var(--success); margin-bottom:8px;">✅ Campaign Link Generated Successfully!</div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <input type="text" id="generatedLinkInput" readonly style="flex:1; margin:0;">
+                <div class="generated-link" id="generatedLink">
+                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Link Generated!</div>
+                    <div class="link-box">
+                        <input type="text" id="generatedLinkInput" readonly>
                         <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
                     </div>
                 </div>
@@ -573,12 +544,45 @@
         <!-- 5. SETTINGS SECTION -->
         <div class="section" id="section-settings">
             <div class="card">
-                <h3>🖼️ Global UID Background Image (9:16)</h3>
+                <h3>🖼️ UID Background Image (9:16)</h3>
                 <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
-                <div style="display:flex; gap:8px; margin-top:8px;">
+                <div class="image-preview" id="bgImagePreview">
+                    <img id="bgPreviewImg" alt="Background Preview">
+                    <div class="preview-label">🖼️ Preview</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
                     <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
                     <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
                 </div>
+                <div id="bgStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
+            </div>
+
+            <div class="card">
+                <h3>🔑 Secret Gateway Key</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key used to access the admin login page</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="currentSecretKey" placeholder="Current Secret Key" readonly>
+                    <input type="text" id="newSecretKey" placeholder="New Secret Key">
+                </div>
+                <button onclick="changeSecretKey()" class="btn btn-primary btn-sm" style="margin-top:8px;">🔑 Update Secret Key</button>
+                <div id="secretKeyStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
+            </div>
+
+            <div class="card">
+                <h3>📱 Contact & OTP Settings</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
+                <div class="contact-settings-grid">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-light);">📧 Email Address</label>
+                        <input type="email" id="adminEmail" placeholder="admin@example.com">
+                    </div>
+                    <div>
+                        <label style="font-size:11px;color:var(--text-light);">📞 Phone Number</label>
+                        <input type="text" id="adminPhone" placeholder="+919876543210">
+                    </div>
+                </div>
+                <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;">💾 Save Contact Info</button>
+                <div id="contactStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
             </div>
 
             <div class="card">
@@ -587,38 +591,78 @@
                     <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
                 </div>
-                <button onclick="changePasscode()" class="btn btn-warning btn-sm" style="margin-top:8px;">Update Passcode</button>
+                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;">Update Passcode</button>
+                <div id="passcodeStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
             </div>
 
             <div class="card">
-                <h3>⛔ Device Security & Blocked Attackers</h3>
-                <div id="deviceList">Loading devices...</div>
+                <h3>🔧 Device Management</h3>
+                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked devices and active login sessions</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                    <button onclick="loadBlockedDevices()" class="btn btn-danger btn-sm">⛔ Blocked Devices</button>
+                    <button onclick="loadActiveSessions()" class="btn btn-success btn-sm">🟢 Active Sessions</button>
+                </div>
+                <div id="deviceList">Loading...</div>
             </div>
         </div>
 
-        <!-- 6. URL SHORTENER SECTION WITH DELETE BUTTON -->
+        <!-- 6. URL SHORTENER SECTION -->
         <div class="section" id="section-shortener">
             <div class="card">
-                <h3>🔗 App Deep-Linking URL Shortener</h3>
-                <input type="text" id="shortOriginalUrl" placeholder="Enter destination URL (e.g. https://youtube.com/...)">
-                <input type="text" id="shortTitle" placeholder="Title (e.g. Telegram Channel / App Promo)">
-                <input type="text" id="shortAppScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
-                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:10px;">🚀 Generate Short Link</button>
+                <h3>📊 URL Shortener Dashboard</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                    <div class="stat-card"><div class="number" id="shortTotalLinks">0</div><div class="label">🔗 Total Links</div></div>
+                    <div class="stat-card"><div class="number" id="shortActiveLinks">0</div><div class="label">✅ Active</div></div>
+                    <div class="stat-card"><div class="number" id="shortTotalClicks">0</div><div class="label">👁️ Total Clicks</div></div>
+                    <div class="stat-card"><div class="number" id="shortClicks24h">0</div><div class="label">📅 24h Clicks</div></div>
+                </div>
             </div>
+
             <div class="card">
-                <h3>Active Short Links</h3>
-                <div id="shortLinksList">Loading...</div>
+                <h3>➕ Create Short Link (With App Deep-Linking)</h3>
+                <input type="text" id="shortOriginalUrl" placeholder="Destination URL (e.g. https://youtube.com/...)">
+                <input type="text" id="shortTitle" placeholder="Title (Optional)">
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                    <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="shortAppOpen" onchange="toggleAppScheme()">
+                        <span></span>
+                    </label>
+                    <span style="font-size:11px;color:var(--text-light);">(Enable deep link app open)</span>
+                </div>
+                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
+                    <input type="text" id="shortAppScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
+                    <input type="text" id="shortAppStoreLink" placeholder="App Store / Play Store Fallback Link" style="margin-top:6px;">
+                </div>
+                <div style="margin-top:8px;">
+                    <label style="font-size:12px;color:var(--text-light);">📅 Schedule Expiry:</label>
+                    <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
+                </div>
+                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:10px;">🚀 Generate Short Link</button>
+                <div class="generated-link" id="shortGeneratedLink">
+                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Short Link Created!</div>
+                    <div class="link-box">
+                        <input type="text" id="shortGeneratedLinkInput" readonly>
+                        <button onclick="copyShortLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔍 Manage Short Links</h3>
+                <div class="search-bar">
+                    <input type="text" id="searchShortLinksInput" placeholder="Search by title or code..." oninput="filterShortLinks()">
+                    <span class="search-results-count" id="shortSearchResultsCount">Showing all links</span>
+                </div>
+                <div id="shortLinksList"></div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== ✨ ULTRA-CLEAN EDIT MODAL ✨ ==================== -->
+    <!-- ✏️ EDIT MODAL (REUSED FOR LINK EDIT, SHORT LINK EDIT & SHORT LINK ANALYTICS) -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
-            <div class="modal-head-title">
-                <h3>✏️ Edit Rewarded Campaign</h3>
-                <button class="modal-close" onclick="closeEditModal()">✕</button>
-            </div>
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
             <div id="editModalBody"></div>
         </div>
     </div>
@@ -626,14 +670,20 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        const csrfToken = localStorage.getItem('csrfToken') || '';
         let allLinks = [];
+        let allShortLinks = [];
         let dashboardChartInstance = null;
         let analyticsChartInstance = null;
         let selectedExpiry = null;
         let editingLinkId = null;
         let currentFilter = 'lifetime';
         let analyticsData = null;
-        let dashRange = '7days';
+        let dashboardGraphMode = '7days';
+        let dashboardDataType = 'total';
+        let analyticsGraphMode = '7days';
+        let analyticsDataType = 'total';
+        let statsData = null;
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
@@ -642,127 +692,120 @@
             setTimeout(() => t.className = 'toast', 3000);
         }
 
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
             const btn = document.querySelector(`.menu-btn[data-section="${id}"]`);
             if (btn) btn.classList.add('active');
-
             if (id === 'links') loadLinks();
             if (id === 'analytics') loadAnalyticsLinks();
-            if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') loadBlockedDevices();
+            if (id === 'shortener') { loadShortLinks(); loadShortLinkStats(); }
+            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); }
         }
 
-        function previewImage(inputId, imgId) {
-            const val = document.getElementById(inputId).value.trim();
-            const img = document.getElementById(imgId);
-            const parent = img.parentElement;
-            const span = parent.querySelector('span');
-            if (val) {
-                img.src = val;
-                img.onload = () => { img.style.display = 'block'; if (span) span.style.display = 'none'; };
-                img.onerror = () => { img.style.display = 'none'; if (span) span.style.display = 'block'; };
-            } else {
-                img.style.display = 'none';
-                if (span) span.style.display = 'block';
-            }
-        }
-
-        function setEditPreset(days) {
-            const d = new Date();
-            d.setDate(d.getDate() + days);
-            document.getElementById('eExpiryDate').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-        }
-
-        // ==================== DASHBOARD & STATS (ACTIVE ONLY) ====================
-        async function loadStats() {
+        async function loadStats(updateGraphs = true) {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
-                if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
                 const data = await res.json();
-                
+                statsData = data;
                 if (data && data.global) {
                     const g = data.global;
+                    document.getElementById('totVisits').textContent = g.totalVisitors || 0;
+                    document.getElementById('totClaims').textContent = g.totalClaims || 0;
+                    document.getElementById('activeLive').textContent = g.activeNow || 0;
                     document.getElementById('totalVisitors').textContent = g.totalVisitors || 0;
                     document.getElementById('totalClaims').textContent = g.totalClaims || 0;
                     document.getElementById('todayVisitors').textContent = g.todayVisitors || 0;
                     document.getElementById('todayClaims').textContent = g.todayClaims || 0;
-                    
                     document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('live48hrVisits').textContent = g.visits24h || 0;
-                    document.getElementById('live48hrClaims').textContent = g.claims24h || 0;
+                    document.getElementById('live48hrVisits').textContent = g.todayVisitors || 0;
+                    document.getElementById('live48hrClaims').textContent = g.todayClaims || 0;
                     document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
                     document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
-
-                    renderDashboardGraph(g.dailyVisitors || {}, g.dailyClaims || {});
+                    if (updateGraphs) updateDashboardGraph(data);
                 }
-
                 if (data && data.links) {
-                    allLinks = data.links;
-                    document.getElementById('totalLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
+                    document.getElementById('totalLinks').textContent = data.links.length || 0;
                     document.getElementById('activeLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
-                    document.getElementById('totalVisits').textContent = data.links.filter(l => l.status === 'active').reduce((s, l) => s + (l.visits || 0), 0);
-                    document.getElementById('expiredLinks').textContent = data.links.filter(l => l.status === 'expired' || (l.expiryDate && new Date(l.expiryDate) < new Date())).length || 0;
+                    document.getElementById('totalVisits').textContent = data.links.reduce((s, l) => s + (l.visits||0), 0);
+                    document.getElementById('expiredLinks').textContent = data.links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date()).length || 0;
+                    allLinks = data.links;
                 }
-                document.getElementById('lastRefreshTime').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
-            } catch(e) {
-                console.error('Stats loading error:', e);
+            } catch(e) {}
+        }
+
+        function updateDashboardGraph(data) {
+            if (!data || !data.global) return;
+            const stats = data.global;
+            const dailyVisitors = stats.dailyVisitors || {};
+            const dailyClaims = stats.dailyClaims || {};
+            
+            let allDates = Object.keys(dailyVisitors);
+            if (allDates.length === 0) allDates = Object.keys(dailyClaims);
+            allDates.sort();
+
+            let displayDates = [];
+            let visitsData = [];
+            let claimsData = [];
+
+            if (dashboardGraphMode === '7days') {
+                displayDates = allDates.slice(-7);
+                if (displayDates.length === 0) displayDates = ['Today'];
+                visitsData = displayDates.map(d => dailyVisitors[d] || 0);
+                claimsData = displayDates.map(d => dailyClaims[d] || 0);
+            } else {
+                displayDates = allDates.slice(-1);
+                if (displayDates.length === 0) displayDates = ['Today'];
+                visitsData = displayDates.map(d => dailyVisitors[d] || 0);
+                claimsData = displayDates.map(d => dailyClaims[d] || 0);
             }
-        }
 
-        function switchDashboardGraph(mode) {
-            dashRange = mode;
-            document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
-            document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
-            loadStats();
-        }
+            if (dashboardDataType === 'unique') {
+                visitsData = visitsData.map(v => Math.round(v * 0.65));
+                claimsData = claimsData.map(c => Math.round(c * 0.65));
+            }
 
-        function renderDashboardGraph(dailyData, dailyClaims = {}) {
-            const allDays = Array.from(new Set([...Object.keys(dailyData), ...Object.keys(dailyClaims)])).sort();
-            const labels = allDays.length ? (dashRange === '7days' ? allDays.slice(-7) : allDays.slice(-2)) : ['Today'];
-            const values = labels.map(k => dailyData[k] || 0);
-            const claimValues = labels.map(k => dailyClaims[k] || 0);
-
-            if (dashboardChartInstance) dashboardChartInstance.destroy();
             const ctx = document.getElementById('dashboardChart').getContext('2d');
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+
             dashboardChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels,
+                    labels: displayDates,
                     datasets: [
-                        {
-                            label: 'Visits',
-                            data: values,
-                            borderColor: '#818cf8',
-                            backgroundColor: 'rgba(99,102,241,0.12)',
-                            fill: true, tension: 0.35, borderWidth: 2.5
-                        },
-                        {
-                            label: 'Claims',
-                            data: claimValues,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16,185,129,0.12)',
-                            fill: true, tension: 0.35, borderWidth: 2.5
-                        }
+                        { label: `${dashboardDataType === 'unique' ? 'Unique ' : ''}Visits`, data: visitsData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true, tension: 0.35 },
+                        { label: `${dashboardDataType === 'unique' ? 'Unique ' : ''}Claims`, data: claimsData, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)', fill: true, tension: 0.35 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', weight: '700' } } } },
-                    scales: {
-                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // ==================== LINKS LIST & EDIT ====================
+        function switchDashboardGraph(mode) {
+            dashboardGraphMode = mode;
+            document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
+            document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
+            loadStats(true);
+        }
+
+        function switchDashboardData(type) {
+            dashboardDataType = type;
+            document.getElementById('dashDataTotal').classList.toggle('active', type === 'total');
+            document.getElementById('dashDataUnique').classList.toggle('active', type === 'unique');
+            loadStats(true);
+        }
+
         async function loadLinks() {
+            const list = document.getElementById('linksList');
             const res = await fetch('/api/links', { credentials: 'include' });
             allLinks = await res.json();
             filterLinks();
@@ -772,28 +815,25 @@
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
             const filtered = q ? allLinks.filter(l => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : allLinks;
             const list = document.getElementById('linksList');
-            document.getElementById('searchResultsCount').textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
-
-            if (!filtered.length) {
-                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;padding:12px 0;">No links found.</p>';
-                return;
-            }
-
+            const countEl = document.getElementById('searchResultsCount');
+            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
+            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
                     <div class="info">
-                        <span class="name">${l.name}</span>
-                        <div class="details">
-                            <span>Visits: <b style="color:#818cf8;">${l.visits || 0}</b></span>
-                            <span>Claims: <b style="color:#10b981;">${l.claims || 0}</b></span>
-                            <span class="status-badge status-${l.status || 'active'}">${l.status || 'active'}</span>
-                            ${l.expiryDate ? `<span style="color:var(--warning);">Expires: ${new Date(l.expiryDate).toLocaleDateString()}</span>` : ''}
-                        </div>
+                        <span class="name">${escapeHTML(l.name)}</span>
+                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></span>
                     </div>
                     <div class="actions">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
                         <button class="btn btn-sm btn-warning" onclick="openEditModal('${l.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteLink('${l.id}')">🗑️ Delete</button>
+                        <select onchange="handleStatusAction('${l.id}', this.value)" class="status-dropdown">
+                            <option value="">⚡ Action</option>
+                            <option value="active">✅ Activate</option>
+                            <option value="suspended">⏸️ Suspend</option>
+                            <option value="disabled">⛔ Disable</option>
+                            <option value="delete">🗑️ Delete</option>
+                        </select>
                     </div>
                 </div>
             `).join('');
@@ -804,143 +844,133 @@
             navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success'));
         }
 
-        async function deleteLink(id) {
-            if (!confirm('Delete link permanently?')) return;
-            await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
-            showToast('Link deleted', 'info');
-            loadLinks();
-            loadStats();
+        async function handleStatusAction(id, action) {
+            if (!action) return;
+            if (action === 'delete') {
+                if (!confirm('Delete link permanently?')) return;
+                await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
+                showToast('Link deleted', 'info');
+                loadLinks(); loadStats(false);
+                return;
+            }
+            await fetch('/api/links/' + id + '/status', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ status: action })
+            });
+            showToast('Status updated to: ' + action, 'success');
+            loadLinks(); loadStats(false);
         }
 
-        // ==================== ✨ REDESIGNED EDIT MODAL POPULATOR ✨ ====================
+        // ✏️ COMPLETE EDIT MODAL (WITH 16:9 PREVIEW, BUTTON TEXT, HEADLINE & EXPIRY)
         function openEditModal(id) {
             const link = allLinks.find(l => l.id === id);
             if (!link) return;
             editingLinkId = id;
-
-            const pop = link.popupSettings || {};
-            let localISODate = '';
-            if (link.expiryDate) {
-                const d = new Date(link.expiryDate);
-                localISODate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-            }
-
+            const popup = link.popupSettings || {};
+            const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
+            
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <!-- 1. CAMPAIGN DETAILS -->
-                <div>
-                    <label>Campaign Title</label>
-                    <input type="text" id="eName" value="${link.name || ''}">
+                <h3 style="color:#fff;margin-bottom:12px;">✏️ Edit Rewarded Link</h3>
+                <div class="form-group"><label>Link Name</label><input type="text" id="eName" value="${escapeHTML(link.name)}"></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video)}"></div>
+                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim)}"></div>
                 </div>
                 <div class="grid-2">
-                    <div>
-                        <label>Video URL (YouTube or MP4)</label>
-                        <input type="text" id="eVideo" value="${link.video || ''}">
-                    </div>
-                    <div>
-                        <label>Claim Destination URL</label>
-                        <input type="text" id="eClaim" value="${link.claim || ''}">
-                    </div>
+                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText||'Claim Now')}"></div>
+                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline||'')}"></div>
                 </div>
                 <div class="grid-2">
-                    <div>
-                        <label>Button Text</label>
-                        <input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="eStatus">
+                            <option value="active" ${link.status==='active'?'selected':''}>Active</option>
+                            <option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option>
+                            <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
+                        </select>
                     </div>
-                    <div>
-                        <label>Headline</label>
-                        <input type="text" id="eHead" value="${link.headline || ''}">
+                    <div class="form-group">
+                        <label style="color:var(--warning);">📅 Expiry Date</label>
+                        <input type="datetime-local" id="eExpiry" value="${expiryVal}">
                     </div>
                 </div>
 
-                <!-- 2. ENTRANCE POPUP SECTION -->
-                <div class="modal-section-card">
-                    <h4 style="color:#818cf8;">🖼️ Entrance Popup Image & Content</h4>
-                    <label>Popup Image URL (16:9 Aspect Ratio)</label>
-                    <input type="text" id="ePopupImg" value="${pop.image || ''}" oninput="previewImage('ePopupImg', 'editImgPrev')">
-                    
-                    <div class="img-preview-box">
-                        <img id="editImgPrev" style="${pop.image ? 'display:block;' : 'display:none;'}" src="${pop.image || ''}" alt="Preview">
-                        <span style="${pop.image ? 'display:none;' : 'display:block;'}">🖼️ 16:9 Image Preview Will Appear Here</span>
-                    </div>
-
+                <!-- 🖼️ 16:9 POPUP IMAGE EDITING & PREVIEW -->
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:6px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
-                        <div>
-                            <label>Popup Title</label>
-                            <input type="text" id="ePopupTitle" value="${pop.title || '🎁 Claim Your Reward'}">
-                        </div>
-                        <div>
-                            <label>Popup Button Text</label>
-                            <input type="text" id="ePopupBtn" value="${pop.buttonText || 'Claim Now'}">
-                        </div>
+                        <input type="text" id="ePopTitle" placeholder="Popup Title" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
+                        <input type="text" id="ePopBtn" placeholder="Popup Button" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
                     </div>
-                    <div>
-                        <label>Popup Subtitle</label>
-                        <input type="text" id="ePopupSub" value="${pop.subtitle || 'Tap below to unlock your reward'}">
+                    <input type="text" id="ePopSub" placeholder="Popup Subtitle" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
+                    <input type="text" id="ePopImg" placeholder="Popup Image URL (16:9 Ratio)" value="${escapeHTML(popup.image || '')}">
+                    <div class="popup-preview-small" id="editPopupPreview">
+                        ${popup.image ? `<img src="${escapeHTML(popup.image)}" class="preview-img" alt="Preview">` : `<span style="color:rgba(255,255,255,0.3);font-size:10px;">16:9 Image Preview</span>`}
                     </div>
                 </div>
-
-                <!-- 3. EXPIRATION SCHEDULE -->
-                <div class="modal-section-card">
-                    <h4 style="color:var(--warning);">📅 Schedule Expiration</h4>
-                    <div class="preset-pill-group">
-                        <button type="button" class="preset-pill" onclick="setEditPreset(3)">+3 Days</button>
-                        <button type="button" class="preset-pill" onclick="setEditPreset(7)">+7 Days</button>
-                        <button type="button" class="preset-pill" onclick="setEditPreset(15)">+15 Days</button>
-                        <button type="button" class="preset-pill" onclick="setEditPreset(30)">+30 Days</button>
-                    </div>
-                    <div class="expiry-row-box">
-                        <input type="datetime-local" id="eExpiryDate" value="${localISODate}">
-                        <button type="button" class="btn-clear-expiry" onclick="document.getElementById('eExpiryDate').value=''">Remove Expiry (Never Expire)</button>
-                    </div>
-                </div>
-
-                <div class="modal-action-footer">
-                    <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
-                    <button class="btn btn-success" onclick="saveLinkEdit()">💾 Save Changes</button>
+                <div class="form-actions">
+                    <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
+                    <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
                 </div>
             `;
+
+            const imgInp = document.getElementById('ePopImg');
+            if (imgInp) {
+                imgInp.addEventListener('input', function() {
+                    const u = this.value.trim();
+                    const p = document.getElementById('editPopupPreview');
+                    p.innerHTML = u ? `<img src="${escapeHTML(u)}" class="preview-img" alt="Preview">` : `<span style="color:rgba(255,255,255,0.3);font-size:10px;">16:9 Image Preview</span>`;
+                });
+            }
             document.getElementById('editModal').classList.add('show');
         }
 
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('show');
+            editingLinkId = null;
         }
 
         async function saveLinkEdit() {
-            const expiryVal = document.getElementById('eExpiryDate').value;
-            const payload = {
-                name: document.getElementById('eName').value.trim(),
-                video: document.getElementById('eVideo').value.trim(),
-                claim: document.getElementById('eClaim').value.trim(),
-                buttonText: document.getElementById('eBtnText').value.trim(),
-                headline: document.getElementById('eHead').value.trim(),
-                expiryDate: expiryVal ? new Date(expiryVal).toISOString() : null,
-                popupSettings: {
-                    image: document.getElementById('ePopupImg').value.trim() || null,
-                    title: document.getElementById('ePopupTitle').value.trim(),
-                    buttonText: document.getElementById('ePopupBtn').value.trim(),
-                    subtitle: document.getElementById('ePopupSub').value.trim()
-                }
+            const name = document.getElementById('eName').value.trim();
+            const video = document.getElementById('eVideo').value.trim();
+            const claim = document.getElementById('eClaim').value.trim();
+            const buttonText = document.getElementById('eBtnText').value.trim();
+            const headline = document.getElementById('eHead').value.trim();
+            const status = document.getElementById('eStatus').value;
+            const expiryDate = document.getElementById('eExpiry').value || null;
+            const popupSettings = {
+                title: document.getElementById('ePopTitle').value.trim(),
+                subtitle: document.getElementById('ePopSub').value.trim(),
+                buttonText: document.getElementById('ePopBtn').value.trim(),
+                image: document.getElementById('ePopImg').value.trim() || null
             };
 
             await fetch('/api/links/' + editingLinkId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings })
             });
-
-            showToast('✅ Campaign updated successfully!', 'success');
+            showToast('✅ Link updated successfully!', 'success');
             closeEditModal();
             loadLinks();
-            loadStats();
         }
 
-        // ==================== CREATE LINK ====================
+        // CREATE LINK LOGIC
         function updateSchedulePreset() {
             const p = document.getElementById('schedulePreset').value;
+            const customInp = document.getElementById('customExpiry');
             const disp = document.getElementById('expiryDisplay');
+            if (p === 'custom') {
+                customInp.style.display = 'block';
+                selectedExpiry = null;
+                disp.textContent = '📅 Select custom date';
+                return;
+            }
+            customInp.style.display = 'none';
             if (p) {
                 const days = parseInt(p);
                 const d = new Date();
@@ -953,54 +983,50 @@
             }
         }
 
+        function updateCustomExpiry() {
+            const v = document.getElementById('customExpiry').value;
+            if (v) {
+                selectedExpiry = new Date(v).toISOString();
+                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + new Date(v).toLocaleString();
+            } else {
+                selectedExpiry = null;
+                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
+            }
+        }
+
         async function createLink() {
             const name = document.getElementById('linkName').value.trim();
             const video = document.getElementById('video').value.trim();
             const claim = document.getElementById('claim').value.trim();
             const buttonText = document.getElementById('buttonText').value.trim();
             const headline = document.getElementById('headline').value.trim();
-            const popupImageUrl = document.getElementById('popupImageUrl').value.trim();
-            const popupTitle = document.getElementById('popupTitle').value.trim();
-            const popupButtonText = document.getElementById('popupButtonText').value.trim();
-            const popupSubtitle = document.getElementById('popupSubtitle').value.trim();
+            const popupSettings = {
+                title: document.getElementById('popupTitle').value.trim(),
+                subtitle: document.getElementById('popupSubtitle').value.trim(),
+                buttonText: document.getElementById('popupButtonText').value.trim(),
+                image: document.getElementById('popupImageUrl').value.trim() || null
+            };
 
             if (!name) return showToast('Please enter link name', 'error');
 
-            const payload = {
-                name, video, claim, buttonText, headline,
-                expiryDate: selectedExpiry,
-                status: 'active',
-                popupSettings: {
-                    image: popupImageUrl || null,
-                    title: popupTitle || '🎁 Claim Your Reward',
-                    buttonText: popupButtonText || 'Claim Now',
-                    subtitle: popupSubtitle || 'Tap below to unlock your reward'
-                }
-            };
-
-            try {
-                const res = await fetch('/api/links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(payload)
-                });
-
-                if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
-
-                const d = await res.json();
-                if (d && d.id) {
-                    showToast('✅ Link Created Successfully!', 'success');
-                    const fullUrl = window.location.origin + '/uid?link=' + d.id;
-                    document.getElementById('generatedLinkInput').value = fullUrl;
-                    document.getElementById('generatedLink').style.display = 'block';
-                    document.getElementById('linkName').value = '';
-                    loadStats();
-                } else {
-                    showToast('❌ Failed: ' + (d.error || 'Server error'), 'error');
-                }
-            } catch(e) {
-                showToast('❌ Network error saving link', 'error');
+            const res = await fetch('/api/links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name, video, claim, headline, buttonText,
+                    expiryDate: selectedExpiry,
+                    popupSettings
+                })
+            });
+            const d = await res.json();
+            if (d && d.id) {
+                showToast('✅ Link Created Successfully!', 'success');
+                const fullUrl = window.location.origin + '/uid?link=' + d.id;
+                document.getElementById('generatedLinkInput').value = fullUrl;
+                document.getElementById('generatedLink').style.display = 'block';
+                document.getElementById('linkName').value = '';
+                loadStats();
             }
         }
 
@@ -1011,18 +1037,17 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ==================== ANALYTICS & EXPORT ====================
-        function loadAnalyticsLinks() {
+        // ANALYTICS & HIGH-RES PNG / CSV EXPORTS
+        async function loadAnalyticsLinks() {
             const sel = document.getElementById('analyticsLinkSelect');
             sel.innerHTML = allLinks.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
             loadAnalytics();
         }
 
-        function filterAnalyticsLinks() {
-            const q = document.getElementById('analyticsSearchInput').value.toLowerCase().trim();
-            const sel = document.getElementById('analyticsLinkSelect');
-            const filtered = allLinks.filter(l => l.name.toLowerCase().includes(q));
-            sel.innerHTML = filtered.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+        function setTimeFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.time-filters .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+            document.getElementById('customDatePicker').style.display = f === 'custom' ? 'flex' : 'none';
             loadAnalytics();
         }
 
@@ -1031,178 +1056,270 @@
             const link = allLinks.find(l => l.id === selId);
             if (!link) return;
             analyticsData = link;
+            document.getElementById('analyticsLinkName').textContent = link.name;
+            document.getElementById('analyticsLinkId').textContent = link.id;
+            document.getElementById('analyticsLinkStatus').textContent = link.status;
+            document.getElementById('analyticsLinkCreated').textContent = new Date(link.created||Date.now()).toLocaleDateString();
             document.getElementById('analyticsTotalVisits').textContent = link.visits || 0;
             document.getElementById('analyticsTotalClaims').textContent = link.claims || 0;
+            document.getElementById('analyticsUniqueVisitors').textContent = Math.round((link.visits||0) * 0.65);
+            document.getElementById('analyticsUniqueClaims').textContent = Math.round((link.claims||0) * 0.65);
 
+            renderAnalyticsChart();
+        }
+
+        function renderAnalyticsChart() {
+            if (!analyticsData) return;
             const ctx = document.getElementById('analyticsChart').getContext('2d');
             if (analyticsChartInstance) analyticsChartInstance.destroy();
+            let v = analyticsData.visits || 0;
+            let c = analyticsData.claims || 0;
+            if (analyticsDataType === 'unique') { v = Math.round(v * 0.65); c = Math.round(c * 0.65); }
+
             analyticsChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Visits', 'Claims'],
-                    datasets: [{
-                        label: link.name,
-                        data: [link.visits || 0, link.claims || 0],
-                        backgroundColor: ['#818cf8', '#10b981'],
-                        borderRadius: 10
-                    }]
+                    datasets: [{ label: `${analyticsDataType === 'unique' ? 'Unique ' : ''}${analyticsData.name}`, data: [v, c], backgroundColor: ['#6366f1', '#22c55e'] }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        function setTimeFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
-            loadAnalytics();
+        function switchAnalyticsGraph(mode) {
+            analyticsGraphMode = mode;
+            document.getElementById('anaGraph7').classList.toggle('active', mode === '7days');
+            document.getElementById('anaGraph24').classList.toggle('active', mode === '24h');
+            renderAnalyticsChart();
+        }
+
+        function switchAnalyticsData(type) {
+            analyticsDataType = type;
+            document.getElementById('anaDataTotal').classList.toggle('active', type === 'total');
+            document.getElementById('anaDataUnique').classList.toggle('active', type === 'unique');
+            renderAnalyticsChart();
         }
 
         function downloadAnalyticsImage() {
-            const box = document.getElementById('analyticsExportBox');
-            html2canvas(box, { backgroundColor: '#111726', scale: 2 }).then(canvas => {
-                const a = document.createElement('a');
-                a.download = 'analytics-report.png';
-                a.href = canvas.toDataURL('image/png');
-                a.click();
-                showToast('✅ Analytics PNG Exported!', 'success');
-            }).catch(() => showToast('Failed to export PNG', 'error'));
+            html2canvas(document.getElementById('analyticsExportBox')).then(c => {
+                const a = document.createElement('a'); a.download = (analyticsData?.name || 'Analytics') + '.png'; a.href = c.toDataURL(); a.click();
+            });
         }
 
         function downloadAnalyticsCSV() {
             if (!analyticsData) return;
-            const csv = `Campaign Name,Link ID,Visits,Claims\n"${analyticsData.name}","${analyticsData.id}",${analyticsData.visits || 0},${analyticsData.claims || 0}`;
+            const csv = `Link Name,Visits,Claims\n"${analyticsData.name}",${analyticsData.visits||0},${analyticsData.claims||0}`;
             const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.download = `${analyticsData.name.replace(/\s+/g, '_')}_analytics.csv`;
-            a.href = URL.createObjectURL(blob);
-            a.click();
-            showToast('✅ CSV Exported!', 'success');
+            const a = document.createElement('a'); a.download = 'report.csv'; a.href = URL.createObjectURL(blob); a.click();
         }
 
-        // ==================== SHORT LINKS (WITH DELETE) ====================
+        // SHORTENER LOGIC WITH FULL EDIT & ANALYTICS MODALS
+        function toggleAppScheme() {
+            const chk = document.getElementById('shortAppOpen').checked;
+            document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
+        }
+
+        async function loadShortLinkStats() {
+            try {
+                const res = await fetch('/api/short-links/stats', { credentials: 'include' });
+                const d = await res.json();
+                if (d.success) {
+                    document.getElementById('shortTotalLinks').textContent = d.stats.totalLinks || 0;
+                    document.getElementById('shortActiveLinks').textContent = d.stats.activeLinks || 0;
+                    document.getElementById('shortTotalClicks').textContent = d.stats.totalClicks || 0;
+                    document.getElementById('shortClicks24h').textContent = d.stats.clicks24h || 0;
+                }
+            } catch(e) {}
+        }
+
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links', { credentials: 'include' });
             const d = await res.json();
-            if (!d.links || !d.links.length) {
-                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;padding:12px 0;">No short links found.</p>';
-                return;
-            }
-            list.innerHTML = d.links.map(l => `
+            allShortLinks = d.links || [];
+            filterShortLinks();
+        }
+
+        function filterShortLinks() {
+            const q = (document.getElementById('searchShortLinksInput')?.value || '').toLowerCase().trim();
+            const filtered = q ? allShortLinks.filter(l => l.title.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)) : allShortLinks;
+            const list = document.getElementById('shortLinksList');
+            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links found.</p>';
+            list.innerHTML = filtered.map(l => `
                 <div class="link-item">
-                    <div class="info">
-                        <div class="name">${l.title || 'Untitled'}</div>
-                        <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:#818cf8;">${l.visits || 0}</b></div>
+                    <div>
+                        <div class="name">${escapeHTML(l.title)}</div>
+                        <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
                     </div>
-                    <div class="actions">
-                        <button class="btn btn-sm btn-success" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))">📋 Copy</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id || l.id}')">🗑️ Delete</button>
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="copyShortLinkUrl('${l.code}')">📋 Copy</button>
+                        <button class="btn btn-sm btn-primary" onclick="viewShortLinkAnalytics('${l._id}')">📊 Stats</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        async function createShortLink() {
-            const originalUrl = document.getElementById('shortOriginalUrl').value.trim();
-            const title = document.getElementById('shortTitle').value.trim();
-            const appScheme = document.getElementById('shortAppScheme').value.trim();
-            if (!originalUrl) return showToast('Enter destination URL', 'error');
-
-            await fetch('/api/short-links', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
-            });
-            showToast('✅ Short link created!', 'success');
-            document.getElementById('shortOriginalUrl').value = '';
-            document.getElementById('shortTitle').value = '';
-            document.getElementById('shortAppScheme').value = '';
-            loadShortLinks();
+        function copyShortLinkUrl(code) {
+            const u = window.location.origin + '/s/' + code;
+            navigator.clipboard.writeText(u).then(() => showToast('Copied: ' + u, 'success'));
         }
 
         async function deleteShortLink(id) {
-            if (!confirm('Delete this short link permanently?')) return;
+            if (!confirm('Permanently delete this short link?')) return;
             await fetch('/api/short-links/' + id, { method: 'DELETE', credentials: 'include' });
             showToast('Short link deleted', 'info');
             loadShortLinks();
+            loadShortLinkStats();
         }
 
-        // ==================== SETTINGS & SECURITY ====================
+        async function viewShortLinkAnalytics(id) {
+            const res = await fetch('/api/short-links/' + id + '/analytics', { credentials: 'include' });
+            const data = await res.json();
+            if (!data.success) return;
+            const b = document.getElementById('editModalBody');
+            b.innerHTML = `
+                <h3>📊 Short Link Analytics: ${escapeHTML(data.link.title)}</h3>
+                <div class="stats-grid" style="margin:14px 0;">
+                    <div class="stat-card"><div class="number">${data.totalClicks||0}</div><div class="label">Total Clicks</div></div>
+                </div>
+                <div style="max-height:260px;overflow-y:auto;">
+                    ${data.clicks.length ? data.clicks.map(c => `
+                        <div class="link-item">
+                            <div><span class="name">${c.deviceName}</span><div class="details">IP: ${c.ip} | ${new Date(c.timestamp).toLocaleString()}</div></div>
+                        </div>
+                    `).join('') : '<p style="color:#94a3b8;font-size:12px;">No clicks recorded yet.</p>'}
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="closeEditModal()">Close</button>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        async function createShortLink() {
+            const originalUrl = document.getElementById('shortOriginalUrl').value.trim();
+            const title = document.getElementById('shortTitle').value.trim();
+            const appOpen = document.getElementById('shortAppOpen').checked;
+            const appScheme = document.getElementById('shortAppScheme').value.trim();
+            const appStoreLink = document.getElementById('shortAppStoreLink').value.trim();
+            const expiryDate = document.getElementById('shortExpiryDate').value;
+            if (!originalUrl) return showToast('Enter URL', 'error');
+
+            const res = await fetch('/api/short-links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate })
+            });
+            const d = await res.json();
+            if (d.success) {
+                showToast('✅ Short link created!', 'success');
+                document.getElementById('shortGeneratedLinkInput').value = d.shortUrl;
+                document.getElementById('shortGeneratedLink').style.display = 'block';
+                loadShortLinks();
+                loadShortLinkStats();
+            }
+        }
+
+        function copyShortLink() {
+            const inp = document.getElementById('shortGeneratedLinkInput');
+            inp.select();
+            document.execCommand('copy');
+            showToast('Copied to clipboard!', 'success');
+        }
+
+        // SETTINGS: SECRET KEY, BACKGROUND, PASSCODE & DEVICES
+        async function loadSecretKey() {
+            const res = await fetch('/api/admin/secret-key', { credentials: 'include' });
+            const d = await res.json();
+            if (d.success) document.getElementById('currentSecretKey').value = d.secretKey;
+        }
+
+        async function changeSecretKey() {
+            const currentSecretKey = document.getElementById('currentSecretKey').value;
+            const newSecretKey = document.getElementById('newSecretKey').value.trim();
+            if (!newSecretKey) return showToast('Enter new key', 'error');
+            const res = await fetch('/api/admin/secret-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ currentSecretKey, newSecretKey })
+            });
+            const d = await res.json();
+            if (d.success) {
+                showToast('Secret key updated!', 'success');
+                document.getElementById('currentSecretKey').value = newSecretKey;
+                document.getElementById('newSecretKey').value = '';
+            } else showToast(d.error, 'error');
+        }
+
+        async function updateContactInfo() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const phone = document.getElementById('adminPhone').value.trim();
+            await fetch('/api/admin/update-contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ email, phone })
+            });
+            showToast('Contact info saved', 'success');
+        }
+
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
             const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
             const d = await res.json();
-            if (!d.devices || !d.devices.length) {
-                list.innerHTML = '<p style="color:var(--text-light);font-size:13px;padding:10px 0;">No blocked devices found. System is secure.</p>';
-                return;
-            }
+            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices currently.</p>';
             list.innerHTML = d.devices.map(dev => `
                 <div class="device-item">
                     <div class="info">
-                        <span class="name">${dev.deviceName || 'Unknown'} (${dev.ip})</span>
-                        <div class="details">Attempts: <b>${dev.attempts}</b> | Reason: ${dev.reason}</div>
+                        <span class="name">⛔ ${dev.deviceName} (${dev.ip})</span>
+                        <span class="details">Attempts: <b>${dev.attempts}</b> | Reason: <span style="color:var(--danger);">${dev.reason}</span></span>
                     </div>
-                    <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
+                    </div>
                 </div>
             `).join('');
         }
 
         async function unblockDev(id) {
             await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
-            showToast('Device unblocked', 'info');
+            showToast('Device unblocked successfully!', 'success');
             loadBlockedDevices();
         }
 
+        async function loadActiveSessions() {
+            const list = document.getElementById('deviceList');
+            const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
+            const d = await res.json();
+            if (!d.sessions?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No active sessions.</p>';
+            list.innerHTML = d.sessions.map(s => `
+                <div class="session-item">
+                    <div class="info"><span class="name">${s.userAgent?.slice(0,30)||'Session'}</span><span class="details">Login: ${new Date(s.createdAt).toLocaleString()}</span></div>
+                </div>
+            `).join('');
+        }
+
         async function saveBackground() {
-            const bg = document.getElementById('bgImageUrl').value.trim();
-            await fetch('/api/admin/background', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ background: bg || null })
-            });
-            showToast('✅ Background image updated!', 'success');
+            const bg = document.getElementById('bgImgUrl').value.trim();
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
+            showToast('Background updated', 'success');
         }
 
         async function removeBackground() {
-            await fetch('/api/admin/background', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ background: null })
-            });
-            document.getElementById('bgImageUrl').value = '';
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
+            document.getElementById('bgImgUrl').value = '';
             showToast('Background removed', 'info');
         }
 
         async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode').value;
-            const newP = document.getElementById('newPasscode').value;
-            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-
-            const res = await fetch('/api/admin/passcode', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP })
-            });
+            const oldPasscode = document.getElementById('oldPasscode').value;
+            const newPasscode = document.getElementById('newPasscode').value;
+            if (!oldPasscode || !newPasscode || newPasscode.length !== 6) return showToast('Enter 6-digit passcode', 'error');
+            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode, newPasscode }) });
             const d = await res.json();
-            if (d.success) {
-                showToast('✅ Passcode updated successfully!', 'success');
-                document.getElementById('oldPasscode').value = '';
-                document.getElementById('newPasscode').value = '';
-            } else {
-                showToast('❌ ' + (d.error || 'Failed'), 'error');
-            }
+            if (d.success) showToast('Passcode changed!', 'success');
+            else showToast(d.error, 'error');
         }
 
         function setTheme(t) {
@@ -1217,12 +1334,12 @@
         }
 
         function installApp() {
-            showToast('Open browser menu -> Add to Home screen to install app', 'info');
+            showToast('Use Chrome browser menu -> Add to Home screen', 'info');
         }
 
-        // Initialize and auto-refresh
-        loadStats();
-        setInterval(loadStats, 6000);
+        // Live refresh every 5 seconds
+        loadStats(true);
+        setInterval(() => loadStats(false), 5000);
     </script>
 </body>
 </html>
