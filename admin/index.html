@@ -54,6 +54,8 @@
         .header-actions button { padding: 7px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
         .header-actions button:hover { transform: translateY(-2px); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
+        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
+        .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
@@ -61,7 +63,7 @@
         .menu-container {
             display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
             background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
-            border: 1px solid var(--border); align-items: center;
+            border: 1px solid var(--border);
         }
         .menu-btn {
             padding: 8px 16px; border: 1px solid transparent; border-radius: 10px;
@@ -119,7 +121,6 @@
             display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
             border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s;
         }
-        .link-item:hover { transform: translateX(3px); }
         .link-item .name { font-weight: 700; font-size: 14px; }
         .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -139,12 +140,17 @@
         .share-box .box-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .share-box input { flex: 1; min-width: 200px; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; }
 
-        .preview-box-16-9 {
-            width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
-            border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center;
-            margin: 8px auto 0;
+        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid var(--border); overflow: hidden; display: none; }
+        .image-preview.show { display: block; }
+        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
+
+        .blocked-card-item {
+            background: #090a0f; border: 1px solid rgba(239, 68, 68, 0.35); border-left: 4px solid var(--danger);
+            border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 10px;
         }
-        .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .blocked-card-item .dev-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .blocked-card-item .dev-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
 
         /* Clean Edit Modal (No Overlap) */
         .edit-modal {
@@ -156,43 +162,17 @@
             background: var(--card-bg); border-radius: 20px; padding: 28px; max-width: 680px; width: 100%;
             border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease;
         }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 12px;
-            width: 100%;
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; width: 100%; }
+        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
+        .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
+        @media (max-width: 650px) { .form-row-2 { grid-template-columns: 1fr; } }
+
+        .preview-box-16-9 {
+            width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
+            border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 8px auto 0;
         }
-        .form-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-light);
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px 14px;
-            background: #090a0f;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 13px;
-            outline: none;
-        }
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--primary);
-        }
-        .form-row-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
-            width: 100%;
-        }
-        @media (max-width: 650px) {
-            .form-row-2 { grid-template-columns: 1fr; }
-        }
+        .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
         .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -203,8 +183,7 @@
 
         .toast {
             position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 13px; z-index: 99999;
-            transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
+            color: white; font-weight: 600; font-size: 13px; z-index: 99999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: #16a34a; }
@@ -225,6 +204,7 @@
         <header class="header">
             <h1>⚡ Admin Control Center</h1>
             <div class="header-actions">
+                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
                     <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
                     <button onclick="setTheme('light')" id="theme-light">☀️</button>
@@ -244,14 +224,13 @@
 
         <!-- 1. DASHBOARD OVERVIEW -->
         <div class="section active" id="sec-dashboard">
-            <!-- 🔗 CUSTOMER PORTAL & SIGNUP LINK SHARE BOX -->
             <div class="share-box">
                 <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
                 <div class="box-row">
                     <input type="text" id="dashUserPortalUrl" readonly>
                     <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
                 </div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this link with customers so they can signup, view analytics, and renew their links.</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this URL with clients to allow them to register, view link analytics, and pay renewals.</div>
             </div>
 
             <div class="stats-grid">
@@ -262,7 +241,6 @@
                 <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">Active Live</div></div>
             </div>
 
-            <!-- Real-time Signal Stream -->
             <div class="live-visitors">
                 <div class="lv-title">
                     <span class="dot"></span> 🟢 Real-Time Visitor & Claim Stream
@@ -280,11 +258,10 @@
 
             <div class="card">
                 <h3>⚡ Quick Shortcuts</h3>
-                <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">Manage promotional campaigns, approve customer renewal requests, or extend validity.</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
                     <button class="btn btn-sm btn-success" onclick="showSection('renewals')">🔄 Check Renewal Requests</button>
-                    <button class="btn btn-sm btn-warning" onclick="showSection('shortener')">🔗 Open URL Shortener</button>
+                    <button class="btn btn-sm btn-warning" onclick="showSection('settings')">⚙️ Device Security</button>
                 </div>
             </div>
         </div>
@@ -301,41 +278,37 @@
             </div>
         </div>
 
-        <!-- 3. 🔄 USERS & RENEWAL MANAGEMENT (PENDING ONLY - NO DUMMY APPROVED DATA) -->
+        <!-- 3. USERS & RENEWAL -->
         <div class="section" id="sec-renewals">
-            <!-- Customer Portal Share Box -->
             <div class="share-box">
-                <div class="share-title">🔗 Customer Portal / Signup Link:</div>
+                <div class="share-title">🔗 Customer Portal & Signup Link:</div>
                 <div class="box-row">
                     <input type="text" id="renewUserPortalUrl" readonly>
                     <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
                 </div>
             </div>
 
-            <!-- Part 1: Pending User Signup Approvals -->
+            <!-- User Registrations -->
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
                     <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
                 </div>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Only pending signup requests appear here. Once approved or rejected, they are removed.</p>
                 <div id="usersApprovalList">Loading user requests...</div>
             </div>
 
-            <!-- Part 2: Pending Renewal Requests -->
+            <!-- Renewal Payment Requests -->
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;padding:0;border:none;">💳 Pending Renewal & Payment Requests</h3>
                     <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
                 </div>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Only active pending payment requests waiting for your approval will appear here.</p>
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
 
-            <!-- Part 3: Pricing & Auto-Payment Mode Settings -->
+            <!-- Pricing Settings -->
             <div class="card">
                 <h3>⚙️ Renewal & Payment Mode Settings</h3>
-                
                 <div style="display:flex;align-items:center;gap:12px;margin:12px 0;background:#090a0f;padding:12px 16px;border-radius:10px;border:1px solid var(--border);">
                     <label style="font-size:13px;font-weight:700;">🤖 Auto-Verify Mode (BharatPe / Ref No):</label>
                     <select id="setPaymentMode" style="width:auto;margin:0;padding:6px 14px;">
@@ -343,21 +316,18 @@
                         <option value="false">OFF (Shows Coming Soon / Contact Admin)</option>
                     </select>
                 </div>
-
                 <div class="grid-2">
-                    <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR Code):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
                     <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number (for Screenshots):</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
                 </div>
-
                 <h4 style="font-size:13px;color:var(--primary);margin:14px 0 6px;">💰 Renewal Plan Prices (₹):</h4>
                 <div class="grid-2">
-                    <div><label style="font-size:11px;color:var(--text-light);">7 Days Price (₹):</label><input type="number" id="p7d" value="100"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">15 Days Price (₹):</label><input type="number" id="p15d" value="200"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">30 Days Price (₹):</label><input type="number" id="p30d" value="400"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">90 Days Price (₹):</label><input type="number" id="p90d" value="1000"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">7 Days (₹):</label><input type="number" id="p7d" value="100"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">15 Days (₹):</label><input type="number" id="p15d" value="200"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">30 Days (₹):</label><input type="number" id="p30d" value="400"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">90 Days (₹):</label><input type="number" id="p90d" value="1000"></div>
                 </div>
-                <div style="margin-top:6px;"><label style="font-size:11px;color:var(--text-light);">1 Year Price (₹):</label><input type="number" id="p1y" value="3000"></div>
-
+                <div style="margin-top:6px;"><label style="font-size:11px;color:var(--text-light);">1 Year (₹):</label><input type="number" id="p1y" value="3000"></div>
                 <button class="btn btn-primary btn-sm" style="margin-top:14px;width:auto;" onclick="saveRenewalSettings()">💾 Save Renewal Settings</button>
             </div>
         </div>
@@ -368,14 +338,13 @@
                 <h3>➕ Create Rewarded Tracking Link</h3>
                 <input type="text" id="cName" placeholder="Link Campaign Name (Must match customer name)">
                 <div class="grid-2">
-                    <input type="text" id="cVideo" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
                     <input type="text" id="cClaim" placeholder="Claim Destination URL" value="#">
                 </div>
                 <div class="grid-2">
-                    <input type="text" id="cButtonText" placeholder="Button Text (e.g. Claim Now)" value="Claim Now">
+                    <input type="text" id="cButtonText" placeholder="Button Text" value="Claim Now">
                     <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
                 </div>
-
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
@@ -388,7 +357,6 @@
                         <span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>
                     </div>
                 </div>
-
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
@@ -399,11 +367,9 @@
                         <option value="30">30 Days</option>
                     </select>
                 </div>
-
                 <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
-
                 <div id="generatedLinkBox" style="display:none;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:12px;padding:14px;margin-top:14px;">
-                    <p style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created Successfully! Copy below:</p>
+                    <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created! Copy below:</div>
                     <div style="display:flex;gap:8px;">
                         <input type="text" id="generatedLinkUrl" readonly>
                         <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">📋 Copy</button>
@@ -415,10 +381,20 @@
         <!-- 5. URL SHORTENER -->
         <div class="section" id="sec-shortener">
             <div class="card">
-                <h3>🔗 App Deep-Linking URL Shortener</h3>
-                <input type="text" id="sUrl" placeholder="Destination URL (e.g. https://youtube.com/...)">
-                <input type="text" id="sTitle" placeholder="Title (Optional)">
-                <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
+                <h3>🔗 URL Shortener</h3>
+                <input type="text" id="sUrl" placeholder="Destination URL">
+                <input type="text" id="sTitle" placeholder="Title">
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                    <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="shortAppOpen" onchange="toggleAppScheme()">
+                        <span></span>
+                    </label>
+                    <span style="font-size:11px;color:var(--text-light);">(Enable deep link app open)</span>
+                </div>
+                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
+                    <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
+                </div>
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
             </div>
             <div class="card">
@@ -427,24 +403,33 @@
             </div>
         </div>
 
-        <!-- 6. SETTINGS -->
+        <!-- 6. SETTINGS & DEVICE MANAGEMENT -->
         <div class="section" id="sec-settings">
             <div class="card">
-                <h3>🖼️ UID Background Image (9:16)</h3>
-                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
-                <div style="display:flex;gap:8px;margin-top:8px;">
-                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
-                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">⛔ Blocked Attackers & Devices</h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadBlockedDevices()">🔄 Refresh Devices</button>
                 </div>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered 3 wrong passcodes are permanently banned here. Click Unblock to restore access.</p>
+                <div id="deviceList">Loading blocked devices...</div>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Change Admin Passcode</h3>
+                <div class="grid-2">
+                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
+                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">Update Passcode</button>
             </div>
 
             <div class="card">
                 <h3>🔑 Secret Gateway Key</h3>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="currentSecretKey" placeholder="Current Secret Key" readonly>
-                    <input type="text" id="newSecretKey" placeholder="New Secret Key">
+                    <input type="text" id="currentSecretKey" placeholder="Current Key" readonly>
+                    <input type="text" id="newSecretKey" placeholder="New Key">
                 </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changeSecretKey()">🔑 Update Secret Key</button>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changeSecretKey()">Update Secret Key</button>
             </div>
 
             <div class="card">
@@ -457,23 +442,20 @@
             </div>
 
             <div class="card">
-                <h3>🔐 Change Admin Passcode</h3>
-                <div class="grid-2">
-                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
+                <h3>🖼️ UID Background Image (9:16)</h3>
+                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
+                <div class="image-preview" id="bgImagePreview">
+                    <img id="bgPreviewImg" alt="Preview">
                 </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changePasscode()">Update Passcode</button>
-            </div>
-
-            <div class="card">
-                <h3>⛔ Permanently Blocked Attackers</h3>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Devices banned automatically after 3 wrong passcode attempts</p>
-                <div id="deviceList">Loading blocked attackers...</div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
+                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL (CLEAN & ORGANIZED FORM - ZERO OVERLAP) -->
+    <!-- ✏️ EDIT MODAL (CLEAN & ZERO OVERLAP) -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -504,7 +486,7 @@
 
         function copyPortalUrl() {
             const u = window.location.origin + '/user-dashboard';
-            navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Signup / Portal Link: ' + u, 'success'));
+            navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Customer Portal URL!', 'success'));
         }
 
         function escapeHTML(str) {
@@ -524,16 +506,12 @@
             if (id === 'links') loadLinks();
             if (id === 'renewals') loadRenewalSystem();
             if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); }
+            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); loadContactInfo(); }
         }
 
         function updateCreatePopupPreview(url) {
             const box = document.getElementById('createImgPreviewBox');
-            if (url && url.startsWith('http')) {
-                box.innerHTML = `<img src="${url}" alt="16:9 Popup Preview">`;
-            } else {
-                box.innerHTML = `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
-            }
+            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${url}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
         }
 
         async function loadStats() {
@@ -541,16 +519,15 @@
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
                 const data = await res.json();
                 if (data && data.global) {
-                    const g = data.global;
-                    document.getElementById('totVisits').textContent = g.totalVisitors || 0;
-                    document.getElementById('totClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('activeLive').textContent = g.activeNow || 0;
-                    document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
-                    document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('liveTodayVisits').textContent = g.todayVisitors || 0;
-                    document.getElementById('liveTodayClaims').textContent = g.todayClaims || 0;
-                    document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
-                    document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
+                    document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('activeLive').textContent = data.global.activeNow || 0;
+                    document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
+                    document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
+                    document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
+                    document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
+                    document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
+                    document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
                 }
                 if (data && data.links) {
                     document.getElementById('totLinks').textContent = data.links.length || 0;
@@ -571,14 +548,12 @@
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
             const filtered = q ? allLinks.filter(l => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : allLinks;
             const list = document.getElementById('linksList');
-            const countEl = document.getElementById('searchResultsCount');
-            if (countEl) countEl.textContent = 'Showing ' + filtered.length + ' of ' + allLinks.length + ' links';
             if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
                     <div>
-                        <span class="name">${escapeHTML(l.name)}</span>
-                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${escapeHTML(l.buttonText || 'Claim Now')}</b> | Visits: <b>${l.visits||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></div>
+                        <span class="name">${l.name}</span>
+                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${l.buttonText || 'Claim Now'}</b> | Visits: <b>${l.visits||0}</b></div>
                     </div>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
@@ -598,11 +573,9 @@
             if (!confirm('Permanently delete this link?')) return;
             await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
             showToast('Link deleted', 'info');
-            loadLinks();
-            loadStats();
+            loadLinks(); loadStats();
         }
 
-        // ✏️ CLEAN ORGANIZED EDIT MODAL (CLEARS OVERLAPPING INPUTS FROM SCREENSHOT)
         function openEditModal(id) {
             const link = allLinks.find(l => l.id === id);
             if (!link) return;
@@ -612,17 +585,14 @@
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group">
-                    <label>Link Name</label>
-                    <input type="text" id="eName" value="${escapeHTML(link.name)}">
+                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${link.name}"></div>
+                <div class="form-row-2">
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video}"></div>
+                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${link.claim}"></div>
                 </div>
                 <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video)}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim)}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
+                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}"></div>
+                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline || ''}"></div>
                 </div>
                 <div class="form-row-2">
                     <div class="form-group">
@@ -633,23 +603,18 @@
                             <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label style="color:var(--warning);">📅 Expiry Date</label>
-                        <input type="datetime-local" id="eExpiry" value="${expiryVal}">
-                    </div>
+                    <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
                 </div>
-
-                <!-- 🖼️ 16:9 ENTRANCE POPUP EDITING (NO OVERLAPS) -->
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
                     <div class="form-row-2">
-                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
-                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
+                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${popup.title || '🎁 Claim Your Reward'}"></div>
+                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${popup.buttonText || 'Claim Now'}"></div>
                     </div>
-                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                    <div class="form-group"><label>Popup Image URL (16:9 Aspect Ratio)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
+                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${popup.subtitle || 'Tap below to unlock your reward'}"></div>
+                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${popup.image || ''}" oninput="updateEditPopupPreview(this.value)"></div>
                     <div class="preview-box-16-9" id="editPreviewBox">
-                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
+                        ${popup.image ? `<img src="${popup.image}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
                     </div>
                 </div>
             `;
@@ -658,11 +623,7 @@
 
         function updateEditPopupPreview(url) {
             const box = document.getElementById('editPreviewBox');
-            if (url && url.startsWith('http')) {
-                box.innerHTML = `<img src="${escapeHTML(url)}">`;
-            } else {
-                box.innerHTML = `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
-            }
+            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${url}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
         }
 
         function closeEditModal() {
@@ -748,16 +709,15 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ==================== 🔄 RENEWAL SYSTEM IN ADMIN (PENDING ONLY) ====================
+        // ==================== 🔄 RENEWAL SYSTEM ====================
         async function loadRenewalSystem() {
-            // Set Customer Portal Links
             const portalUrl = window.location.origin + '/user-dashboard';
             const dInput = document.getElementById('dashUserPortalUrl');
             const rInput = document.getElementById('renewUserPortalUrl');
             if (dInput) dInput.value = portalUrl;
             if (rInput) rInput.value = portalUrl;
 
-            // Load Pending User Signup Approvals (Filtered so approved/rejected are removed!)
+            // Pending User Signups
             const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
             const uData = await uRes.json();
             const uList = document.getElementById('usersApprovalList');
@@ -780,7 +740,7 @@
                 `).join('');
             }
 
-            // Load Pending Renewal Requests (Filtered so completed/approved items never show!)
+            // Pending Renewal Requests
             const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
             const sData = await sRes.json();
             const rList = document.getElementById('renewalReqsList');
@@ -792,8 +752,8 @@
                 rList.innerHTML = pendingReqs.map(r => `
                     <div class="link-item">
                         <div>
-                            <div class="name">User: ${escapeHTML(r.linkName)} | Plan: ${r.plan} (${r.days} Days)</div>
-                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref No: <b>${escapeHTML(r.transactionId || 'None')}</b></div>
+                            <div class="name">User: ${r.linkName} | Plan: ${r.plan} (${r.days} Days)</div>
+                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref: <b>${r.transactionId || 'N/A'}</b></div>
                         </div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
@@ -802,7 +762,6 @@
                 `).join('');
             }
 
-            // Load Pricing & Settings
             if (sData.pricing) {
                 const pr = sData.pricing.pricing || {};
                 if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
@@ -823,7 +782,7 @@
                 credentials: 'include',
                 body: JSON.stringify({ action })
             });
-            showToast(`User ${action}! Removed from pending list.`, 'success');
+            showToast(`User ${action}! Removed from pending.`, 'success');
             loadRenewalSystem();
         }
 
@@ -858,7 +817,124 @@
             showToast('Renewal settings updated!', 'success');
         }
 
-        // URL SHORTENER
+        // ==================== 📱 BLOCKED ATTACKERS LIST WITH UNBLOCK ====================
+        async function loadBlockedDevices() {
+            const list = document.getElementById('deviceList');
+            const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
+            const d = await res.json();
+            if (!d.devices?.length) {
+                return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No permanently blocked attackers currently.</p>';
+            }
+            list.innerHTML = d.devices.map(dev => `
+                <div class="blocked-card-item">
+                    <div>
+                        <div class="dev-title">⛔ ${dev.deviceName || 'Visitor Device'} <span style="font-size:11px;color:#f87171;font-weight:600;">(${dev.deviceType || 'Mobile'})</span></div>
+                        <div class="dev-meta">
+                            <span>🌐 IP: <b>${dev.ip}</b></span>
+                            <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts}/3</b></span>
+                            <span>🚨 Reason: <span style="color:#fca5a5;">${dev.reason}</span></span>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock Device</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function unblockDev(id) {
+            if (!confirm('Unblock this device so they can access the login page again?')) return;
+            const res = await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
+            const d = await res.json();
+            if (d.success) {
+                showToast('✅ Device unblocked successfully!', 'success');
+                loadBlockedDevices();
+            }
+        }
+
+        async function loadSecretKey() {
+            const res = await fetch('/api/admin/secret-key', { credentials: 'include' });
+            const d = await res.json();
+            if (d.success) document.getElementById('currentSecretKey').value = d.secretKey;
+        }
+
+        async function changeSecretKey() {
+            const currentSecretKey = document.getElementById('currentSecretKey').value;
+            const newSecretKey = document.getElementById('newSecretKey').value.trim();
+            if (!newSecretKey) return showToast('Enter new key', 'error');
+            const res = await fetch('/api/admin/secret-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ currentSecretKey, newSecretKey })
+            });
+            const d = await res.json();
+            if (d.success) {
+                showToast('Secret key updated!', 'success');
+                document.getElementById('currentSecretKey').value = newSecretKey;
+                document.getElementById('newSecretKey').value = '';
+            } else showToast(d.error, 'error');
+        }
+
+        async function loadContactInfo() {
+            try {
+                const res = await fetch('/api/settings');
+                const d = await res.json();
+                if (d) {
+                    if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
+                    if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
+                    if (d.background) {
+                        document.getElementById('bgImgUrl').value = d.background;
+                        document.getElementById('bgPreviewImg').src = d.background;
+                        document.getElementById('bgImagePreview').classList.add('show');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function updateContactInfo() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const phone = document.getElementById('adminPhone').value.trim();
+            await fetch('/api/admin/update-contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ email, phone })
+            });
+            showToast('Contact info saved', 'success');
+        }
+
+        async function saveBackground() {
+            const bg = document.getElementById('bgImgUrl').value.trim();
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
+            document.getElementById('bgPreviewImg').src = bg;
+            document.getElementById('bgImagePreview').classList.add('show');
+            showToast('Background updated', 'success');
+        }
+
+        async function removeBackground() {
+            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
+            document.getElementById('bgImgUrl').value = '';
+            document.getElementById('bgImagePreview').classList.remove('show');
+            showToast('Background removed', 'info');
+        }
+
+        async function changePasscode() {
+            const oldP = document.getElementById('oldPasscode').value;
+            const newP = document.getElementById('newPasscode').value;
+            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
+            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
+            const d = await res.json();
+            if (d.success) showToast('✅ Passcode updated!', 'success');
+            else showToast('❌ ' + d.error, 'error');
+        }
+
+        // SHORT LINKS
+        function toggleAppScheme() {
+            const chk = document.getElementById('shortAppOpen').checked;
+            document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
+        }
+
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links', { credentials: 'include' });
@@ -867,7 +943,7 @@
             list.innerHTML = d.links.map(l => `
                 <div class="link-item">
                     <div>
-                        <div class="name">${escapeHTML(l.title)}</div>
+                        <div class="name">${l.title}</div>
                         <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
                     </div>
                     <div>
@@ -902,89 +978,6 @@
             loadShortLinks();
         }
 
-        // DEVICES & SETTINGS
-        async function loadBlockedDevices() {
-            const list = document.getElementById('deviceList');
-            const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-            const d = await res.json();
-            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices currently.</p>';
-            list.innerHTML = d.devices.map(dev => `
-                <div class="link-item" style="border-left-color:var(--danger);">
-                    <div>
-                        <div class="name">⛔ ${dev.deviceName} (${dev.ip})</div>
-                        <div class="details">Attempts: <b>${dev.attempts}</b> | Reason: <span style="color:var(--danger);">${dev.reason}</span></div>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function unblockDev(id) {
-            await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
-            showToast('Device unblocked successfully!', 'success');
-            loadBlockedDevices();
-        }
-
-        async function loadSecretKey() {
-            const res = await fetch('/api/admin/secret-key', { credentials: 'include' });
-            const d = await res.json();
-            if (d.success) document.getElementById('currentSecretKey').value = d.secretKey;
-        }
-
-        async function changeSecretKey() {
-            const currentSecretKey = document.getElementById('currentSecretKey').value;
-            const newSecretKey = document.getElementById('newSecretKey').value.trim();
-            if (!newSecretKey) return showToast('Enter new key', 'error');
-            const res = await fetch('/api/admin/secret-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ currentSecretKey, newSecretKey })
-            });
-            const d = await res.json();
-            if (d.success) {
-                showToast('Secret key updated!', 'success');
-                document.getElementById('currentSecretKey').value = newSecretKey;
-                document.getElementById('newSecretKey').value = '';
-            } else showToast(d.error, 'error');
-        }
-
-        async function updateContactInfo() {
-            const email = document.getElementById('adminEmail').value.trim();
-            const phone = document.getElementById('adminPhone').value.trim();
-            await fetch('/api/admin/update-contact', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email, phone })
-            });
-            showToast('Contact info saved', 'success');
-        }
-
-        async function saveBackground() {
-            const bg = document.getElementById('bgImgUrl').value.trim();
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
-            showToast('Background updated', 'success');
-        }
-
-        async function removeBackground() {
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
-            document.getElementById('bgImgUrl').value = '';
-            showToast('Background removed', 'info');
-        }
-
-        async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode').value;
-            const newP = document.getElementById('newPasscode').value;
-            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
-            const d = await res.json();
-            if (d.success) showToast('✅ Passcode updated!', 'success');
-            else showToast('❌ ' + d.error, 'error');
-        }
-
         function setTheme(t) {
             document.body.className = t;
             document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
@@ -996,10 +989,16 @@
             window.location.href = '/admin/login.html';
         }
 
-        // Initialize Everything on Load
+        function installApp() {
+            showToast('Use browser menu -> Add to Home screen to install app', 'info');
+        }
+
         loadStats();
         loadLinks();
         loadRenewalSystem();
+        loadContactInfo();
+        loadSecretKey();
+        loadBlockedDevices();
         setInterval(loadStats, 5000);
     </script>
 </body>
