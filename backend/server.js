@@ -20,6 +20,7 @@ const Link = require('./models/Link');
 const Stats = require('./models/Stats');
 const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
+const RenewalUser = require('./models/RenewalUser');
 const Pricing = require('./models/Pricing');
 const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
@@ -30,30 +31,37 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
+// Security Module
 const Security = require('./config/security');
 
+// Connect to MongoDB
 connectDB();
 
-// ==================== Configuration ====================
+// ==================== Environment Variables ====================
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10;
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
+// Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
+// ==================== Email Transporter ====================
 let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
+        }
     });
 }
 
-// ==================== Database Initialization ====================
+// ==================== Initialize Default Data ====================
 async function initializeDatabase() {
     try {
         let admin = await User.findOne();
@@ -67,8 +75,19 @@ async function initializeDatabase() {
                 secretKey: 'admin@2024'
             });
             console.log('✅ Admin initialized with passcode: 951753');
+
+            if (ENABLE_2FA) {
+                const secret = Security.generate2FASecret();
+                await TwoFactorAuth.create({
+                    userId: 'admin',
+                    secret: secret.base32,
+                    backupCodes: Security.generateBackupCodes(),
+                    isEnabled: true,
+                    verifiedAt: new Date()
+                });
+                console.log('✅ 2FA enabled for admin');
+            }
         } else {
-            // Ensure passcode hash matches 951753
             admin.passcode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
             if (!admin.secretKey) admin.secretKey = 'admin@2024';
             await admin.save();
@@ -76,7 +95,10 @@ async function initializeDatabase() {
         }
 
         const statsExists = await Stats.findOne();
-        if (!statsExists) await Stats.create({});
+        if (!statsExists) {
+            await Stats.create({});
+            console.log('✅ Stats initialized');
+        }
 
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
@@ -86,28 +108,36 @@ async function initializeDatabase() {
                 buttonText: 'Claim Now',
                 subtitle: 'Tap below to unlock your reward'
             });
+            console.log('✅ Popup settings initialized');
         }
 
         const pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
                 pricing: {
-                    '3days': 50, '7days': 100, '15days': 200, '1month': 500,
-                    '3months': 1200, '6months': 2000, '12months': 3500
+                    '7days': 100,
+                    '15days': 200,
+                    '30days': 400,
+                    '90days': 1000,
+                    '1year': 3000
                 },
                 paymentSettings: {
                     method: 'UPI',
                     details: { upiId: 'admin@upi', qrCode: null, text: '' }
                 },
-                whatsappNumber: '916372923348'
+                whatsappNumber: '916372923348',
+                autoPaymentEnabled: true
             });
+            console.log('✅ Pricing initialized');
         }
 
         await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        console.log('✅ Expired sessions cleaned');
     } catch (error) {
-        console.error('Database initialization error:', error);
+        console.error('❌ Database initialization error:', error);
     }
 }
+
 initializeDatabase();
 
 // ==================== Security Headers ====================
@@ -136,17 +166,30 @@ app.use((req, res, next) => {
     next();
 });
 
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 600,
-    message: { error: 'Too many requests, please try again later.' }
+    message: 'Too many requests, please try again later.'
 });
 app.use('/api', globalLimiter);
+
+const deviceAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: MAX_LOGIN_ATTEMPTS,
+    keyGenerator: (req) => {
+        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+    },
+    message: 'Too many login attempts from this device.'
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// ==================== JWT & Token Helpers ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -171,30 +214,62 @@ function getDeviceId(req) {
     const userAgent = req.headers['user-agent'] || 'unknown';
     const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
     const deviceKey = crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
+    return { ip, userAgent, fingerprint, deviceKey };
+}
+
+function getDeviceDetails(req) {
+    const userAgent = req.headers['user-agent'] || 'Unknown';
     let deviceName = 'Browser';
     let deviceType = 'Desktop';
-    if (/android/i.test(userAgent)) { deviceName = 'Android Device'; deviceType = 'Mobile'; }
-    else if (/iphone|ipad|ipod/i.test(userAgent)) { deviceName = 'iOS Device'; deviceType = 'Mobile'; }
-    else if (/windows/i.test(userAgent)) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
-    else if (/macintosh/i.test(userAgent)) { deviceName = 'Mac'; deviceType = 'Desktop'; }
-    else if (/linux/i.test(userAgent)) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
-    return { ip, userAgent, fingerprint, deviceKey, deviceName, deviceType };
+
+    if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('Mac')) { deviceName = 'Mac'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('Linux')) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('iPhone')) { deviceName = 'iPhone'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('iPad')) { deviceName = 'iPad'; deviceType = 'Tablet'; }
+    else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('Chrome')) { deviceName = 'Chrome Browser'; deviceType = 'Browser'; }
+    else if (userAgent.includes('Firefox')) { deviceName = 'Firefox Browser'; deviceType = 'Browser'; }
+
+    return { deviceName, deviceType };
 }
 
+// ==================== Logging Function ====================
+async function logAdminAction(userId, action, details = {}, req = null) {
+    try {
+        const ip = req?.ip || req?.connection?.remoteAddress || null;
+        const userAgent = req?.headers?.['user-agent'] || null;
+        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
+    } catch (error) {
+        console.error('❌ Logging error:', error);
+    }
+}
+
+// ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { deviceKey, fingerprint, ip } = getDeviceId(req);
+    
     const admin = await User.findOne();
-    if (admin && fingerprint === admin.fingerprint && ip === admin.ip) return null;
-    return await BlockedDevice.findOne({
-        deviceKey,
+    const adminFingerprint = admin?.fingerprint || null;
+    const adminIp = admin?.ip || null;
+    
+    if (fingerprint === adminFingerprint && ip === adminIp) {
+        return null;
+    }
+    
+    const blocked = await BlockedDevice.findOne({
+        deviceKey: deviceKey,
         $or: [
-            { isPermanent: true },
-            { blockedUntil: { $gt: new Date() } }
+            { blockedUntil: { $gt: new Date() } },
+            { isPermanent: true }
         ]
     });
+    
+    return blocked;
 }
 
-async function createSession(token, userId, csrfToken, ip, userAgent) {
+// ==================== Session Management ====================
+async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
     const session = new Session({
         token, userId, csrfToken, ip, userAgent,
         expiresAt: new Date(Date.now() + SESSION_TIMEOUT * 60 * 1000),
@@ -205,24 +280,41 @@ async function createSession(token, userId, csrfToken, ip, userAgent) {
     return session;
 }
 
-// Resilient Auth Middleware
+async function validateSession(token) {
+    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
+    if (!session) return null;
+    session.lastActivity = new Date();
+    await session.save();
+    return session;
+}
+
+// ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        return res.status(403).json({
+            error: 'permanently_blocked',
+            message: 'Your device is permanently blocked. Contact administrator.',
+            permanent: true
+        });
+    }
+    
     const token = req.cookies?.adminToken || req.headers['authorization']?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'Authentication required' });
-
+    
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-
+    
     req.user = decoded;
     next();
 }
 
-// ==================== PUBLIC APIS ====================
+// ==================== PUBLIC ROUTES ====================
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
         res.json({ number: pricing?.whatsappNumber || '916372923348' });
-    } catch (e) {
+    } catch (error) {
         res.json({ number: '916372923348' });
     }
 });
@@ -237,7 +329,7 @@ app.post('/api/whatsapp-number', async (req, res) => {
         await pricing.save();
         res.json({ success: true, number });
     } catch (error) {
-        res.status(500).json({ error: 'Failed' });
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
     }
 });
 
@@ -261,27 +353,50 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     }
 });
 
+app.get('/api/parent-link', async (req, res) => {
+    try {
+        const links = await Link.find({});
+        if (links.length > 0) {
+            const firstLink = links[0];
+            if (!firstLink.dashboardId) {
+                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+                await firstLink.save();
+            }
+            res.json({
+                url: '/user-dashboard/' + firstLink.dashboardId,
+                linkName: firstLink.name,
+                linkId: firstLink.id
+            });
+        } else {
+            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, linkId: null });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
+    }
+});
+
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
         res.json({
             pricing: pricingDoc?.pricing || {},
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
-            whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
+            whatsappNumber: pricingDoc?.whatsappNumber || '916372923348',
+            autoPaymentEnabled: pricingDoc?.autoPaymentEnabled !== false
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
     }
 });
 
-// ✅ LINK RESOLVER (Always active, no false expiry/suspension)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
         let link = await Link.findOne({ id: rawId });
         if (!link) link = await Link.findOne({ dashboardId: rawId });
 
-        // Fallback for default or missing linkId
         if (!link && (rawId === 'default' || !rawId)) {
             return res.json({
                 id: 'default',
@@ -305,7 +420,6 @@ app.get('/api/link/:id', async (req, res) => {
             return res.status(403).json({ error: 'disabled', message: 'Link disabled', status: 'disabled' });
         }
 
-        // Only expire if expiryDate is genuinely a valid date in the past
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
@@ -313,7 +427,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Track Visit
         const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
         let stats = await Stats.findOne();
@@ -360,13 +473,12 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             await link.save();
         }
         let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
-
-        stats.totalClaims = (stats.totalClaims || 0) + 1;
-        if (!stats.dailyClaims) stats.dailyClaims = new Map();
-        stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
-        await stats.save();
-
+        if (stats) {
+            stats.totalClaims = (stats.totalClaims || 0) + 1;
+            if (!stats.dailyClaims) stats.dailyClaims = new Map();
+            stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
+            await stats.save();
+        }
         res.json({ success: true, claims: stats?.totalClaims || 0 });
     } catch (error) {
         res.status(500).json({ error: 'Failed to track claim' });
@@ -389,31 +501,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             dailyVisits: link.dailyVisits ? Object.fromEntries(link.dailyVisits) : {},
             dailyClaims: link.dailyClaims ? Object.fromEntries(link.dailyClaims) : {}
         });
-    } catch (e) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-app.get('/api/parent-link', async (req, res) => {
-    try {
-        const links = await Link.find({});
-        if (links.length > 0) {
-            const firstLink = links[0];
-            if (!firstLink.dashboardId) {
-                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-                await firstLink.save();
-            }
-            res.json({
-                url: '/user-dashboard/' + firstLink.dashboardId,
-                linkName: firstLink.name,
-                linkId: firstLink.id
-            });
-        } else {
-            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, linkId: null });
-        }
     } catch (error) {
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
@@ -424,12 +513,7 @@ app.get('/api/settings', async (req, res) => {
         res.json({
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
-            popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            },
+            popupSettings: popupSettings || {},
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
@@ -464,7 +548,6 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-// ✅ BLOCK STATUS CHECK (Live UI lock for banned devices)
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const blocked = await isDeviceBlocked(req);
@@ -477,7 +560,281 @@ app.get('/api/admin/block-status', async (req, res) => {
             });
         }
         res.json({ blocked: false });
-    } catch (e) { res.json({ blocked: false }); }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to check block status' });
+    }
+});
+
+// ==================== 🔄 USER SIGNUP, SIGNIN & RENEWAL APIS ====================
+app.post('/api/user/signup', async (req, res) => {
+    try {
+        const { name, email, phone } = req.body;
+        if (!name || !email || !phone) return res.status(400).json({ error: 'All fields are required' });
+
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim();
+
+        const existing = await RenewalUser.findOne({ $or: [{ email: cleanEmail }, { phone: cleanPhone }] });
+        if (existing) {
+            return res.status(400).json({ error: 'User with this email or phone already exists', status: existing.status });
+        }
+
+        const newUser = new RenewalUser({
+            name: name.trim(),
+            email: cleanEmail,
+            phone: cleanPhone,
+            status: 'pending'
+        });
+        await newUser.save();
+
+        res.json({ success: true, message: 'Registration submitted. Awaiting admin approval.' });
+    } catch (e) {
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+app.post('/api/user/signin', async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        if (!email || !phone) return res.status(400).json({ error: 'Email and phone are required' });
+
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim();
+
+        const user = await RenewalUser.findOne({ email: cleanEmail, phone: cleanPhone });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found. Please sign up first.' });
+        }
+
+        if (user.status === 'pending') {
+            return res.status(403).json({ error: 'Account is pending approval from Admin.' });
+        }
+        if (user.status === 'rejected') {
+            return res.status(403).json({ error: 'Account has been rejected by Admin.' });
+        }
+
+        res.json({
+            success: true,
+            user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+app.post('/api/user/link-details', async (req, res) => {
+    try {
+        const { userName, linkInput } = req.body;
+        if (!linkInput) return res.status(400).json({ error: 'Link URL or ID required' });
+
+        let searchId = linkInput.trim();
+        if (searchId.includes('?link=')) {
+            searchId = searchId.split('?link=').split('&')[0];
+        } else if (searchId.includes('/v/')) {
+            searchId = searchId.split('/v/').split('?')[0];
+        }
+
+        let link = await Link.findOne({
+            $or: [{ id: searchId }, { dashboardId: searchId }]
+        });
+
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
+            return res.status(403).json({ error: `This link does not belong to user "${userName}". Name mismatch!` });
+        }
+
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const dailyV = link.dailyVisits || new Map();
+        const dailyC = link.dailyClaims || new Map();
+
+        let v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
+
+        for (const [date, count] of dailyV) {
+            const d = new Date(date);
+            if (d >= oneDayAgo) v24h += count;
+            if (d >= sevenDaysAgo) v7d += count;
+            if (d >= thirtyDaysAgo) v30d += count;
+        }
+
+        for (const [date, count] of dailyC) {
+            const d = new Date(date);
+            if (d >= oneDayAgo) c24h += count;
+            if (d >= sevenDaysAgo) c7d += count;
+            if (d >= thirtyDaysAgo) c30d += count;
+        }
+
+        let daysLeft = null;
+        let isEligibleForRenewal = false;
+        if (link.expiryDate) {
+            const diffTime = new Date(link.expiryDate) - now;
+            daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 3) isEligibleForRenewal = true;
+        } else {
+            daysLeft = 'Lifetime';
+        }
+
+        const pricing = await Pricing.findOne();
+
+        res.json({
+            success: true,
+            link: {
+                id: link.id,
+                name: link.name,
+                created: link.created,
+                expiryDate: link.expiryDate,
+                status: link.status,
+                daysLeft,
+                isEligibleForRenewal,
+                totalVisits: link.visits || 0,
+                totalClaims: link.claims || 0,
+                todayVisits: dailyV.get(today) || 0,
+                todayClaims: dailyC.get(today) || 0,
+                v24h, c24h, v7d, c7d, v30d, c30d
+            },
+            pricing: pricing?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+            paymentSettings: pricing?.paymentSettings || { details: { upiId: 'admin@upi' } },
+            autoPaymentEnabled: pricing?.autoPaymentEnabled !== false,
+            whatsappNumber: pricing?.whatsappNumber || '916372923348'
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch link data' });
+    }
+});
+
+app.post('/api/user/renew-payment', async (req, res) => {
+    try {
+        const { linkId, plan, days, amount, refNo, userName, isManual } = req.body;
+        if (!linkId || !plan || !refNo) return res.status(400).json({ error: 'Transaction ref and plan required' });
+
+        const pricing = await Pricing.findOne();
+        const autoEnabled = pricing?.autoPaymentEnabled !== false;
+
+        if (!isManual && autoEnabled) {
+            if (refNo.trim().length >= 8) {
+                const link = await Link.findOne({ id: linkId });
+                if (link) {
+                    const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+                    curExpiry.setDate(curExpiry.getDate() + parseInt(days));
+                    link.expiryDate = curExpiry;
+                    link.status = 'active';
+                    await link.save();
+                }
+
+                await RenewalRequest.create({
+                    id: 'req_' + Date.now(),
+                    linkId,
+                    linkName: userName,
+                    plan,
+                    days: parseInt(days),
+                    amount: parseInt(amount),
+                    transactionId: refNo,
+                    status: 'approved',
+                    paidAt: new Date(),
+                    approvedAt: new Date()
+                });
+
+                return res.json({ success: true, message: `Payment verified! Link extended for ${days} days.` });
+            } else {
+                return res.status(400).json({ error: 'Payment verification failed! Invalid Transaction Ref No.' });
+            }
+        }
+
+        await RenewalRequest.create({
+            id: 'req_' + Date.now(),
+            linkId,
+            linkName: userName,
+            plan,
+            days: parseInt(days),
+            amount: parseInt(amount),
+            transactionId: refNo,
+            status: 'pending'
+        });
+
+        res.json({ success: true, manual: true, message: 'Renewal request submitted. Admin will verify screenshot and approve.' });
+    } catch (e) {
+        res.status(500).json({ error: 'Payment processing error' });
+    }
+});
+
+// ==================== ADMIN: USERS & RENEWAL APIS ====================
+app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
+    try {
+        const users = await RenewalUser.find().sort({ createdAt: -1 });
+        res.json({ success: true, users });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res) => {
+    try {
+        const { action } = req.body;
+        const user = await RenewalUser.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        user.status = action;
+        await user.save();
+        res.json({ success: true, message: `User ${action} successfully` });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
+    try {
+        const pricing = await Pricing.findOne();
+        const requests = await RenewalRequest.find().sort({ createdAt: -1 });
+        res.json({ success: true, pricing, requests });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, autoPaymentEnabled, upiId, whatsappNumber } = req.body;
+        let p = await Pricing.findOne();
+        if (!p) p = new Pricing();
+        if (pricing) p.pricing = pricing;
+        if (autoPaymentEnabled !== undefined) p.autoPaymentEnabled = autoPaymentEnabled;
+        if (upiId) p.paymentSettings = { method: 'UPI', details: { upiId } };
+        if (whatsappNumber) p.whatsappNumber = whatsappNumber;
+        await p.save();
+        res.json({ success: true, message: 'Settings saved' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
+    try {
+        const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
+        if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
+
+        const link = await Link.findOne({ id: reqDoc.linkId });
+        if (link) {
+            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+            curExpiry.setDate(curExpiry.getDate() + reqDoc.days);
+            link.expiryDate = curExpiry;
+            link.status = 'active';
+            await link.save();
+        }
+
+        reqDoc.status = 'approved';
+        reqDoc.approvedAt = new Date();
+        await reqDoc.save();
+
+        res.json({ success: true, message: 'Renewal approved and link extended!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 // ================================================================
@@ -485,8 +842,17 @@ app.get('/api/admin/block-status', async (req, res) => {
 // ================================================================
 app.post('/api/admin/login', async (req, res) => {
     try {
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            return res.status(403).json({
+                error: 'permanently_blocked',
+                message: '⛔ This device is permanently banned from accessing the admin portal.'
+            });
+        }
+
         const { passcode } = req.body;
-        const { deviceKey, fingerprint, ip, deviceName, deviceType } = getDeviceId(req);
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
         const cleanPass = (passcode || '').toString().trim();
         const envPass = (process.env.ADMIN_PASSCODE || '951753').toString().trim();
 
@@ -498,7 +864,6 @@ app.post('/api/admin/login', async (req, res) => {
         let isValid = false;
         if (cleanPass === '951753' || cleanPass === envPass) {
             isValid = true;
-            // Auto-heal hash in MongoDB so it stays permanently synced
             if (admin) {
                 admin.passcode = bcrypt.hashSync(cleanPass, 10);
                 admin.fingerprint = fingerprint;
@@ -603,11 +968,10 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
 
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
-        const popup = await PopupSettings.findOne();
-        if (popup) {
-            popup.image = req.body.background || null;
-            await popup.save();
-        }
+        let popup = await PopupSettings.findOne();
+        if (!popup) popup = new PopupSettings();
+        popup.image = req.body.background || null;
+        await popup.save();
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update background' });
@@ -996,7 +1360,8 @@ app.get('/s/:code', async (req, res) => {
         link.lastClicked = new Date();
         await link.save();
 
-        const { ip, userAgent, deviceName, deviceType } = getDeviceId(req);
+        const { ip, userAgent } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
         await ShortLinkClick.create({
             shortLinkId: link._id, ip, userAgent, deviceName, deviceType,
             referer: req.headers.referer || null
@@ -1096,7 +1461,7 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-// Page Routes
+// ==================== PAGE ROUTES ====================
 app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
 
 app.get('/admin/secret-gateway', (req, res) => {
@@ -1118,11 +1483,26 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 
 app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
 app.get('/v/:id', (req, res) => sendAppFile(res, 'video-lock.html'));
+app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-// Start Server
+// ==================== SESSION CLEANUP INTERVAL ====================
+setInterval(async () => {
+    try {
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+        await BlockedDevice.deleteMany({ 
+            blockedUntil: { $lt: new Date() },
+            isPermanent: false
+        });
+    } catch (error) {
+        console.error('❌ Session cleanup error:', error);
+    }
+}, 60 * 60 * 1000);
+
+// ==================== START SERVER ====================
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Secure Server running on port ${port}`);
 });
