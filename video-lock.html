@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Reward Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 🛡️ FIX FOR YOUTUBE ERROR 153 -->
+    <!-- 🛡️ CRITICAL FIX FOR YOUTUBE ERROR 153 -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
@@ -102,7 +102,7 @@
         }
         @keyframes pulseLive { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
 
-        /* 🚫 USER CANNOT PAUSE OR STOP VIDEO */
+        /* 🚫 UNSTOPPABLE TRANSPARENT BARRIER (User cannot tap to pause or stop video) */
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             background: transparent; pointer-events: auto !important;
@@ -228,7 +228,7 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* 📸 STRICT 16:9 BANNER CONTAINER (NO CROPPING) */
+        /* 📸 STRICT 16:9 BANNER CONTAINER */
         .popup-image-container {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -452,7 +452,7 @@
                     <span class="live-dot"></span> HD 1080P
                 </div>
                 <div id="videoPlayer"></div>
-                <!-- 🚫 Transparent barrier: User cannot tap on video to pause or stop it -->
+                <!-- 🚫 Transparent touch barrier: User cannot tap to pause or stop video -->
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
@@ -485,16 +485,16 @@
         </div>
     </div>
 
-    <!-- ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
+    <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <!-- 16:9 Banner Container -->
+            <!-- Strict 16:9 Banner Container -->
             <div class="popup-image-container" id="popupImageContainer">
                 <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
                     <span>Reward Banner (16:9)</span>
                 </div>
-                <img id="popupImg" class="popup-main-img" referrerpolicy="strict-origin-when-cross-origin" style="display:none;" alt="16:9 Banner Image">
+                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="16:9 Banner Image">
             </div>
 
             <div class="popup-pill-tag">
@@ -523,7 +523,31 @@
         let buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         let headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video & Unlock Reward';
 
-        // 100% Reliable YouTube ID Extractor (Shorts, Watch, youtu.be, Embed)
+        document.getElementById('headline').textContent = headline;
+        document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Now';
+
+        // Robust YouTube URL Parser
+        function fixYouTubeUrl(url) {
+            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
+            const clean = url.trim();
+            if (clean.includes('youtube.com/watch?v=')) {
+                const parts = clean.split('v=');
+                const videoId = parts ? parts.split('&')[0] : '';
+                return 'https://youtu.be/' + videoId;
+            }
+            if (clean.includes('youtu.be/')) return clean;
+            if (clean.includes('youtube.com/embed/')) return clean;
+            if (clean.includes('youtube.com/shorts/')) {
+                const parts = clean.split('shorts/');
+                const videoId = parts ? parts.split('?')[0] : '';
+                return 'https://youtu.be/' + videoId;
+            }
+            if (clean.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + clean;
+            return clean;
+        }
+        videoUrl = fixYouTubeUrl(videoUrl);
+
+        // 100% Reliable YouTube ID Extractor
         function extractYouTubeId(url) {
             if (!url) return null;
             const clean = url.trim();
@@ -549,12 +573,12 @@
         }
         floodHistoryLock();
 
-        // Har back press par turant 20 nayi history entries flood hongi (User 2 baar fast back press karke bhi exit nahi ho sakega)
+        // Har back press par 25 nayi states flood hongi (Double press par exit nahi hoga)
         window.addEventListener('popstate', function(e) {
             if (isExiting) return;
 
             if (!isUnlocked) {
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < 25; i++) {
                     history.pushState({ locked: true, t: Date.now() + i }, null, window.location.href);
                 }
                 if (navigator.vibrate) navigator.vibrate(60);
@@ -567,12 +591,12 @@
             }
         });
 
-        // Background interval to continuously maintain history stack
+        // Background interval check to ensure history stack is never empty
         setInterval(() => {
             if (!isUnlocked) {
                 history.pushState({ locked: true }, null, window.location.href);
             }
-        }, 1200);
+        }, 1000);
 
         document.addEventListener('keydown', function(e) {
             if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4')) {
@@ -647,10 +671,7 @@
                 const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - (isMobile ? 15 : 20);
                 el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
                 el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
-                el.style.left = (50 + Math.random() * 6 - 3) + '%';
-                el.style.top = (45 + Math.random() * 10 - 5) + '%';
-                el.style.animationDelay = (Math.random() * 0.15) + 's';
-                el.style.transform = `rotate(${Math.random() * 360}deg)`;
+                el.style.left = '50%'; el.style.top = '45%';
                 container.appendChild(el);
             }
 
@@ -668,7 +689,6 @@
                 el.style.top = '-10%';
                 const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
                 el.style.animationDuration = duration + 's';
-                el.style.animationDelay = (Math.random() * 0.4) + 's';
                 container.appendChild(el);
             }
 
@@ -679,7 +699,7 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== 16:9 BANNER LOADER (UID BACKGROUND EXCLUDED) ====================
+        // ==================== 16:9 BANNER LOADER (ROBUST ONLOAD & NO UID BACKGROUND) ====================
         async function loadPopupData() {
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
@@ -687,13 +707,14 @@
                     const data = await response.json();
                     
                     if (data.video && data.video.trim().length > 5) {
-                        videoUrl = data.video.trim();
+                        videoUrl = fixYouTubeUrl(data.video.trim());
                     }
                     if (data.claim && data.claim.trim().length > 1) {
                         claimUrl = data.claim.trim();
                     }
                     if (data.buttonText) {
                         buttonText = data.buttonText;
+                        document.getElementById('claimBtn').textContent = '🎁 ' + buttonText;
                     }
                     if (data.headline) {
                         headline = data.headline;
@@ -705,24 +726,39 @@
                     if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
                     if (popup.buttonText) document.getElementById('popupClaimBtn').querySelector('span').textContent = '🔓 ' + popup.buttonText;
                     
-                    // Link's own 16:9 banner check only (No fallback to 9:16 background)
-                    const bannerImg = (popup.image && popup.image.trim().length > 4) ? popup.image.trim() : 
-                                     (data.image && data.image.trim().length > 4 ? data.image.trim() : null);
+                    // Comprehensive Banner URL Lookup
+                    const bannerImg = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') ||
+                                     (popup.image && popup.image.trim().length > 4 ? popup.image.trim() : null) ||
+                                     (data.image && data.image.trim().length > 4 ? data.image.trim() : null) ||
+                                     (data.banner && data.banner.trim().length > 4 ? data.banner.trim() : null);
 
                     if (bannerImg) {
                         const img = document.getElementById('popupImg');
-                        img.referrerPolicy = 'strict-origin-when-cross-origin';
-                        img.src = bannerImg;
-                        img.onload = () => {
+                        img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection on image hosts
+                        
+                        // Attach onload BEFORE setting src to prevent missing cached loads
+                        img.onload = function() {
                             img.style.display = 'block';
                             document.getElementById('popupPlaceholder').style.display = 'none';
                         };
+                        img.onerror = function() {
+                            img.style.display = 'none';
+                            document.getElementById('popupPlaceholder').style.display = 'flex';
+                        };
+                        
+                        img.src = bannerImg;
+                        
+                        // Immediate check if image is already cached
+                        if (img.complete && img.naturalWidth > 0) {
+                            img.style.display = 'block';
+                            document.getElementById('popupPlaceholder').style.display = 'none';
+                        }
                         return;
                     }
                 }
             } catch (e) {}
 
-            // Default placeholder if no banner uploaded for this link
+            // Placeholder shows if no image is uploaded
             document.getElementById('popupImg').style.display = 'none';
             document.getElementById('popupPlaceholder').style.display = 'flex';
         }
@@ -747,9 +783,12 @@
             isPopupClaimed = true;
             hidePopup();
 
+            // ✨ POPUP CLICK CELEBRATION EFFECT (Confetti + Sound + Animations) ✨
+            if (!isCelebrationActive) triggerCelebration();
+
             floodHistoryLock();
 
-            // VIDEO IS LOCKED INITIALLY
+            // VIDEO IS STRICTLY LOCKED AT FIRST
             isUnlocked = false;
             
             setTimeout(() => {
@@ -844,9 +883,9 @@
             if (ytVideoId) {
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
-                // 🛡️ referrerpolicy="strict-origin-when-cross-origin" eliminates Error 153
+                // 🛡️ referrerpolicy="strict-origin-when-cross-origin" eliminates Error 153 on YouTube iframe
                 iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-                // controls=0 & disablekb=1 prevents pause/seek
+                // controls=0 & disablekb=1 prevents user from stopping or pausing
                 iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
                     '?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
                 iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
@@ -879,7 +918,6 @@
                 onVideoFinished();
             };
             
-            // Auto-resume if user pauses
             video.onpause = function() {
                 if (!isUnlocked) video.play().catch(() => {});
             };
@@ -890,7 +928,7 @@
             });
         }
 
-        // PostMessage listener: auto-resume on pause, unlock on video completion
+        // YouTube postMessage detector: End hone par unlock, Pause hone par auto-resume
         window.addEventListener('message', function(event) {
             try {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
