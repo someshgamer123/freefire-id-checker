@@ -219,33 +219,40 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* 16:9 BANNER CONTAINER (Clean Aspect Ratio, Zero Cropping) */
+        /* 📸 ADAPTIVE BANNER CONTAINER - NO CROPPING, NO GHOST BLACK BOX */
         .popup-image-container {
             width: 100%;
-            aspect-ratio: 16 / 9;
-            border-radius: 16px;
+            max-height: 250px;
+            border-radius: 18px;
             overflow: hidden;
-            background: #060913;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            background: transparent;
         }
 
         .popup-main-img {
-            width: 100%;
-            height: 100%;
+            max-width: 100%;
+            max-height: 250px;
+            width: auto;
+            height: auto;
             object-fit: contain !important;
             object-position: center !important;
             display: block;
             pointer-events: none !important;
-            border-radius: 14px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .popup-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #090d16;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 46px; color: rgba(255, 255, 255, 0.2); gap: 6px; padding: 20px 0;
         }
@@ -484,16 +491,16 @@
         </div>
     </div>
 
-    <!-- ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
+    <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <!-- Strict 16:9 Aspect Ratio Container (No image cropping) -->
+            <!-- Strict Clean Adaptive Banner Container -->
             <div class="popup-image-container" id="popupImageContainer">
                 <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
-                    <span>Reward Banner (16:9)</span>
+                    <span>Reward Banner</span>
                 </div>
-                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="16:9 Banner Image">
+                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="Banner Image">
             </div>
 
             <div class="popup-pill-tag">
@@ -513,7 +520,9 @@
     <script>
         // ==================== CONFIG ====================
         const pathSegments = window.location.pathname.split('/');
-        const linkId = pathSegments[pathSegments.length - 1] || 'default';
+        let linkId = pathSegments[pathSegments.length - 1] || 'default';
+        if (linkId.includes('?')) linkId = linkId.split('?')[0];
+
         const urlParams = new URLSearchParams(window.location.search);
         let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
         let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
@@ -523,36 +532,48 @@
         document.getElementById('headline').textContent = headline;
         document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Now';
 
-        // Robust YouTube Video ID Extractor
-        function extractYouTubeId(url) {
-            if (!url) return null;
+        // Robust YouTube URL Parser
+        function fixYouTubeUrl(url) {
+            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
             const clean = url.trim();
-            if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
-            const match = clean.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-            return match ? match : null;
+            if (clean.includes('youtube.com/watch?v=')) {
+                const parts = clean.split('v=');
+                const videoId = parts ? parts.split('&')[0] : '';
+                return 'https://youtu.be/' + videoId;
+            }
+            if (clean.includes('youtu.be/')) return clean;
+            if (clean.includes('youtube.com/embed/')) return clean;
+            if (clean.includes('youtube.com/shorts/')) {
+                const parts = clean.split('shorts/');
+                const videoId = parts ? parts.split('?')[0] : '';
+                return 'https://youtu.be/' + videoId;
+            }
+            if (clean.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + clean;
+            return clean;
         }
+        videoUrl = fixYouTubeUrl(videoUrl);
 
         // ==================== STATE ====================
-        let backPressCount = 0, isUnlocked = false, isExiting = false;
+        let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
+        let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
         let isClaimTracked = false;
 
         const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-        // ==================== STRICT VIDEO LOCK & BACK PRESS TRAP ====================
-        function pushHistoryTrap() {
-            for (let i = 0; i < 10; i++) {
-                history.pushState({ trap: i }, null, window.location.href);
-            }
+        // ==================== STRICT VIDEO LOCK & BACK PRESS SYSTEM ====================
+        function trackVideoPlay() {
+            if (isVideoPlaying) return;
+            videoPlayCount++;
+            isVideoPlaying = true;
         }
-        pushHistoryTrap();
 
         function handleBackPress() {
             if (isExiting) return true;
 
-            // Agar video complete ho chuki hai, tab normal exit allow karo
+            // Agar video complete ho gayi hai to allow exit
             if (isUnlocked) {
                 isExiting = true;
                 document.body.innerHTML = '';
@@ -560,35 +581,27 @@
                 return true;
             }
 
-            // Agar video poori nahi dekhi gayi hai:
-            // User ko baar baar (kam se kam 6 baar) phone ka back button press karna hoga tab jaake exit hoga
+            // Jab tak video lock hai: user ko lagatar baar baar (6 baar) back press karna hoga
             backPressCount++;
+            history.pushState(null, null, window.location.href);
+
             if (backPressCount >= 6) {
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.href = 'about:blank';
                 return true;
             }
-
-            // Re-lock the history stack
-            history.pushState({ trap: Date.now() }, null, window.location.href);
             return false;
         }
 
-        window.addEventListener('popstate', function() {
-            handleBackPress();
-        });
+        history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', () => handleBackPress());
 
         document.addEventListener('keydown', function(e) {
             if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
                 e.preventDefault(); e.stopPropagation();
-                if (!isUnlocked) {
-                    handleBackPress();
-                } else {
-                    isExiting = true;
-                    document.body.innerHTML = '';
-                    window.location.href = 'about:blank';
-                }
+                if (!isUnlocked) handleBackPress();
+                else { isExiting = true; document.body.innerHTML = ''; window.location.href = 'about:blank'; }
                 return false;
             }
         }, true);
@@ -691,16 +704,19 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== STRICT 16:9 IMAGE LOADING SYSTEM ====================
+        // ==================== STRICT IMAGE LOADING SYSTEM ====================
         async function loadPopupData() {
             try {
-                const response = await fetch(`/api/link/${linkId}`);
+                const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Update latest link details from server
-                    if (data.video) videoUrl = data.video;
-                    if (data.claim) claimUrl = data.claim;
+                    if (data.video && data.video.trim().length > 5) {
+                        videoUrl = fixYouTubeUrl(data.video.trim());
+                    }
+                    if (data.claim && data.claim.trim().length > 1) {
+                        claimUrl = data.claim.trim();
+                    }
                     if (data.buttonText) {
                         buttonText = data.buttonText;
                         document.getElementById('claimBtn').textContent = '🎁 ' + buttonText;
@@ -739,7 +755,7 @@
 
         async function tryFallback() {
             try {
-                const res = await fetch('/api/settings');
+                const res = await fetch(`/api/settings?nocache=${Date.now()}`);
                 if (res.ok) {
                     const s = await res.json();
                     if (s && s.background && s.background.trim().length > 4) {
@@ -772,32 +788,35 @@
             document.body.style.overflow = '';
         }
 
-        // ==================== UNLOCK & PLAY SYSTEM ====================
+        // ==================== UNLOCK & PLAY ====================
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
             hidePopup();
-            
-            // Video starts in LOCKED state until completed
+
+            // Arm the history trap during user tap
+            for (let i = 0; i < 20; i++) {
+                history.pushState(null, null, window.location.href);
+            }
+
+            // Video is STRICTLY LOCKED until finished
             isUnlocked = false;
             backPressCount = 0;
+            
+            if (!isCelebrationActive) triggerCelebration();
             
             setTimeout(() => {
                 document.getElementById('headline').classList.add('show');
                 document.getElementById('claimBtnWrapper').classList.add('show');
                 document.getElementById('chatSection').classList.add('show');
                 loadVideo();
-            }, 200);
-        }
-
-        // Called when user finishes watching the video
-        function onVideoFinished() {
-            if (isUnlocked) return;
-            isUnlocked = true;
-            document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
-            document.getElementById('claimBtn').style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Reward Now';
-            triggerCelebration();
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) forcePlayVideo(iframe);
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(() => {});
+                }, 500);
+            }, 300);
         }
 
         function trackClaimOnce() {
@@ -807,18 +826,20 @@
         }
 
         function handleClaimClick() {
+            // Lock enforcement
             if (!isUnlocked) {
-                alert('⚠️ Please watch the complete video to unlock your reward!');
+                alert('⚠️ Please watch the complete video to unlock the reward!');
                 return;
             }
+
             if (isRedirecting) return;
             isRedirecting = true;
             trackClaimOnce();
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                setTimeout(() => { window.location.replace(claimUrl); }, 300);
+                setTimeout(() => { window.location.replace(claimUrl); }, 400);
             } else {
-                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 300);
+                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 400);
             }
         }
 
@@ -845,6 +866,7 @@
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
+            if (!isCelebrationActive) triggerCelebration();
             unlockAndPlay();
         });
 
@@ -854,7 +876,7 @@
             handleClaimClick();
         });
 
-        // ==================== VIDEO PLAYBACK (YOUTUBE + MP4) ====================
+        // ==================== VIDEO PLAYBACK (YOUTUBE & MP4) ====================
         function forcePlayVideo(iframe) {
             try {
                 iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
@@ -867,30 +889,34 @@
             const container = document.getElementById('videoPlayer');
             container.innerHTML = '';
             
-            const ytVideoId = extractYouTubeId(videoUrl);
-            if (ytVideoId) {
+            // Clean YouTube match with proper regex capturing group
+            const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            if (ytMatch && ytMatch) {
+                const videoId = ytMatch;
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
-                iframe.src = `https://www.youtube.com/embed/${ytVideoId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+                // mute=1 with autoplay=1 allows smooth mobile playback without browser blocking
+                iframe.src = 'https://www.youtube.com/embed/' + videoId +
+                    '?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=0' +
+                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
                 iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 container.appendChild(iframe);
-                
                 iframe.onload = function() {
                     forcePlayVideo(iframe);
                     setTimeout(() => forcePlayVideo(iframe), 400);
                     setTimeout(() => forcePlayVideo(iframe), 1200);
+                    trackVideoPlay();
                 };
                 return;
             }
 
-            // Native MP4/WebM Video Fallback
             const video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
             video.autoplay = true;
-            video.loop = false; // Video poori hone par unlock hoga
+            video.loop = false;
             video.controls = true;
             video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
             const source = document.createElement('source');
@@ -899,23 +925,26 @@
             container.appendChild(video);
             
             video.onended = function() {
-                onVideoFinished();
+                isUnlocked = true;
+                document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
             };
             
-            video.play().catch(() => {
+            video.play().then(() => trackVideoPlay()).catch(() => {
                 video.muted = true;
                 video.play().catch(() => {});
             });
         }
 
-        // Listen for YouTube API State Changes via postMessage
+        // YouTube video completion detector
         window.addEventListener('message', function(event) {
             try {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 if (data && data.event === 'onStateChange') {
-                    if (data.info === 0) { // YT.PlayerState.ENDED (Video watched completely)
-                        onVideoFinished();
-                    } else if (data.info === 1) { // YT.PlayerState.PLAYING
+                    if (data.info === 0) { // 0 = ENDED
+                        isUnlocked = true;
+                        document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
+                        triggerCelebration();
+                    } else if (data.info === 1) {
                         isVideoPlaying = true;
                     }
                 }
@@ -947,7 +976,7 @@
             createFlyingReaction(emoji);
         }
 
-        // ==================== LIVE ACTIVITY CHAT ====================
+        // ==================== ALL 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
         const users = [
             { name: 'GamerPro', emoji: '🎮', vip: true }, { name: 'KingSlayer', emoji: '👑', vip: true }, { name: 'NightWolf', emoji: '🐺', vip: false },
             { name: 'ShadowX', emoji: '🌙', vip: false }, { name: 'BlazeIt', emoji: '🔥', vip: true }, { name: 'SniperPro', emoji: '🎯', vip: false },
