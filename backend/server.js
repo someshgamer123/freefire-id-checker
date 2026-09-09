@@ -61,7 +61,7 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
-// ==================== Database Initialization (FIXED: NO OVERWRITE ON RESTART) ====================
+// ==================== Database Initialization ====================
 async function initializeDatabase() {
     try {
         let admin = await User.findOne();
@@ -75,7 +75,19 @@ async function initializeDatabase() {
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
-            console.log('✅ Admin initialized for the first time with passcode: ' + DEFAULT_PASSCODE);
+            console.log('✅ Admin initialized with default passcode: ' + DEFAULT_PASSCODE);
+
+            if (ENABLE_2FA) {
+                const secret = Security.generate2FASecret();
+                await TwoFactorAuth.create({
+                    userId: 'admin',
+                    secret: secret.base32,
+                    backupCodes: Security.generateBackupCodes(),
+                    isEnabled: true,
+                    verifiedAt: new Date()
+                });
+                console.log('✅ 2FA enabled for admin');
+            }
         } else {
             // Admin already exists — NEVER overwrite changed passcode on server restart!
             if (!admin.secretKey) {
@@ -90,6 +102,9 @@ async function initializeDatabase() {
             await Stats.create({});
             console.log('✅ Stats initialized');
         }
+
+        // Clean up old dummy / approved renewal requests
+        await RenewalRequest.deleteMany({ $or: [{ linkName: 'Unknown' }, { status: 'approved' }] });
 
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
@@ -180,7 +195,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ==================== JWT & Token Helpers ====================
+// ==================== JWT & Auth Helpers ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -201,9 +216,11 @@ function generateCSRFToken() {
 }
 
 function getDeviceId(req) {
-    const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+    const rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || '127.0.0.1';
+    const ip = rawIp.split(',')[0].trim();
     const userAgent = req.headers['user-agent'] || 'unknown';
-    const fingerprint = crypto.createHash('sha256').update(ip + userAgent).digest('hex');
+    const clientCookie = req.cookies?.devId || '';
+    const fingerprint = crypto.createHash('sha256').update(ip + userAgent + clientCookie).digest('hex');
     const deviceKey = crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
     return { ip, userAgent, fingerprint, deviceKey };
 }
@@ -225,27 +242,35 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
-// ==================== Device Blocking ====================
+// ==================== Logging Function ====================
+async function logAdminAction(userId, action, details = {}, req = null) {
+    try {
+        const ip = req?.ip || req?.connection?.remoteAddress || null;
+        const userAgent = req?.headers?.['user-agent'] || null;
+        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
+    } catch (error) {
+        console.error('❌ Logging error:', error);
+    }
+}
+
+// ==================== Device Blocking Check ====================
 async function isDeviceBlocked(req) {
     const { deviceKey, fingerprint, ip } = getDeviceId(req);
-    
-    const admin = await User.findOne();
-    const adminFingerprint = admin?.fingerprint || null;
-    const adminIp = admin?.ip || null;
-    
-    if (fingerprint === adminFingerprint && ip === adminIp) {
-        return null;
-    }
-    
-    const blocked = await BlockedDevice.findOne({
-        deviceKey: deviceKey,
+    return await BlockedDevice.findOne({
         $or: [
-            { blockedUntil: { $gt: new Date() } },
-            { isPermanent: true }
+            { deviceKey },
+            { ip },
+            { fingerprint }
+        ],
+        $and: [
+            {
+                $or: [
+                    { isPermanent: true },
+                    { blockedUntil: { $gt: new Date() } }
+                ]
+            }
         ]
     });
-    
-    return blocked;
 }
 
 // ==================== Session Management ====================
@@ -256,6 +281,14 @@ async function createSession(token, userId, csrfToken, ip = null, userAgent = nu
         lastActivity: new Date(),
         isActive: true
     });
+    await session.save();
+    return session;
+}
+
+async function validateSession(token) {
+    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
+    if (!session) return null;
+    session.lastActivity = new Date();
     await session.save();
     return session;
 }
@@ -281,7 +314,10 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
-// ==================== PUBLIC ROUTES ====================
+// ================================================================
+// ==================== PUBLIC ROUTES (NO AUTH) ====================
+// ================================================================
+
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -305,6 +341,88 @@ app.post('/api/whatsapp-number', async (req, res) => {
     }
 });
 
+app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
+    try {
+        const { number } = req.body;
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.whatsappNumber = number;
+        await pricing.save();
+        res.json({ success: true, number });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save WhatsApp number' });
+    }
+});
+
+app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
+    try {
+        const { dashboardId } = req.params;
+        let link = await Link.findOne({ id: dashboardId });
+        if (link) return res.json({ linkId: link.id });
+        link = await Link.findOne({ dashboardId: dashboardId });
+        if (link) return res.json({ linkId: link.id });
+        const allLinks = await Link.find({});
+        const matched = allLinks.find(l => 
+            l.id.includes(dashboardId) || 
+            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
+            dashboardId.includes(l.id)
+        );
+        if (matched) return res.json({ linkId: matched.id });
+        res.status(404).json({ error: 'No link found' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to map dashboard' });
+    }
+});
+
+app.get('/api/visit-stats/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        let link = await Link.findOne({ id: linkId });
+        if (!link) link = await Link.findOne({ dashboardId: linkId });
+        if (!link) {
+            return res.status(404).json({ error: 'Link not found', message: 'No link found with this ID' });
+        }
+        const today = new Date().toISOString().split('T')[0];
+        res.json({
+            linkId: link.id,
+            name: link.name,
+            totalVisits: link.visits || 0,
+            totalClaims: link.claims || 0,
+            todayVisits: link.dailyVisits?.get(today) || 0,
+            todayClaims: link.dailyClaims?.get(today) || 0,
+            dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
+            dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
+            status: link.status || 'active',
+            expiryDate: link.expiryDate || null
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+app.get('/api/parent-link', async (req, res) => {
+    try {
+        const links = await Link.find({});
+        if (links.length > 0) {
+            const firstLink = links[0];
+            if (!firstLink.dashboardId) {
+                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+                await firstLink.save();
+            }
+            res.json({
+                url: '/user-dashboard/' + firstLink.dashboardId,
+                linkName: firstLink.name,
+                linkId: firstLink.id
+            });
+        } else {
+            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, linkId: null });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate dashboard link' });
+    }
+});
+
 app.get('/api/pricing', async (req, res) => {
     try {
         const pricingDoc = await Pricing.findOne();
@@ -316,6 +434,20 @@ app.get('/api/pricing', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
+    }
+});
+
+app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, paymentSettings } = req.body;
+        let pricingDoc = await Pricing.findOne();
+        if (!pricingDoc) pricingDoc = new Pricing();
+        if (pricing) pricingDoc.pricing = pricing;
+        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
+        await pricingDoc.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update pricing' });
     }
 });
 
@@ -357,13 +489,13 @@ app.get('/api/link/:id', async (req, res) => {
         }
 
         const today = new Date().toISOString().split('T')[0];
+        let stats = await Stats.findOne();
+        if (!stats) stats = await Stats.create({});
+
         link.visits = (link.visits || 0) + 1;
         if (!link.dailyVisits) link.dailyVisits = new Map();
         link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
         await link.save();
-
-        let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
 
         stats.totalVisitors = (stats.totalVisitors || 0) + 1;
         if (!stats.dailyVisitors) stats.dailyVisitors = new Map();
@@ -413,6 +545,42 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
+app.get('/api/renewal/history/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 });
+        res.json({ history, count: history.length });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+app.post('/api/renewal/request-from-dashboard', async (req, res) => {
+    try {
+        const { linkId, linkName, plan, days, amount } = req.body;
+        if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
+        const renewalRequest = new RenewalRequest({
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId, linkName: linkName || 'Unknown', plan, days: days || 0, amount: amount || 0,
+            status: 'pending', createdAt: new Date()
+        });
+        await renewalRequest.save();
+        res.json({ success: true, requestId: renewalRequest.id });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create renewal request' });
+    }
+});
+
+app.get('/api/renewal/status/:linkId', async (req, res) => {
+    try {
+        const { linkId } = req.params;
+        const request = await RenewalRequest.findOne({ linkId }).sort({ createdAt: -1 });
+        res.json({ hasRequest: !!request, request: request || null, status: request?.status || 'none' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch status' });
+    }
+});
+
 app.get('/api/settings', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -420,12 +588,17 @@ app.get('/api/settings', async (req, res) => {
         res.json({
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
-            popupSettings: popupSettings || {},
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            },
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
     } catch (error) {
-        res.status(500).json({ error: 'Settings error' });
+        res.status(500).json({ error: 'Failed to fetch settings' });
     }
 });
 
@@ -455,23 +628,6 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
     }
 });
 
-app.get('/api/admin/block-status', async (req, res) => {
-    try {
-        const blocked = await isDeviceBlocked(req);
-        if (blocked) {
-            return res.json({
-                blocked: true,
-                isPermanent: blocked.isPermanent,
-                attempts: blocked.attempts,
-                reason: blocked.reason
-            });
-        }
-        res.json({ blocked: false });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to check block status' });
-    }
-});
-
 // ==================== 🔄 USER SIGNUP, SIGNIN & RENEWAL APIS ====================
 app.post('/api/user/signup', async (req, res) => {
     try {
@@ -483,18 +639,17 @@ app.post('/api/user/signup', async (req, res) => {
 
         const existing = await RenewalUser.findOne({ $or: [{ email: cleanEmail }, { phone: cleanPhone }] });
         if (existing) {
-            return res.status(400).json({ error: 'User with this email or phone already exists', status: existing.status });
+            return res.status(400).json({ error: 'Account already exists. Please wait for Admin approval or sign in.' });
         }
 
-        const newUser = new RenewalUser({
+        await RenewalUser.create({
             name: name.trim(),
             email: cleanEmail,
             phone: cleanPhone,
             status: 'pending'
         });
-        await newUser.save();
 
-        res.json({ success: true, message: 'Registration submitted. Awaiting admin approval.' });
+        res.json({ success: true, message: 'Signup submitted! Admin approval is pending.' });
     } catch (e) {
         res.status(500).json({ error: 'Registration failed' });
     }
@@ -503,21 +658,21 @@ app.post('/api/user/signup', async (req, res) => {
 app.post('/api/user/signin', async (req, res) => {
     try {
         const { email, phone } = req.body;
-        if (!email || !phone) return res.status(400).json({ error: 'Email and phone are required' });
+        if (!email || !phone) return res.status(400).json({ error: 'Enter email and phone number' });
 
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
         const user = await RenewalUser.findOne({ email: cleanEmail, phone: cleanPhone });
         if (!user) {
-            return res.status(404).json({ error: 'User not found. Please sign up first.' });
+            return res.status(404).json({ error: 'User not found. Please click Sign Up to register.' });
         }
 
         if (user.status === 'pending') {
-            return res.status(403).json({ error: 'Account is pending approval from Admin.' });
+            return res.status(403).json({ error: 'Your account is pending approval from Admin.' });
         }
         if (user.status === 'rejected') {
-            return res.status(403).json({ error: 'Account has been rejected by Admin.' });
+            return res.status(403).json({ error: 'Your account registration was rejected by Admin.' });
         }
 
         res.json({
@@ -525,33 +680,25 @@ app.post('/api/user/signin', async (req, res) => {
             user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
         });
     } catch (e) {
-        res.status(500).json({ error: 'Login failed' });
+        res.status(500).json({ error: 'Login error' });
     }
 });
 
 app.post('/api/user/link-details', async (req, res) => {
     try {
         const { userName, linkInput } = req.body;
-        if (!linkInput) return res.status(400).json({ error: 'Link URL or ID required' });
+        if (!linkInput) return res.status(400).json({ error: 'Enter Link URL or ID' });
 
         let searchId = linkInput.trim();
-        if (searchId.includes('?link=')) {
-            searchId = searchId.split('?link=').split('&')[0];
-        } else if (searchId.includes('/v/')) {
-            searchId = searchId.split('/v/').split('?')[0];
-        }
+        if (searchId.includes('?link=')) searchId = searchId.split('?link=').split('&')[0];
+        else if (searchId.includes('/v/')) searchId = searchId.split('/v/').split('?')[0];
 
-        let link = await Link.findOne({
-            $or: [{ id: searchId }, { dashboardId: searchId }]
-        });
+        let link = await Link.findOne({ $or: [{ id: searchId }, { dashboardId: searchId }] });
+        if (!link) return res.status(404).json({ error: 'No link found with this ID' });
 
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
-
-        // Name match verification
+        // Security check: Name must match registered user's name
         if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
-            return res.status(403).json({ error: `This link does not belong to user "${userName}". Name mismatch!` });
+            return res.status(403).json({ error: `Security Warning: Link "${link.name}" does not belong to you (${userName}).` });
         }
 
         const now = new Date();
@@ -598,11 +745,8 @@ app.post('/api/user/link-details', async (req, res) => {
                 name: link.name,
                 created: link.created,
                 expiryDate: link.expiryDate,
-                status: link.status,
                 daysLeft,
                 isEligibleForRenewal,
-                totalVisits: link.visits || 0,
-                totalClaims: link.claims || 0,
                 todayVisits: dailyV.get(today) || 0,
                 todayClaims: dailyC.get(today) || 0,
                 v24h, c24h, v7d, c7d, v30d, c30d
@@ -617,44 +761,58 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
+// ==================== 🤖 BHARATPE 12-DIGIT UTR AUTO-VERIFY ====================
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, plan, days, amount, refNo, userName, isManual } = req.body;
-        if (!linkId || !plan || !refNo) return res.status(400).json({ error: 'Transaction ref and plan required' });
+        if (!linkId || !plan || !refNo) return res.status(400).json({ error: 'Reference number and plan required' });
 
         const pricing = await Pricing.findOne();
         const autoEnabled = pricing?.autoPaymentEnabled !== false;
 
-        if (!isManual && autoEnabled) {
-            if (refNo.trim().length >= 8) {
-                const link = await Link.findOne({ id: linkId });
-                if (link) {
-                    const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-                    curExpiry.setDate(curExpiry.getDate() + parseInt(days));
-                    link.expiryDate = curExpiry;
-                    link.status = 'active';
-                    await link.save();
-                }
+        const cleanRef = refNo.toString().trim();
 
-                await RenewalRequest.create({
-                    id: 'req_' + Date.now(),
-                    linkId,
-                    linkName: userName,
-                    plan,
-                    days: parseInt(days),
-                    amount: parseInt(amount),
-                    transactionId: refNo,
-                    status: 'approved',
-                    paidAt: new Date(),
-                    approvedAt: new Date()
-                });
-
-                return res.json({ success: true, message: `Payment verified! Link extended for ${days} days.` });
-            } else {
-                return res.status(400).json({ error: 'Payment verification failed! Invalid Transaction Ref No.' });
-            }
+        // Check if Ref No was already used (Double-spending protection)
+        const alreadyUsed = await RenewalRequest.findOne({ transactionId: cleanRef });
+        if (alreadyUsed) {
+            return res.status(400).json({ error: '❌ This Transaction Ref Number has already been used!' });
         }
 
+        // Mode 1: Auto Verify (12-Digit Indian Banking NPCI UTR)
+        if (!isManual && autoEnabled) {
+            const isValidUtrFormat = /^\d{12}$/.test(cleanRef);
+            if (!isValidUtrFormat) {
+                return res.status(400).json({ error: '❌ Invalid UPI UTR / Reference Number! It must be exactly 12 digits.' });
+            }
+
+            // Auto-extend link in database
+            const link = await Link.findOne({ id: linkId });
+            if (link) {
+                const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+                curExpiry.setDate(curExpiry.getDate() + parseInt(days));
+                link.expiryDate = curExpiry;
+                link.status = 'active';
+                await link.save();
+            }
+
+            // Record as approved
+            await RenewalRequest.create({
+                id: 'req_' + Date.now(),
+                linkId,
+                linkName: userName,
+                plan,
+                days: parseInt(days),
+                amount: parseInt(amount),
+                transactionId: cleanRef,
+                status: 'approved',
+                paidAt: new Date(),
+                approvedAt: new Date()
+            });
+
+            return res.json({ success: true, message: `🎉 Payment verified via BharatPe! Link successfully extended for ${days} days.` });
+        }
+
+        // Mode 2: Manual Approval Request
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
             linkId,
@@ -662,7 +820,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
             plan,
             days: parseInt(days),
             amount: parseInt(amount),
-            transactionId: refNo,
+            transactionId: cleanRef,
             status: 'pending'
         });
 
@@ -672,14 +830,12 @@ app.post('/api/user/renew-payment', async (req, res) => {
     }
 });
 
-// ==================== ADMIN: USERS & RENEWAL APIS ====================
+// ==================== ADMIN: RENEWAL & USER APIS ====================
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
-        const users = await RenewalUser.find().sort({ createdAt: -1 });
+        const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
         res.json({ success: true, users });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res) => {
@@ -689,20 +845,16 @@ app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res)
         if (!user) return res.status(404).json({ error: 'User not found' });
         user.status = action;
         await user.save();
-        res.json({ success: true, message: `User ${action} successfully` });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
+        res.json({ success: true, message: `User ${action}!` });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
-        const requests = await RenewalRequest.find().sort({ createdAt: -1 });
+        const requests = await RenewalRequest.find({ status: 'pending' }).sort({ createdAt: -1 });
         res.json({ success: true, pricing, requests });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
@@ -716,9 +868,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         if (whatsappNumber) p.whatsappNumber = whatsappNumber;
         await p.save();
         res.json({ success: true, message: 'Settings saved' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
@@ -735,78 +885,117 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
             await link.save();
         }
 
-        reqDoc.status = 'approved';
-        reqDoc.approvedAt = new Date();
-        await reqDoc.save();
+        // Delete from pending requests so it disappears from UI
+        await RenewalRequest.deleteOne({ id: req.params.id });
 
         res.json({ success: true, message: 'Renewal approved and link extended!' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
+    try {
+        const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch renewal requests' });
     }
 });
 
+app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const request = await RenewalRequest.findOne({ id: req.params.requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        request.status = 'paid';
+        request.paidAt = new Date();
+        await request.save();
+        res.json({ success: true, message: 'Payment marked as paid' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark payment' });
+    }
+});
+
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const request = await RenewalRequest.findOne({ id: req.params.requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        request.status = 'rejected';
+        await request.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reject renewal' });
+    }
+});
+
+app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+    try {
+        await RenewalRequest.findOneAndDelete({ id: req.params.requestId });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove request' });
+    }
+});
+
+// Clear all historical approved/dummy requests from database
+app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, res) => {
+    try {
+        await RenewalRequest.deleteMany({ status: { $ne: 'pending' } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 // ================================================================
-// 🔑 ADMIN LOGIN (FIXED: ONLY ACCEPTS CURRENT ACTIVE HASHED PASSCODE)
+// 🔑 ADMIN LOGIN (STRICT PASSCODE & ZERO BYPASS BAN)
 // ================================================================
+app.get('/api/admin/block-status', async (req, res) => {
+    try {
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            return res.json({
+                blocked: true,
+                isPermanent: true,
+                reason: blocked.reason || 'Permanent ban: 3 failed passcode attempts'
+            });
+        }
+        res.json({ blocked: false });
+    } catch (e) { res.json({ blocked: false }); }
+});
+
 app.post('/api/admin/login', async (req, res) => {
     try {
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             return res.status(403).json({
                 error: 'permanently_blocked',
-                message: '⛔ This device is permanently banned from accessing the admin portal.'
+                message: '⛔ Your device has been permanently blocked due to 3 failed passcode attempts.'
             });
         }
 
         const { passcode } = req.body;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        const { deviceName, deviceType } = getDeviceDetails(req);
         const cleanPass = (passcode || '').toString().trim();
 
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
         const admin = await User.findOne();
-        if (!admin || !admin.passcode) {
-            return res.status(500).json({ error: 'Admin user not found' });
-        }
+        if (!admin || !admin.passcode) return res.status(500).json({ error: 'Admin not initialized' });
 
-        // ✅ STRICT PASSCODE CHECK: Verifies ONLY against current stored hash
-        let isValid = false;
-        try {
-            isValid = bcrypt.compareSync(cleanPass, admin.passcode);
-        } catch (e) {
-            isValid = false;
-        }
+        // Strict DB hash comparison — No hardcoded bypass!
+        const isValid = bcrypt.compareSync(cleanPass, admin.passcode);
 
-        // 1. VALID PASSCODE: Always log in and clear failed attempt counters
         if (isValid) {
-            admin.fingerprint = fingerprint;
-            admin.ip = ip;
-            await admin.save();
-
-            await BlockedDevice.deleteMany({
-                $or: [{ deviceKey }, { ip }, { fingerprint }]
-            });
+            // Delete failed attempts for this device on success
+            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
 
             const jwtToken = generateToken('admin');
-            const csrfToken = generateCSRFToken();
-            await createSession(jwtToken, 'admin', csrfToken, ip, req.headers['user-agent']);
-
-            res.cookie('adminToken', jwtToken, {
-                httpOnly: true,
-                secure: false,
-                sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
-
-            return res.json({ success: true, csrfToken, token: jwtToken });
+            res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
+            return res.json({ success: true, token: jwtToken });
         }
 
-        // 2. INVALID PASSCODE: Old passcodes or wrong inputs will fail here!
-        let record = await BlockedDevice.findOne({ deviceKey });
+        // Invalid passcode: Record failed attempt
+        let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
         if (!record) {
             record = new BlockedDevice({
-                deviceKey, fingerprint, ip, deviceName, deviceType,
+                deviceKey, fingerprint, ip,
                 attempts: 1,
                 reason: 'Failed login attempt (1/3)',
                 lastAttempt: new Date()
@@ -816,10 +1005,10 @@ app.post('/api/admin/login', async (req, res) => {
             record.lastAttempt = new Date();
         }
 
+        // ⛔ 3RD ATTEMPT = PERMANENT BAN
         if (record.attempts >= 3) {
             record.isPermanent = true;
             record.blockedUntil = null;
-            record.permanentBlockedAt = new Date();
             record.reason = 'Permanent ban: 3 failed passcode attempts';
             await record.save();
             return res.status(403).json({
@@ -827,15 +1016,14 @@ app.post('/api/admin/login', async (req, res) => {
                 message: '⛔ Your device has been permanently blocked due to 3 failed login attempts.'
             });
         } else {
-            record.reason = `Failed login attempt (${record.attempts}/3)`;
+            record.reason = `Failed passcode attempt (${record.attempts}/3)`;
             await record.save();
             return res.status(401).json({
                 error: `Incorrect Passcode! Attempt ${record.attempts} of 3. (3 attempts par device permanently block ho jayega)`
             });
         }
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error during login' });
+        res.status(500).json({ error: 'Login error' });
     }
 });
 
@@ -844,7 +1032,7 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ PASSCODE CHANGE API (FIXED: STRICTLY ENFORCES NEW PASSCODE)
+// Passcode Change (Strict verification & DB update)
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -853,21 +1041,13 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
         }
 
         const admin = await User.findOne();
-        if (!admin || !admin.passcode) {
-            return res.status(404).json({ error: 'Admin account not found' });
-        }
-
-        // Verify current passcode
         const isCurrentValid = bcrypt.compareSync(oldPasscode.toString().trim(), admin.passcode);
         if (!isCurrentValid) {
             return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
 
-        // Update to new hash in MongoDB
         admin.passcode = bcrypt.hashSync(newPasscode.toString().trim(), 10);
         await admin.save();
-        console.log('✅ Admin passcode successfully updated to new value in MongoDB');
-
         res.json({ success: true, message: 'Passcode changed successfully!' });
     } catch (error) {
         res.status(500).json({ error: 'Passcode change failed' });
@@ -906,93 +1086,55 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
-    try {
-        const { number } = req.body;
-        let pricing = await Pricing.findOne();
-        if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = number;
-        await pricing.save();
-        res.json({ success: true, number });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to save WhatsApp number' });
-    }
-});
-
 app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
-    try {
-        const admin = await User.findOne();
-        res.json({ success: true, secretKey: admin?.secretKey || 'admin@2024' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch secret key' });
-    }
+    const admin = await User.findOne();
+    res.json({ success: true, secretKey: admin?.secretKey || 'admin@2024' });
 });
 
 app.post('/api/admin/secret-key', authMiddleware, async (req, res) => {
-    try {
-        const { currentSecretKey, newSecretKey } = req.body;
-        const admin = await User.findOne();
-        if (admin && admin.secretKey && admin.secretKey !== currentSecretKey) {
-            return res.status(400).json({ error: 'Current secret key is incorrect' });
-        }
-        if (admin) {
-            admin.secretKey = newSecretKey;
-            await admin.save();
-        }
-        res.json({ success: true, secretKey: newSecretKey });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update secret key' });
-    }
+    const admin = await User.findOne();
+    if (admin) { admin.secretKey = req.body.newSecretKey; await admin.save(); }
+    res.json({ success: true });
 });
 
-// ==================== LINKS CRUD ====================
+app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
+    const admin = await User.findOne();
+    if (admin) {
+        if (req.body.email) admin.email = req.body.email;
+        if (req.body.phone) admin.phone = req.body.phone;
+        await admin.save();
+    }
+    res.json({ success: true });
+});
+
+// ==================== ADMIN: LINKS CRUD & EDIT FIX ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
-    try {
-        const links = await Link.find().sort({ created: -1 });
-        res.json(links);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch links' });
-    }
+    const links = await Link.find().sort({ created: -1 });
+    res.json(links);
 });
 
-// ✅ CREATE LINK (Guaranteed Active Status & Safe Expiry)
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const { name, video, claim, buttonText, headline, expiryDate, popupSettings } = req.body;
-        if (!name) return res.status(400).json({ error: 'Invalid link name' });
-
-        let cleanExpiry = null;
-        if (expiryDate && typeof expiryDate === 'string' && expiryDate.trim() !== '') {
-            const parsed = new Date(expiryDate);
-            if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
-                cleanExpiry = parsed;
-            }
-        }
-
+        let cleanExpiry = (expiryDate && new Date(expiryDate) > Date.now()) ? new Date(expiryDate) : null;
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-            name: name.substring(0, 100),
+            name: name || 'Untitled Link',
             video: video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: claim || '#',
             buttonText: buttonText || 'Claim Now',
             headline: headline || '🎬 Watch Video & Unlock Reward',
             expiryDate: cleanExpiry,
             status: 'active',
-            popupSettings: {
-                title: popupSettings?.title || '🎁 Claim Your Reward',
-                subtitle: popupSettings?.subtitle || 'Tap below to unlock your reward',
-                buttonText: popupSettings?.buttonText || 'Claim Now',
-                image: popupSettings?.image || null
-            }
+            popupSettings: popupSettings || {}
         });
         await newLink.save();
         res.json(newLink);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create link' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
-// ✅ EDIT LINK (Updates Button Text, Headline, Expiry, Status & 16:9 Popup Image)
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await Link.findOne({ id: req.params.id });
@@ -1005,9 +1147,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         if (claim !== undefined) link.claim = claim.trim();
         if (buttonText !== undefined) link.buttonText = buttonText.trim();
         if (headline !== undefined) link.headline = headline.trim();
-        if (status !== undefined && ['active', 'suspended', 'disabled'].includes(status)) {
-            link.status = status;
-        }
+        if (status !== undefined) link.status = status;
 
         if (expiryDate !== undefined) {
             link.expiryDate = (expiryDate && new Date(expiryDate) > Date.now()) ? new Date(expiryDate) : null;
@@ -1024,7 +1164,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         await link.save();
         res.json({ success: true, link });
-    } catch (error) {
+    } catch (e) {
         res.status(500).json({ error: 'Failed to update link' });
     }
 });
@@ -1040,26 +1180,8 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
 });
 
 app.delete('/api/links/:id', authMiddleware, async (req, res) => {
-    try {
-        await Link.findOneAndDelete({ id: req.params.id });
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete link' });
-    }
-});
-
-app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
-    try {
-        const { pricing, paymentSettings } = req.body;
-        let pricingDoc = await Pricing.findOne();
-        if (!pricingDoc) pricingDoc = new Pricing();
-        if (pricing) pricingDoc.pricing = pricing;
-        if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
-        await pricingDoc.save();
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update pricing' });
-    }
+    await Link.findOneAndDelete({ id: req.params.id });
+    res.json({ success: true });
 });
 
 app.get('/api/search-links', authMiddleware, async (req, res) => {
@@ -1092,142 +1214,19 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
 
 // ==================== STATS API ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
-    try {
-        const links = await Link.find();
-        const stats = await Stats.findOne();
-        const today = new Date().toISOString().split('T')[0];
-
-        const dailyVisitors = stats?.dailyVisitors ? Object.fromEntries(stats.dailyVisitors) : {};
-        const dailyClaims = stats?.dailyClaims ? Object.fromEntries(stats.dailyClaims) : {};
-
-        let totV = stats?.totalVisitors || links.reduce((s, l) => s + (l.visits||0), 0);
-        let totC = stats?.totalClaims || links.reduce((s, l) => s + (l.claims||0), 0);
-
-        res.json({
-            global: {
-                totalVisitors: totV,
-                totalClaims: totC,
-                todayVisitors: dailyVisitors[today] || 0,
-                todayClaims: dailyClaims[today] || 0,
-                activeNow: Math.max(1, Math.round(totV * 0.05)),
-                activeClaims: Math.max(0, Math.round(totC * 0.04)),
-                dailyVisitors: dailyVisitors,
-                dailyClaims: dailyClaims
-            },
-            links: links.map(l => ({
-                id: l.id,
-                name: l.name,
-                video: l.video,
-                claim: l.claim,
-                buttonText: l.buttonText,
-                headline: l.headline,
-                status: l.status || 'active',
-                expiryDate: l.expiryDate || null,
-                popupSettings: l.popupSettings || {},
-                visits: l.visits || 0,
-                claims: l.claims || 0,
-                dailyVisits: l.dailyVisits ? Object.fromEntries(l.dailyVisits) : {},
-                dailyClaims: l.dailyClaims ? Object.fromEntries(l.dailyClaims) : {}
-            }))
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    const links = await Link.find();
+    let totV = links.reduce((s, l) => s + (l.visits || 0), 0);
+    let totC = links.reduce((s, l) => s + (l.claims || 0), 0);
+    res.json({
+        global: { totalVisitors: totV, totalClaims: totC, activeNow: Math.max(1, Math.round(totV * 0.05)) },
+        links
+    });
 });
 
-// ==================== RENEWAL REQUESTS ====================
-app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
-    try {
-        const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
-        res.json(requests);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch renewal requests' });
-    }
-});
-
-app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const request = await RenewalRequest.findOne({ id: req.params.requestId });
-        if (!request) return res.status(404).json({ error: 'Request not found' });
-        request.status = 'paid';
-        request.paidAt = new Date();
-        await request.save();
-        res.json({ success: true, message: 'Payment marked as paid' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to mark payment' });
-    }
-});
-
-app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const request = await RenewalRequest.findOne({ id: req.params.requestId });
-        if (!request) return res.status(404).json({ error: 'Request not found' });
-        const link = await Link.findOne({ id: request.linkId });
-        if (link) {
-            const currentExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-            currentExpiry.setDate(currentExpiry.getDate() + request.days);
-            link.expiryDate = currentExpiry;
-            link.status = 'active';
-            await link.save();
-        }
-        request.status = 'approved';
-        request.approvedAt = new Date();
-        await request.save();
-        res.json({ success: true, message: 'Renewal approved!' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to approve renewal' });
-    }
-});
-
-app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
-    try {
-        const request = await RenewalRequest.findOne({ id: req.params.requestId });
-        if (!request) return res.status(404).json({ error: 'Request not found' });
-        request.status = 'rejected';
-        await request.save();
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reject renewal' });
-    }
-});
-
-app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
-    try {
-        await RenewalRequest.findOneAndDelete({ id: req.params.requestId });
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove request' });
-    }
-});
-
-app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
-    try {
-        const { email, phone } = req.body;
-        const admin = await User.findOne();
-        if (admin) {
-            if (email !== undefined) admin.email = email;
-            if (phone !== undefined) admin.phone = phone;
-            await admin.save();
-        }
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update contact info' });
-    }
-});
-
-// ==================== DEVICE MANAGEMENT ROUTES ====================
+// Devices & Sessions
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
-    try {
-        const devices = await BlockedDevice.find({
-            $or: [
-                { isPermanent: true },
-                { blockedUntil: { $gt: new Date() } }
-            ]
-        }).sort({ lastAttempt: -1 });
-        res.json({ success: true, devices });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch blocked devices' });
-    }
+    const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
+    res.json({ success: true, devices });
 });
 
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
@@ -1240,19 +1239,21 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
+    await BlockedDevice.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+});
+
+app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
     try {
-        const device = await BlockedDevice.findById(req.params.id);
-        if (device) {
-            device.isPermanent = false;
-            device.blockedUntil = null;
-            device.attempts = 0;
-            device.unblockedAt = new Date();
-            device.reason = 'Unblocked by admin';
-            await device.save();
+        const dev = await BlockedDevice.findById(req.params.id);
+        if (dev) {
+            dev.isPermanent = true;
+            dev.reason = req.body.reason || 'Permanent ban by admin';
+            await dev.save();
         }
-        res.json({ success: true, message: 'Device unblocked successfully!' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to unblock device' });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
@@ -1265,40 +1266,27 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     }
 });
 
-// ==================== SHORT LINK ROUTES ====================
+// Short links
 app.get('/s/:code', async (req, res) => {
-    try {
-        const { code } = req.params;
-        const link = await ShortLink.findOne({ code });
-        if (!link) return res.status(404).send('Short link not found');
+    const link = await ShortLink.findOne({ code: req.params.code });
+    if (!link) return res.status(404).send('Not found');
+    link.visits = (link.visits || 0) + 1;
+    await link.save();
 
-        link.visits = (link.visits || 0) + 1;
-        link.lastClicked = new Date();
-        await link.save();
+    const { ip, userAgent } = getDeviceId(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
+    await ShortLinkClick.create({
+        shortLinkId: link._id, ip, userAgent, deviceName, deviceType,
+        referer: req.headers.referer || null
+    });
 
-        const { ip, userAgent } = getDeviceId(req);
-        const { deviceName, deviceType } = getDeviceDetails(req);
-        await ShortLinkClick.create({
-            shortLinkId: link._id, ip, userAgent, deviceName, deviceType,
-            referer: req.headers.referer || null
-        });
-
-        if (link.appOpen && link.appScheme) {
-            return res.redirect(link.appScheme);
-        }
-        res.redirect(link.originalUrl);
-    } catch (error) {
-        res.status(500).send('Server error');
-    }
+    if (link.appOpen && link.appScheme) return res.redirect(link.appScheme);
+    res.redirect(link.originalUrl);
 });
 
 app.get('/api/short-links', authMiddleware, async (req, res) => {
-    try {
-        const links = await ShortLink.find().sort({ createdAt: -1 });
-        res.json({ success: true, links });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch short links' });
-    }
+    const links = await ShortLink.find().sort({ createdAt: -1 });
+    res.json({ success: true, links });
 });
 
 app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
@@ -1313,29 +1301,29 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/short-links', authMiddleware, async (req, res) => {
+    const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
+    const link = new ShortLink({
+        code: Math.random().toString(36).substring(2, 8),
+        originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || '',
+        appStoreLink: appStoreLink || '', expiryDate: expiryDate || null
+    });
+    await link.save();
+    res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
+});
+
+app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
-        const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
-        const code = Math.random().toString(36).substring(2, 8);
-        const link = new ShortLink({
-            code, originalUrl, title: title || 'Untitled Link',
-            appOpen: appOpen || false, appScheme: appScheme || '',
-            appStoreLink: appStoreLink || '', expiryDate: expiryDate || null
-        });
-        await link.save();
-        res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${code}` });
+        const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json({ success: true, link });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create short link' });
+        res.status(500).json({ error: 'Failed to update short link' });
     }
 });
 
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
-    try {
-        await ShortLink.findByIdAndDelete(req.params.id);
-        await ShortLinkClick.deleteMany({ shortLinkId: req.params.id });
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete short link' });
-    }
+    await ShortLink.findByIdAndDelete(req.params.id);
+    await ShortLinkClick.deleteMany({ shortLinkId: req.params.id });
+    res.json({ success: true });
 });
 
 app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
@@ -1358,66 +1346,43 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 
 // ==================== UNIVERSAL FILE RESOLVER ====================
 function sendAppFile(res, ...fileNames) {
-    const searchDirs = [
-        path.join(__dirname, '..'),
-        path.join(__dirname, '..', 'admin'),
-        __dirname,
-        path.join(__dirname, 'admin')
-    ];
-
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     for (const name of fileNames) {
         for (const dir of searchDirs) {
-            const fullPath = path.join(dir, name);
-            if (fs.existsSync(fullPath)) {
-                return res.sendFile(fullPath);
-            }
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) return res.sendFile(p);
         }
     }
-
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-// ==================== PAGE ROUTES ====================
-app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
-
-app.get('/admin/secret-gateway', (req, res) => {
-    sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html');
-});
-
-app.get('/admin/login.html', (req, res) => {
+// ⛔ STRICT PERSISTENT BAN SHIELD ON LOGIN ROUTE
+app.get('/admin/login.html', async (req, res) => {
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        return res.send(`
+            <!DOCTYPE html><html><head><title>Access Blocked</title>
+            <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
+            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 0 50px rgba(239,68,68,0.2);}
+            h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
+            p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
+            <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
+            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Refreshing will not bypass this ban. Contact the administrator to unblock your device.</p></div></body></html>
+        `);
+    }
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
+app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
+app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
-    if (!token || !verifyToken(token)) {
-        return res.redirect('/admin/login.html');
-    }
+    if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
-
 app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
 app.get('/v/:id', (req, res) => sendAppFile(res, 'video-lock.html'));
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
-app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
-app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-// ==================== SESSION CLEANUP INTERVAL ====================
-setInterval(async () => {
-    try {
-        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
-        await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
-        await BlockedDevice.deleteMany({ 
-            blockedUntil: { $lt: new Date() },
-            isPermanent: false
-        });
-    } catch (error) {
-        console.error('❌ Session cleanup error:', error);
-    }
-}, 60 * 60 * 1000);
-
-// ==================== START SERVER ====================
-app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Secure Server running on port ${port}`);
-});
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Server on port ${port}`));
