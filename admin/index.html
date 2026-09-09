@@ -25,45 +25,42 @@
         })();
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
             --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
-            --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0;
-            --text-light: #94a3b8; --border: #2d3138; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --bg: #090a10; --card-bg: #131722; --text: #f8fafc;
+            --text-light: #94a3b8; --border: #232838; --radius: 14px;
         }
         body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
-        body.dark { --bg: #0f1117; --card-bg: #1a1c23; --text: #e2e8f0; --text-light: #94a3b8; --border: #2d3138; }
+        body.dark { --bg: #090a10; --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838; }
         body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
-        
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        
+        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
         .header {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            box-shadow: var(--shadow); display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
-            border: 1px solid var(--border);
+            background: var(--card-bg); padding: 16px 22px; border-radius: var(--radius);
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 10px;
         }
         .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-        .header-actions button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .header-actions button { padding: 7px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
+        .header-actions button:hover { transform: translateY(-2px); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
-        .btn-logout:hover { background: #dc2626; }
         .btn-install { background: var(--success); color: white; border: none !important; display: none; }
         .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-weight: 600; transition: 0.3s; font-size: 11px; }
+        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
         .menu-container {
@@ -72,23 +69,18 @@
             border: 1px solid var(--border); align-items: center;
         }
         .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
-        .menu-container .menu-btn {
-            padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 11px;
-            font-weight: 600; transition: 0.3s;
+        .menu-btn {
+            padding: 8px 16px; border: 1px solid transparent; border-radius: 10px;
+            background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
         }
-        .menu-container .menu-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .menu-container .menu-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .menu-btn:hover { background: var(--primary); color: white; }
+        .menu-btn.active { background: var(--primary); color: white; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card {
-            background: var(--card-bg); padding: 14px 12px; border-radius: var(--radius);
-            box-shadow: var(--shadow); text-align: center; transition: 0.3s;
-            border: 1px solid var(--border);
-        }
-        .stat-card:hover { transform: translateY(-3px); }
-        .stat-card .number { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 3px; font-weight: 500; }
+        .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
+        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; font-weight: 600; }
 
         .live-visitors {
             background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
@@ -98,225 +90,161 @@
             font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
             display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
-        .live-visitors .lv-title .dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite;
-        }
-        .live-visitors .lv-title .live-badge {
-            font-size: 10px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 10px; border-radius: 20px;
-        }
-        .live-visitors .lv-title .refresh-time { font-size: 10px; color: var(--text-light); font-weight: 400; margin-left: auto; }
-        
+        .live-visitors .lv-title .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
         .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-        .live-visitors .lv-item {
-            background: var(--bg); border-radius: 8px; padding: 12px 14px; text-align: center;
-            border: 1px solid var(--border); transition: 0.3s;
-        }
-        .live-visitors .lv-item:hover { transform: translateY(-2px); border-color: var(--primary); }
-        .live-visitors .lv-item .lv-number {
-            font-size: 24px; font-weight: 800; transition: 0.3s;
-        }
+        .live-visitors .lv-item { background: #090a0f; border-radius: 10px; padding: 12px 14px; text-align: center; border: 1px solid var(--border); transition: 0.2s; }
+        .live-visitors .lv-item:hover { border-color: var(--primary); }
+        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; }
         .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
         .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
         .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
-        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .live-visitors .lv-item .lv-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
         .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
-        .section { display: none; animation: fadeInUp 0.4s ease; }
+        .section { display: none; animation: fadeInUp 0.3s ease; }
         .section.active { display: block; }
 
-        .card {
-            background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius);
-            box-shadow: var(--shadow); margin-bottom: 18px; border: 1px solid var(--border);
-        }
-        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
-        .card h3 { color: var(--text); font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .card { background: var(--card-bg); padding: 24px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border); }
+        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); }
         .card input, .card select, .card textarea {
-            width: 100%; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--text); transition: 0.3s; outline: none;
+            width: 100%; padding: 11px 14px; margin: 6px 0; border: 1px solid var(--border);
+            border-radius: 10px; font-size: 13px; background: #090a0f; color: var(--text); outline: none; transition: 0.2s;
         }
         .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
 
-        .btn {
-            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
-        .btn:active { transform: scale(0.97); }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-success:hover { background: #16a34a; }
-        .btn-danger { background: var(--danger); color: white; }
-        .btn-danger:hover { background: #dc2626; }
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; color: white; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 100%; }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); color: white; }
-        .btn-warning:hover { background: #d97706; }
-        .btn-sm { padding: 4px 10px; font-size: 10px; border-radius: 6px; }
-        .btn-block { width: 100%; }
+        .btn-sm { padding: 6px 14px; font-size: 11px; border-radius: 8px; width: auto; }
         .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
-        .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--text); }
         .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--primary); transition: 0.3s;
+            background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
+            border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s;
         }
-        .link-item:hover { transform: translateX(4px); }
-        .link-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .link-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .link-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
-        .link-item .info .details .visits { color: var(--primary); font-weight: 600; }
-        .link-item .actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .link-item .actions .status-dropdown { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 10px; cursor: pointer; }
+        .link-item:hover { transform: translateX(3px); }
+        .link-item .name { font-weight: 700; font-size: 14px; }
+        .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
 
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
         .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
-        .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
 
-        .edit-modal {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10000;
-            justify-content: center; align-items: center; padding: 20px;
-        }
-        .edit-modal.show { display: flex; }
-        .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 16px; padding: 28px 32px;
-            max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto;
-            border: 1px solid var(--border); animation: fadeInUp 0.3s ease;
-        }
-        .edit-modal .modal-content h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
-        .edit-modal .modal-content .modal-close { float: right; background: none; border: none; color: var(--text-light); font-size: 24px; cursor: pointer; }
-        .edit-modal .modal-content .modal-close:hover { color: var(--text); }
-        .edit-modal .modal-content .form-group { margin-bottom: 10px; }
-        .edit-modal .modal-content .form-group label { font-size: 12px; color: var(--text-light); display: block; margin-bottom: 3px; font-weight: 600; }
-        .edit-modal .modal-content .form-group input, .edit-modal .modal-content .form-group select {
-            width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text); font-size: 13px; outline: none;
-        }
-        .edit-modal .modal-content .form-group input:focus, .edit-modal .modal-content .form-group select:focus { border-color: var(--primary); }
-        .edit-modal .modal-content .form-actions { display: flex; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-        
-        /* 🖼️ 16:9 Aspect Ratio Popup Preview Box */
-        .edit-modal .modal-content .popup-preview-small {
-            background: rgba(0,0,0,0.4); border-radius: 10px; padding: 12px; margin-top: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.08);
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-img {
-            width: 100%; max-width: 320px; aspect-ratio: 16 / 9; border-radius: 8px; object-fit: cover; display: block; margin: 0 auto;
-        }
-        .edit-modal .modal-content .popup-preview-small .preview-text { color: #fff; font-size: 12px; font-weight: 700; margin-top: 6px; }
-        .edit-modal .modal-content .popup-preview-small .preview-sub { color: rgba(255,255,255,0.5); font-size: 10px; }
-        .edit-modal .modal-content .popup-preview-small .preview-btn-small { padding: 4px 14px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 10px; font-weight: 700; cursor: default; margin-top: 6px; display: inline-block; }
+        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
 
-        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-light); }
-        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
-
-        .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 10px;
-            color: white; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            transform: translateY(120px); opacity: 0; transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
-            z-index: 99999; max-width: 400px; font-size: 13px;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: linear-gradient(135deg, var(--success), #16a34a); }
-        .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
-        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-
-        .analytics-container { background: var(--card-bg); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
-        .analytics-container .analytics-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-        .analytics-container .analytics-header .link-selector { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
-        .analytics-container .analytics-header .link-selector select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 180px; }
-        .analytics-container .analytics-header .link-selector .search-input { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; min-width: 150px; flex: 1; }
-        .analytics-container .time-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-        .analytics-container .time-filters .filter-btn { padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-light); cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.3s; }
-        .analytics-container .time-filters .filter-btn:hover { border-color: var(--primary); color: var(--text); }
-        .analytics-container .time-filters .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .analytics-container .analytics-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
-        .analytics-container .analytics-stats .a-stat { background: var(--bg); border-radius: 8px; padding: 12px 14px; border: 1px solid var(--border); text-align: center; }
-        .analytics-container .analytics-stats .a-stat .a-number { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .analytics-container .analytics-stats .a-stat .a-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-        .analytics-container .link-details { background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; border: 1px solid var(--border); }
-        .analytics-container .link-details .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .analytics-container .link-details .detail-row:last-child { border-bottom: none; }
-        .analytics-container .link-details .detail-row .label { color: var(--text-light); }
-        .analytics-container .link-details .detail-row .value { color: var(--text); font-weight: 600; }
-        .custom-date-input { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-        .custom-date-input input[type="date"] { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; }
-
-        .search-results-count { font-size: 11px; color: var(--text-light); }
-
-        .generated-link { background: rgba(99,102,241,0.06); padding: 14px; border-radius: 10px; margin-top: 10px; display: none; border: 1px dashed rgba(99,102,241,0.3); }
+        .generated-link { background: rgba(99,102,241,0.08); border: 1px dashed var(--primary); border-radius: 12px; padding: 14px; margin-top: 14px; display: none; }
         .generated-link.show { display: block; }
         .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .generated-link input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 12px; color: var(--text); }
+        .generated-link input { flex: 1; min-width: 150px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: #090a0f; font-size: 12px; color: var(--text); }
 
         .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
         .image-preview.show { display: block; }
         .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-        .image-preview .preview-label { padding: 4px 10px; font-size: 10px; color: var(--text-light); background: var(--bg); border-top: 1px solid var(--border); }
 
         .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
         .popup-preview .preview-image { width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 8px; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin: 0 auto 8px; }
         .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
         .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
         .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; }
+        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; display: inline-block; }
 
-        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; }
-
-        .device-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--danger); transition: 0.3s;
+        .preview-box-16-9 {
+            width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
+            border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center;
+            margin: 8px auto 0;
         }
-        .device-item:hover { transform: translateX(4px); }
-        .device-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .device-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .device-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+        .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        .session-item {
-            background: var(--bg); padding: 10px 14px; margin: 6px 0; border-radius: 10px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
-            gap: 8px; border-left: 3px solid var(--success); transition: 0.3s;
+        /* Clean Edit Modal */
+        .edit-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;
         }
-        .session-item:hover { transform: translateX(4px); }
-        .session-item .info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; }
-        .session-item .info .name { font-weight: 700; font-size: 13px; color: var(--text); min-width: 120px; }
-        .session-item .info .details { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-light); }
+        .edit-modal.show { display: flex; }
+        .edit-modal .modal-content {
+            background: var(--card-bg); border-radius: 20px; padding: 28px; max-width: 680px; width: 100%;
+            border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease;
+        }
+        
+        /* Fixed Form Groups (Zero Overlap) */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #090a0f;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+        }
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        @media (max-width: 650px) {
+            .form-row-2 { grid-template-columns: 1fr; }
+        }
 
-        .contact-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 768px) { .contact-settings-grid { grid-template-columns: 1fr; } }
-
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 20px; }
-        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: white; transition: .4s; border-radius: 50%; }
-        .switch input:checked + span { background: #6366f1; }
+        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 22px; }
+        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+        .switch input:checked + span { background: var(--primary); }
         .switch input:checked + span:before { transform: translateX(20px); }
 
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
+            color: white; font-weight: 600; font-size: 13px; z-index: 99999;
+            transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #16a34a; }
+        .toast.error { background: #dc2626; }
+        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+
         @media (max-width: 768px) {
-            .header { flex-direction: column; text-align: center; padding: 12px; }
-            .header-actions { justify-content: center; }
-            .menu-container { flex-direction: column; align-items: stretch; }
-            .menu-container .menu-btn { text-align: center; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .live-visitors .lv-grid { grid-template-columns: repeat(2, 1fr); }
-            .link-item { flex-direction: column; align-items: stretch; }
             body { padding: 12px; }
-            .card { padding: 14px; }
+            .header { flex-direction: column; text-align: center; }
+            .menu-container { flex-direction: column; }
+            .menu-btn { text-align: center; }
+            .link-item { flex-direction: column; align-items: stretch; }
             .edit-modal .modal-content { padding: 16px; }
-            .analytics-container .analytics-header { flex-direction: column; align-items: stretch; }
-            .analytics-container .analytics-header .link-selector { flex-direction: column; }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <header class="header">
-            <h1>⚡ Admin Panel</h1>
+            <h1>⚡ Admin Control Center</h1>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
@@ -328,190 +256,135 @@
         </header>
 
         <div class="menu-container">
-            <span class="menu-label">📋 Menu:</span>
-            <button class="menu-btn active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="menu-btn" data-section="links" onclick="showSection('links')">🔗 Links</button>
-            <button class="menu-btn" data-section="analytics" onclick="showSection('analytics')">📈 Analytics</button>
-            <button class="menu-btn" data-section="create" onclick="showSection('create')">➕ Create</button>
-            <button class="menu-btn" data-section="settings" onclick="showSection('settings')">⚙️ Settings</button>
-            <button class="menu-btn" data-section="shortener" onclick="showSection('shortener')">🔗 Short Link</button>
+            <span class="menu-label">📋 Navigation:</span>
+            <button class="menu-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button class="menu-btn" onclick="showSection('links')">🔗 Links Manager</button>
+            <!-- 🔄 NEW USERS & RENEWAL SYSTEM TAB (REPLACED GRAPH) -->
+            <button class="menu-btn" onclick="showSection('renewals')">🔄 Users & Renewal</button>
+            <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
+            <button class="menu-btn" onclick="showSection('shortener')">🔗 Short Link</button>
+            <button class="menu-btn" onclick="showSection('settings')">⚙️ Settings</button>
         </div>
 
-        <!-- 1. DASHBOARD OVERVIEW SECTION -->
-        <div class="section active" id="section-dashboard">
+        <!-- 1. DASHBOARD OVERVIEW -->
+        <div class="section active" id="sec-dashboard">
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totalLinks">0</div><div class="label">📦 Links</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">✅ Active</div></div>
-                <div class="stat-card"><div class="number" id="totalVisits">0</div><div class="label">👁️ Visits</div></div>
-                <div class="stat-card"><div class="number" id="expiredLinks">0</div><div class="label">⏰ Expired</div></div>
+                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
+                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Active Links</div></div>
+                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">Total Visits</div></div>
+                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">Total Claims</div></div>
+                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">Active Live</div></div>
+            </div>
+
+            <!-- Real-time Signal Stream -->
+            <div class="live-visitors">
+                <div class="lv-title">
+                    <span class="dot"></span> 🟢 Real-Time Visitor & Claim Stream
+                    <span style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:400;" id="lastRefreshTime">Updated: Just now</span>
+                </div>
+                <div class="lv-grid">
+                    <div class="lv-item"><div class="lv-number visits-color" id="liveLifetimeVisits">0</div><div class="lv-label">Lifetime Visits</div></div>
+                    <div class="lv-item"><div class="lv-number claims-color" id="liveLifetimeClaims">0</div><div class="lv-label">Lifetime Claims</div></div>
+                    <div class="lv-item"><div class="lv-number visits-color" id="liveTodayVisits">0</div><div class="lv-label">Today's Visits</div></div>
+                    <div class="lv-item"><div class="lv-number claims-color" id="liveTodayClaims">0</div><div class="lv-label">Today's Claims</div></div>
+                    <div class="lv-item active-now"><div class="lv-number visits-color" id="liveActiveVisits">0</div><div class="lv-label">Active Watching</div></div>
+                    <div class="lv-item active-now" style="border-left-color:var(--warning);"><div class="lv-number claims-color" id="liveActiveClaims">0</div><div class="lv-label">Active Claiming</div></div>
+                </div>
             </div>
 
             <div class="card">
-                <h3>📊 Lifetime Visitor & Claim Statistics</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
-                    <div class="stat-card"><div class="number" id="totalVisitors">0</div><div class="label">Total Visitors</div></div>
-                    <div class="stat-card"><div class="number" id="totalClaims">0</div><div class="label">Total Claims</div></div>
-                    <div class="stat-card"><div class="number" id="todayVisitors">0</div><div class="label">Today's Visitors</div></div>
-                    <div class="stat-card"><div class="number" id="todayClaims">0</div><div class="label">Today's Claims</div></div>
-                </div>
-            </div>
-
-            <div class="live-visitors" id="liveVisitors">
-                <div class="lv-title">
-                    <span class="dot"></span> Live Visitors & Claims
-                    <span class="live-badge">🟢 Live</span>
-                    <span class="refresh-time" id="lastRefreshTime">Last updated: Just now</span>
-                </div>
-                
-                <div class="lv-grid">
-                    <div class="lv-item">
-                        <div class="lv-number visits-color" id="liveLifetimeVisits">0</div>
-                        <div class="lv-label">👁️ Lifetime Visits</div>
-                        <div class="lv-time">All time</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number claims-color" id="liveLifetimeClaims">0</div>
-                        <div class="lv-label">🎁 Lifetime Claims</div>
-                        <div class="lv-time">All time</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number visits-color" id="live48hrVisits">0</div>
-                        <div class="lv-label">👁️ Last 24 Hours Visits</div>
-                        <div class="lv-time" id="live48hrTime">Last 24 hours</div>
-                    </div>
-                    <div class="lv-item">
-                        <div class="lv-number claims-color" id="live48hrClaims">0</div>
-                        <div class="lv-label">🎁 Last 24 Hours Claims</div>
-                        <div class="lv-time" id="live48hrClaimsTime">Last 24 hours</div>
-                    </div>
-                    <div class="lv-item active-now">
-                        <div class="lv-number visits-color" id="liveActiveVisits">0</div>
-                        <div class="lv-label">🟢 Active Visits</div>
-                        <div class="lv-time">Watching now</div>
-                    </div>
-                    <div class="lv-item active-now" style="border-left-color: var(--warning);">
-                        <div class="lv-number claims-color" id="liveActiveClaims">0</div>
-                        <div class="lv-label">🟢 Active Claims</div>
-                        <div class="lv-time">Claiming now</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 📈 RESTORED 7-DAYS VS 24-HOURS & TOTAL VS UNIQUE GRAPH -->
-            <div class="card" style="margin-top:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                    <h3 style="font-size:14px;margin:0;">📈 Visitor & Claim Analytics</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button onclick="switchDashboardGraph('7days')" class="btn btn-primary btn-sm active" id="dashGraph7">7 Days</button>
-                        <button onclick="switchDashboardGraph('24h')" class="btn btn-outline btn-sm" id="dashGraph24">24 Hours</button>
-                        <span style="border-right:1px solid var(--border);margin:0 4px;"></span>
-                        <button onclick="switchDashboardData('total')" class="btn btn-primary btn-sm active" id="dashDataTotal">Total</button>
-                        <button onclick="switchDashboardData('unique')" class="btn btn-outline btn-sm" id="dashDataUnique">Unique</button>
-                    </div>
-                </div>
-                <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
-                    <canvas id="dashboardChart"></canvas>
+                <h3>⚡ Management Shortcuts</h3>
+                <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">Manage promotional campaigns, approve customer renewal requests, or extend validity.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
+                    <button class="btn btn-sm btn-success" onclick="showSection('renewals')">🔄 Check Renewal Requests</button>
+                    <button class="btn btn-sm btn-warning" onclick="showSection('shortener')">🔗 Open URL Shortener</button>
                 </div>
             </div>
         </div>
 
-        <!-- 2. LINKS MANAGER SECTION -->
-        <div class="section" id="section-links">
+        <!-- 2. LINKS MANAGER -->
+        <div class="section" id="sec-links">
             <div class="card">
-                <h3>🔍 Search Links</h3>
+                <h3>🔍 All Tracking Links</h3>
                 <div class="search-bar">
                     <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
-                    <span class="search-results-count" id="searchResultsCount">Showing all links</span>
+                    <span id="searchResultsCount" style="font-size:12px;color:var(--text-light);">Showing all links</span>
                 </div>
-                <div id="linksList"></div>
+                <div id="linksList">Loading links...</div>
             </div>
         </div>
 
-        <!-- 3. ANALYTICS & EXPORT SECTION -->
-        <div class="section" id="section-analytics">
-            <div class="analytics-container" id="analyticsExportBox">
-                <div class="analytics-header">
-                    <div class="link-selector">
-                        <label style="font-weight:600;color:var(--text-light);font-size:12px;">📌 Link:</label>
-                        <select id="analyticsLinkSelect" onchange="loadAnalytics()"></select>
-                        <input type="text" class="search-input" id="analyticsSearchInput" placeholder="Filter by name..." oninput="filterAnalyticsLinks()">
-                    </div>
-                    <div class="time-filters">
-                        <button class="filter-btn active" data-filter="lifetime" onclick="setTimeFilter('lifetime')">Lifetime</button>
-                        <button class="filter-btn" data-filter="24h" onclick="setTimeFilter('24h')">24h</button>
-                        <button class="filter-btn" data-filter="custom" onclick="setTimeFilter('custom')">Custom</button>
-                    </div>
-                </div>
-                <div class="custom-date-input" id="customDatePicker" style="display:none;">
-                    <label style="font-size:11px;color:var(--text-light);">From:</label>
-                    <input type="date" id="analyticsFromDate" onchange="loadAnalytics()">
-                    <label style="font-size:11px;color:var(--text-light);">To:</label>
-                    <input type="date" id="analyticsToDate" onchange="loadAnalytics()">
-                    <button onclick="loadAnalytics()" class="btn btn-primary btn-sm">Apply</button>
-                </div>
-                <div class="link-details" id="analyticsLinkDetails">
-                    <div class="detail-row"><span class="label">Link Name</span><span class="value" id="analyticsLinkName">Not selected</span></div>
-                    <div class="detail-row"><span class="label">Link ID</span><span class="value" id="analyticsLinkId">-</span></div>
-                    <div class="detail-row"><span class="label">Status</span><span class="value" id="analyticsLinkStatus">-</span></div>
-                    <div class="detail-row"><span class="label">Created</span><span class="value" id="analyticsLinkCreated">-</span></div>
-                </div>
-
-                <div class="analytics-stats">
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalVisits">0</div><div class="a-label">👁️ Total Visits</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsTotalClaims">0</div><div class="a-label">🎁 Total Claims</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsUniqueVisitors">0</div><div class="a-label">👤 Unique Visitors</div></div>
-                    <div class="a-stat"><div class="a-number" id="analyticsUniqueClaims">0</div><div class="a-label">🏷️ Unique Claims</div></div>
-                </div>
-
-                <div class="card" style="margin-top:10px;padding:15px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                        <h3 style="font-size:14px;margin:0;">📈 Detailed Analysis</h3>
-                        <div style="display:flex;gap:6px;">
-                            <button onclick="switchAnalyticsGraph('7days')" class="btn btn-primary btn-sm active" id="anaGraph7">7 Days</button>
-                            <button onclick="switchAnalyticsGraph('24h')" class="btn btn-outline btn-sm" id="anaGraph24">24 Hours</button>
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button onclick="switchAnalyticsData('total')" class="btn btn-primary btn-sm active" id="anaDataTotal">👁️ Total</button>
-                            <button onclick="switchAnalyticsData('unique')" class="btn btn-outline btn-sm" id="anaDataUnique">👤 Unique</button>
-                        </div>
-                    </div>
-                    <div style="height:280px;position:relative;background:rgba(255,255,255,0.02);border-radius:12px;padding:10px;">
-                        <canvas id="analyticsChart"></canvas>
-                    </div>
-                </div>
-
-                <div style="margin-top:16px;display:flex;gap:8px;">
-                    <button onclick="downloadAnalyticsImage()" class="btn btn-success btn-sm">🖼️ Export PNG</button>
-                    <button onclick="downloadAnalyticsCSV()" class="btn btn-primary btn-sm">📊 Export CSV</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. CREATE LINK SECTION -->
-        <div class="section" id="section-create">
+        <!-- 3. 🔄 USERS & RENEWAL MANAGEMENT SECTION (REPLACED GRAPH) -->
+        <div class="section" id="sec-renewals">
+            <!-- Part 1: Pending User Signup Approvals -->
             <div class="card">
-                <h3>➕ Create Rewarded Link</h3>
-                <input type="text" id="linkName" placeholder="Link Name (e.g. Free Fire Promo 1)">
-                <div class="grid-2">
-                    <input type="text" id="video" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
-                    <input type="text" id="claim" placeholder="Claim Destination URL" value="#">
+                <h3>👥 User Registration Approvals (Customer Signups)</h3>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Approve users so they can log in to the Customer Portal (`/user-dashboard`) to view link analytics and pay renewals.</p>
+                <div id="usersApprovalList">Loading user requests...</div>
+            </div>
+
+            <!-- Part 2: Renewal Requests (Manual & Auto) -->
+            <div class="card">
+                <h3>💳 Renewal & Payment Requests</h3>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Customer payments submitted via Reference Number / Screenshot awaiting verification.</p>
+                <div id="renewalReqsList">Loading renewal requests...</div>
+            </div>
+
+            <!-- Part 3: Pricing & Auto-Payment Mode Settings -->
+            <div class="card">
+                <h3>⚙️ Renewal & Payment Mode Settings</h3>
+                
+                <div style="display:flex;align-items:center;gap:12px;margin:12px 0;background:#090a0f;padding:12px 16px;border-radius:10px;border:1px solid var(--border);">
+                    <label style="font-size:13px;font-weight:700;">🤖 Auto-Verify Mode (BharatPe / Ref No):</label>
+                    <select id="setPaymentMode" style="width:auto;margin:0;padding:6px 14px;">
+                        <option value="true">ON (Automatic Instant Extension)</option>
+                        <option value="false">OFF (Shows Coming Soon / Contact Admin)</option>
+                    </select>
                 </div>
-                <input type="text" id="buttonText" placeholder="Button Text" value="Claim Now">
-                <input type="text" id="headline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+
+                <div class="grid-2">
+                    <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR Code):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
+                    <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number (for Screenshots):</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
+                </div>
+
+                <h4 style="font-size:13px;color:var(--primary);margin:14px 0 6px;">💰 Renewal Plan Prices (₹):</h4>
+                <div class="grid-2">
+                    <div><label style="font-size:11px;color:var(--text-light);">7 Days Price (₹):</label><input type="number" id="p7d" value="100"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">15 Days Price (₹):</label><input type="number" id="p15d" value="200"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">30 Days Price (₹):</label><input type="number" id="p30d" value="400"></div>
+                    <div><label style="font-size:11px;color:var(--text-light);">90 Days Price (₹):</label><input type="number" id="p90d" value="1000"></div>
+                </div>
+                <div style="margin-top:6px;"><label style="font-size:11px;color:var(--text-light);">1 Year Price (₹):</label><input type="number" id="p1y" value="3000"></div>
+
+                <button class="btn btn-primary btn-sm" style="margin-top:14px;width:auto;" onclick="saveRenewalSettings()">💾 Save Renewal Settings</button>
+            </div>
+        </div>
+
+        <!-- 4. CREATE LINK -->
+        <div class="section" id="sec-create">
+            <div class="card">
+                <h3>➕ Create Rewarded Tracking Link</h3>
+                <input type="text" id="cName" placeholder="Link Campaign Name (Must match customer name)">
+                <div class="grid-2">
+                    <input type="text" id="cVideo" placeholder="Video URL (YouTube or MP4)" value="https://youtu.be/dQw4w9WgXcQ">
+                    <input type="text" id="cClaim" placeholder="Claim Destination URL" value="#">
+                </div>
+                <div class="grid-2">
+                    <input type="text" id="cButtonText" placeholder="Button Text (e.g. Claim Now)" value="Claim Now">
+                    <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+                </div>
 
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
-                        <input type="text" id="popupTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
-                        <input type="text" id="popupButtonText" placeholder="Popup Button Text" value="Claim Now">
+                        <input type="text" id="cPopTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                        <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="Claim Now">
                     </div>
-                    <input type="text" id="popupSubtitle" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <input type="text" id="popupImageUrl" placeholder="Image URL (16:9 ratio)">
-                    <div class="popup-preview" id="popupPreviewSection">
-                        <div class="preview-image" id="popupPreviewImage"><span>🎬 16:9 Preview</span></div>
-                        <div class="preview-title" id="popupPreviewTitle">🎁 Claim Your Reward</div>
-                        <div class="preview-sub" id="popupPreviewSub">Tap below to unlock</div>
-                        <div class="preview-btn" id="popupPreviewBtn">Claim Now</div>
+                    <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    <input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)">
+                    <div class="preview-box-16-9" id="createImgPreviewBox">
+                        <span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>
                     </div>
                 </div>
 
@@ -523,105 +396,36 @@
                         <option value="7">7 Days</option>
                         <option value="15">15 Days</option>
                         <option value="30">30 Days</option>
-                        <option value="custom">Custom Date</option>
                     </select>
-                    <input type="datetime-local" id="customExpiry" style="display:none;" onchange="updateCustomExpiry()">
-                    <div id="expiryDisplay" style="margin-top:4px;font-size:11px;color:var(--text-light);">⏰ No expiry set (Lifetime Active)</div>
                 </div>
 
-                <button onclick="createLink()" class="btn btn-primary btn-block" style="margin-top:16px;">🚀 Generate Link</button>
+                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
 
-                <div class="generated-link" id="generatedLink">
-                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Link Generated!</div>
+                <div id="generatedLinkBox" class="generated-link">
+                    <p style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created Successfully! Copy below:</p>
                     <div class="link-box">
-                        <input type="text" id="generatedLinkInput" readonly>
-                        <button onclick="copyLink()" class="btn btn-success btn-sm">📋 Copy</button>
+                        <input type="text" id="generatedLinkUrl" readonly>
+                        <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">📋 Copy</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 5. SETTINGS SECTION -->
-        <div class="section" id="section-settings">
+        <!-- 5. URL SHORTENER -->
+        <div class="section" id="sec-shortener">
             <div class="card">
-                <h3>🖼️ UID Background Image (9:16)</h3>
-                <input type="text" id="bgImageUrl" placeholder="Enter background image URL">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Background Preview">
-                    <div class="preview-label">🖼️ Preview</div>
-                </div>
-                <div style="display:flex;gap:8px;margin-top:8px;">
-                    <button onclick="saveBackground()" class="btn btn-primary btn-sm">💾 Save</button>
-                    <button onclick="removeBackground()" class="btn btn-danger btn-sm">🗑️ Remove</button>
-                </div>
-                <div id="bgStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔑 Secret Gateway Key</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Change the secret key used to access the admin login page</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="currentSecretKey" placeholder="Current Secret Key" readonly>
-                    <input type="text" id="newSecretKey" placeholder="New Secret Key">
-                </div>
-                <button onclick="changeSecretKey()" class="btn btn-primary btn-sm" style="margin-top:8px;">🔑 Update Secret Key</button>
-                <div id="secretKeyStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>📱 Contact & OTP Settings</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:6px;">Update admin contact info for OTP verification</p>
-                <div class="contact-settings-grid">
-                    <div>
-                        <label style="font-size:11px;color:var(--text-light);">📧 Email Address</label>
-                        <input type="email" id="adminEmail" placeholder="admin@example.com">
-                    </div>
-                    <div>
-                        <label style="font-size:11px;color:var(--text-light);">📞 Phone Number</label>
-                        <input type="text" id="adminPhone" placeholder="+919876543210">
-                    </div>
-                </div>
-                <button onclick="updateContactInfo()" class="btn btn-primary btn-sm" style="margin-top:10px;">💾 Save Contact Info</button>
-                <div id="contactStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔐 Change Admin Passcode</h3>
-                <div class="grid-2">
-                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
-                </div>
-                <button onclick="changePasscode()" class="btn btn-primary btn-sm" style="margin-top:8px;">Update Passcode</button>
-                <div id="passcodeStatus" style="margin-top:4px;font-size:11px;color:var(--text-light);"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔧 Device Management</h3>
-                <p style="font-size:11px;color:var(--text-light);margin-bottom:10px;">Manage blocked devices and active login sessions</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-                    <button onclick="loadBlockedDevices()" class="btn btn-danger btn-sm">⛔ Blocked Devices</button>
-                    <button onclick="loadActiveSessions()" class="btn btn-success btn-sm">🟢 Active Sessions</button>
-                </div>
-                <div id="deviceList">Loading...</div>
-            </div>
-        </div>
-
-        <!-- 6. URL SHORTENER SECTION -->
-        <div class="section" id="section-shortener">
-            <div class="card">
-                <h3>📊 URL Shortener Dashboard</h3>
+                <h3>📊 URL Shortener Overview</h3>
                 <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
                     <div class="stat-card"><div class="number" id="shortTotalLinks">0</div><div class="label">🔗 Total Links</div></div>
                     <div class="stat-card"><div class="number" id="shortActiveLinks">0</div><div class="label">✅ Active</div></div>
                     <div class="stat-card"><div class="number" id="shortTotalClicks">0</div><div class="label">👁️ Total Clicks</div></div>
-                    <div class="stat-card"><div class="number" id="shortClicks24h">0</div><div class="label">📅 24h Clicks</div></div>
                 </div>
             </div>
 
             <div class="card">
                 <h3>➕ Create Short Link (With App Deep-Linking)</h3>
-                <input type="text" id="shortOriginalUrl" placeholder="Destination URL (e.g. https://youtube.com/...)">
-                <input type="text" id="shortTitle" placeholder="Title (Optional)">
+                <input type="text" id="sUrl" placeholder="Destination URL (e.g. https://youtube.com/...)">
+                <input type="text" id="sTitle" placeholder="Title (Optional)">
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
                     <label class="switch">
@@ -631,39 +435,78 @@
                     <span style="font-size:11px;color:var(--text-light);">(Enable deep link app open)</span>
                 </div>
                 <div id="appSchemeContainer" style="display:none;margin-top:8px;">
-                    <input type="text" id="shortAppScheme" placeholder="App Deep Link Scheme (e.g. vnd.youtube://, whatsapp://)">
-                    <input type="text" id="shortAppStoreLink" placeholder="App Store / Play Store Fallback Link" style="margin-top:6px;">
+                    <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
                 </div>
-                <div style="margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);">📅 Schedule Expiry:</label>
-                    <input type="datetime-local" id="shortExpiryDate" style="margin-top:4px;">
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
+            </div>
+
+            <div class="card">
+                <h3>Active Short Links</h3>
+                <div id="shortLinksList">Loading...</div>
+            </div>
+        </div>
+
+        <!-- 6. SETTINGS -->
+        <div class="section" id="sec-settings">
+            <div class="card">
+                <h3>🖼️ UID Background Image (9:16)</h3>
+                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
+                <div class="image-preview" id="bgImagePreview">
+                    <img id="bgPreviewImg" alt="Preview">
                 </div>
-                <button onclick="createShortLink()" class="btn btn-primary btn-block" style="margin-top:10px;">🚀 Generate Short Link</button>
-                <div class="generated-link" id="shortGeneratedLink">
-                    <div class="link-label" style="font-weight:700;color:var(--success);">✅ Short Link Created!</div>
-                    <div class="link-box">
-                        <input type="text" id="shortGeneratedLinkInput" readonly>
-                        <button onclick="copyShortLink()" class="btn btn-success btn-sm">📋 Copy</button>
-                    </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
+                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
                 </div>
             </div>
 
             <div class="card">
-                <h3>🔍 Manage Short Links</h3>
-                <div class="search-bar">
-                    <input type="text" id="searchShortLinksInput" placeholder="Search by title or code..." oninput="filterShortLinks()">
-                    <span class="search-results-count" id="shortSearchResultsCount">Showing all links</span>
+                <h3>🔑 Secret Gateway Key</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="currentSecretKey" placeholder="Current Secret Key" readonly>
+                    <input type="text" id="newSecretKey" placeholder="New Secret Key">
                 </div>
-                <div id="shortLinksList"></div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changeSecretKey()">🔑 Update Secret Key</button>
+            </div>
+
+            <div class="card">
+                <h3>📱 Contact & OTP Settings</h3>
+                <div class="grid-2">
+                    <input type="email" id="adminEmail" placeholder="admin@example.com">
+                    <input type="text" id="adminPhone" placeholder="+919876543210">
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">💾 Save Contact</button>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Change Admin Passcode</h3>
+                <div class="grid-2">
+                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
+                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changePasscode()">Update Passcode</button>
+            </div>
+
+            <div class="card">
+                <h3>⛔ Permanently Blocked Attackers</h3>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Devices banned automatically after 3 wrong passcode attempts</p>
+                <div id="deviceList">Loading blocked attackers...</div>
             </div>
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL (REUSED FOR LINK EDIT, SHORT LINK EDIT & SHORT LINK ANALYTICS) -->
+    <!-- ✏️ EDIT MODAL (CLEAN & ORGANIZED FORM - ZERO OVERLAP) -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="margin:0;font-size:18px;">✏️ Edit Rewarded Link</h3>
+                <button onclick="closeEditModal()" style="background:none;border:none;color:var(--text-light);font-size:22px;cursor:pointer;">✕</button>
+            </div>
             <div id="editModalBody"></div>
+            <div style="margin-top:18px;display:flex;gap:10px;">
+                <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
+                <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -672,18 +515,8 @@
     <script>
         const csrfToken = localStorage.getItem('csrfToken') || '';
         let allLinks = [];
-        let allShortLinks = [];
-        let dashboardChartInstance = null;
-        let analyticsChartInstance = null;
-        let selectedExpiry = null;
         let editingLinkId = null;
-        let currentFilter = 'lifetime';
-        let analyticsData = null;
-        let dashboardGraphMode = '7days';
-        let dashboardDataType = 'total';
-        let analyticsGraphMode = '7days';
-        let analyticsDataType = 'total';
-        let statsData = null;
+        let selectedExpiry = null;
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
@@ -702,106 +535,47 @@
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('section-' + id).classList.add('active');
-            const btn = document.querySelector(`.menu-btn[data-section="${id}"]`);
-            if (btn) btn.classList.add('active');
+            const target = document.getElementById('sec-' + id);
+            if (target) target.classList.add('active');
+            event.currentTarget.classList.add('active');
+
             if (id === 'links') loadLinks();
-            if (id === 'analytics') loadAnalyticsLinks();
-            if (id === 'shortener') { loadShortLinks(); loadShortLinkStats(); }
-            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); }
+            if (id === 'renewals') loadRenewalSystem();
+            if (id === 'shortener') loadShortLinks();
+            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); loadContactInfo(); }
         }
 
-        async function loadStats(updateGraphs = true) {
+        function updateCreatePopupPreview(url) {
+            const box = document.getElementById('createImgPreviewBox');
+            if (url && url.startsWith('http')) {
+                box.innerHTML = `<img src="${url}" alt="16:9 Popup Preview">`;
+            } else {
+                box.innerHTML = `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            }
+        }
+
+        async function loadStats() {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
                 const data = await res.json();
-                statsData = data;
                 if (data && data.global) {
                     const g = data.global;
                     document.getElementById('totVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('totClaims').textContent = g.totalClaims || 0;
                     document.getElementById('activeLive').textContent = g.activeNow || 0;
-                    document.getElementById('totalVisitors').textContent = g.totalVisitors || 0;
-                    document.getElementById('totalClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('todayVisitors').textContent = g.todayVisitors || 0;
-                    document.getElementById('todayClaims').textContent = g.todayClaims || 0;
                     document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
                     document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
-                    document.getElementById('live48hrVisits').textContent = g.todayVisitors || 0;
-                    document.getElementById('live48hrClaims').textContent = g.todayClaims || 0;
+                    document.getElementById('liveTodayVisits').textContent = g.todayVisitors || 0;
+                    document.getElementById('liveTodayClaims').textContent = g.todayClaims || 0;
                     document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
                     document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
-                    if (updateGraphs) updateDashboardGraph(data);
                 }
                 if (data && data.links) {
-                    document.getElementById('totalLinks').textContent = data.links.length || 0;
+                    document.getElementById('totLinks').textContent = data.links.length || 0;
                     document.getElementById('activeLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
-                    document.getElementById('totalVisits').textContent = data.links.reduce((s, l) => s + (l.visits||0), 0);
-                    document.getElementById('expiredLinks').textContent = data.links.filter(l => l.expiryDate && new Date(l.expiryDate) < new Date()).length || 0;
                     allLinks = data.links;
                 }
             } catch(e) {}
-        }
-
-        function updateDashboardGraph(data) {
-            if (!data || !data.global) return;
-            const stats = data.global;
-            const dailyVisitors = stats.dailyVisitors || {};
-            const dailyClaims = stats.dailyClaims || {};
-            
-            let allDates = Object.keys(dailyVisitors);
-            if (allDates.length === 0) allDates = Object.keys(dailyClaims);
-            allDates.sort();
-
-            let displayDates = [];
-            let visitsData = [];
-            let claimsData = [];
-
-            if (dashboardGraphMode === '7days') {
-                displayDates = allDates.slice(-7);
-                if (displayDates.length === 0) displayDates = ['Today'];
-                visitsData = displayDates.map(d => dailyVisitors[d] || 0);
-                claimsData = displayDates.map(d => dailyClaims[d] || 0);
-            } else {
-                displayDates = allDates.slice(-1);
-                if (displayDates.length === 0) displayDates = ['Today'];
-                visitsData = displayDates.map(d => dailyVisitors[d] || 0);
-                claimsData = displayDates.map(d => dailyClaims[d] || 0);
-            }
-
-            if (dashboardDataType === 'unique') {
-                visitsData = visitsData.map(v => Math.round(v * 0.65));
-                claimsData = claimsData.map(c => Math.round(c * 0.65));
-            }
-
-            const ctx = document.getElementById('dashboardChart').getContext('2d');
-            if (dashboardChartInstance) dashboardChartInstance.destroy();
-
-            dashboardChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: displayDates,
-                    datasets: [
-                        { label: `${dashboardDataType === 'unique' ? 'Unique ' : ''}Visits`, data: visitsData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true, tension: 0.35 },
-                        { label: `${dashboardDataType === 'unique' ? 'Unique ' : ''}Claims`, data: claimsData, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.15)', fill: true, tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function switchDashboardGraph(mode) {
-            dashboardGraphMode = mode;
-            document.getElementById('dashGraph7').classList.toggle('active', mode === '7days');
-            document.getElementById('dashGraph24').classList.toggle('active', mode === '24h');
-            loadStats(true);
-        }
-
-        function switchDashboardData(type) {
-            dashboardDataType = type;
-            document.getElementById('dashDataTotal').classList.toggle('active', type === 'total');
-            document.getElementById('dashDataUnique').classList.toggle('active', type === 'unique');
-            loadStats(true);
         }
 
         async function loadLinks() {
@@ -820,20 +594,14 @@
             if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
-                    <div class="info">
+                    <div>
                         <span class="name">${escapeHTML(l.name)}</span>
-                        <span class="details">Visits: <b>${l.visits||0}</b> | Claims: <b>${l.claims||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></span>
+                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${escapeHTML(l.buttonText || 'Claim Now')}</b> | Visits: <b>${l.visits||0}</b> | <span class="status-badge status-${l.status}">${l.status}</span></div>
                     </div>
-                    <div class="actions">
+                    <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
                         <button class="btn btn-sm btn-warning" onclick="openEditModal('${l.id}')">✏️ Edit</button>
-                        <select onchange="handleStatusAction('${l.id}', this.value)" class="status-dropdown">
-                            <option value="">⚡ Action</option>
-                            <option value="active">✅ Activate</option>
-                            <option value="suspended">⏸️ Suspend</option>
-                            <option value="disabled">⛔ Disable</option>
-                            <option value="delete">🗑️ Delete</option>
-                        </select>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLink('${l.id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -844,46 +612,37 @@
             navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success'));
         }
 
-        async function handleStatusAction(id, action) {
-            if (!action) return;
-            if (action === 'delete') {
-                if (!confirm('Delete link permanently?')) return;
-                await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
-                showToast('Link deleted', 'info');
-                loadLinks(); loadStats(false);
-                return;
-            }
-            await fetch('/api/links/' + id + '/status', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ status: action })
-            });
-            showToast('Status updated to: ' + action, 'success');
-            loadLinks(); loadStats(false);
+        async function deleteLink(id) {
+            if (!confirm('Permanently delete this link?')) return;
+            await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
+            showToast('Link deleted', 'info');
+            loadLinks();
+            loadStats();
         }
 
-        // ✏️ COMPLETE EDIT MODAL (WITH 16:9 PREVIEW, BUTTON TEXT, HEADLINE & EXPIRY)
+        // ✏️ CLEAN ORGANIZED EDIT MODAL (CLEARS OVERLAPPING INPUTS FROM SCREENSHOT)
         function openEditModal(id) {
             const link = allLinks.find(l => l.id === id);
             if (!link) return;
             editingLinkId = id;
             const popup = link.popupSettings || {};
             const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-            
+
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <h3 style="color:#fff;margin-bottom:12px;">✏️ Edit Rewarded Link</h3>
-                <div class="form-group"><label>Link Name</label><input type="text" id="eName" value="${escapeHTML(link.name)}"></div>
-                <div class="grid-2">
+                <div class="form-group">
+                    <label>Link Name</label>
+                    <input type="text" id="eName" value="${escapeHTML(link.name)}">
+                </div>
+                <div class="form-row-2">
                     <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video)}"></div>
                     <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim)}"></div>
                 </div>
-                <div class="grid-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText||'Claim Now')}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline||'')}"></div>
+                <div class="form-row-2">
+                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
+                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
                 </div>
-                <div class="grid-2">
+                <div class="form-row-2">
                     <div class="form-group">
                         <label>Status</label>
                         <select id="eStatus">
@@ -898,34 +657,30 @@
                     </div>
                 </div>
 
-                <!-- 🖼️ 16:9 POPUP IMAGE EDITING & PREVIEW -->
-                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:6px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
-                    <div class="grid-2">
-                        <input type="text" id="ePopTitle" placeholder="Popup Title" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}">
-                        <input type="text" id="ePopBtn" placeholder="Popup Button" value="${escapeHTML(popup.buttonText || 'Claim Now')}">
+                <!-- 🖼️ 16:9 ENTRANCE POPUP EDITING (NO OVERLAPS) -->
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
+                    <div class="form-row-2">
+                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
+                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
                     </div>
-                    <input type="text" id="ePopSub" placeholder="Popup Subtitle" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}">
-                    <input type="text" id="ePopImg" placeholder="Popup Image URL (16:9 Ratio)" value="${escapeHTML(popup.image || '')}">
-                    <div class="popup-preview-small" id="editPopupPreview">
-                        ${popup.image ? `<img src="${escapeHTML(popup.image)}" class="preview-img" alt="Preview">` : `<span style="color:rgba(255,255,255,0.3);font-size:10px;">16:9 Image Preview</span>`}
+                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
+                    <div class="form-group"><label>Popup Image URL (16:9 Aspect Ratio)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
+                    <div class="preview-box-16-9" id="editPreviewBox">
+                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
                     </div>
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
-                    <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
                 </div>
             `;
-
-            const imgInp = document.getElementById('ePopImg');
-            if (imgInp) {
-                imgInp.addEventListener('input', function() {
-                    const u = this.value.trim();
-                    const p = document.getElementById('editPopupPreview');
-                    p.innerHTML = u ? `<img src="${escapeHTML(u)}" class="preview-img" alt="Preview">` : `<span style="color:rgba(255,255,255,0.3);font-size:10px;">16:9 Image Preview</span>`;
-                });
-            }
             document.getElementById('editModal').classList.add('show');
+        }
+
+        function updateEditPopupPreview(url) {
+            const box = document.getElementById('editPreviewBox');
+            if (url && url.startsWith('http')) {
+                box.innerHTML = `<img src="${escapeHTML(url)}">`;
+            } else {
+                box.innerHTML = `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            }
         }
 
         function closeEditModal() {
@@ -954,57 +709,35 @@
                 credentials: 'include',
                 body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings })
             });
-            showToast('✅ Link updated successfully!', 'success');
+
+            showToast('✅ Link updated successfully! Live on visitor page.', 'success');
             closeEditModal();
             loadLinks();
         }
 
-        // CREATE LINK LOGIC
         function updateSchedulePreset() {
             const p = document.getElementById('schedulePreset').value;
-            const customInp = document.getElementById('customExpiry');
-            const disp = document.getElementById('expiryDisplay');
-            if (p === 'custom') {
-                customInp.style.display = 'block';
-                selectedExpiry = null;
-                disp.textContent = '📅 Select custom date';
-                return;
-            }
-            customInp.style.display = 'none';
             if (p) {
                 const days = parseInt(p);
                 const d = new Date();
                 d.setDate(d.getDate() + days);
                 selectedExpiry = d.toISOString();
-                disp.textContent = '📅 Expires: ' + d.toLocaleDateString();
             } else {
                 selectedExpiry = null;
-                disp.textContent = '⏰ No expiry set (Lifetime Active)';
-            }
-        }
-
-        function updateCustomExpiry() {
-            const v = document.getElementById('customExpiry').value;
-            if (v) {
-                selectedExpiry = new Date(v).toISOString();
-                document.getElementById('expiryDisplay').textContent = '📅 Expires: ' + new Date(v).toLocaleString();
-            } else {
-                selectedExpiry = null;
-                document.getElementById('expiryDisplay').textContent = '⏰ No expiry set';
             }
         }
 
         async function createLink() {
-            const name = document.getElementById('linkName').value.trim();
-            const video = document.getElementById('video').value.trim();
-            const claim = document.getElementById('claim').value.trim();
-            const buttonText = document.getElementById('buttonText').value.trim();
-            const headline = document.getElementById('headline').value.trim();
+            const name = document.getElementById('cName').value.trim();
+            const video = document.getElementById('cVideo').value.trim();
+            const claim = document.getElementById('cClaim').value.trim();
+            const headline = document.getElementById('cHeadline').value.trim();
+            const buttonText = document.getElementById('cButtonText').value.trim();
             const popupSettings = {
-                title: document.getElementById('popupTitle').value.trim(),
-                subtitle: document.getElementById('popupSubtitle').value.trim(),
-                buttonText: document.getElementById('popupButtonText').value.trim(),
-                image: document.getElementById('popupImageUrl').value.trim() || null
+                title: document.getElementById('cPopTitle').value,
+                subtitle: document.getElementById('cPopSub').value,
+                buttonText: document.getElementById('cPopBtn').value,
+                image: document.getElementById('cPopImg').value || null
             };
 
             if (!name) return showToast('Please enter link name', 'error');
@@ -1013,221 +746,203 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    name, video, claim, headline, buttonText,
-                    expiryDate: selectedExpiry,
-                    popupSettings
-                })
+                body: JSON.stringify({ name, video, claim, headline, buttonText, expiryDate: selectedExpiry, popupSettings })
             });
             const d = await res.json();
             if (d && d.id) {
                 showToast('✅ Link Created Successfully!', 'success');
                 const fullUrl = window.location.origin + '/uid?link=' + d.id;
-                document.getElementById('generatedLinkInput').value = fullUrl;
-                document.getElementById('generatedLink').style.display = 'block';
-                document.getElementById('linkName').value = '';
+                document.getElementById('generatedLinkUrl').value = fullUrl;
+                document.getElementById('generatedLinkBox').style.display = 'block';
+                document.getElementById('cName').value = '';
                 loadStats();
             }
         }
 
-        function copyLink() {
-            const inp = document.getElementById('generatedLinkInput');
+        function copyGeneratedLink() {
+            const inp = document.getElementById('generatedLinkUrl');
             inp.select();
             document.execCommand('copy');
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ANALYTICS & HIGH-RES PNG / CSV EXPORTS
-        async function loadAnalyticsLinks() {
-            const sel = document.getElementById('analyticsLinkSelect');
-            sel.innerHTML = allLinks.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
-            loadAnalytics();
+        // ==================== 🔄 RENEWAL SYSTEM IN ADMIN ====================
+        async function loadRenewalSystem() {
+            // Load User Signup Approvals
+            const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
+            const uData = await uRes.json();
+            const uList = document.getElementById('usersApprovalList');
+            if (!uData.users?.length) {
+                uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No user registration requests.</p>';
+            } else {
+                uList.innerHTML = uData.users.map(u => `
+                    <div class="link-item">
+                        <div>
+                            <div class="name">${escapeHTML(u.name)} (${u.status.toUpperCase()})</div>
+                            <div class="details">📧 ${escapeHTML(u.email)} | 📞 ${escapeHTML(u.phone)}</div>
+                        </div>
+                        <div>
+                            ${u.status === 'pending' ? `
+                                <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>
+                                <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id}', 'rejected')">❌ Reject</button>
+                            ` : `<span style="font-size:11px;font-weight:700;color:var(--text-light);">${u.status}</span>`}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Load Renewal Requests & Pricing
+            const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
+            const sData = await sRes.json();
+            const rList = document.getElementById('renewalReqsList');
+            if (!sData.requests?.length) {
+                rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No renewal requests pending.</p>';
+            } else {
+                rList.innerHTML = sData.requests.map(r => `
+                    <div class="link-item">
+                        <div>
+                            <div class="name">User: ${escapeHTML(r.linkName)} | Plan: ${r.plan} (${r.days} Days)</div>
+                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref: <b>${escapeHTML(r.transactionId)}</b></div>
+                        </div>
+                        <div>
+                            ${r.status === 'pending' ? `
+                                <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
+                            ` : `<span style="font-size:11px;color:var(--success);font-weight:700;">APPROVED</span>`}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Load Pricing Inputs
+            if (sData.pricing) {
+                const pr = sData.pricing.pricing || {};
+                if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
+                if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
+                if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
+                if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
+                if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
+                document.getElementById('setPaymentMode').value = sData.pricing.autoPaymentEnabled !== false ? 'true' : 'false';
+                document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || '';
+                document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
+            }
         }
 
-        function setTimeFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.time-filters .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
-            document.getElementById('customDatePicker').style.display = f === 'custom' ? 'flex' : 'none';
-            loadAnalytics();
-        }
-
-        function loadAnalytics() {
-            const selId = document.getElementById('analyticsLinkSelect').value;
-            const link = allLinks.find(l => l.id === selId);
-            if (!link) return;
-            analyticsData = link;
-            document.getElementById('analyticsLinkName').textContent = link.name;
-            document.getElementById('analyticsLinkId').textContent = link.id;
-            document.getElementById('analyticsLinkStatus').textContent = link.status;
-            document.getElementById('analyticsLinkCreated').textContent = new Date(link.created||Date.now()).toLocaleDateString();
-            document.getElementById('analyticsTotalVisits').textContent = link.visits || 0;
-            document.getElementById('analyticsTotalClaims').textContent = link.claims || 0;
-            document.getElementById('analyticsUniqueVisitors').textContent = Math.round((link.visits||0) * 0.65);
-            document.getElementById('analyticsUniqueClaims').textContent = Math.round((link.claims||0) * 0.65);
-
-            renderAnalyticsChart();
-        }
-
-        function renderAnalyticsChart() {
-            if (!analyticsData) return;
-            const ctx = document.getElementById('analyticsChart').getContext('2d');
-            if (analyticsChartInstance) analyticsChartInstance.destroy();
-            let v = analyticsData.visits || 0;
-            let c = analyticsData.claims || 0;
-            if (analyticsDataType === 'unique') { v = Math.round(v * 0.65); c = Math.round(c * 0.65); }
-
-            analyticsChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Visits', 'Claims'],
-                    datasets: [{ label: `${analyticsDataType === 'unique' ? 'Unique ' : ''}${analyticsData.name}`, data: [v, c], backgroundColor: ['#6366f1', '#22c55e'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+        async function setUserStatus(id, action) {
+            await fetch(`/api/admin/renewal-users/${id}/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ action })
             });
+            showToast(`User ${action}!`, 'success');
+            loadRenewalSystem();
         }
 
-        function switchAnalyticsGraph(mode) {
-            analyticsGraphMode = mode;
-            document.getElementById('anaGraph7').classList.toggle('active', mode === '7days');
-            document.getElementById('anaGraph24').classList.toggle('active', mode === '24h');
-            renderAnalyticsChart();
-        }
-
-        function switchAnalyticsData(type) {
-            analyticsDataType = type;
-            document.getElementById('anaDataTotal').classList.toggle('active', type === 'total');
-            document.getElementById('anaDataUnique').classList.toggle('active', type === 'unique');
-            renderAnalyticsChart();
-        }
-
-        function downloadAnalyticsImage() {
-            html2canvas(document.getElementById('analyticsExportBox')).then(c => {
-                const a = document.createElement('a'); a.download = (analyticsData?.name || 'Analytics') + '.png'; a.href = c.toDataURL(); a.click();
+        async function approveRenewal(id) {
+            await fetch(`/api/admin/renewal-requests/${id}/approve`, {
+                method: 'POST',
+                credentials: 'include'
             });
+            showToast('Renewal approved & Link extended!', 'success');
+            loadRenewalSystem();
+            loadStats();
         }
 
-        function downloadAnalyticsCSV() {
-            if (!analyticsData) return;
-            const csv = `Link Name,Visits,Claims\n"${analyticsData.name}",${analyticsData.visits||0},${analyticsData.claims||0}`;
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.download = 'report.csv'; a.href = URL.createObjectURL(blob); a.click();
+        async function saveRenewalSettings() {
+            const pricing = {
+                '7days': parseInt(document.getElementById('p7d').value),
+                '15days': parseInt(document.getElementById('p15d').value),
+                '30days': parseInt(document.getElementById('p30d').value),
+                '90days': parseInt(document.getElementById('p90d').value),
+                '1year': parseInt(document.getElementById('p1y').value)
+            };
+            const autoPaymentEnabled = document.getElementById('setPaymentMode').value === 'true';
+            const upiId = document.getElementById('setUpiId').value.trim();
+            const whatsappNumber = document.getElementById('setWaNumber').value.trim();
+
+            await fetch('/api/admin/renewal-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ pricing, autoPaymentEnabled, upiId, whatsappNumber })
+            });
+            showToast('Renewal settings updated!', 'success');
         }
 
-        // SHORTENER LOGIC WITH FULL EDIT & ANALYTICS MODALS
+        // URL SHORTENER
         function toggleAppScheme() {
             const chk = document.getElementById('shortAppOpen').checked;
             document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
-        }
-
-        async function loadShortLinkStats() {
-            try {
-                const res = await fetch('/api/short-links/stats', { credentials: 'include' });
-                const d = await res.json();
-                if (d.success) {
-                    document.getElementById('shortTotalLinks').textContent = d.stats.totalLinks || 0;
-                    document.getElementById('shortActiveLinks').textContent = d.stats.activeLinks || 0;
-                    document.getElementById('shortTotalClicks').textContent = d.stats.totalClicks || 0;
-                    document.getElementById('shortClicks24h').textContent = d.stats.clicks24h || 0;
-                }
-            } catch(e) {}
         }
 
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links', { credentials: 'include' });
             const d = await res.json();
-            allShortLinks = d.links || [];
-            filterShortLinks();
-        }
-
-        function filterShortLinks() {
-            const q = (document.getElementById('searchShortLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allShortLinks.filter(l => l.title.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)) : allShortLinks;
-            const list = document.getElementById('shortLinksList');
-            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links found.</p>';
-            list.innerHTML = filtered.map(l => `
+            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
+            list.innerHTML = d.links.map(l => `
                 <div class="link-item">
                     <div>
                         <div class="name">${escapeHTML(l.title)}</div>
                         <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
                     </div>
                     <div>
-                        <button class="btn btn-sm btn-success" onclick="copyShortLinkUrl('${l.code}')">📋 Copy</button>
-                        <button class="btn btn-sm btn-primary" onclick="viewShortLinkAnalytics('${l._id}')">📊 Stats</button>
+                        <button class="btn btn-sm btn-success" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))">📋 Copy</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id}')">🗑️ Delete</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function copyShortLinkUrl(code) {
-            const u = window.location.origin + '/s/' + code;
-            navigator.clipboard.writeText(u).then(() => showToast('Copied: ' + u, 'success'));
-        }
-
         async function deleteShortLink(id) {
-            if (!confirm('Permanently delete this short link?')) return;
+            if (!confirm('Delete short link?')) return;
             await fetch('/api/short-links/' + id, { method: 'DELETE', credentials: 'include' });
             showToast('Short link deleted', 'info');
             loadShortLinks();
-            loadShortLinkStats();
-        }
-
-        async function viewShortLinkAnalytics(id) {
-            const res = await fetch('/api/short-links/' + id + '/analytics', { credentials: 'include' });
-            const data = await res.json();
-            if (!data.success) return;
-            const b = document.getElementById('editModalBody');
-            b.innerHTML = `
-                <h3>📊 Short Link Analytics: ${escapeHTML(data.link.title)}</h3>
-                <div class="stats-grid" style="margin:14px 0;">
-                    <div class="stat-card"><div class="number">${data.totalClicks||0}</div><div class="label">Total Clicks</div></div>
-                </div>
-                <div style="max-height:260px;overflow-y:auto;">
-                    ${data.clicks.length ? data.clicks.map(c => `
-                        <div class="link-item">
-                            <div><span class="name">${c.deviceName}</span><div class="details">IP: ${c.ip} | ${new Date(c.timestamp).toLocaleString()}</div></div>
-                        </div>
-                    `).join('') : '<p style="color:#94a3b8;font-size:12px;">No clicks recorded yet.</p>'}
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="closeEditModal()">Close</button>
-            `;
-            document.getElementById('editModal').classList.add('show');
         }
 
         async function createShortLink() {
-            const originalUrl = document.getElementById('shortOriginalUrl').value.trim();
-            const title = document.getElementById('shortTitle').value.trim();
-            const appOpen = document.getElementById('shortAppOpen').checked;
-            const appScheme = document.getElementById('shortAppScheme').value.trim();
-            const appStoreLink = document.getElementById('shortAppStoreLink').value.trim();
-            const expiryDate = document.getElementById('shortExpiryDate').value;
+            const originalUrl = document.getElementById('sUrl').value.trim();
+            const title = document.getElementById('sTitle').value.trim();
+            const appScheme = document.getElementById('sScheme').value.trim();
             if (!originalUrl) return showToast('Enter URL', 'error');
 
-            const res = await fetch('/api/short-links', {
+            await fetch('/api/short-links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate })
+                body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
             });
+            showToast('✅ Short link created!', 'success');
+            document.getElementById('sUrl').value = '';
+            loadShortLinks();
+        }
+
+        // DEVICES & SETTINGS
+        async function loadBlockedDevices() {
+            const list = document.getElementById('deviceList');
+            const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
             const d = await res.json();
-            if (d.success) {
-                showToast('✅ Short link created!', 'success');
-                document.getElementById('shortGeneratedLinkInput').value = d.shortUrl;
-                document.getElementById('shortGeneratedLink').style.display = 'block';
-                loadShortLinks();
-                loadShortLinkStats();
-            }
+            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices currently.</p>';
+            list.innerHTML = d.devices.map(dev => `
+                <div class="link-item" style="border-left-color:var(--danger);">
+                    <div>
+                        <div class="name">⛔ ${dev.deviceName} (${dev.ip})</div>
+                        <div class="details">Attempts: <b>${dev.attempts}</b> | Reason: <span style="color:var(--danger);">${dev.reason}</span></div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function copyShortLink() {
-            const inp = document.getElementById('shortGeneratedLinkInput');
-            inp.select();
-            document.execCommand('copy');
-            showToast('Copied to clipboard!', 'success');
+        async function unblockDev(id) {
+            await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
+            showToast('Device unblocked successfully!', 'success');
+            loadBlockedDevices();
         }
 
-        // SETTINGS: SECRET KEY, BACKGROUND, PASSCODE & DEVICES
         async function loadSecretKey() {
             const res = await fetch('/api/admin/secret-key', { credentials: 'include' });
             const d = await res.json();
@@ -1252,6 +967,22 @@
             } else showToast(d.error, 'error');
         }
 
+        async function loadContactInfo() {
+            try {
+                const res = await fetch('/api/settings');
+                const d = await res.json();
+                if (d) {
+                    if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
+                    if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
+                    if (d.background) {
+                        document.getElementById('bgImgUrl').value = d.background;
+                        document.getElementById('bgPreviewImg').src = d.background;
+                        document.getElementById('bgImagePreview').classList.add('show');
+                    }
+                }
+            } catch(e) {}
+        }
+
         async function updateContactInfo() {
             const email = document.getElementById('adminEmail').value.trim();
             const phone = document.getElementById('adminPhone').value.trim();
@@ -1264,62 +995,29 @@
             showToast('Contact info saved', 'success');
         }
 
-        async function loadBlockedDevices() {
-            const list = document.getElementById('deviceList');
-            const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-            const d = await res.json();
-            if (!d.devices?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices currently.</p>';
-            list.innerHTML = d.devices.map(dev => `
-                <div class="device-item">
-                    <div class="info">
-                        <span class="name">⛔ ${dev.deviceName} (${dev.ip})</span>
-                        <span class="details">Attempts: <b>${dev.attempts}</b> | Reason: <span style="color:var(--danger);">${dev.reason}</span></span>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function unblockDev(id) {
-            await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
-            showToast('Device unblocked successfully!', 'success');
-            loadBlockedDevices();
-        }
-
-        async function loadActiveSessions() {
-            const list = document.getElementById('deviceList');
-            const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
-            const d = await res.json();
-            if (!d.sessions?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No active sessions.</p>';
-            list.innerHTML = d.sessions.map(s => `
-                <div class="session-item">
-                    <div class="info"><span class="name">${s.userAgent?.slice(0,30)||'Session'}</span><span class="details">Login: ${new Date(s.createdAt).toLocaleString()}</span></div>
-                </div>
-            `).join('');
-        }
-
         async function saveBackground() {
             const bg = document.getElementById('bgImgUrl').value.trim();
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
+            document.getElementById('bgPreviewImg').src = bg;
+            document.getElementById('bgImagePreview').classList.add('show');
             showToast('Background updated', 'success');
         }
 
         async function removeBackground() {
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
             document.getElementById('bgImgUrl').value = '';
+            document.getElementById('bgImagePreview').classList.remove('show');
             showToast('Background removed', 'info');
         }
 
         async function changePasscode() {
-            const oldPasscode = document.getElementById('oldPasscode').value;
-            const newPasscode = document.getElementById('newPasscode').value;
-            if (!oldPasscode || !newPasscode || newPasscode.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode, newPasscode }) });
+            const oldP = document.getElementById('oldPasscode').value;
+            const newP = document.getElementById('newPasscode').value;
+            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
+            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
             const d = await res.json();
-            if (d.success) showToast('Passcode changed!', 'success');
-            else showToast(d.error, 'error');
+            if (d.success) showToast('✅ Passcode updated!', 'success');
+            else showToast('❌ ' + d.error, 'error');
         }
 
         function setTheme(t) {
@@ -1334,12 +1032,14 @@
         }
 
         function installApp() {
-            showToast('Use Chrome browser menu -> Add to Home screen', 'info');
+            showToast('Use browser menu -> Add to Home Screen', 'info');
         }
 
-        // Live refresh every 5 seconds
-        loadStats(true);
-        setInterval(() => loadStats(false), 5000);
+        // Initialize Everything on Load
+        loadStats();
+        loadLinks();
+        loadContactInfo();
+        setInterval(loadStats, 5000);
     </script>
 </body>
 </html>
