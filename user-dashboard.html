@@ -35,7 +35,7 @@
 
         .portal-wrap { width: 100%; max-width: 680px; position: relative; z-index: 2; }
 
-        /* Auth Tabs & Card */
+        /* Auth Card with Video-Lock Styling */
         .auth-card {
             background: rgba(19, 23, 34, 0.85); backdrop-filter: blur(16px); border-radius: 24px;
             padding: 32px 26px; border: 1px solid rgba(99, 102, 241, 0.25); box-shadow: 0 20px 50px rgba(0,0,0,0.6);
@@ -60,9 +60,11 @@
         .btn {
             width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
             cursor: pointer; transition: 0.2s; color: #fff; position: relative; overflow: hidden;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 6px 24px rgba(99,102,241,0.4); }
-        .btn-success { background: linear-gradient(135deg, var(--success), #16a34a); }
+        .btn-success { background: linear-gradient(135deg, var(--success), #16a34a); box-shadow: 0 6px 24px rgba(34,197,94,0.3); }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); }
         .btn:active { transform: scale(0.98); }
 
         /* Dashboard View */
@@ -71,11 +73,11 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .head-card {
-            background: rgba(19, 23, 34, 0.8); backdrop-filter: blur(14px); border: 1px solid var(--border);
+            background: rgba(19, 23, 34, 0.85); backdrop-filter: blur(14px); border: 1px solid var(--border);
             border-radius: 20px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
         }
         .card {
-            background: rgba(19, 23, 34, 0.8); backdrop-filter: blur(14px); border: 1px solid var(--border);
+            background: rgba(19, 23, 34, 0.85); backdrop-filter: blur(14px); border: 1px solid var(--border);
             border-radius: 20px; padding: 22px; margin-bottom: 18px;
         }
         .card h4 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
@@ -87,6 +89,10 @@
 
         .detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.03); }
         .detail-row span:first-child { color: var(--text-light); }
+
+        /* Permanent Action Buttons on User Dashboard */
+        .action-hub { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        @media (max-width: 600px) { .action-hub { grid-template-columns: 1fr; } }
 
         /* Renewal Plan Selector */
         .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; margin: 16px 0; }
@@ -109,6 +115,23 @@
             max-width: 420px; width: 100%; text-align: center;
         }
         .qr-wrap { background: #fff; padding: 12px; border-radius: 14px; display: inline-block; margin: 14px 0; }
+
+        /* ✨ CUSTOM MODERN POPUP MODAL (REPLACES NATIVE BROWSER ALERT) */
+        .custom-popup-overlay {
+            position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(16px);
+            z-index: 100000; display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .custom-popup-overlay.show { display: flex; }
+        .custom-popup-card {
+            background: #131722; border-radius: 24px; padding: 32px 26px; max-width: 380px; width: 100%;
+            border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            text-align: center; animation: popIn 0.3s ease;
+        }
+        .custom-popup-card .p-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+        .custom-popup-card .p-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .custom-popup-card .p-msg { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 22px; }
+        .custom-popup-card .p-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -127,13 +150,13 @@
                 <!-- Signin Form -->
                 <div id="formSignin">
                     <input type="email" id="logEmail" placeholder="Enter Registered Email">
-                    <input type="text" id="logPhone" placeholder="Enter Phone Number">
+                    <input type="text" id="logPhone" placeholder="Enter Registered Phone Number">
                     <button class="btn btn-primary" onclick="handleSignin()">Sign In ➜</button>
                 </div>
 
                 <!-- Signup Form -->
                 <div id="formSignup" style="display:none;">
-                    <input type="text" id="regName" placeholder="Your Full Name (Must match link name)">
+                    <input type="text" id="regName" placeholder="Your Full Name (Must match link campaign name)">
                     <input type="email" id="regEmail" placeholder="Your Email Address">
                     <input type="text" id="regPhone" placeholder="Your Phone Number">
                     <button class="btn btn-primary" onclick="handleSignup()">Submit Registration ➜</button>
@@ -142,20 +165,26 @@
             </div>
         </div>
 
-        <!-- CUSTOMER DASHBOARD & EXTENSION -->
+        <!-- CUSTOMER DASHBOARD & EXTENSION VIEW -->
         <div class="dash-view" id="dashView">
             <div class="head-card">
                 <div>
                     <h3 id="welcomeUser" style="font-size:18px;font-weight:800;">Welcome</h3>
-                    <p style="font-size:12px;color:var(--text-light);">Link Analytics & Validity Extension</p>
+                    <p style="font-size:12px;color:var(--text-light);">Customer Link Portal & Analytics Hub</p>
                 </div>
                 <button class="btn" style="width:auto;padding:7px 16px;background:var(--danger);" onclick="logoutUser()">Logout</button>
             </div>
 
-            <!-- Enter Link URL or ID -->
+            <!-- Permanent Action Hub (Never Empty) -->
+            <div class="action-hub">
+                <button class="btn btn-success" onclick="openPaymentModalDirect()">🔄 Renew Link Validity</button>
+                <button class="btn btn-warning" onclick="openWhatsAppContact()">📞 Contact Admin (WhatsApp)</button>
+            </div>
+
+            <!-- Search & Load Link -->
             <div class="card">
-                <h4>🔗 Search & Load Your Link</h4>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Paste your tracking URL or Link ID. It will only open if the campaign name matches your registered name.</p>
+                <h4>🔗 Load & Verify Your Link</h4>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Paste your tracking URL or Link ID. It will unlock if the campaign name matches your registered name.</p>
                 <div style="display:flex;gap:8px;">
                     <input type="text" id="userLinkInput" placeholder="Paste link URL or link_xxx" style="flex:1;padding:12px 14px;background:#090a0f;border:1px solid var(--border);border-radius:10px;color:#fff;outline:none;">
                     <button class="btn btn-primary" style="width:auto;padding:0 22px;" onclick="fetchLinkAnalytics()">Load ➜</button>
@@ -192,7 +221,7 @@
                         <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin-bottom:12px;color:#f59e0b;font-size:13px;">
                             ⚠️ <b>Validity Alert:</b> Your link is expiring soon or expired. Please renew below to keep video rewards active!
                         </div>
-                        <button class="btn btn-success" onclick="openPaymentModal()">🔄 Renew Link Validity Now</button>
+                        <button class="btn btn-success" onclick="openPaymentModalDirect()">🔄 Renew Link Validity Now</button>
                     </div>
                 </div>
             </div>
@@ -240,12 +269,22 @@
                     <button class="btn btn-primary" onclick="verifyUpiPayment(false)">✅ Verify Payment & Activate</button>
                 </div>
 
-                <!-- Manual WhatsApp Block (If Auto is OFF) -->
+                <!-- Manual WhatsApp Block -->
                 <div id="manualBlock" style="display:none;margin-top:10px;">
-                    <button class="btn btn-success" onclick="openWhatsApp()">📱 Send Screenshot to Admin</button>
+                    <button class="btn btn-success" onclick="openWhatsAppScreenshot()">📱 Send Screenshot to Admin</button>
                 </div>
 
                 <button class="btn" style="background:transparent;color:var(--text-light);margin-top:10px;" onclick="closePaymentModal()">Close</button>
+            </div>
+        </div>
+
+        <!-- ✨ CUSTOM POPUP MODAL (REPLACES NATIVE BROWSER ALERT) -->
+        <div class="custom-popup-overlay" id="customPopup">
+            <div class="custom-popup-card">
+                <span class="p-icon" id="popIcon">✅</span>
+                <div class="p-title" id="popTitle">Notification</div>
+                <div class="p-msg" id="popMsg">Message content</div>
+                <button class="p-btn" onclick="closeCustomPopup()">OK</button>
             </div>
         </div>
 
@@ -257,10 +296,22 @@
         let selectedPlanKey = '7days';
         let selectedDays = 7;
         let selectedPrice = 100;
-        let pricingObj = {};
+        let pricingObj = { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 };
         let upiIdVal = 'admin@upi';
         let waNumberVal = '916372923348';
         let isAutoEnabled = true;
+
+        // Custom Popup Trigger (Replaces ugly browser alerts)
+        function showCustomPopup(title, msg, isSuccess = true) {
+            document.getElementById('popTitle').textContent = title;
+            document.getElementById('popMsg').textContent = msg;
+            document.getElementById('popIcon').textContent = isSuccess ? '✅' : '❌';
+            document.getElementById('customPopup').classList.add('show');
+        }
+
+        function closeCustomPopup() {
+            document.getElementById('customPopup').classList.remove('show');
+        }
 
         function switchAuth(type) {
             document.getElementById('tabSignin').classList.toggle('active', type === 'signin');
@@ -273,7 +324,7 @@
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
-            if (!name || !email || !phone) return alert('Enter all fields');
+            if (!name || !email || !phone) return showCustomPopup('Incomplete Form', 'Please enter Name, Email, and Phone number', false);
 
             const res = await fetch('/api/user/signup', {
                 method: 'POST',
@@ -282,17 +333,17 @@
             });
             const d = await res.json();
             if (d.success) {
-                alert('✅ ' + d.message);
+                showCustomPopup('Registration Submitted', d.message, true);
                 switchAuth('signin');
             } else {
-                alert('❌ ' + (d.error || 'Failed'));
+                showCustomPopup('Registration Failed', d.error || 'Account registration failed', false);
             }
         }
 
         async function handleSignin() {
             const email = document.getElementById('logEmail').value.trim();
             const phone = document.getElementById('logPhone').value.trim();
-            if (!email || !phone) return alert('Enter email and phone');
+            if (!email || !phone) return showCustomPopup('Missing Credentials', 'Enter both Email and Phone Number', false);
 
             const res = await fetch('/api/user/signin', {
                 method: 'POST',
@@ -305,7 +356,7 @@
                 localStorage.setItem('userAuth', JSON.stringify(currentUser));
                 initDash();
             } else {
-                alert('❌ ' + (d.error || 'Failed'));
+                showCustomPopup('Login Failed', d.error || 'Failed to authenticate', false);
             }
         }
 
@@ -324,7 +375,7 @@
 
         async function fetchLinkAnalytics() {
             const val = document.getElementById('userLinkInput').value.trim();
-            if (!val) return alert('Enter link URL or ID');
+            if (!val) return showCustomPopup('Input Required', 'Please paste your tracking Link URL or ID', false);
 
             const res = await fetch('/api/user/link-details', {
                 method: 'POST',
@@ -332,22 +383,22 @@
                 body: JSON.stringify({ userName: currentUser.name, linkInput: val })
             });
             const d = await res.json();
-            if (!d.success) return alert('❌ ' + (d.error || 'Failed'));
+            if (!d.success) return showCustomPopup('Verification Error', d.error || 'Failed to load link data', false);
 
             currentLink = d.link;
-            pricingObj = d.pricing || {};
+            pricingObj = d.pricing || pricingObj;
             upiIdVal = d.paymentSettings?.details?.upiId || 'admin@upi';
             waNumberVal = d.whatsappNumber || '916372923348';
-            isAutoEnabled = d.autoPaymentEnabled;
+            isAutoEnabled = d.autoPaymentEnabled !== false;
 
-            document.getElementById('dTodayVisits').textContent = d.link.todayVisits;
-            document.getElementById('dTodayClaims').textContent = d.link.todayClaims;
-            document.getElementById('d24hVisits').textContent = d.link.v24h;
-            document.getElementById('d24hClaims').textContent = d.link.c24h;
-            document.getElementById('d7dVisits').textContent = d.link.v7d;
-            document.getElementById('d7dClaims').textContent = d.link.c7d;
-            document.getElementById('d30dVisits').textContent = d.link.v30d;
-            document.getElementById('d30dClaims').textContent = d.link.c30d;
+            document.getElementById('dTodayVisits').textContent = d.link.todayVisits || 0;
+            document.getElementById('dTodayClaims').textContent = d.link.todayClaims || 0;
+            document.getElementById('d24hVisits').textContent = d.link.v24h || 0;
+            document.getElementById('d24hClaims').textContent = d.link.c24h || 0;
+            document.getElementById('d7dVisits').textContent = d.link.v7d || 0;
+            document.getElementById('d7dClaims').textContent = d.link.c7d || 0;
+            document.getElementById('d30dVisits').textContent = d.link.v30d || 0;
+            document.getElementById('d30dClaims').textContent = d.link.c30d || 0;
 
             document.getElementById('dLinkName').textContent = d.link.name;
             document.getElementById('dLinkId').textContent = d.link.id;
@@ -359,7 +410,10 @@
             document.getElementById('linkDataBlock').style.display = 'block';
         }
 
-        function openPaymentModal() {
+        function openPaymentModalDirect() {
+            if (!currentLink) {
+                return showCustomPopup('Search Link First', 'Please enter and load your link above before renewing validity.', false);
+            }
             document.getElementById('pr7d').textContent = `₹${pricingObj['7days'] || 100}`;
             document.getElementById('pr15d').textContent = `₹${pricingObj['15days'] || 200}`;
             document.getElementById('pr30d').textContent = `₹${pricingObj['30days'] || 400}`;
@@ -388,15 +442,14 @@
         }
 
         function renderQr() {
-            const upiUrl = `upi://pay?pa=${upiIdVal}&pn=PromotedLink&am=${selectedPrice}&cu=INR&tn=Renewal_${currentLink.id}`;
+            const upiUrl = `upi://pay?pa=${upiIdVal}&pn=PromotedLink&am=${selectedPrice}&cu=INR&tn=Renewal_${currentLink?.id || 'Link'}`;
             QRCode.toCanvas(document.getElementById('qrCanvas'), upiUrl, { width: 160, margin: 1 });
         }
 
-        // BharatPe 12-Digit UTR Verification
         async function verifyUpiPayment(isManual) {
             const refNo = document.getElementById('utrInput').value.trim();
             if (!refNo || refNo.length !== 12 || !/^\d{12}$/.test(refNo)) {
-                return alert('❌ Enter valid 12-digit Indian UPI UTR / Reference Number');
+                return showCustomPopup('Invalid UTR', 'Please enter a valid 12-digit Indian UPI UTR / Reference Number', false);
             }
 
             const res = await fetch('/api/user/renew-payment', {
@@ -414,16 +467,21 @@
             });
             const d = await res.json();
             if (d.success) {
-                alert(d.message);
+                showCustomPopup('Payment Success', d.message, true);
                 closePaymentModal();
                 fetchLinkAnalytics();
             } else {
-                alert('❌ ' + (d.error || 'Payment failed'));
+                showCustomPopup('Payment Failed', d.error || 'Payment verification failed', false);
             }
         }
 
-        function openWhatsApp() {
-            const msg = encodeURIComponent(`Payment screenshot for Link: ${currentLink.name} (${currentLink.id}). Plan: ${selectedPlanKey}, Amount: ₹${selectedPrice}`);
+        function openWhatsAppScreenshot() {
+            const msg = encodeURIComponent(`Payment screenshot for Link: ${currentLink?.name || 'Campaign'} (${currentLink?.id || ''}). Plan: ${selectedPlanKey}, Amount: ₹${selectedPrice}`);
+            window.open(`https://wa.me/${waNumberVal}?text=${msg}`, '_blank');
+        }
+
+        function openWhatsAppContact() {
+            const msg = encodeURIComponent(`Hello Admin, I need assistance regarding my promoted link on your platform.`);
             window.open(`https://wa.me/${waNumberVal}?text=${msg}`, '_blank');
         }
 
