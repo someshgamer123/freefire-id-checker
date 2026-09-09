@@ -31,10 +31,8 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// Security Module
 const Security = require('./config/security');
 
-// Connect to MongoDB
 connectDB();
 
 // ==================== Environment Variables ====================
@@ -45,11 +43,9 @@ const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
 const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
 const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
 
-// Email Config
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
-// ==================== Email Transporter ====================
 let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
@@ -66,7 +62,6 @@ async function initializeDatabase() {
     try {
         let admin = await User.findOne();
         if (!admin) {
-            // First time setup only
             const hashedPasscode = bcrypt.hashSync(DEFAULT_PASSCODE, 10);
             await User.create({
                 passcode: hashedPasscode,
@@ -75,7 +70,7 @@ async function initializeDatabase() {
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
-            console.log('✅ Admin initialized with default passcode: ' + DEFAULT_PASSCODE);
+            console.log('✅ Admin initialized for the first time with passcode: ' + DEFAULT_PASSCODE);
 
             if (ENABLE_2FA) {
                 const secret = Security.generate2FASecret();
@@ -89,7 +84,6 @@ async function initializeDatabase() {
                 console.log('✅ 2FA enabled for admin');
             }
         } else {
-            // Admin already exists — NEVER overwrite changed passcode on server restart!
             if (!admin.secretKey) {
                 admin.secretKey = 'admin@2024';
                 await admin.save();
@@ -103,7 +97,6 @@ async function initializeDatabase() {
             console.log('✅ Stats initialized');
         }
 
-        // Clean up old dummy / approved renewal requests
         await RenewalRequest.deleteMany({ $or: [{ linkName: 'Unknown' }, { status: 'approved' }] });
 
         const popupExists = await PopupSettings.findOne();
@@ -161,7 +154,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// Protect sensitive files from direct download
 app.use((req, res, next) => {
     const blocked = ['.env', '.log', '.json', '.md'];
     const p = req.path.toLowerCase();
@@ -195,7 +187,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ==================== JWT & Auth Helpers ====================
+// ==================== JWT & Token Helpers ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -230,19 +222,16 @@ function getDeviceDetails(req) {
     let deviceName = 'Browser';
     let deviceType = 'Desktop';
 
-    if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
-    else if (userAgent.includes('Mac')) { deviceName = 'Mac'; deviceType = 'Desktop'; }
+    if (userAgent.includes('Android')) { deviceName = 'Android Mobile'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('iPhone')) { deviceName = 'Apple iPhone'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('iPad')) { deviceName = 'Apple iPad'; deviceType = 'Tablet'; }
+    else if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('Mac')) { deviceName = 'Mac Computer'; deviceType = 'Desktop'; }
     else if (userAgent.includes('Linux')) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
-    else if (userAgent.includes('iPhone')) { deviceName = 'iPhone'; deviceType = 'Mobile'; }
-    else if (userAgent.includes('iPad')) { deviceName = 'iPad'; deviceType = 'Tablet'; }
-    else if (userAgent.includes('Android')) { deviceName = 'Android'; deviceType = 'Mobile'; }
-    else if (userAgent.includes('Chrome')) { deviceName = 'Chrome Browser'; deviceType = 'Browser'; }
-    else if (userAgent.includes('Firefox')) { deviceName = 'Firefox Browser'; deviceType = 'Browser'; }
 
     return { deviceName, deviceType };
 }
 
-// ==================== Logging Function ====================
 async function logAdminAction(userId, action, details = {}, req = null) {
     try {
         const ip = req?.ip || req?.connection?.remoteAddress || null;
@@ -253,7 +242,6 @@ async function logAdminAction(userId, action, details = {}, req = null) {
     }
 }
 
-// ==================== Device Blocking Check ====================
 async function isDeviceBlocked(req) {
     const { deviceKey, fingerprint, ip } = getDeviceId(req);
     return await BlockedDevice.findOne({
@@ -262,18 +250,10 @@ async function isDeviceBlocked(req) {
             { ip },
             { fingerprint }
         ],
-        $and: [
-            {
-                $or: [
-                    { isPermanent: true },
-                    { blockedUntil: { $gt: new Date() } }
-                ]
-            }
-        ]
+        isPermanent: true
     });
 }
 
-// ==================== Session Management ====================
 async function createSession(token, userId, csrfToken, ip = null, userAgent = null) {
     const session = new Session({
         token, userId, csrfToken, ip, userAgent,
@@ -293,7 +273,6 @@ async function validateSession(token) {
     return session;
 }
 
-// ==================== Auth Middleware ====================
 async function authMiddleware(req, res, next) {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -455,8 +434,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
 app.get('/api/link/:id', async (req, res) => {
     try {
         const rawId = (req.params.id || '').trim();
-        let link = await Link.findOne({ id: rawId });
-        if (!link) link = await Link.findOne({ dashboardId: rawId });
+        let link = await Link.findOne({ $or: [{ id: rawId }, { dashboardId: rawId }] });
 
         if (!link && (rawId === 'default' || !rawId)) {
             return res.json({
@@ -524,7 +502,7 @@ app.get('/api/link/:id', async (req, res) => {
 
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
-        const link = await Link.findOne({ id: req.params.linkId });
+        const link = await Link.findOne({ $or: [{ id: req.params.linkId }, { dashboardId: req.params.linkId }] });
         const today = new Date().toISOString().split('T')[0];
         if (link) {
             link.claims = (link.claims || 0) + 1;
@@ -637,9 +615,14 @@ app.post('/api/user/signup', async (req, res) => {
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        const existing = await RenewalUser.findOne({ $or: [{ email: cleanEmail }, { phone: cleanPhone }] });
-        if (existing) {
-            return res.status(400).json({ error: 'Account already exists. Please wait for Admin approval or sign in.' });
+        const emailExists = await RenewalUser.findOne({ email: cleanEmail });
+        if (emailExists) {
+            return res.status(400).json({ error: '❌ Invalid: This Email Address is already registered! Please sign in.' });
+        }
+
+        const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
+        if (phoneExists) {
+            return res.status(400).json({ error: '❌ Invalid: This Phone Number is already registered! Please sign in.' });
         }
 
         await RenewalUser.create({
@@ -680,7 +663,7 @@ app.post('/api/user/signin', async (req, res) => {
             user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
         });
     } catch (e) {
-        res.status(500).json({ error: 'Login error' });
+        res.status(500).json({ error: 'Login failed' });
     }
 });
 
@@ -696,7 +679,6 @@ app.post('/api/user/link-details', async (req, res) => {
         let link = await Link.findOne({ $or: [{ id: searchId }, { dashboardId: searchId }] });
         if (!link) return res.status(404).json({ error: 'No link found with this ID' });
 
-        // Security check: Name must match registered user's name
         if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
             return res.status(403).json({ error: `Security Warning: Link "${link.name}" does not belong to you (${userName}).` });
         }
@@ -707,23 +689,27 @@ app.post('/api/user/link-details', async (req, res) => {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        const dailyV = link.dailyVisits || new Map();
-        const dailyC = link.dailyClaims || new Map();
+        const entriesV = link.dailyVisits ? (link.dailyVisits instanceof Map ? Array.from(link.dailyVisits.entries()) : Object.entries(link.dailyVisits)) : [];
+        const entriesC = link.dailyClaims ? (link.dailyClaims instanceof Map ? Array.from(link.dailyClaims.entries()) : Object.entries(link.dailyClaims)) : [];
 
-        let v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
+        let vToday = 0, cToday = 0, v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
 
-        for (const [date, count] of dailyV) {
+        for (const [date, count] of entriesV) {
             const d = new Date(date);
-            if (d >= oneDayAgo) v24h += count;
-            if (d >= sevenDaysAgo) v7d += count;
-            if (d >= thirtyDaysAgo) v30d += count;
+            const cnt = parseInt(count) || 0;
+            if (date === today) vToday += cnt;
+            if (d >= oneDayAgo) v24h += cnt;
+            if (d >= sevenDaysAgo) v7d += cnt;
+            if (d >= thirtyDaysAgo) v30d += cnt;
         }
 
-        for (const [date, count] of dailyC) {
+        for (const [date, count] of entriesC) {
             const d = new Date(date);
-            if (d >= oneDayAgo) c24h += count;
-            if (d >= sevenDaysAgo) c7d += count;
-            if (d >= thirtyDaysAgo) c30d += count;
+            const cnt = parseInt(count) || 0;
+            if (date === today) cToday += cnt;
+            if (d >= oneDayAgo) c24h += cnt;
+            if (d >= sevenDaysAgo) c7d += cnt;
+            if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
         let daysLeft = null;
@@ -733,7 +719,7 @@ app.post('/api/user/link-details', async (req, res) => {
             daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (daysLeft <= 3) isEligibleForRenewal = true;
         } else {
-            daysLeft = 'Lifetime';
+            daysLeft = 'Lifetime Active';
         }
 
         const pricing = await Pricing.findOne();
@@ -747,8 +733,8 @@ app.post('/api/user/link-details', async (req, res) => {
                 expiryDate: link.expiryDate,
                 daysLeft,
                 isEligibleForRenewal,
-                todayVisits: dailyV.get(today) || 0,
-                todayClaims: dailyC.get(today) || 0,
+                todayVisits: vToday,
+                todayClaims: cToday,
                 v24h, c24h, v7d, c7d, v30d, c30d
             },
             pricing: pricing?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -761,7 +747,6 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// ==================== 🤖 BHARATPE 12-DIGIT UTR AUTO-VERIFY ====================
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, plan, days, amount, refNo, userName, isManual } = req.body;
@@ -772,21 +757,18 @@ app.post('/api/user/renew-payment', async (req, res) => {
 
         const cleanRef = refNo.toString().trim();
 
-        // Check if Ref No was already used (Double-spending protection)
         const alreadyUsed = await RenewalRequest.findOne({ transactionId: cleanRef });
         if (alreadyUsed) {
             return res.status(400).json({ error: '❌ This Transaction Ref Number has already been used!' });
         }
 
-        // Mode 1: Auto Verify (12-Digit Indian Banking NPCI UTR)
         if (!isManual && autoEnabled) {
             const isValidUtrFormat = /^\d{12}$/.test(cleanRef);
             if (!isValidUtrFormat) {
                 return res.status(400).json({ error: '❌ Invalid UPI UTR / Reference Number! It must be exactly 12 digits.' });
             }
 
-            // Auto-extend link in database
-            const link = await Link.findOne({ id: linkId });
+            const link = await Link.findOne({ $or: [{ id: linkId }, { dashboardId: linkId }] });
             if (link) {
                 const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
                 curExpiry.setDate(curExpiry.getDate() + parseInt(days));
@@ -795,7 +777,6 @@ app.post('/api/user/renew-payment', async (req, res) => {
                 await link.save();
             }
 
-            // Record as approved
             await RenewalRequest.create({
                 id: 'req_' + Date.now(),
                 linkId,
@@ -812,7 +793,6 @@ app.post('/api/user/renew-payment', async (req, res) => {
             return res.json({ success: true, message: `🎉 Payment verified via BharatPe! Link successfully extended for ${days} days.` });
         }
 
-        // Mode 2: Manual Approval Request
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
             linkId,
@@ -876,7 +856,7 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
         if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
 
-        const link = await Link.findOne({ id: reqDoc.linkId });
+        const link = await Link.findOne({ $or: [{ id: reqDoc.linkId }, { dashboardId: reqDoc.linkId }] });
         if (link) {
             const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
             curExpiry.setDate(curExpiry.getDate() + reqDoc.days);
@@ -885,7 +865,6 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
             await link.save();
         }
 
-        // Delete from pending requests so it disappears from UI
         await RenewalRequest.deleteOne({ id: req.params.id });
 
         res.json({ success: true, message: 'Renewal approved and link extended!' });
@@ -914,6 +893,28 @@ app.post('/api/renewal/pay/:requestId', authMiddleware, async (req, res) => {
     }
 });
 
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const request = await RenewalRequest.findOne({ id: req.params.requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        const link = await Link.findOne({ $or: [{ id: request.linkId }, { dashboardId: request.linkId }] });
+        if (link) {
+            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
+            const newExpiry = new Date(currentExpiry);
+            newExpiry.setDate(newExpiry.getDate() + request.days);
+            link.expiryDate = newExpiry;
+            link.status = 'active';
+            await link.save();
+        }
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        res.json({ success: true, message: 'Renewal approved!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to approve renewal' });
+    }
+});
+
 app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
@@ -935,7 +936,6 @@ app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) =
     }
 });
 
-// Clear all historical approved/dummy requests from database
 app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, res) => {
     try {
         await RenewalRequest.deleteMany({ status: { $ne: 'pending' } });
@@ -966,12 +966,13 @@ app.post('/api/admin/login', async (req, res) => {
         if (blocked) {
             return res.status(403).json({
                 error: 'permanently_blocked',
-                message: '⛔ Your device has been permanently blocked due to 3 failed passcode attempts.'
+                message: '⛔ This device is permanently banned from accessing the admin portal.'
             });
         }
 
         const { passcode } = req.body;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
         const cleanPass = (passcode || '').toString().trim();
 
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
@@ -979,23 +980,19 @@ app.post('/api/admin/login', async (req, res) => {
         const admin = await User.findOne();
         if (!admin || !admin.passcode) return res.status(500).json({ error: 'Admin not initialized' });
 
-        // Strict DB hash comparison — No hardcoded bypass!
         const isValid = bcrypt.compareSync(cleanPass, admin.passcode);
 
         if (isValid) {
-            // Delete failed attempts for this device on success
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
-
             const jwtToken = generateToken('admin');
             res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
             return res.json({ success: true, token: jwtToken });
         }
 
-        // Invalid passcode: Record failed attempt
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
         if (!record) {
             record = new BlockedDevice({
-                deviceKey, fingerprint, ip,
+                deviceKey, fingerprint, ip, deviceName, deviceType,
                 attempts: 1,
                 reason: 'Failed login attempt (1/3)',
                 lastAttempt: new Date()
@@ -1003,9 +1000,10 @@ app.post('/api/admin/login', async (req, res) => {
         } else {
             record.attempts = (record.attempts || 0) + 1;
             record.lastAttempt = new Date();
+            record.deviceName = deviceName;
+            record.deviceType = deviceType;
         }
 
-        // ⛔ 3RD ATTEMPT = PERMANENT BAN
         if (record.attempts >= 3) {
             record.isPermanent = true;
             record.blockedUntil = null;
@@ -1032,7 +1030,6 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// Passcode Change (Strict verification & DB update)
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -1137,7 +1134,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
-        const link = await Link.findOne({ id: req.params.id });
+        const link = await Link.findOne({ $or: [{ id: req.params.id }, { _id: req.params.id }] });
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
         const { name, video, claim, buttonText, headline, status, expiryDate, popupSettings } = req.body;
@@ -1172,7 +1169,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        const link = await Link.findOneAndUpdate({ id: req.params.id }, { status }, { new: true });
+        const link = await Link.findOneAndUpdate({ $or: [{ id: req.params.id }, { _id: req.params.id }] }, { status }, { new: true });
         res.json(link);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status' });
@@ -1180,7 +1177,7 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
 });
 
 app.delete('/api/links/:id', authMiddleware, async (req, res) => {
-    await Link.findOneAndDelete({ id: req.params.id });
+    await Link.findOneAndDelete({ $or: [{ id: req.params.id }, { _id: req.params.id }] });
     res.json({ success: true });
 });
 
@@ -1201,7 +1198,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
-        const link = await Link.findOne({ id: linkId });
+        const link = await Link.findOne({ $or: [{ id: linkId }, { dashboardId: linkId }] });
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
         link.dashboardId = dashboardId;
@@ -1212,7 +1209,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== STATS API ====================
+// Stats API
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     const links = await Link.find();
     let totV = links.reduce((s, l) => s + (l.visits || 0), 0);
@@ -1239,8 +1236,12 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
-    await BlockedDevice.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    try {
+        await BlockedDevice.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Device unblocked' });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to unblock' });
+    }
 });
 
 app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
@@ -1301,11 +1302,10 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/short-links', authMiddleware, async (req, res) => {
-    const { originalUrl, title, appOpen, appScheme, appStoreLink, expiryDate } = req.body;
+    const { originalUrl, title, appOpen, appScheme } = req.body;
     const link = new ShortLink({
         code: Math.random().toString(36).substring(2, 8),
-        originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || '',
-        appStoreLink: appStoreLink || '', expiryDate: expiryDate || null
+        originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || ''
     });
     await link.save();
     res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
@@ -1344,7 +1344,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== UNIVERSAL FILE RESOLVER ====================
+// Universal File Resolver
 function sendAppFile(res, ...fileNames) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     for (const name of fileNames) {
@@ -1367,7 +1367,7 @@ app.get('/admin/login.html', async (req, res) => {
             h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
             p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
             <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Refreshing will not bypass this ban. Contact the administrator to unblock your device.</p></div></body></html>
+            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Refreshing will not bypass this ban. Contact the administrator to unblock your device from the Admin Panel.</p></div></body></html>
         `);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
@@ -1384,5 +1384,18 @@ app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
 app.get('/v/:id', (req, res) => sendAppFile(res, 'video-lock.html'));
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
+app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
+app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
+// Session Cleanup Interval
+setInterval(async () => {
+    try {
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+    } catch (error) {
+        console.error('❌ Session cleanup error:', error);
+    }
+}, 60 * 60 * 1000);
+
+// Start Server
 app.listen(port, '0.0.0.0', () => console.log(`🚀 Server on port ${port}`));
