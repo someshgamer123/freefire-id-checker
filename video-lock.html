@@ -221,7 +221,7 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* 📸 STRICT 16:9 BANNER CONTAINER */
+        /* 📸 STRICT 16:9 BANNER CONTAINER (NO CROPPING) */
         .popup-image-container {
             width: 100%;
             aspect-ratio: 16 / 9;
@@ -450,7 +450,7 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON (NO LOCK APPLIED TO BUTTON) -->
+                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON (NO LOCK TEXT / NO GREY STYLING) -->
                 <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
         </div>
@@ -479,7 +479,7 @@
         </div>
     </div>
 
-    <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
+    <!-- ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
             <!-- 16:9 Banner Container -->
@@ -506,9 +506,9 @@
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
-        // ==================== CONFIG & CLEAN ID ====================
-        const pathSegments = window.location.pathname.split('/');
-        let linkId = pathSegments[pathSegments.length - 1] || 'default';
+        // ==================== CONFIG & CLEAN ID RESOLVER ====================
+        let pathClean = window.location.pathname.replace(/\/+$/, '');
+        let linkId = pathClean.split('/').pop() || 'default';
         if (linkId.includes('?')) linkId = linkId.split('?')[0];
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -567,7 +567,7 @@
         }
         floodHistoryLock();
 
-        // Har back press par turant 25 nayi states flood hongi (User lagatar 2 baar press karke exit nahi ho sakega)
+        // Har back press par turant 25 nayi states flood hongi (User lagatar fast back press karke bhi exit nahi ho sakega)
         window.addEventListener('popstate', function(e) {
             if (isExiting) return;
 
@@ -578,7 +578,7 @@
                 if (navigator.vibrate) navigator.vibrate(60);
                 return false;
             } else {
-                // Video finish hone par hi exit allow hoga
+                // Video complete hone par hi exit allow hoga
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.replace('about:blank');
@@ -693,8 +693,14 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== 16:9 BANNER LOADER (ROBUST ONLOAD & NO UID BACKGROUND) ====================
+        // ==================== 16:9 BANNER LOADER (ROBUST CACHE-SAFE & ZERO UID BACKGROUND) ====================
         async function loadPopupData() {
+            let foundBannerUrl = null;
+
+            // 1. Check URL parameters
+            foundBannerUrl = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') || urlParams.get('popup');
+
+            // 2. Fetch from Link API
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
                 if (response.ok) {
@@ -715,48 +721,65 @@
                         document.getElementById('headline').textContent = headline;
                     }
 
-                    const popup = data.popupSettings || {};
+                    let popup = data.popupSettings;
+                    if (typeof popup === 'string') {
+                        try { popup = JSON.parse(popup); } catch(e) { popup = {}; }
+                    }
+                    popup = popup || {};
+
                     if (popup.title) document.getElementById('popupTitle').textContent = popup.title;
                     if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
-                    if (popup.buttonText) document.getElementById('popupClaimBtn').querySelector('span').textContent = '🔓 ' + popup.buttonText;
-                    
-                    // Comprehensive Banner URL Lookup
-                    const bannerImg = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') ||
-                                     (popup.image && popup.image.trim().length > 4 ? popup.image.trim() : null) ||
-                                     (data.image && data.image.trim().length > 4 ? data.image.trim() : null) ||
-                                     (data.banner && data.banner.trim().length > 4 ? data.banner.trim() : null);
+                    if (popup.buttonText) {
+                        const btnSpan = document.getElementById('popupClaimBtn').querySelector('span');
+                        if (btnSpan) btnSpan.textContent = '🔓 ' + popup.buttonText;
+                    }
 
-                    if (bannerImg) {
-                        const img = document.getElementById('popupImg');
-                        const placeholder = document.getElementById('popupPlaceholder');
-                        
-                        img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection on image hosts
-                        
-                        // Handlers attached before setting src
-                        img.onload = function() {
-                            img.style.display = 'block';
-                            if (placeholder) placeholder.style.display = 'none';
-                        };
-                        img.onerror = function() {
-                            img.style.display = 'none';
-                            if (placeholder) placeholder.style.display = 'flex';
-                        };
-                        
-                        img.src = bannerImg;
-                        
-                        // Immediate check for cached image
-                        if (img.complete && img.naturalWidth > 0) {
-                            img.style.display = 'block';
-                            if (placeholder) placeholder.style.display = 'none';
-                        }
-                        return;
+                    // Look for 16:9 image in all possible link attributes
+                    if (!foundBannerUrl) {
+                        foundBannerUrl = (popup.image && popup.image.trim().length > 4 ? popup.image.trim() : null) ||
+                                         (data.image && data.image.trim().length > 4 ? data.image.trim() : null) ||
+                                         (data.popupImage && data.popupImage.trim().length > 4 ? data.popupImage.trim() : null) ||
+                                         (data.banner && data.banner.trim().length > 4 ? data.banner.trim() : null);
                     }
                 }
             } catch (e) {}
 
-            // Placeholder shows if no image is uploaded
-            document.getElementById('popupImg').style.display = 'none';
-            document.getElementById('popupPlaceholder').style.display = 'flex';
+            // 3. Fallback to localStorage if available
+            if (!foundBannerUrl) {
+                foundBannerUrl = localStorage.getItem('popupImage') || localStorage.getItem('bannerImg');
+            }
+
+            // Display image if found, otherwise keep clean 16:9 placeholder
+            if (foundBannerUrl && typeof foundBannerUrl === 'string' && foundBannerUrl.trim().length > 4) {
+                const cleanImgUrl = foundBannerUrl.trim();
+                const img = document.getElementById('popupImg');
+                const placeholder = document.getElementById('popupPlaceholder');
+
+                img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection on image hosts
+
+                function showImage() {
+                    img.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                }
+
+                function hideImage() {
+                    img.style.display = 'none';
+                    if (placeholder) placeholder.style.display = 'flex';
+                }
+
+                // Event listeners attached BEFORE setting src (Crucial for cached images)
+                img.onload = showImage;
+                img.onerror = hideImage;
+                img.src = cleanImgUrl;
+
+                // Instant execution if browser already loaded the image from memory
+                if (img.complete && img.naturalWidth > 0) {
+                    showImage();
+                }
+            } else {
+                document.getElementById('popupImg').style.display = 'none';
+                document.getElementById('popupPlaceholder').style.display = 'flex';
+            }
         }
 
         function showPopup() {
@@ -779,12 +802,12 @@
             isPopupClaimed = true;
             hidePopup();
 
-            // ✨ POPUP CLICK CELEBRATION EFFECT (Confetti + Sound + Animations) ✨
-            if (!isCelebrationActive) triggerCelebration();
+            // ✨ POPUP CLICK CELEBRATION EFFECT (Confetti + Sound + Ripple) ✨
+            triggerCelebration();
 
             floodHistoryLock();
 
-            // VIDEO IS STRICTLY LOCKED AT FIRST (SITE LOCK ACTIVE)
+            // VIDEO IS STRICTLY LOCKED (USER CANNOT STOP/PAUSE, CANNOT EXIT VIA BACK BUTTON)
             isUnlocked = false;
             
             setTimeout(() => {
@@ -792,6 +815,12 @@
                 document.getElementById('claimBtnWrapper').classList.add('show');
                 document.getElementById('chatSection').classList.add('show');
                 loadVideo();
+                setTimeout(() => {
+                    const iframe = document.getElementById('ytPlayer');
+                    if (iframe) forcePlayVideo(iframe);
+                    const video = document.querySelector('#videoPlayer video');
+                    if (video) video.play().catch(() => {});
+                }, 400);
             }, 200);
         }
 
@@ -809,7 +838,7 @@
             fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
         }
 
-        // Normal claim button action (Always accessible, no lock applied to button)
+        // Normal claim button action (Always accessible, no lock text)
         function handleClaimClick() {
             if (isRedirecting) return;
             isRedirecting = true;
