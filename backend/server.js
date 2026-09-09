@@ -150,10 +150,12 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
-// ==================== Security Headers ====================
+// ==================== 🛡️ Security Headers & Referrer Policy Fix ====================
 app.use(helmet({
     contentSecurityPolicy: false,
-    frameguard: false
+    frameguard: false,
+    // Fixes YouTube Error 153 globally across all browsers
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 app.set('trust proxy', 1);
@@ -166,6 +168,7 @@ app.use(cors({
 }));
 
 app.use((req, res, next) => {
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     const blocked = ['.env', '.log', '.json', '.md'];
     const p = req.path.toLowerCase();
     if (p === '/manifest.json') return next();
@@ -440,19 +443,16 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH REAL-TIME DATA - NO CACHING)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
 app.get('/api/link/:id', async (req, res) => {
     try {
-        // Prevent browser and proxy caching so edits reflect immediately
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        res.setHeader('Surrogate-Control', 'no-store');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         let rawId = (req.params.id || '').trim();
         if (rawId.includes('?')) rawId = rawId.split('?')[0];
-        if (rawId.endsWith('/')) rawId = rawId.slice(0, -1);
-        if (rawId.endsWith('.html')) rawId = rawId.replace('.html', '');
 
         let link = await Link.findOne(getLinkQuery(rawId));
 
@@ -478,10 +478,7 @@ app.get('/api/link/:id', async (req, res) => {
             return res.status(404).json({ error: 'not_found', message: 'Link not found' });
         }
 
-        if (link.status === 'suspended') {
-            return res.status(403).json({ error: 'suspended', message: 'Link suspended', status: 'suspended' });
-        }
-        if (link.status === 'disabled' || link.status === 'inactive') {
+        if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
             return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
         }
 
@@ -522,7 +519,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ Error resolving link:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -593,12 +589,6 @@ app.get('/api/settings', async (req, res) => {
         res.json({
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
-            popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
-            },
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
@@ -971,7 +961,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
 });
 
 // ================================================================
-// 🔑 ADMIN LOGIN (STRICT PASSCODE & ZERO BYPASS BAN)
+// 🔑 ADMIN LOGIN
 // ================================================================
 app.get('/api/admin/block-status', async (req, res) => {
     try {
@@ -1044,7 +1034,7 @@ app.post('/api/admin/login', async (req, res) => {
             record.reason = `Failed passcode attempt (${record.attempts}/3)`;
             await record.save();
             return res.status(401).json({
-                error: `Incorrect Passcode! Attempt ${record.attempts} of 3. (3 attempts par device permanently block ho jayega)`
+                error: `Incorrect Passcode! Attempt ${record.attempts} of 3.`
             });
         }
     } catch (error) {
@@ -1089,6 +1079,7 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
+// UID Background (Strictly isolated for 9:16 UID Background Image Only)
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         let popup = await PopupSettings.findOne();
@@ -1131,7 +1122,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== ADMIN: LINKS CRUD (FULLY FIXED & COMPATIBLE) ====================
+// ==================== ADMIN: LINKS CRUD ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const links = await Link.find().sort({ created: -1 });
@@ -1143,20 +1134,19 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const {
             name, title,
             video, videoUrl, url, youtubeUrl,
-            claim, claimUrl, claimLink, rewardUrl, targetUrl,
+            claim, claimUrl, claimLink,
             buttonText, btnText,
             headline, heading,
             expiryDate,
-            popupSettings
+            popupSettings,
+            image, popupImage, banner
         } = req.body;
 
         const cleanName = (name || title || 'Untitled Link').trim();
         const cleanVideo = (video || videoUrl || url || youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ').trim();
-        const cleanClaim = (claim || claimUrl || claimLink || rewardUrl || targetUrl || '#').trim();
+        const cleanClaim = (claim || claimUrl || claimLink || '#').trim();
         const cleanButtonText = (buttonText || btnText || 'Claim Now').trim();
         const cleanHeadline = (headline || heading || '🎬 Watch Video & Unlock Reward').trim();
-
-        let cleanExpiry = (expiryDate && new Date(expiryDate).getTime() > Date.now()) ? new Date(expiryDate) : null;
 
         let parsedPopup = popupSettings;
         if (typeof parsedPopup === 'string') {
@@ -1164,11 +1154,14 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         }
         parsedPopup = parsedPopup || {};
 
+        // 16:9 Banner parsing (Supports all naming conventions)
+        const bannerImage = image || popupImage || banner || parsedPopup.image || req.body.popupImage || null;
+
         const finalPopup = {
             title: parsedPopup.title || req.body.popupTitle || '🎁 Claim Your Reward',
             subtitle: parsedPopup.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
             buttonText: parsedPopup.buttonText || req.body.popupButtonText || 'Claim Now',
-            image: parsedPopup.image !== undefined ? parsedPopup.image : (req.body.popupImage || null)
+            image: bannerImage ? bannerImage.trim() : null
         };
 
         const newLink = new Link({
@@ -1178,14 +1171,12 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             claim: cleanClaim,
             buttonText: cleanButtonText,
             headline: cleanHeadline,
-            expiryDate: cleanExpiry,
             status: 'active',
             popupSettings: finalPopup
         });
         await newLink.save();
         res.json(newLink);
     } catch (e) {
-        console.error('❌ Error creating link:', e);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
@@ -1199,15 +1190,14 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         const {
             name, title,
             video, videoUrl, url, youtubeUrl,
-            claim, claimUrl, claimLink, rewardUrl, targetUrl,
+            claim, claimUrl, claimLink,
             buttonText, btnText,
             headline, heading,
             status,
-            expiryDate,
-            popupSettings
+            popupSettings,
+            image, popupImage, banner
         } = req.body;
 
-        // Flexible field updating
         if (name !== undefined) link.name = name.trim();
         else if (title !== undefined) link.name = title.trim();
 
@@ -1219,8 +1209,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         if (claim !== undefined) link.claim = claim.trim();
         else if (claimUrl !== undefined) link.claim = claimUrl.trim();
         else if (claimLink !== undefined) link.claim = claimLink.trim();
-        else if (rewardUrl !== undefined) link.claim = rewardUrl.trim();
-        else if (targetUrl !== undefined) link.claim = targetUrl.trim();
 
         if (buttonText !== undefined) link.buttonText = buttonText.trim();
         else if (btnText !== undefined) link.buttonText = btnText.trim();
@@ -1230,35 +1218,26 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         if (status !== undefined) link.status = status;
 
-        if (expiryDate !== undefined) {
-            link.expiryDate = (expiryDate && new Date(expiryDate).getTime() > Date.now()) ? new Date(expiryDate) : null;
-        }
-
-        // Handle popupSettings (JSON string or object or flat keys)
         let parsedPopup = popupSettings;
         if (typeof parsedPopup === 'string') {
             try { parsedPopup = JSON.parse(parsedPopup); } catch (e) { parsedPopup = null; }
         }
 
-        const newPopupTitle = parsedPopup?.title !== undefined ? parsedPopup.title : req.body.popupTitle;
-        const newPopupSubtitle = parsedPopup?.subtitle !== undefined ? parsedPopup.subtitle : req.body.popupSubtitle;
-        const newPopupButtonText = parsedPopup?.buttonText !== undefined ? parsedPopup.buttonText : req.body.popupButtonText;
-        const newPopupImage = parsedPopup?.image !== undefined ? parsedPopup.image : req.body.popupImage;
+        const bannerImage = image || popupImage || banner || parsedPopup?.image || req.body.popupImage;
 
-        if (parsedPopup !== undefined || newPopupTitle !== undefined || newPopupSubtitle !== undefined || newPopupButtonText !== undefined || newPopupImage !== undefined) {
+        if (parsedPopup !== undefined || bannerImage !== undefined) {
             if (!link.popupSettings) link.popupSettings = {};
-            if (newPopupTitle !== undefined) link.popupSettings.title = newPopupTitle;
-            if (newPopupSubtitle !== undefined) link.popupSettings.subtitle = newPopupSubtitle;
-            if (newPopupButtonText !== undefined) link.popupSettings.buttonText = newPopupButtonText;
-            if (newPopupImage !== undefined) link.popupSettings.image = newPopupImage;
+            if (parsedPopup?.title !== undefined) link.popupSettings.title = parsedPopup.title;
+            if (parsedPopup?.subtitle !== undefined) link.popupSettings.subtitle = parsedPopup.subtitle;
+            if (parsedPopup?.buttonText !== undefined) link.popupSettings.buttonText = parsedPopup.buttonText;
+            if (bannerImage !== undefined) link.popupSettings.image = bannerImage ? bannerImage.trim() : null;
             link.markModified('popupSettings');
         }
 
         await link.save();
         res.json({ success: true, link });
     } catch (e) {
-        console.error('❌ Error updating link:', e);
-        res.status(500).json({ error: 'Failed to update link', details: e.message });
+        res.status(500).json({ error: 'Failed to update link' });
     }
 });
 
@@ -1267,7 +1246,6 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
         const { status } = req.body;
         const query = getLinkQuery(req.params.id);
         const link = await Link.findOneAndUpdate(query, { status }, { new: true });
-        if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status' });
@@ -1460,7 +1438,7 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-// ⛔ STRICT PERSISTENT BAN SHIELD ON LOGIN ROUTE
+// ⛔ Persistent Ban Shield on Login Route
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -1487,8 +1465,7 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
 app.get('/v/:id', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     sendAppFile(res, 'video-lock.html');
 });
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
