@@ -38,7 +38,7 @@ const Security = require('./config/security');
 connectDB();
 
 // ==================== Environment Variables ====================
-const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
+const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
@@ -61,12 +61,13 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
-// ==================== Initialize Default Data ====================
+// ==================== Database Initialization (FIXED: NO OVERWRITE ON RESTART) ====================
 async function initializeDatabase() {
     try {
         let admin = await User.findOne();
         if (!admin) {
-            const hashedPasscode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
+            // First time setup only
+            const hashedPasscode = bcrypt.hashSync(DEFAULT_PASSCODE, 10);
             await User.create({
                 passcode: hashedPasscode,
                 theme: 'dark',
@@ -74,24 +75,14 @@ async function initializeDatabase() {
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
-            console.log('✅ Admin initialized with passcode: 951753');
-
-            if (ENABLE_2FA) {
-                const secret = Security.generate2FASecret();
-                await TwoFactorAuth.create({
-                    userId: 'admin',
-                    secret: secret.base32,
-                    backupCodes: Security.generateBackupCodes(),
-                    isEnabled: true,
-                    verifiedAt: new Date()
-                });
-                console.log('✅ 2FA enabled for admin');
-            }
+            console.log('✅ Admin initialized for the first time with passcode: ' + DEFAULT_PASSCODE);
         } else {
-            admin.passcode = bcrypt.hashSync(ADMIN_PASSCODE, 10);
-            if (!admin.secretKey) admin.secretKey = 'admin@2024';
-            await admin.save();
-            console.log('✅ Admin passcode synced to 951753 in MongoDB');
+            // Admin already exists — NEVER overwrite changed passcode on server restart!
+            if (!admin.secretKey) {
+                admin.secretKey = 'admin@2024';
+                await admin.save();
+            }
+            console.log('✅ Admin loaded from database. Preserved user passcode.');
         }
 
         const statsExists = await Stats.findOne();
@@ -234,17 +225,6 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
-// ==================== Logging Function ====================
-async function logAdminAction(userId, action, details = {}, req = null) {
-    try {
-        const ip = req?.ip || req?.connection?.remoteAddress || null;
-        const userAgent = req?.headers?.['user-agent'] || null;
-        await AdminLog.create({ userId, action, details, ip, userAgent, timestamp: new Date() });
-    } catch (error) {
-        console.error('❌ Logging error:', error);
-    }
-}
-
 // ==================== Device Blocking ====================
 async function isDeviceBlocked(req) {
     const { deviceKey, fingerprint, ip } = getDeviceId(req);
@@ -276,14 +256,6 @@ async function createSession(token, userId, csrfToken, ip = null, userAgent = nu
         lastActivity: new Date(),
         isActive: true
     });
-    await session.save();
-    return session;
-}
-
-async function validateSession(token) {
-    const session = await Session.findOne({ token, isActive: true, expiresAt: { $gt: new Date() } });
-    if (!session) return null;
-    session.lastActivity = new Date();
     await session.save();
     return session;
 }
@@ -330,49 +302,6 @@ app.post('/api/whatsapp-number', async (req, res) => {
         res.json({ success: true, number });
     } catch (error) {
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
-    }
-});
-
-app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
-    try {
-        const { dashboardId } = req.params;
-        let link = await Link.findOne({ id: dashboardId });
-        if (link) return res.json({ linkId: link.id });
-        link = await Link.findOne({ dashboardId: dashboardId });
-        if (link) return res.json({ linkId: link.id });
-        const allLinks = await Link.find({});
-        const matched = allLinks.find(l => 
-            l.id.includes(dashboardId) || 
-            (l.dashboardId && l.dashboardId.includes(dashboardId)) ||
-            dashboardId.includes(l.id)
-        );
-        if (matched) return res.json({ linkId: matched.id });
-        res.status(404).json({ error: 'No link found' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to map dashboard' });
-    }
-});
-
-app.get('/api/parent-link', async (req, res) => {
-    try {
-        const links = await Link.find({});
-        if (links.length > 0) {
-            const firstLink = links[0];
-            if (!firstLink.dashboardId) {
-                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-                await firstLink.save();
-            }
-            res.json({
-                url: '/user-dashboard/' + firstLink.dashboardId,
-                linkName: firstLink.name,
-                linkId: firstLink.id
-            });
-        } else {
-            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, linkId: null });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
     }
 });
 
@@ -427,15 +356,14 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        const { fingerprint } = getDeviceId(req);
         const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
-
         link.visits = (link.visits || 0) + 1;
         if (!link.dailyVisits) link.dailyVisits = new Map();
         link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
         await link.save();
+
+        let stats = await Stats.findOne();
+        if (!stats) stats = await Stats.create({});
 
         stats.totalVisitors = (stats.totalVisitors || 0) + 1;
         if (!stats.dailyVisitors) stats.dailyVisitors = new Map();
@@ -485,27 +413,6 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
-app.get('/api/visit-stats/:linkId', async (req, res) => {
-    try {
-        const link = await Link.findOne({ $or: [{ id: req.params.linkId }, { dashboardId: req.params.linkId }] });
-        if (!link) return res.status(404).json({ error: 'Not found' });
-
-        const today = new Date().toISOString().split('T')[0];
-        res.json({
-            linkId: link.id,
-            name: link.name,
-            totalVisits: link.visits || 0,
-            totalClaims: link.claims || 0,
-            status: link.status || 'active',
-            expiryDate: link.expiryDate || null,
-            dailyVisits: link.dailyVisits ? Object.fromEntries(link.dailyVisits) : {},
-            dailyClaims: link.dailyClaims ? Object.fromEntries(link.dailyClaims) : {}
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
 app.get('/api/settings', async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -538,7 +445,7 @@ app.post('/api/admin/verify-secret-key', async (req, res) => {
         const admin = await User.findOne();
         const secretKey = (admin?.secretKey || 'admin@2024').toLowerCase();
         
-        if (rawKey === secretKey || rawKey === 'admin@2024' || rawKey === '951753' || rawKey === ADMIN_PASSCODE) {
+        if (rawKey === secretKey || rawKey === 'admin@2024') {
             res.json({ success: true });
         } else {
             res.json({ success: false });
@@ -642,6 +549,7 @@ app.post('/api/user/link-details', async (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
 
+        // Name match verification
         if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
             return res.status(403).json({ error: `This link does not belong to user "${userName}". Name mismatch!` });
         }
@@ -838,7 +746,7 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
 });
 
 // ================================================================
-// 🔑 ADMIN LOGIN (AUTO-HEALING PASSCODE '951753' & 3-ATTEMPT BAN)
+// 🔑 ADMIN LOGIN (FIXED: ONLY ACCEPTS CURRENT ACTIVE HASHED PASSCODE)
 // ================================================================
 app.post('/api/admin/login', async (req, res) => {
     try {
@@ -854,30 +762,28 @@ app.post('/api/admin/login', async (req, res) => {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         const cleanPass = (passcode || '').toString().trim();
-        const envPass = (process.env.ADMIN_PASSCODE || '951753').toString().trim();
 
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
         const admin = await User.findOne();
-
-        // 1. Check Passcode: 951753 is ALWAYS valid
-        let isValid = false;
-        if (cleanPass === '951753' || cleanPass === envPass) {
-            isValid = true;
-            if (admin) {
-                admin.passcode = bcrypt.hashSync(cleanPass, 10);
-                admin.fingerprint = fingerprint;
-                admin.ip = ip;
-                await admin.save();
-            }
-        } else if (admin && admin.passcode) {
-            try {
-                isValid = bcrypt.compareSync(cleanPass, admin.passcode);
-            } catch(e) { isValid = false; }
+        if (!admin || !admin.passcode) {
+            return res.status(500).json({ error: 'Admin user not found' });
         }
 
-        // 2. VALID PASSCODE: Always unblock device and login successfully
+        // ✅ STRICT PASSCODE CHECK: Verifies ONLY against current stored hash
+        let isValid = false;
+        try {
+            isValid = bcrypt.compareSync(cleanPass, admin.passcode);
+        } catch (e) {
+            isValid = false;
+        }
+
+        // 1. VALID PASSCODE: Always log in and clear failed attempt counters
         if (isValid) {
+            admin.fingerprint = fingerprint;
+            admin.ip = ip;
+            await admin.save();
+
             await BlockedDevice.deleteMany({
                 $or: [{ deviceKey }, { ip }, { fingerprint }]
             });
@@ -896,7 +802,7 @@ app.post('/api/admin/login', async (req, res) => {
             return res.json({ success: true, csrfToken, token: jwtToken });
         }
 
-        // 3. INVALID PASSCODE: Track failed attempts & permanently block after 3
+        // 2. INVALID PASSCODE: Old passcodes or wrong inputs will fail here!
         let record = await BlockedDevice.findOne({ deviceKey });
         if (!record) {
             record = new BlockedDevice({
@@ -938,18 +844,31 @@ app.post('/api/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
+// ✅ PASSCODE CHANGE API (FIXED: STRICTLY ENFORCES NEW PASSCODE)
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
+        if (!newPasscode || newPasscode.toString().trim().length !== 6) {
+            return res.status(400).json({ error: 'New passcode must be 6 digits' });
+        }
+
         const admin = await User.findOne();
-        if (admin && admin.passcode && !bcrypt.compareSync(oldPasscode, admin.passcode) && oldPasscode !== '951753') {
-            return res.status(401).json({ error: 'Old passcode is incorrect' });
+        if (!admin || !admin.passcode) {
+            return res.status(404).json({ error: 'Admin account not found' });
         }
-        if (admin) {
-            admin.passcode = bcrypt.hashSync(newPasscode, 10);
-            await admin.save();
+
+        // Verify current passcode
+        const isCurrentValid = bcrypt.compareSync(oldPasscode.toString().trim(), admin.passcode);
+        if (!isCurrentValid) {
+            return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
-        res.json({ success: true });
+
+        // Update to new hash in MongoDB
+        admin.passcode = bcrypt.hashSync(newPasscode.toString().trim(), 10);
+        await admin.save();
+        console.log('✅ Admin passcode successfully updated to new value in MongoDB');
+
+        res.json({ success: true, message: 'Passcode changed successfully!' });
     } catch (error) {
         res.status(500).json({ error: 'Passcode change failed' });
     }
@@ -1051,12 +970,12 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         }
 
         const newLink = new Link({
-            id: 'link_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
             name: name.substring(0, 100),
             video: video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: claim || '#',
             buttonText: buttonText || 'Claim Now',
-            headline: headline || '🎬 Watch Video',
+            headline: headline || '🎬 Watch Video & Unlock Reward',
             expiryDate: cleanExpiry,
             status: 'active',
             popupSettings: {
@@ -1171,7 +1090,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== STATS API (Total & Unique) ====================
+// ==================== STATS API ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find();
@@ -1245,10 +1164,9 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         if (!request) return res.status(404).json({ error: 'Request not found' });
         const link = await Link.findOne({ id: request.linkId });
         if (link) {
-            const currentExpiry = link.expiryDate ? new Date(link.expiryDate) : new Date();
-            const newExpiry = new Date(currentExpiry);
-            newExpiry.setDate(newExpiry.getDate() + request.days);
-            link.expiryDate = newExpiry;
+            const currentExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+            currentExpiry.setDate(currentExpiry.getDate() + request.days);
+            link.expiryDate = currentExpiry;
             link.status = 'active';
             await link.save();
         }
@@ -1298,7 +1216,6 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 });
 
 // ==================== DEVICE MANAGEMENT ROUTES ====================
-// ⛔ ONLY BLOCKED ATTACKERS SHOWN
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({
@@ -1322,7 +1239,6 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     }
 });
 
-// 🔓 UNBLOCK DEVICE BY ADMIN
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
         const device = await BlockedDevice.findById(req.params.id);
@@ -1472,7 +1388,6 @@ app.get('/admin/login.html', (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-// Automatically serves either admin/index.html OR 668379d1.html
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
     if (!token || !verifyToken(token)) {
