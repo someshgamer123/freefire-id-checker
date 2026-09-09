@@ -26,28 +26,38 @@
             --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838;
         }
         body {
-            background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 14px;
+            background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px 14px;
             display: flex; justify-content: center; position: relative; overflow-x: hidden;
         }
 
         .ambient-glow {
-            position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%);
-            width: 75vw; height: 75vw; background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 65%);
+            position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%);
+            width: 80vw; height: 80vw; background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 65%);
             z-index: 0; pointer-events: none; filter: blur(50px);
         }
 
         .portal-wrap { width: 100%; max-width: 680px; position: relative; z-index: 2; }
 
+        /* 📍 AUTH CONTAINER CENTERED EXACTLY IN MIDDLE OF SCREEN */
+        #authSection {
+            min-height: calc(100vh - 32px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
         /* Auth Card */
         .auth-card {
+            width: 100%; max-width: 440px;
             background: rgba(19, 23, 34, 0.88); backdrop-filter: blur(18px); border-radius: 24px;
-            padding: 36px 28px; border: 1px solid rgba(99, 102, 241, 0.25); box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            padding: 38px 28px; border: 1px solid rgba(99, 102, 241, 0.25); box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             text-align: center; animation: popIn 0.35s ease;
         }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
         .auth-header { margin-bottom: 24px; }
-        .auth-header .icon { font-size: 40px; margin-bottom: 8px; display: inline-block; }
+        .auth-header .icon { font-size: 42px; margin-bottom: 8px; display: inline-block; }
         .auth-header h2 { font-size: 22px; font-weight: 800; color: #fff; }
         .auth-header p { font-size: 13px; color: var(--text-light); margin-top: 4px; }
 
@@ -97,7 +107,7 @@
             font-size: 22px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25); flex-shrink: 0;
         }
 
-        /* 3-DOTS MENU CONTAINER (PERFECT OVERLAY - ZERO CUTOFF) */
+        /* 3-DOTS MENU CONTAINER */
         .menu-3dots-wrapper {
             position: relative;
         }
@@ -159,7 +169,7 @@
         }
         .qr-wrap { background: #fff; padding: 12px; border-radius: 14px; display: inline-block; margin: 14px 0; }
 
-        /* Custom Popup Modal (Replaces browser alert) */
+        /* Custom Popup Modal */
         .custom-popup-overlay {
             position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(16px);
             z-index: 100000; display: none; justify-content: center; align-items: center; padding: 20px;
@@ -181,7 +191,7 @@
 
     <div class="portal-wrap">
 
-        <!-- ==================== 🔐 AUTHENTICATION CONTAINER ==================== -->
+        <!-- ==================== 🔐 AUTHENTICATION CONTAINER (CENTERED IN MIDDLE) ==================== -->
         <div id="authSection">
             <!-- 1. SIGN IN VIEW (PRIMARY DEFAULT) -->
             <div class="auth-card" id="viewSignin">
@@ -369,7 +379,6 @@
         let waNumberVal = '916372923348';
         let isAutoEnabled = true;
 
-        // Custom Modern Popup (Replaces Browser Alert)
         function showCustomPopup(title, msg, isSuccess = true) {
             document.getElementById('popTitle').textContent = title;
             document.getElementById('popMsg').textContent = msg;
@@ -381,13 +390,11 @@
             document.getElementById('customPopup').classList.remove('show');
         }
 
-        // Toggle between Sign In and Sign Up view
         function toggleAuthView(view) {
             document.getElementById('viewSignin').style.display = view === 'signin' ? 'block' : 'none';
             document.getElementById('viewSignup').style.display = view === 'signup' ? 'block' : 'none';
         }
 
-        // 3-Dots Dropdown Toggle
         function toggle3DotsMenu(e) {
             e.stopPropagation();
             const dd = document.getElementById('dotsDropdown');
