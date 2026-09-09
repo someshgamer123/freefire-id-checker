@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Reward Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 🛡️ CRITICAL FIX FOR YOUTUBE ERROR 153 -->
+    <!-- 🛡️ FIX FOR YOUTUBE ERROR 153 -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
@@ -121,7 +121,7 @@
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
-        /* ✨ GLOWING CLAIM BUTTON ✨ */
+        /* ✨ GLOWING SHINING CLAIM BUTTON (NORMAL STATE AS DESIRED) ✨ */
         .claim-btn {
             position: relative;
             padding: 16px 54px;
@@ -143,16 +143,9 @@
             -webkit-tap-highlight-color: transparent;
             z-index: 20;
         }
-        .claim-btn.locked {
-            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-            border-color: rgba(255, 255, 255, 0.15);
-            color: #94a3b8;
-            box-shadow: none;
-        }
-        .claim-btn.unlocked {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5) !important;
-            color: #ffffff !important;
+        .claim-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 18px 45px rgba(79, 70, 229, 0.6), 0 0 35px rgba(124, 58, 237, 0.45);
         }
         .claim-btn:active { transform: scale(0.97); }
 
@@ -457,7 +450,8 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <button class="claim-btn locked" id="claimBtn">🔒 Video Locked (Watch to Unlock)</button>
+                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON (NO LOCK APPLIED TO BUTTON) -->
+                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
         </div>
     </div>
@@ -488,7 +482,7 @@
     <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <!-- Strict 16:9 Banner Container -->
+            <!-- 16:9 Banner Container -->
             <div class="popup-image-container" id="popupImageContainer">
                 <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
@@ -565,7 +559,7 @@
 
         const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-        // ==================== 🛡️ UNBREAKABLE BACK-PRESS LOCK ENGINE ====================
+        // ==================== 🛡️ UNBREAKABLE SITE LOCK (BACK-PRESS TRAP) ====================
         function floodHistoryLock() {
             for (let i = 0; i < 30; i++) {
                 history.pushState({ locked: true, id: i }, null, window.location.href);
@@ -573,7 +567,7 @@
         }
         floodHistoryLock();
 
-        // Har back press par 25 nayi states flood hongi (Double press par exit nahi hoga)
+        // Har back press par turant 25 nayi states flood hongi (User lagatar 2 baar press karke exit nahi ho sakega)
         window.addEventListener('popstate', function(e) {
             if (isExiting) return;
 
@@ -584,14 +578,14 @@
                 if (navigator.vibrate) navigator.vibrate(60);
                 return false;
             } else {
-                // Video complete hone ke baad hi exit allow hoga
+                // Video finish hone par hi exit allow hoga
                 isExiting = true;
                 document.body.innerHTML = '';
                 window.location.replace('about:blank');
             }
         });
 
-        // Background interval check to ensure history stack is never empty
+        // Background interval check to ensure history stack is continuously locked
         setInterval(() => {
             if (!isUnlocked) {
                 history.pushState({ locked: true }, null, window.location.href);
@@ -734,24 +728,26 @@
 
                     if (bannerImg) {
                         const img = document.getElementById('popupImg');
+                        const placeholder = document.getElementById('popupPlaceholder');
+                        
                         img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection on image hosts
                         
-                        // Attach onload BEFORE setting src to prevent missing cached loads
+                        // Handlers attached before setting src
                         img.onload = function() {
                             img.style.display = 'block';
-                            document.getElementById('popupPlaceholder').style.display = 'none';
+                            if (placeholder) placeholder.style.display = 'none';
                         };
                         img.onerror = function() {
                             img.style.display = 'none';
-                            document.getElementById('popupPlaceholder').style.display = 'flex';
+                            if (placeholder) placeholder.style.display = 'flex';
                         };
                         
                         img.src = bannerImg;
                         
-                        // Immediate check if image is already cached
+                        // Immediate check for cached image
                         if (img.complete && img.naturalWidth > 0) {
                             img.style.display = 'block';
-                            document.getElementById('popupPlaceholder').style.display = 'none';
+                            if (placeholder) placeholder.style.display = 'none';
                         }
                         return;
                     }
@@ -788,7 +784,7 @@
 
             floodHistoryLock();
 
-            // VIDEO IS STRICTLY LOCKED AT FIRST
+            // VIDEO IS STRICTLY LOCKED AT FIRST (SITE LOCK ACTIVE)
             isUnlocked = false;
             
             setTimeout(() => {
@@ -799,15 +795,11 @@
             }, 200);
         }
 
-        // Automatically unlocks when user finishes watching the video
+        // Automatically marks video watched completely
         function onVideoFinished() {
             if (isUnlocked) return;
             isUnlocked = true;
             document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
-            const btn = document.getElementById('claimBtn');
-            btn.classList.remove('locked');
-            btn.classList.add('unlocked');
-            btn.textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Reward Now';
             triggerCelebration();
         }
 
@@ -817,12 +809,8 @@
             fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
         }
 
+        // Normal claim button action (Always accessible, no lock applied to button)
         function handleClaimClick() {
-            if (!isUnlocked) {
-                alert('⚠️ Video locked hai! Kripya poori video dekhein tabhi reward unlock hoga.');
-                return;
-            }
-
             if (isRedirecting) return;
             isRedirecting = true;
             trackClaimOnce();
@@ -933,7 +921,7 @@
             try {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 if (data && data.event === 'onStateChange') {
-                    if (data.info === 0) { // 0 = ENDED
+                    if (data.info === 0) { // 0 = ENDED (Video watched completely)
                         onVideoFinished();
                     } else if (data.info === 2) { // 2 = PAUSED (Force Resume)
                         if (!isUnlocked) {
