@@ -26,8 +26,6 @@
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -43,7 +41,6 @@
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes numberPulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
         .admin-container { max-width: 1400px; margin: 0 auto; }
 
@@ -57,8 +54,6 @@
         .header-actions button { padding: 7px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
         .header-actions button:hover { transform: translateY(-2px); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
-        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
-        .btn-install.show { display: inline-block; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
@@ -68,7 +63,6 @@
             background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
             border: 1px solid var(--border); align-items: center;
         }
-        .menu-container .menu-label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-right: 4px; }
         .menu-btn {
             padding: 8px 16px; border: 1px solid transparent; border-radius: 10px;
             background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
@@ -93,13 +87,10 @@
         .live-visitors .lv-title .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
         .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
         .live-visitors .lv-item { background: #090a0f; border-radius: 10px; padding: 12px 14px; text-align: center; border: 1px solid var(--border); transition: 0.2s; }
-        .live-visitors .lv-item:hover { border-color: var(--primary); }
         .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; }
         .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
         .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
-        .live-visitors .lv-item .lv-number.pulse-update { animation: numberPulse 0.3s ease; }
         .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
-        .live-visitors .lv-item.active-now { border-left: 3px solid var(--success); }
 
         .section { display: none; animation: fadeInUp 0.3s ease; }
         .section.active { display: block; }
@@ -122,8 +113,6 @@
         .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); color: white; }
         .btn-sm { padding: 6px 14px; font-size: 11px; border-radius: 8px; width: auto; }
-        .btn-outline { background: transparent; color: var(--text-light); border: 1px solid var(--border); }
-        .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .link-item {
             background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px;
@@ -142,21 +131,13 @@
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
 
-        .generated-link { background: rgba(99,102,241,0.08); border: 1px dashed var(--primary); border-radius: 12px; padding: 14px; margin-top: 14px; display: none; }
-        .generated-link.show { display: block; }
-        .generated-link .link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-        .generated-link input { flex: 1; min-width: 150px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: #090a0f; font-size: 12px; color: var(--text); }
-
-        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); overflow: hidden; display: none; }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-
-        .popup-preview { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: center; border: 1px solid rgba(99,102,241,0.2); }
-        .popup-preview .preview-image { width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 8px; background: var(--bg); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 11px; overflow: hidden; margin: 0 auto 8px; }
-        .popup-preview .preview-image img { width: 100%; height: 100%; object-fit: cover; }
-        .popup-preview .preview-title { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-        .popup-preview .preview-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 6px; }
-        .popup-preview .preview-btn { padding: 6px 20px; border: none; border-radius: 6px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-weight: 700; font-size: 11px; cursor: default; display: inline-block; }
+        .share-box {
+            background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--primary);
+            border-radius: 12px; padding: 14px; margin-bottom: 20px;
+        }
+        .share-box .share-title { font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px; }
+        .share-box .box-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .share-box input { flex: 1; min-width: 200px; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; }
 
         .preview-box-16-9 {
             width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
@@ -165,7 +146,7 @@
         }
         .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        /* Clean Edit Modal */
+        /* Clean Edit Modal (No Overlap) */
         .edit-modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             backdrop-filter: blur(12px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;
@@ -176,7 +157,6 @@
             border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease;
         }
         
-        /* Fixed Form Groups (Zero Overlap) */
         .form-group {
             display: flex;
             flex-direction: column;
@@ -190,7 +170,7 @@
             color: var(--text-light);
             margin-bottom: 5px;
         }
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 10px 14px;
             background: #090a0f;
@@ -229,7 +209,6 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
-        .toast.info { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
 
         @media (max-width: 768px) {
             body { padding: 12px; }
@@ -246,7 +225,6 @@
         <header class="header">
             <h1>⚡ Admin Control Center</h1>
             <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
                     <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
                     <button onclick="setTheme('light')" id="theme-light">☀️</button>
@@ -256,10 +234,8 @@
         </header>
 
         <div class="menu-container">
-            <span class="menu-label">📋 Navigation:</span>
             <button class="menu-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
             <button class="menu-btn" onclick="showSection('links')">🔗 Links Manager</button>
-            <!-- 🔄 NEW USERS & RENEWAL SYSTEM TAB (REPLACED GRAPH) -->
             <button class="menu-btn" onclick="showSection('renewals')">🔄 Users & Renewal</button>
             <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
             <button class="menu-btn" onclick="showSection('shortener')">🔗 Short Link</button>
@@ -268,6 +244,16 @@
 
         <!-- 1. DASHBOARD OVERVIEW -->
         <div class="section active" id="sec-dashboard">
+            <!-- 🔗 CUSTOMER PORTAL & SIGNUP LINK SHARE BOX -->
+            <div class="share-box">
+                <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
+                <div class="box-row">
+                    <input type="text" id="dashUserPortalUrl" readonly>
+                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this link with customers so they can signup, view analytics, and renew their links.</div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
                 <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Active Links</div></div>
@@ -287,13 +273,13 @@
                     <div class="lv-item"><div class="lv-number claims-color" id="liveLifetimeClaims">0</div><div class="lv-label">Lifetime Claims</div></div>
                     <div class="lv-item"><div class="lv-number visits-color" id="liveTodayVisits">0</div><div class="lv-label">Today's Visits</div></div>
                     <div class="lv-item"><div class="lv-number claims-color" id="liveTodayClaims">0</div><div class="lv-label">Today's Claims</div></div>
-                    <div class="lv-item active-now"><div class="lv-number visits-color" id="liveActiveVisits">0</div><div class="lv-label">Active Watching</div></div>
-                    <div class="lv-item active-now" style="border-left-color:var(--warning);"><div class="lv-number claims-color" id="liveActiveClaims">0</div><div class="lv-label">Active Claiming</div></div>
+                    <div class="lv-item"><div class="lv-number visits-color" id="liveActiveVisits">0</div><div class="lv-label">Active Watching</div></div>
+                    <div class="lv-item"><div class="lv-number claims-color" id="liveActiveClaims">0</div><div class="lv-label">Active Claiming</div></div>
                 </div>
             </div>
 
             <div class="card">
-                <h3>⚡ Management Shortcuts</h3>
+                <h3>⚡ Quick Shortcuts</h3>
                 <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">Manage promotional campaigns, approve customer renewal requests, or extend validity.</p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
@@ -315,19 +301,34 @@
             </div>
         </div>
 
-        <!-- 3. 🔄 USERS & RENEWAL MANAGEMENT SECTION (REPLACED GRAPH) -->
+        <!-- 3. 🔄 USERS & RENEWAL MANAGEMENT (PENDING ONLY - NO DUMMY APPROVED DATA) -->
         <div class="section" id="sec-renewals">
+            <!-- Customer Portal Share Box -->
+            <div class="share-box">
+                <div class="share-title">🔗 Customer Portal / Signup Link:</div>
+                <div class="box-row">
+                    <input type="text" id="renewUserPortalUrl" readonly>
+                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
+                </div>
+            </div>
+
             <!-- Part 1: Pending User Signup Approvals -->
             <div class="card">
-                <h3>👥 User Registration Approvals (Customer Signups)</h3>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Approve users so they can log in to the Customer Portal (`/user-dashboard`) to view link analytics and pay renewals.</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
+                </div>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Only pending signup requests appear here. Once approved or rejected, they are removed.</p>
                 <div id="usersApprovalList">Loading user requests...</div>
             </div>
 
-            <!-- Part 2: Renewal Requests (Manual & Auto) -->
+            <!-- Part 2: Pending Renewal Requests -->
             <div class="card">
-                <h3>💳 Renewal & Payment Requests</h3>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Customer payments submitted via Reference Number / Screenshot awaiting verification.</p>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">💳 Pending Renewal & Payment Requests</h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
+                </div>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">Only active pending payment requests waiting for your approval will appear here.</p>
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
 
@@ -401,9 +402,9 @@
 
                 <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
 
-                <div id="generatedLinkBox" class="generated-link">
+                <div id="generatedLinkBox" style="display:none;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:12px;padding:14px;margin-top:14px;">
                     <p style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created Successfully! Copy below:</p>
-                    <div class="link-box">
+                    <div style="display:flex;gap:8px;">
                         <input type="text" id="generatedLinkUrl" readonly>
                         <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">📋 Copy</button>
                     </div>
@@ -414,32 +415,12 @@
         <!-- 5. URL SHORTENER -->
         <div class="section" id="sec-shortener">
             <div class="card">
-                <h3>📊 URL Shortener Overview</h3>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
-                    <div class="stat-card"><div class="number" id="shortTotalLinks">0</div><div class="label">🔗 Total Links</div></div>
-                    <div class="stat-card"><div class="number" id="shortActiveLinks">0</div><div class="label">✅ Active</div></div>
-                    <div class="stat-card"><div class="number" id="shortTotalClicks">0</div><div class="label">👁️ Total Clicks</div></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>➕ Create Short Link (With App Deep-Linking)</h3>
+                <h3>🔗 App Deep-Linking URL Shortener</h3>
                 <input type="text" id="sUrl" placeholder="Destination URL (e.g. https://youtube.com/...)">
                 <input type="text" id="sTitle" placeholder="Title (Optional)">
-                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="shortAppOpen" onchange="toggleAppScheme()">
-                        <span></span>
-                    </label>
-                    <span style="font-size:11px;color:var(--text-light);">(Enable deep link app open)</span>
-                </div>
-                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
-                    <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
-                </div>
+                <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
             </div>
-
             <div class="card">
                 <h3>Active Short Links</h3>
                 <div id="shortLinksList">Loading...</div>
@@ -451,9 +432,6 @@
             <div class="card">
                 <h3>🖼️ UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Preview">
-                </div>
                 <div style="display:flex;gap:8px;margin-top:8px;">
                     <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
                     <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
@@ -513,7 +491,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        const csrfToken = localStorage.getItem('csrfToken') || '';
         let allLinks = [];
         let editingLinkId = null;
         let selectedExpiry = null;
@@ -523,6 +500,11 @@
             t.textContent = msg;
             t.className = `toast ${type} show`;
             setTimeout(() => t.className = 'toast', 3000);
+        }
+
+        function copyPortalUrl() {
+            const u = window.location.origin + '/user-dashboard';
+            navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Signup / Portal Link: ' + u, 'success'));
         }
 
         function escapeHTML(str) {
@@ -542,7 +524,7 @@
             if (id === 'links') loadLinks();
             if (id === 'renewals') loadRenewalSystem();
             if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); loadContactInfo(); }
+            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); }
         }
 
         function updateCreatePopupPreview(url) {
@@ -766,54 +748,61 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ==================== 🔄 RENEWAL SYSTEM IN ADMIN ====================
+        // ==================== 🔄 RENEWAL SYSTEM IN ADMIN (PENDING ONLY) ====================
         async function loadRenewalSystem() {
-            // Load User Signup Approvals
+            // Set Customer Portal Links
+            const portalUrl = window.location.origin + '/user-dashboard';
+            const dInput = document.getElementById('dashUserPortalUrl');
+            const rInput = document.getElementById('renewUserPortalUrl');
+            if (dInput) dInput.value = portalUrl;
+            if (rInput) rInput.value = portalUrl;
+
+            // Load Pending User Signup Approvals (Filtered so approved/rejected are removed!)
             const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
             const uData = await uRes.json();
             const uList = document.getElementById('usersApprovalList');
-            if (!uData.users?.length) {
-                uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No user registration requests.</p>';
+            const pendingUsers = (uData.users || []).filter(u => u.status === 'pending');
+
+            if (!pendingUsers.length) {
+                uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
             } else {
-                uList.innerHTML = uData.users.map(u => `
+                uList.innerHTML = pendingUsers.map(u => `
                     <div class="link-item">
                         <div>
-                            <div class="name">${escapeHTML(u.name)} (${u.status.toUpperCase()})</div>
+                            <div class="name">${escapeHTML(u.name)} (PENDING)</div>
                             <div class="details">📧 ${escapeHTML(u.email)} | 📞 ${escapeHTML(u.phone)}</div>
                         </div>
-                        <div>
-                            ${u.status === 'pending' ? `
-                                <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>
-                                <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id}', 'rejected')">❌ Reject</button>
-                            ` : `<span style="font-size:11px;font-weight:700;color:var(--text-light);">${u.status}</span>`}
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>
+                            <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id}', 'rejected')">❌ Reject</button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            // Load Renewal Requests & Pricing
+            // Load Pending Renewal Requests (Filtered so completed/approved items never show!)
             const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
             const sData = await sRes.json();
             const rList = document.getElementById('renewalReqsList');
-            if (!sData.requests?.length) {
-                rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No renewal requests pending.</p>';
+            const pendingReqs = (sData.requests || []).filter(r => r.status === 'pending');
+
+            if (!pendingReqs.length) {
+                rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
             } else {
-                rList.innerHTML = sData.requests.map(r => `
+                rList.innerHTML = pendingReqs.map(r => `
                     <div class="link-item">
                         <div>
                             <div class="name">User: ${escapeHTML(r.linkName)} | Plan: ${r.plan} (${r.days} Days)</div>
-                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref: <b>${escapeHTML(r.transactionId)}</b></div>
+                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref No: <b>${escapeHTML(r.transactionId || 'None')}</b></div>
                         </div>
-                        <div>
-                            ${r.status === 'pending' ? `
-                                <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
-                            ` : `<span style="font-size:11px;color:var(--success);font-weight:700;">APPROVED</span>`}
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            // Load Pricing Inputs
+            // Load Pricing & Settings
             if (sData.pricing) {
                 const pr = sData.pricing.pricing || {};
                 if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
@@ -834,7 +823,7 @@
                 credentials: 'include',
                 body: JSON.stringify({ action })
             });
-            showToast(`User ${action}!`, 'success');
+            showToast(`User ${action}! Removed from pending list.`, 'success');
             loadRenewalSystem();
         }
 
@@ -843,7 +832,7 @@
                 method: 'POST',
                 credentials: 'include'
             });
-            showToast('Renewal approved & Link extended!', 'success');
+            showToast('Renewal approved & Link extended! Removed from pending.', 'success');
             loadRenewalSystem();
             loadStats();
         }
@@ -870,11 +859,6 @@
         }
 
         // URL SHORTENER
-        function toggleAppScheme() {
-            const chk = document.getElementById('shortAppOpen').checked;
-            document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
-        }
-
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
             const res = await fetch('/api/short-links', { credentials: 'include' });
@@ -967,22 +951,6 @@
             } else showToast(d.error, 'error');
         }
 
-        async function loadContactInfo() {
-            try {
-                const res = await fetch('/api/settings');
-                const d = await res.json();
-                if (d) {
-                    if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
-                    if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
-                    if (d.background) {
-                        document.getElementById('bgImgUrl').value = d.background;
-                        document.getElementById('bgPreviewImg').src = d.background;
-                        document.getElementById('bgImagePreview').classList.add('show');
-                    }
-                }
-            } catch(e) {}
-        }
-
         async function updateContactInfo() {
             const email = document.getElementById('adminEmail').value.trim();
             const phone = document.getElementById('adminPhone').value.trim();
@@ -998,15 +966,12 @@
         async function saveBackground() {
             const bg = document.getElementById('bgImgUrl').value.trim();
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
-            document.getElementById('bgPreviewImg').src = bg;
-            document.getElementById('bgImagePreview').classList.add('show');
             showToast('Background updated', 'success');
         }
 
         async function removeBackground() {
             await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
             document.getElementById('bgImgUrl').value = '';
-            document.getElementById('bgImagePreview').classList.remove('show');
             showToast('Background removed', 'info');
         }
 
@@ -1031,14 +996,10 @@
             window.location.href = '/admin/login.html';
         }
 
-        function installApp() {
-            showToast('Use browser menu -> Add to Home Screen', 'info');
-        }
-
         // Initialize Everything on Load
         loadStats();
         loadLinks();
-        loadContactInfo();
+        loadRenewalSystem();
         setInterval(loadStats, 5000);
     </script>
 </body>
