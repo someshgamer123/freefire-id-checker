@@ -5,7 +5,7 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- Clean Human-Grade Typography -->
+    <!-- Clean Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
-        /* Header */
+        /* Top Header */
         .top-navbar {
             position: sticky;
             top: 0;
@@ -121,14 +121,14 @@
             background: #34d399;
         }
 
-        /* 3-Dot Menu Button (Hidden on login page) */
+        /* 3-Dot Menu Button (Hidden on login page by default) */
         .btn-kebab {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             color: var(--text-primary);
             width: 36px; height: 36px;
             border-radius: 9px;
-            display: none; /* Controlled via JS: Only visible when logged in */
+            display: none;
             align-items: center;
             justify-content: center;
             font-size: 18px;
@@ -250,10 +250,11 @@
         .btn-whatsapp {
             background: linear-gradient(135deg, #10b981, #059669);
             color: #fff;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
         }
-        .btn-whatsapp:hover { opacity: 0.95; }
+        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
 
-        /* Checkbox */
+        /* Terms Checkbox */
         .checkbox-container {
             display: flex;
             align-items: flex-start;
@@ -307,7 +308,7 @@
             border: 1px solid var(--border-subtle);
         }
 
-        /* Dashboard Views */
+        /* Dashboard Section */
         #dashboardSection { display: none; }
 
         .welcome-header {
@@ -386,7 +387,7 @@
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
 
-        /* Stats Grid */
+        /* Stats Row */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -404,50 +405,98 @@
         .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
 
-        /* 💎 COMPACT & PROFESSIONAL PLANS GRID */
-        .plan-cards-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
+        /* ==================== 💎 SLIM STACKED PLAN LIST (LINE-BY-LINE) ==================== */
+        .plan-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
         }
-        @media (max-width: 860px) { .plan-cards-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 520px) { .plan-cards-grid { grid-template-columns: repeat(2, 1fr); } }
 
-        .plan-box {
+        .plan-row-item {
             background: var(--surface-2);
             border: 1.5px solid var(--border-subtle);
             border-radius: 12px;
-            padding: 10px 8px;
-            text-align: center;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             cursor: pointer;
-            position: relative;
             transition: all 0.2s ease;
         }
-        .plan-box:hover { border-color: var(--primary-light); transform: translateY(-1px); }
-        .plan-box.selected {
+        .plan-row-item:hover {
             border-color: var(--primary-light);
-            background: rgba(79, 70, 229, 0.12);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.2);
+            background: rgba(79, 70, 229, 0.08);
         }
-        .plan-tag {
-            position: absolute;
-            top: -7px; left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: #fff;
-            font-size: 8px;
-            font-weight: 800;
-            padding: 1px 6px;
-            border-radius: 8px;
-            letter-spacing: 0.3px;
-            white-space: nowrap;
+        .plan-row-item.selected {
+            border-color: var(--primary-light);
+            background: rgba(79, 70, 229, 0.14);
+            box-shadow: 0 4px 18px rgba(79, 70, 229, 0.22);
         }
-        .plan-name { font-size: 12.5px; font-weight: 700; color: #fff; margin-top: 2px; }
-        .plan-rate { font-size: 16px; font-weight: 800; color: var(--accent-cyan); margin: 3px 0 1px; }
-        .plan-sub { font-size: 10.5px; color: var(--text-muted); }
 
-        /* Payment Panels */
+        .plan-row-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .plan-radio-circle {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .plan-row-item.selected .plan-radio-circle {
+            border-color: var(--primary-light);
+            background: var(--primary);
+        }
+        .plan-row-item.selected .plan-radio-circle::after {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        .plan-meta h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .plan-meta p {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .plan-row-right {
+            text-align: right;
+        }
+        .plan-price-tag {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--accent-cyan);
+        }
+
+        .plan-badge-pill {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .plan-badge-pill.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .plan-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+
+        /* Payment Summary Box */
         .payment-panel {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
@@ -489,27 +538,7 @@
         }
         .upi-copy-chip:hover { border-color: var(--border-hover); }
 
-        /* Upload Screenshot Preview Box */
-        .screenshot-upload-box {
-            border: 1.5px dashed var(--border-subtle);
-            border-radius: 12px;
-            padding: 14px;
-            text-align: center;
-            cursor: pointer;
-            background: #080c14;
-            transition: all 0.2s;
-            margin-bottom: 12px;
-        }
-        .screenshot-upload-box:hover { border-color: var(--primary-light); }
-        .screenshot-upload-box img {
-            max-width: 100%;
-            max-height: 120px;
-            border-radius: 8px;
-            display: none;
-            margin: 8px auto 0;
-        }
-
-        /* History Table */
+        /* Table */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -531,7 +560,7 @@
             color: var(--text-secondary);
         }
 
-        /* Custom Dialog & Toast Notifications (Replaces alert) */
+        /* Custom Modal Dialog (Replaces native browser alert) */
         .custom-dialog-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -580,7 +609,7 @@
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             border-radius: 18px;
-            max-width: 520px;
+            max-width: 500px;
             width: 100%;
             padding: 22px;
             max-height: 85vh;
@@ -612,7 +641,7 @@
 <body>
     <div class="ambient-layer"></div>
 
-    <!-- Top Navigation Header -->
+    <!-- Top Navigation Bar -->
     <header class="top-navbar">
         <a href="#" class="navbar-brand">
             <div class="brand-badge-icon">⚡</div>
@@ -625,7 +654,7 @@
                 <span id="navUserName">Gamer</span>
             </div>
 
-            <!-- 3-Dot Menu Button (Hidden on login/signup page) -->
+            <!-- 3-Dot Menu Button (Hidden on login page, visible only after login) -->
             <button class="btn-kebab" id="btnKebab" onclick="toggleDropdown()" title="Menu">⋮</button>
 
             <!-- 3-Dot Options Dropdown -->
@@ -662,7 +691,7 @@
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="inEmail" class="form-input" placeholder="Enter your email" required>
+                        <input type="email" id="inEmail" class="form-input" placeholder="name@domain.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
@@ -681,7 +710,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="upEmail" class="form-input" placeholder="Enter your email" required>
+                        <input type="email" id="upEmail" class="form-input" placeholder="name@domain.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
@@ -712,7 +741,7 @@
                     <p>Protected Account • Only links registered to your identity are displayed</p>
                 </div>
                 <button class="btn-action btn-secondary" onclick="openPlansModal()" style="width:auto; padding:9px 16px; font-size:13px;">
-                    <span>💎 Extension Plans</span>
+                    <span>💎 Renewal Plans</span>
                 </button>
             </div>
 
@@ -775,7 +804,7 @@
                                 <th>Date</th>
                                 <th>Plan</th>
                                 <th>Amount</th>
-                                <th>Reference / UTR</th>
+                                <th>Reference ID</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -792,43 +821,84 @@
         </div>
     </main>
 
-    <!-- ==================== 💎 RENEWAL PLANS MODAL ==================== -->
+    <!-- ==================== 💎 RENEWAL PLANS MODAL (COMPACT STACKED LIST) ==================== -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>💎 Extension Plans & Renewal</h3>
+                <h3>💎 Extension Plans</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
 
-            <!-- Compact & Professional Plans Grid -->
-            <div class="plan-cards-grid">
-                <div class="plan-box" onclick="pickPlan('7days', 7, 100, this)">
-                    <div class="plan-name">7 Days</div>
-                    <div class="plan-rate">₹100</div>
-                    <div class="plan-sub">₹14.2 / d</div>
+            <!-- 📋 SLIM STACKED PLAN LIST (LINE-BY-LINE) -->
+            <div class="plan-list-container">
+                <!-- 7 Days -->
+                <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>7 Days Extension</h4>
+                            <p>₹14.2 / day • Starter Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹100</div>
+                    </div>
                 </div>
-                <div class="plan-box" onclick="pickPlan('15days', 15, 200, this)">
-                    <div class="plan-name">15 Days</div>
-                    <div class="plan-rate">₹200</div>
-                    <div class="plan-sub">₹13.3 / d</div>
+
+                <!-- 15 Days -->
+                <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>15 Days Extension</h4>
+                            <p>₹13.3 / day • Standard Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹200</div>
+                    </div>
                 </div>
-                <div class="plan-box selected" onclick="pickPlan('30days', 30, 400, this)">
-                    <span class="plan-tag">POPULAR</span>
-                    <div class="plan-name">30 Days</div>
-                    <div class="plan-rate">₹400</div>
-                    <div class="plan-sub">₹13.3 / d</div>
+
+                <!-- 30 Days (Popular) -->
+                <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>30 Days Extension <span class="plan-badge-pill popular">POPULAR</span></h4>
+                            <p>₹13.3 / day • Most Recommended</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹400</div>
+                    </div>
                 </div>
-                <div class="plan-box" onclick="pickPlan('90days', 90, 1000, this)">
-                    <span class="plan-tag">SAVE 15%</span>
-                    <div class="plan-name">90 Days</div>
-                    <div class="plan-rate">₹1000</div>
-                    <div class="plan-sub">₹11.1 / d</div>
+
+                <!-- 90 Days (Save 15%) -->
+                <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>90 Days Extension <span class="plan-badge-pill save">SAVE 15%</span></h4>
+                            <p>₹11.1 / day • Quarterly Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹1000</div>
+                    </div>
                 </div>
-                <div class="plan-box" onclick="pickPlan('1year', 365, 3000, this)">
-                    <span class="plan-tag">BEST</span>
-                    <div class="plan-name">1 Year</div>
-                    <div class="plan-rate">₹3000</div>
-                    <div class="plan-sub">₹8.2 / d</div>
+
+                <!-- 1 Year (Best Value) -->
+                <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>1 Year Extension <span class="plan-badge-pill best">BEST VALUE</span></h4>
+                            <p>₹8.2 / day • Maximum Savings</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹3000</div>
+                    </div>
                 </div>
             </div>
 
@@ -836,7 +906,7 @@
             <div class="payment-panel">
                 <div class="qr-wrapper">
                     <img id="qrImageElement" src="" alt="Payment QR">
-                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan with any UPI App</span>
+                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan to Pay</span>
                 </div>
                 <div class="payment-info">
                     <div class="upi-copy-chip" onclick="copyUpiText()">
@@ -844,33 +914,15 @@
                         <span>📋</span>
                     </div>
 
-                    <!-- ⚡ MODE A: AUTO-VERIFY VIEW (Only shown when autoPaymentEnabled === true) -->
-                    <div id="autoVerifyBlock">
-                        <div class="form-group" style="margin-bottom:10px;">
-                            <label class="form-label">12-Digit Reference / UTR Number</label>
-                            <input type="text" id="inputUtr" class="form-input" maxlength="12" placeholder="e.g. 423589123456" inputmode="numeric">
-                        </div>
-                        <button class="btn-action" onclick="verifyAndRenew()">
-                            <span>Payment Verification</span>
-                        </button>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+                        Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
+                        Scan QR or pay to UPI ID, then submit your renewal request below.
                     </div>
 
-                    <!-- 📩 MODE B: MANUAL VERIFY VIEW (Only shown when autoPaymentEnabled === false) -->
-                    <div id="manualVerifyBlock" style="display:none;">
-                        <!-- Screenshot Upload UI -->
-                        <div class="screenshot-upload-box" onclick="document.getElementById('fileScreenshot').click()">
-                            <input type="file" id="fileScreenshot" accept="image/*" style="display:none;" onchange="handleScreenshotSelected(event)">
-                            <div id="uploadPlaceholderText" style="font-size:12.5px; color:var(--text-secondary);">
-                                📸 Tap to attach payment screenshot (Optional)
-                            </div>
-                            <img id="previewScreenshot" alt="Screenshot Preview">
-                        </div>
-
-                        <!-- Manual Request Button -->
-                        <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
-                            <span>📩 Request Admin Renewal via WhatsApp</span>
-                        </button>
-                    </div>
+                    <!-- 📩 EXCLUSIVELY MANUAL VERIFY / WHATSAPP REQUEST RENEWAL BUTTON -->
+                    <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
+                        <span>📩 Request Admin Renewal via WhatsApp</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -896,18 +948,18 @@
 
             <div class="guide-item">
                 <h4>3. Selecting an Extension Plan</h4>
-                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration immediately.</p>
+                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
             </div>
 
             <!-- Explicitly Named "Payment Verification" -->
             <div class="guide-item">
                 <h4>4. Payment Verification</h4>
-                <p>Scan the dynamic QR code with any UPI app. For automated verification, submit your <strong>12-digit UPI reference (UTR) number</strong> to activate instantly.</p>
+                <p>Scan the dynamic QR code with any UPI app. After sending payment, click "Request Admin Renewal" to notify the administrator for instant approval.</p>
             </div>
 
             <div class="guide-item">
                 <h4>5. Manual Admin Assistance</h4>
-                <p>When manual verification is active, click "Request Admin Renewal" to open WhatsApp with pre-composed transaction details for direct approval.</p>
+                <p>Clicking "Request Admin Renewal" opens WhatsApp with pre-composed transaction details for direct review and extension.</p>
             </div>
 
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
@@ -931,7 +983,7 @@
 
             <div class="guide-item">
                 <h4>2. Genuine Payment Submissions</h4>
-                <p>Submission of fabricated, duplicate, or expired 12-digit reference numbers will result in immediate account suspension.</p>
+                <p>Submission of fabricated, duplicate, or expired reference numbers will result in immediate account suspension.</p>
             </div>
 
             <div class="guide-item">
@@ -950,7 +1002,7 @@
         </div>
     </div>
 
-    <!-- ==================== 🔔 BEAUTIFUL CUSTOM DIALOG (REPLACES UGLY ALERT) ==================== -->
+    <!-- ==================== 🔔 CUSTOM MODAL DIALOG (REPLACES NATIVE ALERT) ==================== -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="dialog-icon" id="dialogIcon">🔔</div>
@@ -967,7 +1019,6 @@
         let activePlan = { key: '30days', days: 30, cost: 400 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
-        let autoPaymentEnabled = true;
 
         // Custom Sleek Modal Alert (Replaces browser alert)
         function notify(message, title = 'Notification', icon = 'ℹ️') {
@@ -1084,7 +1135,7 @@
             }
         }
 
-        // Sign Up (With Mandatory Terms Validation)
+        // Sign Up (With Mandatory Terms Validation in English)
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1165,10 +1216,11 @@
                     activeLinkRecord = data.link;
                     activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
                     adminPhone = data.whatsappNumber || '916372923348';
-                    
-                    // Determine mode: Auto verify vs Manual verify
-                    autoPaymentEnabled = data.autoPaymentEnabled !== false;
-                    applyVerificationMode(autoPaymentEnabled);
+
+                    // Update live pricing if present from database
+                    if (data.pricing) {
+                        applyLivePricing(data.pricing);
+                    }
 
                     // Update Support Link
                     document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
@@ -1188,20 +1240,27 @@
             }
         }
 
-        // Toggles Auto vs Manual Mode view cleanly
-        function applyVerificationMode(isAuto) {
-            const autoBlock = document.getElementById('autoVerifyBlock');
-            const manualBlock = document.getElementById('manualVerifyBlock');
+        // Sync live pricing numbers onto plan rows
+        function applyLivePricing(p) {
+            if (p['7days']) updatePlanRowText('7days', p['7days'], 7);
+            if (p['15days']) updatePlanRowText('15days', p['15days'], 15);
+            if (p['30days']) updatePlanRowText('30days', p['30days'], 30);
+            if (p['90days']) updatePlanRowText('90days', p['90days'], 90);
+            if (p['1year']) updatePlanRowText('1year', p['1year'], 365);
+        }
 
-            if (isAuto) {
-                // Auto Mode: Show UTR & Payment Verification button; HIDE WhatsApp button
-                autoBlock.style.display = 'block';
-                manualBlock.style.display = 'none';
-            } else {
-                // Manual Mode: HIDE UTR & Payment Verification; SHOW WhatsApp button & Screenshot
-                autoBlock.style.display = 'none';
-                manualBlock.style.display = 'block';
-            }
+        function updatePlanRowText(key, cost, days) {
+            const rows = document.querySelectorAll('.plan-row-item');
+            rows.forEach(r => {
+                const onclickStr = r.getAttribute('onclick') || '';
+                if (onclickStr.includes(`'${key}'`)) {
+                    r.setAttribute('onclick', `pickPlan('${key}', ${days}, ${cost}, this)`);
+                    const tag = r.querySelector('.plan-price-tag');
+                    if (tag) tag.textContent = `₹${cost}`;
+                    const sub = r.querySelector('.plan-meta p');
+                    if (sub) sub.textContent = `₹${(cost / days).toFixed(1)} / day`;
+                }
+            });
         }
 
         function switchActiveLink() {
@@ -1270,11 +1329,12 @@
             }
         }
 
-        // Compact Plan Selection
+        // Slim Stacked Plan Selection
         function pickPlan(key, days, cost, elem) {
-            document.querySelectorAll('.plan-box').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.plan-row-item').forEach(b => b.classList.remove('selected'));
             elem.classList.add('selected');
             activePlan = { key, days, cost };
+            document.getElementById('txtSelectedPlanSummary').textContent = `${days} Days (₹${cost})`;
             updateQrCode(cost);
         }
 
@@ -1290,38 +1350,18 @@
             });
         }
 
-        // Screenshot Preview handler
-        function handleScreenshotSelected(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    const img = document.getElementById('previewScreenshot');
-                    img.src = evt.target.result;
-                    img.style.display = 'block';
-                    document.getElementById('uploadPlaceholderText').textContent = '✅ Screenshot attached';
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Submit Automated Verification (Auto Mode Only)
-        async function verifyAndRenew() {
+        // 📩 Manual WhatsApp Admin Request Action (Auto-fills Details)
+        async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
 
             if (!currentId) {
-                notify('Please connect your Link ID before verifying payment.', 'Link Required', '⚠️');
+                notify('Please enter and connect your Link ID before requesting renewal.', 'Link Required', '⚠️');
                 return;
             }
 
-            const utr = document.getElementById('inputUtr').value.trim();
-            if (!/^\d{12}$/.test(utr)) {
-                notify('Please enter a valid 12-digit numeric UPI reference (UTR) number.', 'Invalid UTR', '❌');
-                return;
-            }
-
+            // Create pending request record in database
             try {
-                const res = await fetch('/api/user/renew-payment', {
+                fetch('/api/user/renew-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1330,33 +1370,10 @@
                         plan: activePlan.key,
                         days: activePlan.days,
                         amount: activePlan.cost,
-                        refNo: utr,
-                        isManual: false
+                        refNo: 'Manual-WhatsApp'
                     })
-                });
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    notify(data.message || 'Payment verified! Link validity extended.', 'Success', '🎉');
-                    document.getElementById('inputUtr').value = '';
-                    closePlansModal();
-                    fetchUserLinkData(currentId);
-                } else {
-                    notify(data.error || 'Payment verification failed.', 'Verification Failed', '❌');
-                }
-            } catch(e) {
-                notify('Unable to process payment submission.', 'Error', '⚠️');
-            }
-        }
-
-        // 📩 Manual WhatsApp Admin Request Action (Manual Mode Only)
-        function requestAdminRenewal() {
-            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-
-            if (!currentId) {
-                notify('Please enter and connect your Link ID before requesting renewal.', 'Link Required', '⚠️');
-                return;
-            }
+                }).catch(() => {});
+            } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const message = 
@@ -1367,16 +1384,19 @@
 💰 Total Amount: ₹${activePlan.cost}
 📅 Date: ${today}
 
-Please verify and approve my link extension. Thank you!`;
+Please verify my payment and approve my extension. Thank you!`;
 
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
             window.open(waUrl, '_blank');
+
+            closePlansModal();
+            setTimeout(() => { fetchHistoryRecords(currentId); }, 1500);
         }
 
         // Fetch and Render ONLY the Past 7 Renewal Records
         async function fetchHistoryRecords(linkId) {
             try {
-                const res = await fetch(`/api/renewal/history/${linkId}`);
+                const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
                 if (res.ok) {
                     const data = await res.json();
                     const list = data.history || [];
