@@ -121,7 +121,7 @@ async function initializeDatabase() {
                     details: { upiId: 'admin@upi', qrCode: null, text: '' }
                 },
                 whatsappNumber: '916372923348',
-                autoPaymentEnabled: false // Exclusively manual mode
+                autoPaymentEnabled: false
             });
         } else if (pricingExists.autoPaymentEnabled !== false) {
             pricingExists.autoPaymentEnabled = false;
@@ -371,7 +371,6 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
-// ✅ GET /api/pricing - Real-time Live Pricing without Caching (Exclusively Manual Mode)
 app.get('/api/pricing', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -388,14 +387,13 @@ app.get('/api/pricing', async (req, res) => {
             pricing: pricingDoc.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
             paymentSettings: pricingDoc.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
-            autoPaymentEnabled: false // Permanently manual mode
+            autoPaymentEnabled: false
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch pricing' });
     }
 });
 
-// ✅ POST /api/admin/pricing - Direct Atomic Update for Pricing Changes
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { pricing, paymentSettings, upiId, whatsappNumber } = req.body;
@@ -520,7 +518,6 @@ app.get('/api/link/:id', async (req, res) => {
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
-        const today = new Date().toISOString().split('T')[0];
         if (link) {
             link.claims = (link.claims || 0) + 1;
             await link.save();
@@ -594,32 +591,6 @@ app.get('/api/settings', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch settings' });
-    }
-});
-
-// ==================== SECRET GATEWAY VERIFICATION ====================
-app.get('/api/admin/public-secret-key', async (req, res) => {
-    try {
-        const admin = await User.findOne();
-        res.json({ secretKey: admin?.secretKey || 'admin@2024' });
-    } catch (error) {
-        res.json({ secretKey: 'admin@2024' });
-    }
-});
-
-app.post('/api/admin/verify-secret-key', async (req, res) => {
-    try {
-        const rawKey = (req.body?.key || '').trim().toLowerCase();
-        const admin = await User.findOne();
-        const secretKey = (admin?.secretKey || 'admin@2024').toLowerCase();
-        
-        if (rawKey === secretKey || rawKey === 'admin@2024') {
-            res.json({ success: true });
-        } else {
-            res.json({ success: false });
-        }
-    } catch (error) {
-        res.json({ success: false });
     }
 });
 
@@ -697,12 +668,10 @@ app.post('/api/user/link-details', async (req, res) => {
         if (searchId.includes('?link=')) searchId = searchId.split('?link=').split('&')[0];
         else if (searchId.includes('/v/')) searchId = searchId.split('/v/').split('?')[0];
 
-        // Search by link ID / dashboardId / _id
         if (searchId && searchId !== cleanUser) {
             link = await Link.findOne(getLinkQuery(searchId));
         }
 
-        // Auto-resolve by assigned User Name
         if (!link && cleanUser) {
             link = await Link.findOne({ name: new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).sort({ created: -1 });
         }
@@ -775,7 +744,7 @@ app.post('/api/user/link-details', async (req, res) => {
             },
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
             paymentSettings: pricingDoc?.paymentSettings || { details: { upiId: 'admin@upi' } },
-            autoPaymentEnabled: false, // Permanently Manual Mode
+            autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
     } catch (e) {
@@ -783,7 +752,7 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/renew-payment - Exclusively Creates Manual Renewal Requests
+// ✅ POST /api/user/renew-payment - Creates Manual Renewal Requests
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, plan, days, amount, refNo, userName } = req.body;
@@ -812,7 +781,40 @@ app.post('/api/user/renew-payment', async (req, res) => {
     }
 });
 
-// ==================== ADMIN: RENEWAL & USER APIS ====================
+// ================================================================
+// ==================== 👥 ADMIN: USER MANAGEMENT ====================
+// ================================================================
+
+// 1. Fetch all registered users with their created link count
+app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
+    try {
+        const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
+        const links = await Link.find().lean();
+        const usersWithStats = users.map(u => {
+            const cleanName = (u.name || '').toLowerCase().trim();
+            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName);
+            return {
+                ...u,
+                totalLinks: userLinks.length
+            };
+        });
+        res.json({ success: true, users: usersWithStats, totalUsers: users.length });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// 2. Delete a user permanently
+app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
+    try {
+        await RenewalUser.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to delete user' });
+    }
+});
+
+// 3. Pending users for renewal approval
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -831,6 +833,7 @@ app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res)
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== ADMIN: RENEWAL SETTINGS & REQUESTS ====================
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const pricing = await Pricing.findOne().lean();
@@ -839,7 +842,6 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ POST /api/admin/renewal-settings - Full Atomic Sync with Pricing Updates
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
@@ -870,7 +872,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Persistent Approval (Updates status to approved, extends link, retains in history)
+// Approve Renewal
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
@@ -923,13 +925,14 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     }
 });
 
+// ✅ Reject Renewal Request
 app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
         if (!request) return res.status(404).json({ error: 'Request not found' });
         request.status = 'rejected';
         await request.save();
-        res.json({ success: true });
+        res.json({ success: true, message: 'Renewal rejected successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to reject renewal' });
     }
@@ -952,7 +955,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
 });
 
 // ================================================================
-// 🔑 ADMIN LOGIN
+// 🔑 ADMIN AUTHENTICATION & LOGIN SESSIONS
 // ================================================================
 app.get('/api/admin/block-status', async (req, res) => {
     try {
@@ -990,7 +993,24 @@ app.post('/api/admin/login', async (req, res) => {
 
         if (isValid) {
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
+            const { deviceName, deviceType } = getDeviceDetails(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
+
+            // Record Active Session in Database for "Active Devices" tab
+            await Session.create({
+                userId: 'admin',
+                deviceKey,
+                fingerprint,
+                ip,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                deviceName,
+                deviceType,
+                isActive: true,
+                lastActivity: new Date(),
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+            });
+
             const jwtToken = generateToken('admin');
             res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
             return res.json({ success: true, token: jwtToken });
@@ -1035,7 +1055,11 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.post('/api/admin/logout', (req, res) => {
+app.post('/api/admin/logout', async (req, res) => {
+    try {
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
+    } catch(e) {}
     res.clearCookie('adminToken');
     res.json({ success: true });
 });
@@ -1091,17 +1115,6 @@ app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch logs' });
     }
-});
-
-app.get('/api/admin/secret-key', authMiddleware, async (req, res) => {
-    const admin = await User.findOne();
-    res.json({ success: true, secretKey: admin?.secretKey || 'admin@2024' });
-});
-
-app.post('/api/admin/secret-key', authMiddleware, async (req, res) => {
-    const admin = await User.findOne();
-    if (admin) { admin.secretKey = req.body.newSecretKey; await admin.save(); }
-    res.json({ success: true });
 });
 
 app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
@@ -1242,7 +1255,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ PUT /api/links/:id - 100% Direct Atomic MongoDB Update
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1289,7 +1301,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             }
         }
 
-        // 📸 16:9 Banner Image (Catches Popup Image URL (16:9) form field)
+        // 📸 16:9 Banner Image
         let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
                             (req.body.image !== undefined ? req.body.image :
                             (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
@@ -1419,19 +1431,14 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     });
 });
 
-// Devices & Sessions
+// ================================================================
+// ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
+// ================================================================
+
+// 1. Blocked Devices List
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
     res.json({ success: true, devices });
-});
-
-app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
-    try {
-        const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
-        res.json({ success: true, sessions });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch active sessions' });
-    }
 });
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
@@ -1466,7 +1473,51 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     }
 });
 
-// Short links
+// 2. Active Sessions List
+app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
+    try {
+        const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
+        res.json({ success: true, sessions });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch active sessions' });
+    }
+});
+
+// 3. Terminate an Active Session
+app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
+    try {
+        await Session.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Session terminated' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to terminate session' });
+    }
+});
+
+// 4. Permanently Block an Active Device
+app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
+    try {
+        const session = await Session.findById(req.params.id);
+        if (session) {
+            await BlockedDevice.create({
+                ip: session.ip || '127.0.0.1',
+                deviceKey: session.deviceKey || crypto.randomBytes(16).toString('hex'),
+                fingerprint: session.fingerprint || crypto.randomBytes(16).toString('hex'),
+                deviceName: session.deviceName || 'Admin Device',
+                deviceType: session.deviceType || 'Desktop',
+                attempts: 3,
+                isPermanent: true,
+                reason: 'Terminated & blocked by admin from Active Devices list',
+                lastAttempt: new Date()
+            });
+            await Session.findByIdAndDelete(req.params.id);
+        }
+        res.json({ success: true, message: 'Device blocked permanently and session terminated' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to block device' });
+    }
+});
+
+// ==================== 🔗 SHORT LINKS ====================
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
