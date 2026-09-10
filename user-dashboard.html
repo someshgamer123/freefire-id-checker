@@ -14,7 +14,7 @@
         :root {
             --bg-base: #0a0e17;
             --surface-1: #111726;
-            --surface-2: #182238;
+            --surface-2: #161f33;
             --border-subtle: rgba(255, 255, 255, 0.08);
             --border-hover: rgba(99, 102, 241, 0.35);
             --primary: #4f46e5;
@@ -45,7 +45,6 @@
             padding-bottom: 50px;
         }
 
-        /* Subtle Human-Crafted Lighting */
         .ambient-layer {
             position: fixed;
             top: 0; left: 0;
@@ -57,15 +56,15 @@
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
-        /* Professional Header */
+        /* Header */
         .top-navbar {
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(10, 14, 23, 0.92);
+            background: rgba(10, 14, 23, 0.94);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 14px 24px;
+            padding: 14px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -100,7 +99,7 @@
         .navbar-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             position: relative;
         }
 
@@ -110,7 +109,7 @@
             color: #34d399;
             padding: 5px 12px;
             border-radius: 20px;
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -122,14 +121,14 @@
             background: #34d399;
         }
 
-        /* 3-Dot Navigation Menu */
+        /* 3-Dot Menu Button (Hidden on login page) */
         .btn-kebab {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             color: var(--text-primary);
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            display: flex;
+            width: 36px; height: 36px;
+            border-radius: 9px;
+            display: none; /* Controlled via JS: Only visible when logged in */
             align-items: center;
             justify-content: center;
             font-size: 18px;
@@ -143,14 +142,14 @@
 
         .kebab-dropdown {
             position: absolute;
-            top: 48px;
+            top: 46px;
             right: 0;
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             border-radius: 14px;
             padding: 6px;
-            width: 220px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            width: 210px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
             display: none;
             flex-direction: column;
             gap: 2px;
@@ -160,7 +159,7 @@
 
         .dropdown-link {
             padding: 10px 14px;
-            border-radius: 9px;
+            border-radius: 8px;
             color: var(--text-secondary);
             font-size: 13.5px;
             font-weight: 600;
@@ -182,40 +181,37 @@
         .content-wrap {
             max-width: 960px;
             margin: 24px auto 0;
-            padding: 0 20px;
+            padding: 0 16px;
             position: relative;
             z-index: 1;
         }
 
-        /* Clean Human-Like Cards */
         .pro-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
         /* Forms */
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 14px; }
         .form-label {
             display: block;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             color: var(--text-secondary);
             margin-bottom: 6px;
         }
         .form-input {
             width: 100%;
-            padding: 13px 16px;
+            padding: 12px 14px;
             background: #080c14;
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
+            border-radius: 10px;
             color: #fff;
-            font-size: 14.5px;
+            font-size: 14px;
             font-weight: 600;
             outline: none;
             transition: all 0.2s;
@@ -227,10 +223,10 @@
 
         .btn-action {
             width: 100%;
-            padding: 14px;
+            padding: 13px;
             border: none;
-            border-radius: 12px;
-            font-size: 15px;
+            border-radius: 10px;
+            font-size: 14.5px;
             font-weight: 700;
             cursor: pointer;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
@@ -241,10 +237,7 @@
             justify-content: center;
             gap: 8px;
         }
-        .btn-action:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-        }
+        .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-action:active { transform: scale(0.99); }
 
         .btn-secondary {
@@ -252,16 +245,20 @@
             color: var(--text-primary);
             border: 1px solid var(--border-subtle);
         }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
         }
+        .btn-whatsapp:hover { opacity: 0.95; }
 
         /* Checkbox */
         .checkbox-container {
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            margin: 18px 0;
+            margin: 16px 0;
             cursor: pointer;
         }
         .checkbox-container input[type="checkbox"] {
@@ -284,23 +281,23 @@
             font-weight: 600;
         }
 
-        /* Switch Tabs */
+        /* Segmented Tabs */
         .auth-segmented {
             display: flex;
             background: #080c14;
             padding: 4px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            border-radius: 11px;
+            margin-bottom: 18px;
             border: 1px solid var(--border-subtle);
         }
         .segmented-btn {
             flex: 1;
-            padding: 10px;
+            padding: 9px;
             text-align: center;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--text-muted);
-            border-radius: 9px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -310,10 +307,9 @@
             border: 1px solid var(--border-subtle);
         }
 
-        /* ==================== DASHBOARD VIEW ==================== */
+        /* Dashboard Views */
         #dashboardSection { display: none; }
 
-        /* User Header Banner */
         .welcome-header {
             display: flex;
             justify-content: space-between;
@@ -322,66 +318,53 @@
             gap: 14px;
             margin-bottom: 16px;
         }
-        .welcome-title h2 {
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .welcome-title p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
+        .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
+        .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
-        /* Link Selector Card */
         .link-selector-card {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 14px 18px;
+            border-radius: 12px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 16px;
         }
         .link-badge {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 13.5px;
+            font-size: 13px;
             color: #fff;
         }
         .link-badge strong {
             color: var(--accent-cyan);
             font-family: monospace;
-            font-size: 14px;
+            font-size: 13.5px;
         }
 
-        /* Expiry Progress Bar */
+        /* Progress Bar */
         .timeline-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
         }
         .timeline-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
-        .timeline-label {
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #fff;
-        }
+        .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
         .badge-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 11.5px;
             font-weight: 700;
         }
         .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
@@ -389,7 +372,7 @@
         .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
         .progress-bar-bg {
-            width: 100%; height: 8px;
+            width: 100%; height: 7px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
@@ -407,102 +390,74 @@
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
-        @media (max-width: 768px) {
-            .stats-row { grid-template-columns: repeat(2, 1fr); }
-        }
+        @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
         .metric-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 14px;
         }
-        .metric-value {
-            font-size: 24px;
-            font-weight: 800;
-            color: #fff;
-            margin-bottom: 2px;
-        }
-        .metric-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
+        .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
 
-        /* Plans Grid */
+        /* 💎 COMPACT & PROFESSIONAL PLANS GRID */
         .plan-cards-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 16px;
         }
-        @media (max-width: 860px) {
-            .plan-cards-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 520px) {
-            .plan-cards-grid { grid-template-columns: repeat(2, 1fr); }
-        }
+        @media (max-width: 860px) { .plan-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 520px) { .plan-cards-grid { grid-template-columns: repeat(2, 1fr); } }
 
         .plan-box {
             background: var(--surface-2);
-            border: 2px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 16px 12px;
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 10px 8px;
             text-align: center;
             cursor: pointer;
             position: relative;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
-        .plan-box:hover {
-            border-color: var(--primary-light);
-            transform: translateY(-2px);
-        }
+        .plan-box:hover { border-color: var(--primary-light); transform: translateY(-1px); }
         .plan-box.selected {
             border-color: var(--primary-light);
-            background: rgba(79, 70, 229, 0.15);
+            background: rgba(79, 70, 229, 0.12);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.2);
         }
         .plan-tag {
             position: absolute;
-            top: -9px; left: 50%;
+            top: -7px; left: 50%;
             transform: translateX(-50%);
             background: var(--primary);
             color: #fff;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 1px 6px;
+            border-radius: 8px;
             letter-spacing: 0.3px;
+            white-space: nowrap;
         }
-        .plan-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            margin-top: 4px;
-        }
-        .plan-rate {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--accent-cyan);
-            margin: 6px 0 2px;
-        }
-        .plan-sub {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
+        .plan-name { font-size: 12.5px; font-weight: 700; color: #fff; margin-top: 2px; }
+        .plan-rate { font-size: 16px; font-weight: 800; color: var(--accent-cyan); margin: 3px 0 1px; }
+        .plan-sub { font-size: 10.5px; color: var(--text-muted); }
 
-        /* Payment Container */
+        /* Payment Panels */
         .payment-panel {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 16px;
             display: flex;
-            gap: 20px;
+            gap: 16px;
             align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .qr-wrapper {
             display: flex;
@@ -511,25 +466,22 @@
             gap: 6px;
         }
         .qr-wrapper img {
-            width: 130px; height: 130px;
+            width: 120px; height: 120px;
             background: #fff;
-            padding: 8px;
-            border-radius: 12px;
+            padding: 6px;
+            border-radius: 10px;
         }
 
-        .payment-info {
-            flex: 1;
-            min-width: 240px;
-        }
+        .payment-info { flex: 1; min-width: 220px; }
         .upi-copy-chip {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             background: #080c14;
             border: 1px solid var(--border-subtle);
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 13px;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
             font-weight: 600;
             color: var(--accent-cyan);
             margin-bottom: 12px;
@@ -537,34 +489,79 @@
         }
         .upi-copy-chip:hover { border-color: var(--border-hover); }
 
+        /* Upload Screenshot Preview Box */
+        .screenshot-upload-box {
+            border: 1.5px dashed var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            background: #080c14;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+        .screenshot-upload-box:hover { border-color: var(--primary-light); }
+        .screenshot-upload-box img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 8px;
+            display: none;
+            margin: 8px auto 0;
+        }
+
         /* History Table */
         .table-container {
             width: 100%;
             overflow-x: auto;
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--border-subtle);
         }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13.5px;
-        }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .data-table th {
             background: #080c14;
-            padding: 12px 16px;
+            padding: 11px 14px;
             color: var(--text-muted);
             font-weight: 700;
             text-align: left;
-            font-size: 12px;
+            font-size: 11.5px;
         }
         .data-table td {
-            padding: 12px 16px;
+            padding: 11px 14px;
             border-top: 1px solid var(--border-subtle);
             color: var(--text-secondary);
         }
-        .data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-        /* Generic Modal */
+        /* Custom Dialog & Toast Notifications (Replaces alert) */
+        .custom-dialog-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .custom-dialog-overlay.active { display: flex; animation: fadeInDialog 0.2s ease; }
+        @keyframes fadeInDialog { from { opacity: 0; } to { opacity: 1; } }
+
+        .custom-dialog-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
+        .dialog-icon { font-size: 34px; margin-bottom: 8px; }
+        .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+        .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
+
+        /* Generic Modals */
         .app-modal {
             position: fixed;
             top: 0; left: 0;
@@ -582,10 +579,10 @@
         .modal-body-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            max-width: 500px;
+            border-radius: 18px;
+            max-width: 520px;
             width: 100%;
-            padding: 24px;
+            padding: 22px;
             max-height: 85vh;
             overflow-y: auto;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
@@ -594,15 +591,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             border-bottom: 1px solid var(--border-subtle);
-            padding-bottom: 12px;
+            padding-bottom: 10px;
         }
-        .modal-header-row h3 {
-            font-size: 17px;
-            font-weight: 800;
-            color: #fff;
-        }
+        .modal-header-row h3 { font-size: 16px; font-weight: 800; color: #fff; }
         .modal-close-btn {
             background: transparent;
             border: none;
@@ -610,28 +603,16 @@
             font-size: 20px;
             cursor: pointer;
         }
-        .modal-close-btn:hover { color: #fff; }
 
-        .guide-item {
-            margin-bottom: 16px;
-        }
-        .guide-item h4 {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-        .guide-item p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
+        .guide-item { margin-bottom: 14px; }
+        .guide-item h4 { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .guide-item p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
     </style>
 </head>
 <body>
     <div class="ambient-layer"></div>
 
-    <!-- Top Navigation -->
+    <!-- Top Navigation Header -->
     <header class="top-navbar">
         <a href="#" class="navbar-brand">
             <div class="brand-badge-icon">⚡</div>
@@ -644,7 +625,8 @@
                 <span id="navUserName">Gamer</span>
             </div>
 
-            <button class="btn-kebab" onclick="toggleDropdown()" title="Menu">⋮</button>
+            <!-- 3-Dot Menu Button (Hidden on login/signup page) -->
+            <button class="btn-kebab" id="btnKebab" onclick="toggleDropdown()" title="Menu">⋮</button>
 
             <!-- 3-Dot Options Dropdown -->
             <div class="kebab-dropdown" id="kebabDropdown">
@@ -669,7 +651,7 @@
 
     <main class="content-wrap">
         <!-- ==================== AUTH VIEW (SIGN IN / SIGN UP) ==================== -->
-        <div id="authSection" style="max-width:440px; margin:40px auto 0;">
+        <div id="authSection" style="max-width:420px; margin:40px auto 0;">
             <div class="pro-card">
                 <div class="auth-segmented">
                     <div class="segmented-btn active" id="tabLogin" onclick="switchAuth('login')">Sign In</div>
@@ -680,18 +662,18 @@
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="inEmail" class="form-input" placeholder="name@domain.com" required>
+                        <input type="email" id="inEmail" class="form-input" placeholder="Enter your email" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" id="inPhone" class="form-input" placeholder="10-digit phone number" required>
+                        <input type="tel" id="inPhone" class="form-input" placeholder="10-digit mobile number" required>
                     </div>
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
                 </form>
 
-                <!-- Sign Up Form (With Mandatory Terms Checkbox) -->
+                <!-- Sign Up Form (With Mandatory Terms Checkbox in English) -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
@@ -699,7 +681,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="upEmail" class="form-input" placeholder="name@domain.com" required>
+                        <input type="email" id="upEmail" class="form-input" placeholder="Enter your email" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
@@ -710,7 +692,7 @@
                     <label class="checkbox-container">
                         <input type="checkbox" id="upTermsCheck" required>
                         <span class="checkbox-label">
-                            I agree to the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize management of my links.
+                            I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize link management.
                         </span>
                     </label>
 
@@ -723,14 +705,14 @@
 
         <!-- ==================== AUTHENTICATED DASHBOARD VIEW ==================== -->
         <div id="dashboardSection">
-            <!-- Welcome Bar -->
+            <!-- Welcome Header -->
             <div class="welcome-header">
                 <div class="welcome-title">
-                    <h2>Hello, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
-                    <p>Protected Workspace • Only links assigned to your account are accessible</p>
+                    <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
+                    <p>Protected Account • Only links registered to your identity are displayed</p>
                 </div>
-                <button class="btn-action btn-secondary" onclick="openPlansModal()" style="width:auto; padding:10px 18px; font-size:13.5px;">
-                    <span>💎 Extend Plan</span>
+                <button class="btn-action btn-secondary" onclick="openPlansModal()" style="width:auto; padding:9px 16px; font-size:13px;">
+                    <span>💎 Extension Plans</span>
                 </button>
             </div>
 
@@ -741,14 +723,14 @@
                     <strong id="displayLinkId">Detecting link...</strong>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="text" id="customLinkInput" class="form-input" placeholder="Enter Link ID or URL" style="padding:7px 12px; font-size:13px; width:180px;">
-                    <button class="btn-action" onclick="switchActiveLink()" style="width:auto; padding:7px 14px; font-size:12.5px;">
-                        Switch
+                    <input type="text" id="customLinkInput" class="form-input" placeholder="Enter Link ID / URL" style="padding:6px 10px; font-size:12.5px; width:170px;">
+                    <button class="btn-action" onclick="switchActiveLink()" style="width:auto; padding:6px 12px; font-size:12px;">
+                        Connect
                     </button>
                 </div>
             </div>
 
-            <!-- Expiry Timeline Bar -->
+            <!-- Expiry Progress Bar -->
             <div class="timeline-card">
                 <div class="timeline-header">
                     <span class="timeline-label">Validity Status</span>
@@ -757,13 +739,13 @@
                 <div class="progress-bar-bg">
                     <div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:var(--text-muted);">
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
                     <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
                     <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">Lifetime</strong></span>
                 </div>
             </div>
 
-            <!-- Metrics Analytics Grid -->
+            <!-- Analytics Row -->
             <div class="stats-row">
                 <div class="metric-card">
                     <div class="metric-value" id="metricToday">0</div>
@@ -785,7 +767,7 @@
 
             <!-- Recent 7 Renewal History Records -->
             <div class="pro-card">
-                <h3 style="font-size:16px; font-weight:800; margin-bottom:14px;">Recent Renewal History (Past 7 Records)</h3>
+                <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Renewal History (Past 7 Records)</h3>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -799,7 +781,7 @@
                         </thead>
                         <tbody id="historyTableRows">
                             <tr>
-                                <td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">
+                                <td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">
                                     No transaction records found
                                 </td>
                             </tr>
@@ -810,51 +792,51 @@
         </div>
     </main>
 
-    <!-- ==================== 💎 RENEWAL / EXTENSION PLANS MODAL ==================== -->
+    <!-- ==================== 💎 RENEWAL PLANS MODAL ==================== -->
     <div class="app-modal" id="plansModal">
-        <div class="modal-body-card" style="max-width:580px;">
+        <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>💎 Select Extension Plan</h3>
+                <h3>💎 Extension Plans & Renewal</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
 
-            <!-- Plans Grid -->
+            <!-- Compact & Professional Plans Grid -->
             <div class="plan-cards-grid">
                 <div class="plan-box" onclick="pickPlan('7days', 7, 100, this)">
                     <div class="plan-name">7 Days</div>
                     <div class="plan-rate">₹100</div>
-                    <div class="plan-sub">₹14.2 / day</div>
+                    <div class="plan-sub">₹14.2 / d</div>
                 </div>
                 <div class="plan-box" onclick="pickPlan('15days', 15, 200, this)">
                     <div class="plan-name">15 Days</div>
                     <div class="plan-rate">₹200</div>
-                    <div class="plan-sub">₹13.3 / day</div>
+                    <div class="plan-sub">₹13.3 / d</div>
                 </div>
                 <div class="plan-box selected" onclick="pickPlan('30days', 30, 400, this)">
                     <span class="plan-tag">POPULAR</span>
                     <div class="plan-name">30 Days</div>
                     <div class="plan-rate">₹400</div>
-                    <div class="plan-sub">₹13.3 / day</div>
+                    <div class="plan-sub">₹13.3 / d</div>
                 </div>
                 <div class="plan-box" onclick="pickPlan('90days', 90, 1000, this)">
                     <span class="plan-tag">SAVE 15%</span>
                     <div class="plan-name">90 Days</div>
                     <div class="plan-rate">₹1000</div>
-                    <div class="plan-sub">₹11.1 / day</div>
+                    <div class="plan-sub">₹11.1 / d</div>
                 </div>
                 <div class="plan-box" onclick="pickPlan('1year', 365, 3000, this)">
-                    <span class="plan-tag">BEST VALUE</span>
+                    <span class="plan-tag">BEST</span>
                     <div class="plan-name">1 Year</div>
                     <div class="plan-rate">₹3000</div>
-                    <div class="plan-sub">₹8.2 / day</div>
+                    <div class="plan-sub">₹8.2 / d</div>
                 </div>
             </div>
 
-            <!-- Payment Panel -->
+            <!-- Payment Details (QR & UPI ID) -->
             <div class="payment-panel">
                 <div class="qr-wrapper">
                     <img id="qrImageElement" src="" alt="Payment QR">
-                    <span style="font-size:11px; color:var(--text-muted); font-weight:600;">Scan with any UPI App</span>
+                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan with any UPI App</span>
                 </div>
                 <div class="payment-info">
                     <div class="upi-copy-chip" onclick="copyUpiText()">
@@ -862,25 +844,34 @@
                         <span>📋</span>
                     </div>
 
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label class="form-label">12-Digit Reference / UTR Number</label>
-                        <input type="text" id="inputUtr" class="form-input" maxlength="12" placeholder="e.g. 423589123456" inputmode="numeric">
+                    <!-- ⚡ MODE A: AUTO-VERIFY VIEW (Only shown when autoPaymentEnabled === true) -->
+                    <div id="autoVerifyBlock">
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label class="form-label">12-Digit Reference / UTR Number</label>
+                            <input type="text" id="inputUtr" class="form-input" maxlength="12" placeholder="e.g. 423589123456" inputmode="numeric">
+                        </div>
+                        <button class="btn-action" onclick="verifyAndRenew()">
+                            <span>Payment Verification</span>
+                        </button>
                     </div>
 
-                    <button class="btn-action" onclick="verifyAndRenew()">
-                        <span>Payment Verification</span>
-                    </button>
-                </div>
-            </div>
+                    <!-- 📩 MODE B: MANUAL VERIFY VIEW (Only shown when autoPaymentEnabled === false) -->
+                    <div id="manualVerifyBlock" style="display:none;">
+                        <!-- Screenshot Upload UI -->
+                        <div class="screenshot-upload-box" onclick="document.getElementById('fileScreenshot').click()">
+                            <input type="file" id="fileScreenshot" accept="image/*" style="display:none;" onchange="handleScreenshotSelected(event)">
+                            <div id="uploadPlaceholderText" style="font-size:12.5px; color:var(--text-secondary);">
+                                📸 Tap to attach payment screenshot (Optional)
+                            </div>
+                            <img id="previewScreenshot" alt="Screenshot Preview">
+                        </div>
 
-            <!-- Manual Admin Request Button -->
-            <div style="margin-top:14px; text-align:center;">
-                <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:8px;">
-                    Prefer manual verification via support?
-                </p>
-                <button class="btn-action btn-secondary" onclick="requestAdminRenewal()" style="padding:12px;">
-                    <span>📩 Request Admin Renewal via WhatsApp</span>
-                </button>
+                        <!-- Manual Request Button -->
+                        <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
+                            <span>📩 Request Admin Renewal via WhatsApp</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -895,27 +886,28 @@
             
             <div class="guide-item">
                 <h4>1. Account Access & Ownership</h4>
-                <p>Sign in using your registered credentials. For privacy and security, only links officially associated with your profile will appear on your dashboard.</p>
+                <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
             </div>
 
             <div class="guide-item">
                 <h4>2. Traffic & Claim Analytics</h4>
-                <p>Track real-time performance of your active links, including Today Visits, 24-hour visitors, 7-day traffic trends, and verified reward claims.</p>
+                <p>Track real-time performance of your active links, including Today Visits, 24-hour visitors, 7-day trends, and reward claims.</p>
             </div>
 
             <div class="guide-item">
                 <h4>3. Selecting an Extension Plan</h4>
-                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will reflect corresponding validity extension immediately upon confirmation.</p>
+                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration immediately.</p>
             </div>
 
+            <!-- Explicitly Named "Payment Verification" -->
             <div class="guide-item">
                 <h4>4. Payment Verification</h4>
-                <p>Scan the dynamic QR code with any UPI app. After completing payment, enter the <strong>12-digit UPI reference (UTR) number</strong> into the verification box and submit.</p>
+                <p>Scan the dynamic QR code with any UPI app. For automated verification, submit your <strong>12-digit UPI reference (UTR) number</strong> to activate instantly.</p>
             </div>
 
             <div class="guide-item">
-                <h4>5. Manual Request Assistance</h4>
-                <p>If automated verification is disabled or pending, click "Request Admin Renewal" to open WhatsApp with your pre-filled transaction details for instant manual authorization.</p>
+                <h4>5. Manual Admin Assistance</h4>
+                <p>When manual verification is active, click "Request Admin Renewal" to open WhatsApp with pre-composed transaction details for direct approval.</p>
             </div>
 
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
@@ -924,7 +916,7 @@
         </div>
     </div>
 
-    <!-- ==================== 📜 TERMS & RULES MODAL (100% ENGLISH) ==================== -->
+    <!-- ==================== 📜 TERMS & RULES MODAL (100% ENGLISH - NO BHARATPE) ==================== -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -934,7 +926,7 @@
             
             <div class="guide-item">
                 <h4>1. Account Integrity</h4>
-                <p>Users must register with valid identification. Each link is private and exclusively managed by its authorized holder.</p>
+                <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
             </div>
 
             <div class="guide-item">
@@ -943,18 +935,28 @@
             </div>
 
             <div class="guide-item">
-                <h4>3. Extension Timelines</h4>
-                <p>Extensions are added to your existing validity date. Unexpired days are preserved whenever an active link is renewed ahead of time.</p>
+                <h4>3. Extension Policy</h4>
+                <p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p>
             </div>
 
             <div class="guide-item">
-                <h4>4. Support & Inquiry</h4>
-                <p>For any discrepancies, contact our Support desk with your link ID and transaction receipt for resolution.</p>
+                <h4>4. Support Desk</h4>
+                <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
             </div>
 
             <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;">
-                <span>Accept & Close</span>
+                <span>I Understand & Agree</span>
             </button>
+        </div>
+    </div>
+
+    <!-- ==================== 🔔 BEAUTIFUL CUSTOM DIALOG (REPLACES UGLY ALERT) ==================== -->
+    <div class="custom-dialog-overlay" id="customDialog">
+        <div class="custom-dialog-card">
+            <div class="dialog-icon" id="dialogIcon">🔔</div>
+            <div class="dialog-title" id="dialogTitle">Notification</div>
+            <div class="dialog-message" id="dialogMessage">Alert message goes here.</div>
+            <button class="btn-action" onclick="closeCustomDialog()">OK</button>
         </div>
     </div>
 
@@ -967,7 +969,18 @@
         let adminPhone = '916372923348';
         let autoPaymentEnabled = true;
 
-        // Session check on start
+        // Custom Sleek Modal Alert (Replaces browser alert)
+        function notify(message, title = 'Notification', icon = 'ℹ️') {
+            document.getElementById('dialogIcon').textContent = icon;
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = message;
+            document.getElementById('customDialog').classList.add('active');
+        }
+        function closeCustomDialog() {
+            document.getElementById('customDialog').classList.remove('active');
+        }
+
+        // Initialize Session on Load
         function initApp() {
             const cached = localStorage.getItem('activeUserSession');
             if (cached) {
@@ -976,8 +989,20 @@
                     showDashboardView();
                 } catch(e) {
                     localStorage.removeItem('activeUserSession');
+                    hide3DotMenu();
                 }
+            } else {
+                hide3DotMenu();
             }
+        }
+
+        function hide3DotMenu() {
+            document.getElementById('btnKebab').style.display = 'none';
+            document.getElementById('kebabDropdown').classList.remove('show');
+        }
+
+        function show3DotMenu() {
+            document.getElementById('btnKebab').style.display = 'flex';
         }
 
         // Navigation Dropdown
@@ -1049,10 +1074,10 @@
                     localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
                     showDashboardView();
                 } else {
-                    alert(data.error || 'Authentication failed. Please verify credentials.');
+                    notify(data.error || 'Authentication failed. Please verify credentials.', 'Sign In Failed', '❌');
                 }
-            } catch(err) {
-                alert('Unable to reach server. Please check your network connection.');
+            } catch (err) {
+                notify('Unable to reach server. Please check your network connection.', 'Connection Error', '⚠️');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Sign In</span>';
@@ -1068,7 +1093,7 @@
             const termsAgreed = document.getElementById('upTermsCheck').checked;
 
             if (!termsAgreed) {
-                alert('Please accept the Terms & Conditions before registering.');
+                notify('Please accept the Terms & Conditions before registering.', 'Terms Required', '⚠️');
                 return;
             }
 
@@ -1085,13 +1110,13 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    alert('Registration submitted successfully! Your account is pending administrator approval.');
+                    notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
                     switchAuth('login');
                 } else {
-                    alert(data.error || 'Registration failed.');
+                    notify(data.error || 'Registration failed.', 'Registration Failed', '❌');
                 }
-            } catch(err) {
-                alert('Connection error during registration.');
+            } catch (err) {
+                notify('Connection error during registration.', 'Error', '⚠️');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Create Account</span>';
@@ -1104,6 +1129,9 @@
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('navUserBadge').style.display = 'flex';
             document.getElementById('btnLogout').style.display = 'flex';
+
+            // Show 3-dot menu ONLY after login
+            show3DotMenu();
 
             document.getElementById('navUserName').textContent = userProfile.name;
             document.getElementById('labelUserName').textContent = userProfile.name;
@@ -1137,7 +1165,10 @@
                     activeLinkRecord = data.link;
                     activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
                     adminPhone = data.whatsappNumber || '916372923348';
+                    
+                    // Determine mode: Auto verify vs Manual verify
                     autoPaymentEnabled = data.autoPaymentEnabled !== false;
+                    applyVerificationMode(autoPaymentEnabled);
 
                     // Update Support Link
                     document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
@@ -1157,10 +1188,26 @@
             }
         }
 
+        // Toggles Auto vs Manual Mode view cleanly
+        function applyVerificationMode(isAuto) {
+            const autoBlock = document.getElementById('autoVerifyBlock');
+            const manualBlock = document.getElementById('manualVerifyBlock');
+
+            if (isAuto) {
+                // Auto Mode: Show UTR & Payment Verification button; HIDE WhatsApp button
+                autoBlock.style.display = 'block';
+                manualBlock.style.display = 'none';
+            } else {
+                // Manual Mode: HIDE UTR & Payment Verification; SHOW WhatsApp button & Screenshot
+                autoBlock.style.display = 'none';
+                manualBlock.style.display = 'block';
+            }
+        }
+
         function switchActiveLink() {
             const input = document.getElementById('customLinkInput').value.trim();
             if (!input) {
-                alert('Please enter a Link ID or Link URL to switch.');
+                notify('Please enter a Link ID or URL to connect.', 'Input Required', '⚠️');
                 return;
             }
             fetchUserLinkData(input);
@@ -1175,9 +1222,6 @@
             document.getElementById('badgeExpiry').textContent = 'Unassigned';
             document.getElementById('barExpiryProgress').style.width = '0%';
             document.getElementById('txtExpiryDate').textContent = 'None';
-            if (errMsg) {
-                console.warn(errMsg);
-            }
         }
 
         // Populate Analytics & Progress Bar
@@ -1226,7 +1270,7 @@
             }
         }
 
-        // Plan Selection
+        // Compact Plan Selection
         function pickPlan(key, days, cost, elem) {
             document.querySelectorAll('.plan-box').forEach(b => b.classList.remove('selected'));
             elem.classList.add('selected');
@@ -1237,25 +1281,42 @@
         function updateQrCode(cost) {
             document.getElementById('upiIdDisplay').textContent = activeAdminUpi;
             const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${cost}&cu=INR`;
-            document.getElementById('qrImageElement').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiString)}`;
+            document.getElementById('qrImageElement').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
         }
 
         function copyUpiText() {
             navigator.clipboard.writeText(activeAdminUpi).then(() => {
-                alert('UPI ID copied to clipboard: ' + activeAdminUpi);
+                notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋');
             });
         }
 
-        // Submit Automated Verification
+        // Screenshot Preview handler
+        function handleScreenshotSelected(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = document.getElementById('previewScreenshot');
+                    img.src = evt.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('uploadPlaceholderText').textContent = '✅ Screenshot attached';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Submit Automated Verification (Auto Mode Only)
         async function verifyAndRenew() {
-            if (!activeLinkRecord) {
-                alert('Please enter and verify your active Link ID first.');
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
+
+            if (!currentId) {
+                notify('Please connect your Link ID before verifying payment.', 'Link Required', '⚠️');
                 return;
             }
 
             const utr = document.getElementById('inputUtr').value.trim();
             if (!/^\d{12}$/.test(utr)) {
-                alert('Please enter a valid 12-digit numeric UPI reference number.');
+                notify('Please enter a valid 12-digit numeric UPI reference (UTR) number.', 'Invalid UTR', '❌');
                 return;
             }
 
@@ -1264,7 +1325,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        linkId: activeLinkRecord.id,
+                        linkId: currentId,
                         userName: userProfile.name,
                         plan: activePlan.key,
                         days: activePlan.days,
@@ -1276,35 +1337,37 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    alert(data.message || 'Payment verified! Link extension applied.');
+                    notify(data.message || 'Payment verified! Link validity extended.', 'Success', '🎉');
                     document.getElementById('inputUtr').value = '';
                     closePlansModal();
-                    fetchUserLinkData(activeLinkRecord.id);
+                    fetchUserLinkData(currentId);
                 } else {
-                    alert(data.error || 'Payment verification failed.');
+                    notify(data.error || 'Payment verification failed.', 'Verification Failed', '❌');
                 }
             } catch(e) {
-                alert('Unable to process payment submission.');
+                notify('Unable to process payment submission.', 'Error', '⚠️');
             }
         }
 
-        // 📩 Manual WhatsApp Admin Request Action with Formatted Message
+        // 📩 Manual WhatsApp Admin Request Action (Manual Mode Only)
         function requestAdminRenewal() {
-            if (!activeLinkRecord) {
-                alert('Please select or specify your active Link ID before requesting a renewal.');
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
+
+            if (!currentId) {
+                notify('Please enter and connect your Link ID before requesting renewal.', 'Link Required', '⚠️');
                 return;
             }
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const message = 
-`Hello Admin, I would like to request an extension for my link:
+`Hello Admin, I want to renew my link:
 👤 User Name: ${userProfile.name}
-🔗 Link ID: ${activeLinkRecord.id}
+🔗 Link ID: ${currentId}
 💎 Extension Plan: ${activePlan.days} Days (${activePlan.key.toUpperCase()})
 💰 Total Amount: ₹${activePlan.cost}
 📅 Date: ${today}
 
-Please review and confirm my extension. Thank you!`;
+Please verify and approve my link extension. Thank you!`;
 
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
             window.open(waUrl, '_blank');
@@ -1319,11 +1382,10 @@ Please review and confirm my extension. Thank you!`;
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
 
-                    // Filter to strictly the 7 most recent records
                     const pastSeven = list.slice(0, 7);
 
                     if (pastSeven.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No transaction records found</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>';
                         return;
                     }
 
