@@ -36,7 +36,7 @@ const Security = require('./config/security');
 
 connectDB();
 
-// 🔓 Disable Mongoose strict mode on Link so all image fields (popupImage, banner, image) save permanently
+// 🔓 Disable Mongoose strict mode on Link so all image and custom fields persist in MongoDB
 try {
     Link.schema.set('strict', false);
 } catch(e) {}
@@ -103,7 +103,7 @@ async function initializeDatabase() {
             console.log('✅ Stats initialized');
         }
 
-        await RenewalRequest.deleteMany({ $or: [{ linkName: 'Unknown' }, { status: 'approved' }] });
+        await RenewalRequest.deleteMany({ $or: [{ linkName: 'Unknown' }] });
 
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
@@ -145,7 +145,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Helper: Safe Link Query (Prevents CastError) ====================
+// ==================== Helper: Safe Link Query ====================
 function getLinkQuery(rawId) {
     const cleanId = (rawId || '').toString().trim();
     const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
@@ -330,9 +330,9 @@ app.post('/api/whatsapp-number', async (req, res) => {
         if (!number) return res.status(400).json({ error: 'Number required' });
         let pricing = await Pricing.findOne();
         if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = number;
+        pricing.whatsappNumber = number.toString().trim();
         await pricing.save();
-        res.json({ success: true, number });
+        res.json({ success: true, number: pricing.whatsappNumber });
     } catch (error) {
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
     }
@@ -343,9 +343,9 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
         const { number } = req.body;
         let pricing = await Pricing.findOne();
         if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = number;
+        pricing.whatsappNumber = (number || '916372923348').toString().trim();
         await pricing.save();
-        res.json({ success: true, number });
+        res.json({ success: true, number: pricing.whatsappNumber });
     } catch (error) {
         res.status(500).json({ error: 'Failed to save WhatsApp number' });
     }
@@ -373,6 +373,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
 
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const { linkId } = req.params;
         let link = await Link.findOne(getLinkQuery(linkId));
         if (!link) {
@@ -419,11 +420,13 @@ app.get('/api/parent-link', async (req, res) => {
     }
 });
 
+// ✅ GET /api/pricing - Real-time No-Cache for User Dashboard
 app.get('/api/pricing', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const pricingDoc = await Pricing.findOne();
         res.json({
-            pricing: pricingDoc?.pricing || {},
+            pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
             paymentSettings: pricingDoc?.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348',
             autoPaymentEnabled: pricingDoc?.autoPaymentEnabled !== false
@@ -433,21 +436,27 @@ app.get('/api/pricing', async (req, res) => {
     }
 });
 
+// ✅ POST /api/admin/pricing - Full Sync
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
-        const { pricing, paymentSettings } = req.body;
+        const { pricing, paymentSettings, autoPaymentEnabled, upiId, whatsappNumber } = req.body;
         let pricingDoc = await Pricing.findOne();
         if (!pricingDoc) pricingDoc = new Pricing();
         if (pricing) pricingDoc.pricing = pricing;
         if (paymentSettings) pricingDoc.paymentSettings = paymentSettings;
+        if (upiId) pricingDoc.paymentSettings = { method: 'UPI', details: { upiId: upiId.trim() } };
+        if (autoPaymentEnabled !== undefined) {
+            pricingDoc.autoPaymentEnabled = (autoPaymentEnabled === true || autoPaymentEnabled === 'true');
+        }
+        if (whatsappNumber) pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
         await pricingDoc.save();
-        res.json({ success: true });
+        res.json({ success: true, pricing: pricingDoc });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update pricing' });
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (REAL-TIME SYNCED)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -460,7 +469,6 @@ app.get('/api/link/:id', async (req, res) => {
 
         let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
-        // If linkId is 'default' or not found, fall back to newest active link in database
         if (!link && (rawId === 'default' || !rawId)) {
             const activeFallback = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
             if (activeFallback) {
@@ -511,7 +519,6 @@ app.get('/api/link/:id', async (req, res) => {
             { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
         ).catch(() => {});
 
-        // Comprehensive 16:9 banner image lookup across all fields
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
 
@@ -559,10 +566,12 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
+// ✅ Real-time No-Cache for Past 7 Records History
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { linkId } = req.params;
-        const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 });
+        const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 }).limit(7);
         res.json({ history, count: history.length });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch history' });
@@ -587,6 +596,7 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
 
 app.get('/api/renewal/status/:linkId', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const { linkId } = req.params;
         const request = await RenewalRequest.findOne({ linkId }).sort({ createdAt: -1 });
         res.json({ hasRequest: !!request, request: request || null, status: request?.status || 'none' });
@@ -597,6 +607,7 @@ app.get('/api/renewal/status/:linkId', async (req, res) => {
 
 app.get('/api/settings', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const admin = await User.findOne();
         const popupSettings = await PopupSettings.findOne();
         res.json({
@@ -653,12 +664,12 @@ app.post('/api/user/signup', async (req, res) => {
 
         const emailExists = await RenewalUser.findOne({ email: cleanEmail });
         if (emailExists) {
-            return res.status(400).json({ error: '❌ Invalid: This Email Address is already registered! Please sign in.' });
+            return res.status(400).json({ error: 'This Email Address is already registered! Please sign in.' });
         }
 
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
         if (phoneExists) {
-            return res.status(400).json({ error: '❌ Invalid: This Phone Number is already registered! Please sign in.' });
+            return res.status(400).json({ error: 'This Phone Number is already registered! Please sign in.' });
         }
 
         await RenewalUser.create({
@@ -688,10 +699,10 @@ app.post('/api/user/signin', async (req, res) => {
         }
 
         if (user.status === 'pending') {
-            return res.status(403).json({ error: 'Your account is pending approval from Admin.' });
+            return res.status(403).json({ error: 'Your account is pending approval from Administrator.' });
         }
         if (user.status === 'rejected') {
-            return res.status(403).json({ error: 'Your account registration was rejected by Admin.' });
+            return res.status(403).json({ error: 'Your account registration was rejected by Administrator.' });
         }
 
         res.json({
@@ -703,20 +714,41 @@ app.post('/api/user/signin', async (req, res) => {
     }
 });
 
+// ✅ POST /api/user/link-details - Auto-Resolves Link by ID or User's Name
 app.post('/api/user/link-details', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { userName, linkInput } = req.body;
-        if (!linkInput) return res.status(400).json({ error: 'Enter Link URL or ID' });
+        const cleanUser = (userName || '').trim();
 
-        let searchId = linkInput.trim();
+        let link = null;
+        let searchId = (linkInput || '').trim();
+
         if (searchId.includes('?link=')) searchId = searchId.split('?link=').split('&')[0];
         else if (searchId.includes('/v/')) searchId = searchId.split('/v/').split('?')[0];
 
-        let link = await Link.findOne(getLinkQuery(searchId));
-        if (!link) return res.status(404).json({ error: 'No link found with this ID' });
+        // 1. Try finding by ID / dashboardId / ObjectId
+        if (searchId && searchId !== cleanUser) {
+            link = await Link.findOne(getLinkQuery(searchId));
+        }
 
-        if (link.name.toLowerCase().trim() !== (userName || '').toLowerCase().trim()) {
-            return res.status(403).json({ error: `Security Warning: Link "${link.name}" does not belong to you (${userName}).` });
+        // 2. If not found, automatically search by assigned User's Name
+        if (!link && cleanUser) {
+            link = await Link.findOne({ name: new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).sort({ created: -1 });
+        }
+
+        // 3. Fallback search on searchId as Name
+        if (!link && searchId) {
+            link = await Link.findOne({ name: new RegExp('^' + searchId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).sort({ created: -1 });
+        }
+
+        if (!link) {
+            return res.status(404).json({ error: `No active link found for user "${cleanUser}". Please connect your assigned Link ID.` });
+        }
+
+        // Validate Ownership
+        if (link.name && cleanUser && link.name.toLowerCase().trim() !== cleanUser.toLowerCase()) {
+            return res.status(403).json({ error: `Security Warning: Link "${link.id}" is assigned to "${link.name}", not "${cleanUser}".` });
         }
 
         const now = new Date();
@@ -783,25 +815,30 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
+// ✅ POST /api/user/renew-payment - Handles Auto UTR & Manual WhatsApp Requests
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, plan, days, amount, refNo, userName, isManual } = req.body;
-        if (!linkId || !plan || !refNo) return res.status(400).json({ error: 'Reference number and plan required' });
+        if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
 
         const pricing = await Pricing.findOne();
         const autoEnabled = pricing?.autoPaymentEnabled !== false;
+        const cleanRef = (refNo || '').toString().trim();
 
-        const cleanRef = refNo.toString().trim();
-
-        const alreadyUsed = await RenewalRequest.findOne({ transactionId: cleanRef });
-        if (alreadyUsed) {
-            return res.status(400).json({ error: '❌ This Transaction Ref Number has already been used!' });
-        }
-
+        // Mode A: Auto Verification via 12-digit UTR
         if (!isManual && autoEnabled) {
+            if (!cleanRef) {
+                return res.status(400).json({ error: '12-digit UTR Reference number required' });
+            }
+
+            const alreadyUsed = await RenewalRequest.findOne({ transactionId: cleanRef });
+            if (alreadyUsed) {
+                return res.status(400).json({ error: 'This Transaction Ref Number has already been submitted!' });
+            }
+
             const isValidUtrFormat = /^\d{12}$/.test(cleanRef);
             if (!isValidUtrFormat) {
-                return res.status(400).json({ error: '❌ Invalid UPI UTR / Reference Number! It must be exactly 12 digits.' });
+                return res.status(400).json({ error: 'Invalid Reference Number! UTR must be exactly 12 numeric digits.' });
             }
 
             const link = await Link.findOne(getLinkQuery(linkId));
@@ -816,7 +853,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
             await RenewalRequest.create({
                 id: 'req_' + Date.now(),
                 linkId,
-                linkName: userName,
+                linkName: userName || 'Unknown',
                 plan,
                 days: parseInt(days),
                 amount: parseInt(amount),
@@ -826,21 +863,22 @@ app.post('/api/user/renew-payment', async (req, res) => {
                 approvedAt: new Date()
             });
 
-            return res.json({ success: true, message: `🎉 Payment verified via BharatPe! Link successfully extended for ${days} days.` });
+            return res.json({ success: true, message: `Payment verified! Link successfully extended for ${days} days.` });
         }
 
+        // Mode B: Manual Request
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
             linkId,
-            linkName: userName,
+            linkName: userName || 'Unknown',
             plan,
             days: parseInt(days),
             amount: parseInt(amount),
-            transactionId: cleanRef,
+            transactionId: cleanRef || 'Manual-Request',
             status: 'pending'
         });
 
-        res.json({ success: true, manual: true, message: 'Renewal request submitted. Admin will verify screenshot and approve.' });
+        res.json({ success: true, manual: true, message: 'Renewal request submitted. Administrator will verify and approve.' });
     } catch (e) {
         res.status(500).json({ error: 'Payment processing error' });
     }
@@ -865,6 +903,7 @@ app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res)
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ✅ GET /api/admin/renewal-settings
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
@@ -873,20 +912,25 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ✅ POST /api/admin/renewal-settings - Full Sync
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
-        const { pricing, autoPaymentEnabled, upiId, whatsappNumber } = req.body;
+        const { pricing, autoPaymentEnabled, upiId, whatsappNumber, paymentSettings } = req.body;
         let p = await Pricing.findOne();
         if (!p) p = new Pricing();
         if (pricing) p.pricing = pricing;
-        if (autoPaymentEnabled !== undefined) p.autoPaymentEnabled = autoPaymentEnabled;
-        if (upiId) p.paymentSettings = { method: 'UPI', details: { upiId } };
-        if (whatsappNumber) p.whatsappNumber = whatsappNumber;
+        if (autoPaymentEnabled !== undefined) {
+            p.autoPaymentEnabled = (autoPaymentEnabled === true || autoPaymentEnabled === 'true');
+        }
+        if (paymentSettings) p.paymentSettings = paymentSettings;
+        if (upiId) p.paymentSettings = { method: 'UPI', details: { upiId: upiId.trim() } };
+        if (whatsappNumber) p.whatsappNumber = whatsappNumber.toString().trim();
         await p.save();
-        res.json({ success: true, message: 'Settings saved' });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        res.json({ success: true, message: 'Settings saved', pricing: p });
+    } catch (e) { res.status(500).json({ error: 'Failed to save renewal settings' }); }
 });
 
+// ✅ Persistent Approval (Does NOT delete, keeps in past 7 history)
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
@@ -895,13 +939,15 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
         const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
         if (link) {
             const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-            curExpiry.setDate(curExpiry.getDate() + reqDoc.days);
+            curExpiry.setDate(curExpiry.getDate() + (reqDoc.days || 30));
             link.expiryDate = curExpiry;
             link.status = 'active';
             await link.save();
         }
 
-        await RenewalRequest.deleteOne({ id: req.params.id });
+        reqDoc.status = 'approved';
+        reqDoc.approvedAt = new Date();
+        await reqDoc.save();
 
         res.json({ success: true, message: 'Renewal approved and link extended!' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1100,7 +1146,6 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
-// Admin Background (For 9:16 UID Background Image Only)
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         let popup = await PopupSettings.findOne();
@@ -1144,7 +1189,6 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 });
 
 // ==================== 🔗 ADMIN: LINKS CRUD & EDIT FIX ====================
-// Format all links so Admin Panel table & edit modal receives image in all field names
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1173,7 +1217,6 @@ app.get('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// Single link getter for edit modal
 app.get('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1208,14 +1251,12 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        // 📅 Parse Expiry Date
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
         let cleanExpiry = null;
         if (rawExpiry && !isNaN(new Date(rawExpiry).getTime())) {
             cleanExpiry = new Date(rawExpiry);
         }
 
-        // 📸 Parse 16:9 Banner Image from any field name
         let incomingImage = req.body.popupImage || 
                             req.body.image || 
                             req.body.popupImageUrl || 
@@ -1275,7 +1316,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ PUT /api/links/:id - 100% DIRECT ATOMIC MONGODB UPDATE (GUARANTEED PERSISTENCE)
+// ✅ Direct Atomic MongoDB Update
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1284,34 +1325,28 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         const updateData = {};
 
-        // Name / Title
         if (req.body.name !== undefined) updateData.name = req.body.name.trim();
         else if (req.body.title !== undefined) updateData.name = req.body.title.trim();
 
-        // Video URL
         const incomingVideo = req.body.video !== undefined ? req.body.video :
                               (req.body.videoUrl !== undefined ? req.body.videoUrl :
                               (req.body.url !== undefined ? req.body.url : req.body.youtubeUrl));
         if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
 
-        // Claim URL
         const incomingClaim = req.body.claim !== undefined ? req.body.claim :
                               (req.body.claimUrl !== undefined ? req.body.claimUrl :
                               (req.body.claimLink !== undefined ? req.body.claimLink :
                               (req.body.rewardUrl !== undefined ? req.body.rewardUrl : req.body.targetUrl)));
         if (incomingClaim !== undefined) updateData.claim = incomingClaim.trim();
 
-        // Button Text
         const incomingBtn = req.body.buttonText !== undefined ? req.body.buttonText :
                             (req.body.btnText !== undefined ? req.body.btnText : req.body.button_text);
         if (incomingBtn !== undefined) updateData.buttonText = incomingBtn.trim();
 
-        // Headline
         const incomingHeadline = req.body.headline !== undefined ? req.body.headline :
                                  (req.body.heading !== undefined ? req.body.heading : req.body.headLine);
         if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
 
-        // Status
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
         // 📅 Expiry Date
@@ -1374,7 +1409,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         updateData.popupSettings = newPopup;
 
-        // Perform direct atomic MongoDB update using findOneAndUpdate
         const updatedLink = await Link.findOneAndUpdate(
             query,
             { $set: updateData },
