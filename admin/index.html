@@ -501,7 +501,7 @@
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             const target = document.getElementById('sec-' + id);
             if (target) target.classList.add('active');
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
             if (id === 'links') loadLinks();
             if (id === 'renewals') loadRenewalSystem();
@@ -552,8 +552,8 @@
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
                     <div>
-                        <span class="name">${l.name}</span>
-                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${l.buttonText || 'Claim Now'}</b> | Visits: <b>${l.visits||0}</b></div>
+                        <span class="name">${escapeHTML(l.name)}</span>
+                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${escapeHTML(l.buttonText || 'Claim Now')}</b> | Visits: <b>${l.visits||0}</b></div>
                     </div>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
@@ -585,14 +585,14 @@
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${link.name}"></div>
+                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name)}"></div>
                 <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${link.video}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${link.claim}"></div>
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video)}"></div>
+                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim)}"></div>
                 </div>
                 <div class="form-row-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${link.buttonText || 'Claim Now'}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${link.headline || ''}"></div>
+                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
+                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
                 </div>
                 <div class="form-row-2">
                     <div class="form-group">
@@ -608,11 +608,11 @@
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
                     <div class="form-row-2">
-                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${popup.title || '🎁 Claim Your Reward'}"></div>
-                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${popup.buttonText || 'Claim Now'}"></div>
+                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
+                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
                     </div>
-                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${popup.subtitle || 'Tap below to unlock your reward'}"></div>
-                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${popup.image || ''}" oninput="updateEditPopupPreview(this.value)"></div>
+                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
+                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
                     <div class="preview-box-16-9" id="editPreviewBox">
                         ${popup.image ? `<img src="${popup.image}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
                     </div>
@@ -752,11 +752,12 @@
                 rList.innerHTML = pendingReqs.map(r => `
                     <div class="link-item">
                         <div>
-                            <div class="name">User: ${r.linkName} | Plan: ${r.plan} (${r.days} Days)</div>
-                            <div class="details">Link ID: <b>${r.linkId}</b> | Amount: ₹${r.amount} | Ref: <b>${r.transactionId || 'N/A'}</b></div>
+                            <div class="name">User: ${escapeHTML(r.linkName)} | Plan: ${escapeHTML(r.plan)} (${r.days} Days)</div>
+                            <div class="details">Link ID: <b>${escapeHTML(r.linkId)}</b> | Amount: ₹${r.amount} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div>
                         </div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id}')">❌ Reject Renewal</button>
                         </div>
                     </div>
                 `).join('');
@@ -796,6 +797,25 @@
             loadStats();
         }
 
+        async function rejectRenewal(id) {
+            if (!confirm('Are you sure you want to reject this renewal request?')) return;
+            try {
+                const res = await fetch(`/api/renewal/reject/${id}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const d = await res.json();
+                if (d && d.success) {
+                    showToast('Renewal request rejected! Removed from pending.', 'info');
+                    loadRenewalSystem();
+                } else {
+                    showToast(d.error || 'Failed to reject renewal request', 'error');
+                }
+            } catch(e) {
+                showToast('Error rejecting renewal', 'error');
+            }
+        }
+
         async function saveRenewalSettings() {
             const pricing = {
                 '7days': parseInt(document.getElementById('p7d').value),
@@ -828,11 +848,11 @@
             list.innerHTML = d.devices.map(dev => `
                 <div class="blocked-card-item">
                     <div>
-                        <div class="dev-title">⛔ ${dev.deviceName || 'Visitor Device'} <span style="font-size:11px;color:#f87171;font-weight:600;">(${dev.deviceType || 'Mobile'})</span></div>
+                        <div class="dev-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
                         <div class="dev-meta">
-                            <span>🌐 IP: <b>${dev.ip}</b></span>
+                            <span>🌐 IP: <b>${escapeHTML(dev.ip)}</b></span>
                             <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts}/3</b></span>
-                            <span>🚨 Reason: <span style="color:#fca5a5;">${dev.reason}</span></span>
+                            <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason)}</span></span>
                         </div>
                     </div>
                     <div>
@@ -943,7 +963,7 @@
             list.innerHTML = d.links.map(l => `
                 <div class="link-item">
                     <div>
-                        <div class="name">${l.title}</div>
+                        <div class="name">${escapeHTML(l.title)}</div>
                         <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
                     </div>
                     <div>
