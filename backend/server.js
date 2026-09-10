@@ -36,7 +36,7 @@ const Security = require('./config/security');
 
 connectDB();
 
-// 🔓 Disable strict schema mode on collections for seamless field persistence
+// 🔓 Disable strict schema mode on collections
 try {
     Link.schema.set('strict', false);
     Pricing.schema.set('strict', false);
@@ -44,6 +44,15 @@ try {
     if (Session && Session.schema) Session.schema.set('strict', false);
     if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
 } catch(e) {}
+
+// ==================== 🕒 24-HOUR UNIQUE VISITOR ACTIVITY MODEL ====================
+// Tracks 24-hour unique visits, unique claims, and active streaming
+const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
+    linkId: { type: String, required: true, index: true },
+    visitorKey: { type: String, required: true, index: true },
+    type: { type: String, enum: ['visit', 'claim'], required: true, index: true },
+    lastSeen: { type: Date, default: Date.now, index: true }
+}, { timestamps: true }));
 
 // ==================== Environment Variables ====================
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
@@ -67,13 +76,12 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
-// ==================== Helper: Safe Passcode Verification ====================
+// Helper: Strict single-passcode verification
 function verifyPasscode(inputPass, storedPass) {
     if (!inputPass || !storedPass) return false;
     const cleanInput = inputPass.toString().trim();
     const cleanStored = storedPass.toString().trim();
 
-    // Check if stored passcode is standard bcrypt hash
     if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
         try {
             return bcrypt.compareSync(cleanInput, cleanStored);
@@ -81,11 +89,10 @@ function verifyPasscode(inputPass, storedPass) {
             return false;
         }
     }
-    // Fallback: exact match if stored as plain text
     return cleanInput === cleanStored;
 }
 
-// ==================== Database Initialization & Strict Passcode Sync ====================
+// Database Initialization & Strict Passcode Sync
 async function initializeDatabase() {
     try {
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
@@ -114,11 +121,10 @@ async function initializeDatabase() {
                 });
             }
         } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
-            // Instant sync: If ADMIN_PASSCODE environment variable was changed, update DB immediately
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
             admin.lastEnvPasscode = activeEnvPass;
             await admin.save();
-            console.log('🔄 Admin passcode strictly updated from environment variable ADMIN_PASSCODE');
+            console.log('🔄 Admin passcode updated from environment variable ADMIN_PASSCODE');
         }
 
         const statsExists = await Stats.findOne();
@@ -166,7 +172,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// ==================== Helper: Safe Link Query ====================
+// Helper: Safe Link Query
 function getLinkQuery(rawId) {
     const cleanId = (rawId || '').toString().trim();
     const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
@@ -176,7 +182,7 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
-// ==================== Security Headers ====================
+// Security Headers
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false,
@@ -203,7 +209,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ==================== Rate Limiting ====================
+// Rate Limiting
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 600,
@@ -215,7 +221,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// ==================== JWT Helpers ====================
+// JWT Helpers
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -231,7 +237,7 @@ function verifyToken(token) {
     }
 }
 
-// Safe device ID generator (Crash-proof for Hostinger/Cloudflare proxies)
+// Safe device ID generator
 function getDeviceId(req) {
     let rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '127.0.0.1';
     if (Array.isArray(rawIp)) rawIp = rawIp[0];
@@ -361,8 +367,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             name: link.name,
             totalVisits: link.visits || 0,
             totalClaims: link.claims || 0,
-            todayVisits: link.dailyVisits?.get(today) || 0,
-            todayClaims: link.dailyClaims?.get(today) || 0,
+            todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
+            todayClaims: link.dailyClaims?.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims?.[today] || 0),
             dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status || 'active',
@@ -449,7 +455,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (REAL-TIME LIVE DATA)
+// ✅ VISITOR LINK RESOLVER (STRICT 24-HOUR UNIQUE VISIT COUNT & LIVE ACTIVE WATCHING)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -500,15 +506,37 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        const today = new Date().toISOString().split('T')[0];
-        Link.updateOne(
-            { _id: link._id },
-            { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
-        ).catch(() => {});
+        // ==================== 🛡️ 24-HOUR UNIQUE VISIT TRACKING ====================
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-        Stats.updateOne(
-            {},
-            { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
+        const recentVisit = await VisitorActivity.findOne({
+            linkId: link.id,
+            visitorKey: visitorKey,
+            type: 'visit',
+            lastSeen: { $gte: twentyFourHoursAgo }
+        }).catch(() => null);
+
+        if (!recentVisit) {
+            // Unique Visit within 24 Hours! Count it!
+            const today = new Date().toISOString().split('T')[0];
+            Link.updateOne(
+                { _id: link._id },
+                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
+            ).catch(() => {});
+
+            Stats.updateOne(
+                {},
+                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
+            ).catch(() => {});
+        }
+
+        // Always update lastSeen for Real-Time Active Watching
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
+            { $set: { lastSeen: new Date() } },
+            { upsert: true, new: true }
         ).catch(() => {});
 
         const popup = link.popupSettings || {};
@@ -539,20 +567,47 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
+// ✅ TRACK CLAIM (STRICT 24-HOUR UNIQUE CLAIM & LIVE ACTIVE CLAIMING)
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
-        const today = new Date().toISOString().split('T')[0];
-        if (link) {
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const recentClaim = await VisitorActivity.findOne({
+            linkId: link.id,
+            visitorKey: visitorKey,
+            type: 'claim',
+            lastSeen: { $gte: twentyFourHoursAgo }
+        }).catch(() => null);
+
+        if (!recentClaim) {
+            // Unique Claim within 24 Hours!
+            const today = new Date().toISOString().split('T')[0];
             link.claims = (link.claims || 0) + 1;
-            await link.save();
+            if (!link.dailyClaims) link.dailyClaims = new Map();
+            const currentDaily = link.dailyClaims.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims[today] || 0);
+            if (link.dailyClaims.set) link.dailyClaims.set(today, currentDaily + 1);
+            else link.dailyClaims[today] = currentDaily + 1;
+            await link.save().catch(() => {});
+
+            await Stats.updateOne(
+                {},
+                { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }
+            ).catch(() => {});
         }
-        let stats = await Stats.findOne();
-        if (stats) {
-            stats.totalClaims = (stats.totalClaims || 0) + 1;
-            await stats.save();
-        }
-        res.json({ success: true, claims: stats?.totalClaims || 0 });
+
+        // Always update lastSeen for Real-Time Active Claiming
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
+            { $set: { lastSeen: new Date() } },
+            { upsert: true, new: true }
+        ).catch(() => {});
+
+        res.json({ success: true, claims: link.claims || 0 });
     } catch (error) {
         res.status(500).json({ error: 'Failed to track claim' });
     }
@@ -950,7 +1005,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     }
 });
 
-// ✅ Reject Renewal Request
+// Reject Renewal Request
 app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
@@ -1004,7 +1059,6 @@ app.post('/api/admin/login', async (req, res) => {
 
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
-        // Retrieve current active admin
         let admin = await User.findOne();
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
 
@@ -1019,7 +1073,6 @@ app.post('/api/admin/login', async (req, res) => {
                 secretKey: 'admin@2024'
             });
         } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
-            // Environment variable update sync
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
             admin.lastEnvPasscode = activeEnvPass;
             await admin.save();
@@ -1030,12 +1083,12 @@ app.post('/api/admin/login', async (req, res) => {
 
         if (isValid) {
             // Authorized Admin!
-            // Automatically clear any prior accidental blocks for this authorized device
+            // Clear prior accidental blocks for this authorized device
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
 
-            // Safely record active session (never blocks login if session write fails)
+            // Safely record active session
             try {
                 if (Session) {
                     await Session.create({
@@ -1060,7 +1113,6 @@ app.post('/api/admin/login', async (req, res) => {
         }
 
         // --- WRONG PASSCODE HANDLING ---
-        // 1. Check if device is already blocked
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             return res.status(403).json({
@@ -1069,7 +1121,6 @@ app.post('/api/admin/login', async (req, res) => {
             });
         }
 
-        // 2. Increment failed attempt count
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
 
@@ -1118,7 +1169,7 @@ app.post('/api/admin/logout', async (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ Change Passcode from Admin Panel: Strictly sets new passcode, invalidating the old one
+// ✅ Change Passcode from Admin Panel: Strictly updates current passcode, invalidating the old one
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -1138,7 +1189,7 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
         }
 
         admin.passcode = bcrypt.hashSync(cleanNew, 10);
-        admin.lastEnvPasscode = cleanNew; // Synced so it will not revert
+        admin.lastEnvPasscode = cleanNew;
         await admin.save();
         res.json({ success: true, message: 'Passcode changed successfully! Old passcode is permanently disabled.' });
     } catch (error) {
@@ -1348,7 +1399,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
-        // 📅 Expiry Date
         const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
                                (req.body.expiry !== undefined ? req.body.expiry :
                                (req.body.expDate !== undefined ? req.body.expDate :
@@ -1362,7 +1412,6 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             }
         }
 
-        // 📸 16:9 Banner Image
         let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
                             (req.body.image !== undefined ? req.body.image :
                             (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
@@ -1481,15 +1530,59 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// Stats API
+// ==================== 📊 ACCURATE 24H UNIQUE REAL-TIME LIVELY STATS API ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
-    const links = await Link.find();
-    let totV = links.reduce((s, l) => s + (l.visits || 0), 0);
-    let totC = links.reduce((s, l) => s + (l.claims || 0), 0);
-    res.json({
-        global: { totalVisitors: totV, totalClaims: totC, activeNow: Math.max(1, Math.round(totV * 0.05)) },
-        links
-    });
+    try {
+        const links = await Link.find().lean();
+        const today = new Date().toISOString().split('T')[0];
+
+        let totV = 0;
+        let totC = 0;
+        let todayV = 0;
+        let todayC = 0;
+
+        links.forEach(l => {
+            totV += (l.visits || 0);
+            totC += (l.claims || 0);
+
+            if (l.dailyVisits) {
+                const dv = l.dailyVisits instanceof Map ? l.dailyVisits.get(today) : l.dailyVisits[today];
+                todayV += parseInt(dv) || 0;
+            }
+            if (l.dailyClaims) {
+                const dc = l.dailyClaims instanceof Map ? l.dailyClaims.get(today) : l.dailyClaims[today];
+                todayC += parseInt(dc) || 0;
+            }
+        });
+
+        // Real active users in the last 3 minutes
+        const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+        const activeWatching = await VisitorActivity.countDocuments({
+            type: 'visit',
+            lastSeen: { $gte: threeMinutesAgo }
+        }).catch(() => 0);
+
+        // Real active claims in the last 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const activeClaiming = await VisitorActivity.countDocuments({
+            type: 'claim',
+            lastSeen: { $gte: fiveMinutesAgo }
+        }).catch(() => 0);
+
+        res.json({
+            global: {
+                totalVisitors: totV,
+                totalClaims: totC,
+                todayVisitors: todayV,
+                todayClaims: todayC,
+                activeNow: activeWatching,
+                activeClaims: activeClaiming
+            },
+            links
+        });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
 });
 
 // ================================================================
@@ -1626,6 +1719,8 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json({ success: true, link });
+    , req.body, { new: true });
         res.json({ success: true, link });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update short link' });
