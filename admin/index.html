@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Admin Panel - Control Center</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -35,21 +36,23 @@
             --bg: #090a10; --card-bg: #131722; --text: #f8fafc;
             --text-light: #94a3b8; --border: #232838; --radius: 14px;
         }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; overflow-x: hidden; }
         body.dark { --bg: #090a10; --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838; }
         body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        .admin-container { max-width: 1400px; margin: 0 auto; }
+        .admin-container { max-width: 1400px; margin: 0 auto; position: relative; }
 
+        /* Top Header */
         .header {
-            background: var(--card-bg); padding: 16px 22px; border-radius: var(--radius);
+            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 10px;
+            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 12px;
         }
-        .header h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header h1 { font-size: 19px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .header-actions button { padding: 7px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
         .header-actions button:hover { transform: translateY(-2px); }
@@ -60,18 +63,42 @@
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        .menu-container {
-            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
-            background: var(--card-bg); padding: 10px 14px; border-radius: var(--radius);
-            border: 1px solid var(--border);
+        /* ☰ Top-Left 3-Line Hamburger Button */
+        .btn-hamburger {
+            width: 42px; height: 42px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; gap: 5px; cursor: pointer; transition: 0.2s; flex-shrink: 0;
         }
-        .menu-btn {
-            padding: 8px 16px; border: 1px solid transparent; border-radius: 10px;
-            background: transparent; color: var(--text-light); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
-        }
-        .menu-btn:hover { background: var(--primary); color: white; }
-        .menu-btn.active { background: var(--primary); color: white; }
+        .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
+        .btn-hamburger span { display: block; width: 22px; height: 2.5px; background: var(--text); border-radius: 3px; transition: 0.3s; }
 
+        /* Slide-out Sidebar Drawer */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg);
+            border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column;
+            padding: 24px 18px; box-shadow: 10px 0 40px rgba(0,0,0,0.8);
+        }
+        .sidebar.show { transform: translateX(0); }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-light); cursor: pointer; line-height: 1; }
+        .sidebar-close:hover { color: #fff; }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+        .sidebar-btn {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+            background: transparent; color: var(--text-light); font-size: 14px; font-weight: 700;
+            border: 1px solid transparent; cursor: pointer; transition: 0.2s; text-align: left; width: 100%;
+        }
+        .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #fff; border-color: rgba(99,102,241,0.2); }
+        .sidebar-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(99,102,241,0.35); }
+
+        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.3s; }
         .stat-card:hover { transform: translateY(-2px); }
@@ -122,12 +149,13 @@
             border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s;
         }
         .link-item .name { font-weight: 700; font-size: 14px; }
-        .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
         .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
         .status-active { background: rgba(34,197,94,0.15); color: var(--success); }
         .status-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
         .status-disabled { background: rgba(239,68,68,0.15); color: var(--danger); }
+        .status-pending { background: rgba(245,158,11,0.2); color: #fbbf24; }
 
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
@@ -144,18 +172,21 @@
         .image-preview.show { display: block; }
         .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
 
-        .blocked-card-item {
-            background: #090a0f; border: 1px solid rgba(239, 68, 68, 0.35); border-left: 4px solid var(--danger);
-            border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between;
+        /* Devices Cards */
+        .device-card-item {
+            background: #090a0f; border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between;
             align-items: center; flex-wrap: wrap; gap: 10px;
         }
-        .blocked-card-item .dev-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-        .blocked-card-item .dev-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .device-card-item.blocked { border-color: rgba(239, 68, 68, 0.35); border-left: 4px solid var(--danger); }
+        .device-card-item.active-dev { border-color: rgba(34, 197, 94, 0.35); border-left: 4px solid var(--success); }
+        .device-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .device-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
 
-        /* Clean Edit Modal (No Overlap) */
+        /* Clean Edit Modal */
         .edit-modal {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;
+            backdrop-filter: blur(12px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;
         }
         .edit-modal.show { display: flex; }
         .edit-modal .modal-content {
@@ -183,26 +214,70 @@
 
         .toast {
             position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 13px; z-index: 99999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
+            color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
+        .toast.info { background: #4f46e5; }
 
         @media (max-width: 768px) {
             body { padding: 12px; }
-            .header { flex-direction: column; text-align: center; }
-            .menu-container { flex-direction: column; }
-            .menu-btn { text-align: center; }
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header-left { justify-content: space-between; }
+            .header-actions { justify-content: center; }
             .link-item { flex-direction: column; align-items: stretch; }
             .edit-modal .modal-content { padding: 16px; }
         }
     </style>
 </head>
 <body>
+    <!-- Slide-out Sidebar Overlay & Drawer (☰) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>⚡ Control Menu</h2>
+            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
+        </div>
+        <div class="sidebar-menu">
+            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
+                <span>📊</span> Dashboard
+            </button>
+            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
+                <span>🔗</span> Links Manager
+            </button>
+            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
+                <span>👥</span> Manage Users
+            </button>
+            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
+                <span>🔄</span> Users & Renewal
+            </button>
+            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
+                <span>➕</span> Create Link
+            </button>
+            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
+                <span>🔗</span> Short Link
+            </button>
+            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
+                <span>⚙️</span> Settings
+            </button>
+        </div>
+        <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:auto;">
+            <button class="btn btn-danger btn-sm" style="width:100%;" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
     <div class="admin-container">
+        <!-- Header with 3-Line Menu Button on Left -->
         <header class="header">
-            <h1>⚡ Admin Control Center</h1>
+            <div class="header-left">
+                <button class="btn-hamburger" id="hamburgerBtn" onclick="toggleSidebar(true)" title="Open Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <h1>⚡ Admin Control Center</h1>
+            </div>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
                 <div class="theme-toggle">
@@ -212,15 +287,6 @@
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
-
-        <div class="menu-container">
-            <button class="menu-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="menu-btn" onclick="showSection('links')">🔗 Links Manager</button>
-            <button class="menu-btn" onclick="showSection('renewals')">🔄 Users & Renewal</button>
-            <button class="menu-btn" onclick="showSection('create')">➕ Create Link</button>
-            <button class="menu-btn" onclick="showSection('shortener')">🔗 Short Link</button>
-            <button class="menu-btn" onclick="showSection('settings')">⚙️ Settings</button>
-        </div>
 
         <!-- 1. DASHBOARD OVERVIEW -->
         <div class="section active" id="sec-dashboard">
@@ -260,13 +326,14 @@
                 <h3>⚡ Quick Shortcuts</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
-                    <button class="btn btn-sm btn-success" onclick="showSection('renewals')">🔄 Check Renewal Requests</button>
-                    <button class="btn btn-sm btn-warning" onclick="showSection('settings')">⚙️ Device Security</button>
+                    <button class="btn btn-sm btn-success" onclick="showSection('users')">👥 Manage Users</button>
+                    <button class="btn btn-sm btn-warning" onclick="showSection('renewals')">🔄 Check Renewal Requests</button>
+                    <button class="btn btn-sm btn-secondary" onclick="showSection('settings')" style="background:var(--bg);border:1px solid var(--border);">🛡️ Devices</button>
                 </div>
             </div>
         </div>
 
-        <!-- 2. LINKS MANAGER -->
+        <!-- 2. LINKS MANAGER (With Expiry Date instead of Button) -->
         <div class="section" id="sec-links">
             <div class="card">
                 <h3>🔍 All Tracking Links</h3>
@@ -278,7 +345,30 @@
             </div>
         </div>
 
-        <!-- 3. USERS & RENEWAL -->
+        <!-- 3. 👥 MANAGE USERS (NEW FEATURE) -->
+        <div class="section" id="sec-users">
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                    <h3 style="margin:0;padding:0;border:none;">👥 Registered Users Management</h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadAllUsers()">🔄 Refresh Users</button>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="stat-card"><div class="number" id="statTotUsers">0</div><div class="label">Total Users</div></div>
+                    <div class="stat-card"><div class="number" id="statAppUsers" style="color:var(--success);">0</div><div class="label">Approved Users</div></div>
+                    <div class="stat-card"><div class="number" id="statPendUsers" style="color:var(--warning);">0</div><div class="label">Pending Approval</div></div>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="searchUsersInput" placeholder="Search user by name, email, or phone..." oninput="filterUsersList()">
+                    <span id="usersSearchCount" style="font-size:12px;color:var(--text-light);">Loading users...</span>
+                </div>
+
+                <div id="usersFullList">Loading users...</div>
+            </div>
+        </div>
+
+        <!-- 4. USERS & RENEWAL (Auto-Verify Mode Removed) -->
         <div class="section" id="sec-renewals">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Portal & Signup Link:</div>
@@ -288,7 +378,7 @@
                 </div>
             </div>
 
-            <!-- User Registrations -->
+            <!-- User Registrations Pending Approval -->
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
@@ -306,16 +396,9 @@
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
 
-            <!-- Pricing Settings -->
+            <!-- Pricing Settings (Cleaned - Auto-Verify Removed) -->
             <div class="card">
-                <h3>⚙️ Renewal & Payment Mode Settings</h3>
-                <div style="display:flex;align-items:center;gap:12px;margin:12px 0;background:#090a0f;padding:12px 16px;border-radius:10px;border:1px solid var(--border);">
-                    <label style="font-size:13px;font-weight:700;">🤖 Auto-Verify Mode (BharatPe / Ref No):</label>
-                    <select id="setPaymentMode" style="width:auto;margin:0;padding:6px 14px;">
-                        <option value="true">ON (Automatic Instant Extension)</option>
-                        <option value="false">OFF (Shows Coming Soon / Contact Admin)</option>
-                    </select>
-                </div>
+                <h3>⚙️ Renewal & Payment Settings</h3>
                 <div class="grid-2">
                     <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
                     <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number (for Screenshots):</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
@@ -332,7 +415,7 @@
             </div>
         </div>
 
-        <!-- 4. CREATE LINK -->
+        <!-- 5. CREATE LINK -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
@@ -378,7 +461,7 @@
             </div>
         </div>
 
-        <!-- 5. URL SHORTENER -->
+        <!-- 6. URL SHORTENER -->
         <div class="section" id="sec-shortener">
             <div class="card">
                 <h3>🔗 URL Shortener</h3>
@@ -403,17 +486,33 @@
             </div>
         </div>
 
-        <!-- 6. SETTINGS & DEVICE MANAGEMENT -->
+        <!-- 7. SETTINGS & BLOCKED & ACTIVE DEVICES (Secret Key Removed) -->
         <div class="section" id="sec-settings">
+            <!-- Blocked & Active Devices Card -->
             <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">⛔ Blocked Attackers & Devices</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadBlockedDevices()">🔄 Refresh Devices</button>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">⛔ Blocked</button>
+                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">🟢 Active</button>
+                        <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">🔄 Refresh</button>
+                    </div>
                 </div>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered 3 wrong passcodes are permanently banned here. Click Unblock to restore access.</p>
-                <div id="deviceList">Loading blocked devices...</div>
+
+                <!-- Blocked Devices View -->
+                <div id="deviceViewBlocked">
+                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered 3 wrong passcodes are permanently banned here. Click Unblock to restore access.</p>
+                    <div id="deviceList">Loading blocked devices...</div>
+                </div>
+
+                <!-- Active Logged-in Devices View -->
+                <div id="deviceViewActive" style="display:none;">
+                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices currently authenticated in this Admin Control Center. You can terminate their session or block them permanently.</p>
+                    <div id="activeDeviceList">Loading active sessions...</div>
+                </div>
             </div>
 
+            <!-- Passcode Update -->
             <div class="card">
                 <h3>🔐 Change Admin Passcode</h3>
                 <div class="grid-2">
@@ -423,15 +522,7 @@
                 <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">Update Passcode</button>
             </div>
 
-            <div class="card">
-                <h3>🔑 Secret Gateway Key</h3>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="currentSecretKey" placeholder="Current Key" readonly>
-                    <input type="text" id="newSecretKey" placeholder="New Key">
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="changeSecretKey()">Update Secret Key</button>
-            </div>
-
+            <!-- Contact Settings -->
             <div class="card">
                 <h3>📱 Contact & OTP Settings</h3>
                 <div class="grid-2">
@@ -441,6 +532,7 @@
                 <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">💾 Save Contact</button>
             </div>
 
+            <!-- Background Setting -->
             <div class="card">
                 <h3>🖼️ UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
@@ -474,8 +566,10 @@
 
     <script>
         let allLinks = [];
+        let allUsers = [];
         let editingLinkId = null;
         let selectedExpiry = null;
+        let currentDeviceTab = 'blocked';
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
@@ -496,17 +590,36 @@
             return div.innerHTML;
         }
 
+        // Toggle Sidebar Drawer
+        function toggleSidebar(open) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (open) {
+                sb.classList.add('show');
+                ov.classList.add('show');
+            } else {
+                sb.classList.remove('show');
+                ov.classList.remove('show');
+            }
+        }
+
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+
             const target = document.getElementById('sec-' + id);
             if (target) target.classList.add('active');
-            if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+            const btn = document.getElementById('btn-nav-' + id);
+            if (btn) btn.classList.add('active');
+
+            toggleSidebar(false);
 
             if (id === 'links') loadLinks();
+            if (id === 'users') loadAllUsers();
             if (id === 'renewals') loadRenewalSystem();
             if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') { loadBlockedDevices(); loadSecretKey(); loadContactInfo(); }
+            if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
         }
 
         function updateCreatePopupPreview(url) {
@@ -537,6 +650,7 @@
             } catch(e) {}
         }
 
+        // ==================== 🔗 LINKS MANAGER (Expiry Date Display) ====================
         async function loadLinks() {
             const list = document.getElementById('linksList');
             const res = await fetch('/api/links', { credentials: 'include' });
@@ -544,16 +658,40 @@
             filterLinks();
         }
 
+        function getExpiryBadge(expDate) {
+            if (!expDate) {
+                return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
+            }
+            const exp = new Date(expDate);
+            if (isNaN(exp.getTime())) {
+                return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
+            }
+            const now = new Date();
+            const diffTime = exp.getTime() - now.getTime();
+            if (diffTime <= 0) {
+                return '<span style="color:var(--danger);font-weight:700;">Expired</span>';
+            }
+            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const formattedDate = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const color = daysLeft <= 3 ? 'var(--warning)' : '#38bdf8';
+            return `<span style="color:${color};font-weight:700;">${daysLeft} ${daysLeft === 1 ? 'Day' : 'Days'} Left (${formattedDate})</span>`;
+        }
+
         function filterLinks() {
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allLinks.filter(l => l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)) : allLinks;
+            const filtered = q ? allLinks.filter(l => (l.name || '').toLowerCase().includes(q) || (l.id || '').toLowerCase().includes(q)) : allLinks;
             const list = document.getElementById('linksList');
             if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
             list.innerHTML = filtered.map(l => `
                 <div class="link-item">
                     <div>
                         <span class="name">${escapeHTML(l.name)}</span>
-                        <div class="details">ID: <b>${l.id}</b> | Button: <b>${escapeHTML(l.buttonText || 'Claim Now')}</b> | Visits: <b>${l.visits||0}</b></div>
+                        <div class="details">
+                            <span>ID: <b>${l.id}</b></span>
+                            <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
+                            <span>| Visits: <b>${l.visits||0}</b></span>
+                            <span>| Status: <span class="status-badge status-${l.status||'active'}">${(l.status||'active').toUpperCase()}</span></span>
+                        </div>
                     </div>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
@@ -709,7 +847,106 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ==================== 🔄 RENEWAL SYSTEM ====================
+        // ==================== 👥 3. MANAGE USERS (NEW SECTION) ====================
+        async function loadAllUsers() {
+            const container = document.getElementById('usersFullList');
+            container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
+            
+            // Ensure links are loaded to count user links accurately
+            if (!allLinks.length) {
+                try {
+                    const lRes = await fetch('/api/links', { credentials: 'include' });
+                    allLinks = await lRes.json();
+                } catch(e) {}
+            }
+
+            try {
+                const res = await fetch('/api/admin/all-users', { credentials: 'include' });
+                const data = await res.json();
+                allUsers = data.users || [];
+            } catch(e) {
+                // Fallback to renewal-users if all-users endpoint is pending
+                try {
+                    const res2 = await fetch('/api/admin/renewal-users', { credentials: 'include' });
+                    const d2 = await res2.json();
+                    allUsers = d2.users || [];
+                } catch(err) {
+                    allUsers = [];
+                }
+            }
+
+            document.getElementById('statTotUsers').textContent = allUsers.length;
+            document.getElementById('statAppUsers').textContent = allUsers.filter(u => u.status === 'approved').length;
+            document.getElementById('statPendUsers').textContent = allUsers.filter(u => u.status === 'pending').length;
+
+            filterUsersList();
+        }
+
+        function filterUsersList() {
+            const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
+            const filtered = q ? allUsers.filter(u => 
+                (u.name || '').toLowerCase().includes(q) || 
+                (u.email || '').toLowerCase().includes(q) || 
+                (u.phone || '').toLowerCase().includes(q)
+            ) : allUsers;
+
+            const countEl = document.getElementById('usersSearchCount');
+            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
+
+            const container = document.getElementById('usersFullList');
+            if (!filtered.length) {
+                return container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
+            }
+
+            container.innerHTML = filtered.map(u => {
+                const cleanName = (u.name || '').toLowerCase().trim();
+                const userLinkCount = allLinks.filter(l => (l.name || '').toLowerCase().trim() === cleanName).length;
+                const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const statusBadge = u.status === 'approved' 
+                    ? '<span class="status-badge status-active">APPROVED</span>' 
+                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+
+                return `
+                    <div class="link-item">
+                        <div>
+                            <div class="name" style="display:flex;align-items:center;gap:8px;">
+                                <span>👤 ${escapeHTML(u.name)}</span>
+                                ${statusBadge}
+                            </div>
+                            <div class="details">
+                                <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
+                                <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
+                                <span>| 🔗 Total Links: <b style="color:var(--primary);">${userLinkCount}</b></span>
+                                <span>| 📅 Joined: <b>${joinedDate}</b></span>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            ${u.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u._id}', '${escapeHTML(u.name)}')">🗑️ Remove User</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function deleteUser(id, name) {
+            if (!confirm(`Are you sure you want to permanently remove user "${name}"?`)) return;
+            try {
+                const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE', credentials: 'include' });
+                const d = await res.json();
+                if (d && d.success) {
+                    showToast('✅ User removed successfully!', 'success');
+                } else {
+                    showToast(d.error || 'User removed', 'info');
+                }
+                loadAllUsers();
+                loadRenewalSystem();
+            } catch(e) {
+                showToast('Failed to remove user', 'error');
+            }
+        }
+
+        // ==================== 🔄 RENEWAL SYSTEM (Auto-Verify Removed) ====================
         async function loadRenewalSystem() {
             const portalUrl = window.location.origin + '/user-dashboard';
             const dInput = document.getElementById('dashUserPortalUrl');
@@ -729,7 +966,7 @@
                 uList.innerHTML = pendingUsers.map(u => `
                     <div class="link-item">
                         <div>
-                            <div class="name">${escapeHTML(u.name)} (PENDING)</div>
+                            <div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div>
                             <div class="details">📧 ${escapeHTML(u.email)} | 📞 ${escapeHTML(u.phone)}</div>
                         </div>
                         <div style="display:flex;gap:6px;">
@@ -770,7 +1007,6 @@
                 if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
                 if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
                 if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
-                document.getElementById('setPaymentMode').value = sData.pricing.autoPaymentEnabled !== false ? 'true' : 'false';
                 document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || '';
                 document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
             }
@@ -783,8 +1019,9 @@
                 credentials: 'include',
                 body: JSON.stringify({ action })
             });
-            showToast(`User ${action}! Removed from pending.`, 'success');
+            showToast(`User ${action}!`, 'success');
             loadRenewalSystem();
+            loadAllUsers();
         }
 
         async function approveRenewal(id) {
@@ -824,7 +1061,6 @@
                 '90days': parseInt(document.getElementById('p90d').value),
                 '1year': parseInt(document.getElementById('p1y').value)
             };
-            const autoPaymentEnabled = document.getElementById('setPaymentMode').value === 'true';
             const upiId = document.getElementById('setUpiId').value.trim();
             const whatsappNumber = document.getElementById('setWaNumber').value.trim();
 
@@ -832,34 +1068,70 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ pricing, autoPaymentEnabled, upiId, whatsappNumber })
+                body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
             });
             showToast('Renewal settings updated!', 'success');
         }
 
-        // ==================== 📱 BLOCKED ATTACKERS LIST WITH UNBLOCK ====================
+        // ==================== 🛡️ 7. BLOCKED & ACTIVE DEVICES ====================
+        function toggleDeviceTab(tab) {
+            currentDeviceTab = tab;
+            const bBtn = document.getElementById('tabBtnBlocked');
+            const aBtn = document.getElementById('tabBtnActive');
+            const bView = document.getElementById('deviceViewBlocked');
+            const aView = document.getElementById('deviceViewActive');
+
+            if (tab === 'blocked') {
+                bBtn.style.background = 'var(--danger)';
+                bBtn.style.color = '#fff';
+                aBtn.style.background = 'var(--bg)';
+                aBtn.style.color = 'var(--text-light)';
+                bView.style.display = 'block';
+                aView.style.display = 'none';
+                loadBlockedDevices();
+            } else {
+                aBtn.style.background = 'var(--success)';
+                aBtn.style.color = '#fff';
+                bBtn.style.background = 'var(--bg)';
+                bBtn.style.color = 'var(--text-light)';
+                bView.style.display = 'none';
+                aView.style.display = 'block';
+                loadActiveDevices();
+            }
+        }
+
+        function refreshDeviceTabs() {
+            if (currentDeviceTab === 'blocked') loadBlockedDevices();
+            else loadActiveDevices();
+        }
+
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
-            const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-            const d = await res.json();
-            if (!d.devices?.length) {
-                return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No permanently blocked attackers currently.</p>';
-            }
-            list.innerHTML = d.devices.map(dev => `
-                <div class="blocked-card-item">
-                    <div>
-                        <div class="dev-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
-                        <div class="dev-meta">
-                            <span>🌐 IP: <b>${escapeHTML(dev.ip)}</b></span>
-                            <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts}/3</b></span>
-                            <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason)}</span></span>
+            list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
+            try {
+                const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
+                const d = await res.json();
+                if (!d.devices?.length) {
+                    return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No permanently blocked attackers currently.</p>';
+                }
+                list.innerHTML = d.devices.map(dev => `
+                    <div class="device-card-item blocked">
+                        <div>
+                            <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
+                            <div class="device-meta">
+                                <span>🌐 IP: <b>${escapeHTML(dev.ip)}</b></span>
+                                <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts}/3</b></span>
+                                <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason)}</span></span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock Device</button>
                         </div>
                     </div>
-                    <div>
-                        <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock Device</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            } catch(e) {
+                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load blocked devices.</p>';
+            }
         }
 
         async function unblockDev(id) {
@@ -872,28 +1144,68 @@
             }
         }
 
-        async function loadSecretKey() {
-            const res = await fetch('/api/admin/secret-key', { credentials: 'include' });
-            const d = await res.json();
-            if (d.success) document.getElementById('currentSecretKey').value = d.secretKey;
+        async function loadActiveDevices() {
+            const list = document.getElementById('activeDeviceList');
+            list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
+            try {
+                const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
+                const d = await res.json();
+                const sessions = d.sessions || [];
+
+                if (!sessions.length) {
+                    // Show current active browser
+                    return list.innerHTML = `
+                        <div class="device-card-item active-dev">
+                            <div>
+                                <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
+                                <div class="device-meta">
+                                    <span>🌐 IP: <b>Your Connected IP</b></span>
+                                    <span>🕒 Last Active: <b>Just now</b></span>
+                                    <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                list.innerHTML = sessions.map(s => {
+                    const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                    return `
+                        <div class="device-card-item active-dev">
+                            <div>
+                                <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Desktop')})</span></div>
+                                <div class="device-meta">
+                                    <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
+                                    <span>🕒 Last Active: <b>${lastActive}</b></span>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${s._id}')">⛔ Block</button>
+                                <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${s._id}')">🗑️ Logout</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No active sessions data found.</p>';
+            }
         }
 
-        async function changeSecretKey() {
-            const currentSecretKey = document.getElementById('currentSecretKey').value;
-            const newSecretKey = document.getElementById('newSecretKey').value.trim();
-            if (!newSecretKey) return showToast('Enter new key', 'error');
-            const res = await fetch('/api/admin/secret-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ currentSecretKey, newSecretKey })
-            });
-            const d = await res.json();
-            if (d.success) {
-                showToast('Secret key updated!', 'success');
-                document.getElementById('currentSecretKey').value = newSecretKey;
-                document.getElementById('newSecretKey').value = '';
-            } else showToast(d.error, 'error');
+        async function deleteActiveSession(id) {
+            if (!confirm('Log out and terminate this session?')) return;
+            await fetch(`/api/admin/sessions/${id}`, { method: 'DELETE', credentials: 'include' });
+            showToast('Session terminated', 'info');
+            loadActiveDevices();
+        }
+
+        async function blockActiveSession(id) {
+            if (!confirm('Block this device permanently and kick it out from Admin Panel?')) return;
+            await fetch(`/api/admin/sessions/${id}/block`, { method: 'POST', credentials: 'include' });
+            showToast('Device blocked permanently!', 'success');
+            loadActiveDevices();
         }
 
         async function loadContactInfo() {
@@ -1013,11 +1325,12 @@
             showToast('Use browser menu -> Add to Home screen to install app', 'info');
         }
 
+        // Init Load
         loadStats();
         loadLinks();
+        loadAllUsers();
         loadRenewalSystem();
         loadContactInfo();
-        loadSecretKey();
         loadBlockedDevices();
         setInterval(loadStats, 5000);
     </script>
