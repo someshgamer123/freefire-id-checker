@@ -288,7 +288,7 @@
             </div>
         </header>
 
-        <!-- 1. DASHBOARD OVERVIEW -->
+        <!-- 1. DASHBOARD OVERVIEW (Lively 5-Second Real-Time Updates) -->
         <div class="section active" id="sec-dashboard">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
@@ -309,7 +309,7 @@
 
             <div class="live-visitors">
                 <div class="lv-title">
-                    <span class="dot"></span> 🟢 Real-Time Visitor & Claim Stream
+                    <span class="dot"></span> 🟢 Real-Time Visitor & Claim Stream (Unique 24h)
                     <span style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:400;" id="lastRefreshTime">Updated: Just now</span>
                 </div>
                 <div class="lv-grid">
@@ -345,7 +345,7 @@
             </div>
         </div>
 
-        <!-- 3. 👥 MANAGE USERS (NEW FEATURE) -->
+        <!-- 3. 👥 MANAGE USERS -->
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
@@ -368,7 +368,7 @@
             </div>
         </div>
 
-        <!-- 4. USERS & RENEWAL (Auto-Verify Mode Removed) -->
+        <!-- 4. USERS & RENEWAL -->
         <div class="section" id="sec-renewals">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Portal & Signup Link:</div>
@@ -396,7 +396,7 @@
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
 
-            <!-- Pricing Settings (Cleaned - Auto-Verify Removed) -->
+            <!-- Pricing Settings -->
             <div class="card">
                 <h3>⚙️ Renewal & Payment Settings</h3>
                 <div class="grid-2">
@@ -415,11 +415,35 @@
             </div>
         </div>
 
-        <!-- 5. CREATE LINK -->
+        <!-- 5. CREATE LINK (With Searchable Registered User Selector) -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
-                <input type="text" id="cName" placeholder="Link Campaign Name (Must match customer name)">
+                
+                <!-- 👤 SEARCHABLE REGISTERED USER SELECTOR -->
+                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
+                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
+                        👤 Select Registered User (Campaign Owner):
+                    </label>
+                    
+                    <!-- Search Input for Users -->
+                    <input type="text" id="userSearchInCreate" placeholder="🔍 Search registered user by name, email, or phone..." oninput="filterCreateUserList()" style="margin-bottom:8px;padding:9px 12px;font-size:13px;">
+
+                    <!-- Single User Selector Dropdown -->
+                    <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
+                        <option value="">-- Choose a Registered User (1 User Only) --</option>
+                    </select>
+
+                    <!-- Selected User Info Display Badge -->
+                    <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;display:none;align-items:center;justify-content:space-between;">
+                        <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
+                        <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
+                    </div>
+
+                    <!-- Hidden input to store cName for createLink() -->
+                    <input type="hidden" id="cName">
+                </div>
+
                 <div class="grid-2">
                     <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
                     <input type="text" id="cClaim" placeholder="Claim Destination URL" value="#">
@@ -486,7 +510,7 @@
             </div>
         </div>
 
-        <!-- 7. SETTINGS & BLOCKED & ACTIVE DEVICES (Secret Key Removed) -->
+        <!-- 7. SETTINGS & BLOCKED & ACTIVE DEVICES -->
         <div class="section" id="sec-settings">
             <!-- Blocked & Active Devices Card -->
             <div class="card">
@@ -547,7 +571,7 @@
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL (CLEAN & ZERO OVERLAP) -->
+    <!-- ✏️ EDIT MODAL -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -617,6 +641,7 @@
 
             if (id === 'links') loadLinks();
             if (id === 'users') loadAllUsers();
+            if (id === 'create') loadCreateUserDropdown();
             if (id === 'renewals') loadRenewalSystem();
             if (id === 'shortener') loadShortLinks();
             if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
@@ -627,6 +652,7 @@
             box.innerHTML = (url && url.startsWith('http')) ? `<img src="${url}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
         }
 
+        // ==================== 📊 REAL-TIME LIVELY STATS (REFRESH PER 5 SECONDS) ====================
         async function loadStats() {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
@@ -635,12 +661,16 @@
                     document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
                     document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
                     document.getElementById('activeLive').textContent = data.global.activeNow || 0;
+                    
                     document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
                     document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
                     document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
                     document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
                     document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
                     document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
+
+                    const now = new Date();
+                    document.getElementById('lastRefreshTime').textContent = `Lively Updated: ${now.toLocaleTimeString()}`;
                 }
                 if (data && data.links) {
                     document.getElementById('totLinks').textContent = data.links.length || 0;
@@ -650,7 +680,7 @@
             } catch(e) {}
         }
 
-        // ==================== 🔗 LINKS MANAGER (Expiry Date Display) ====================
+        // ==================== 🔗 LINKS MANAGER ====================
         async function loadLinks() {
             const list = document.getElementById('linksList');
             const res = await fetch('/api/links', { credentials: 'include' });
@@ -808,6 +838,57 @@
             }
         }
 
+        // ==================== ➕ CREATE LINK (WITH SEARCHABLE USER SELECTOR) ====================
+        async function loadCreateUserDropdown() {
+            if (!allUsers.length) {
+                try {
+                    const res = await fetch('/api/admin/all-users', { credentials: 'include' });
+                    const data = await res.json();
+                    allUsers = data.users || [];
+                } catch(e) {}
+            }
+            filterCreateUserList();
+        }
+
+        function filterCreateUserList() {
+            const searchKeyword = (document.getElementById('userSearchInCreate')?.value || '').toLowerCase().trim();
+            const selectEl = document.getElementById('cUserSelect');
+            const currentSelected = document.getElementById('cName').value.trim();
+
+            const filtered = searchKeyword ? allUsers.filter(u => 
+                (u.name || '').toLowerCase().includes(searchKeyword) ||
+                (u.email || '').toLowerCase().includes(searchKeyword) ||
+                (u.phone || '').toLowerCase().includes(searchKeyword)
+            ) : allUsers;
+
+            selectEl.innerHTML = '<option value="">-- Choose a Registered User (1 User Only) --</option>' + 
+                filtered.map(u => {
+                    const isSel = (u.name === currentSelected) ? 'selected' : '';
+                    return `<option value="${escapeHTML(u.name)}" ${isSel}>👤 ${escapeHTML(u.name)} (${escapeHTML(u.email || u.phone)})</option>`;
+                }).join('');
+        }
+
+        function onUserSelected(userName) {
+            const trimmed = userName.trim();
+            document.getElementById('cName').value = trimmed;
+            const badge = document.getElementById('selectedUserBadge');
+            
+            if (trimmed) {
+                const userObj = allUsers.find(u => u.name === trimmed);
+                document.getElementById('selectedUserName').textContent = trimmed;
+                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone) : 'Registered User';
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function clearSelectedUser() {
+            document.getElementById('cName').value = '';
+            document.getElementById('cUserSelect').value = '';
+            document.getElementById('selectedUserBadge').style.display = 'none';
+        }
+
         async function createLink() {
             const name = document.getElementById('cName').value.trim();
             const video = document.getElementById('cVideo').value.trim();
@@ -821,7 +902,7 @@
                 image: document.getElementById('cPopImg').value || null
             };
 
-            if (!name) return showToast('Please enter link name', 'error');
+            if (!name) return showToast('Please select a registered user from the list!', 'error');
 
             const res = await fetch('/api/links', {
                 method: 'POST',
@@ -831,11 +912,11 @@
             });
             const d = await res.json();
             if (d && d.id) {
-                showToast('✅ Link Created Successfully!', 'success');
+                showToast('✅ Link Created Successfully for ' + name + '!', 'success');
                 const fullUrl = window.location.origin + '/uid?link=' + d.id;
                 document.getElementById('generatedLinkUrl').value = fullUrl;
                 document.getElementById('generatedLinkBox').style.display = 'block';
-                document.getElementById('cName').value = '';
+                clearSelectedUser();
                 loadStats();
             }
         }
@@ -847,12 +928,11 @@
             showToast('✅ Copied to clipboard!', 'success');
         }
 
-        // ==================== 👥 3. MANAGE USERS (NEW SECTION) ====================
+        // ==================== 👥 MANAGE USERS ====================
         async function loadAllUsers() {
             const container = document.getElementById('usersFullList');
             container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
             
-            // Ensure links are loaded to count user links accurately
             if (!allLinks.length) {
                 try {
                     const lRes = await fetch('/api/links', { credentials: 'include' });
@@ -865,7 +945,6 @@
                 const data = await res.json();
                 allUsers = data.users || [];
             } catch(e) {
-                // Fallback to renewal-users if all-users endpoint is pending
                 try {
                     const res2 = await fetch('/api/admin/renewal-users', { credentials: 'include' });
                     const d2 = await res2.json();
@@ -880,6 +959,7 @@
             document.getElementById('statPendUsers').textContent = allUsers.filter(u => u.status === 'pending').length;
 
             filterUsersList();
+            loadCreateUserDropdown();
         }
 
         function filterUsersList() {
@@ -946,7 +1026,7 @@
             }
         }
 
-        // ==================== 🔄 RENEWAL SYSTEM (Auto-Verify Removed) ====================
+        // ==================== 🔄 RENEWAL SYSTEM ====================
         async function loadRenewalSystem() {
             const portalUrl = window.location.origin + '/user-dashboard';
             const dInput = document.getElementById('dashUserPortalUrl');
@@ -1073,7 +1153,7 @@
             showToast('Renewal settings updated!', 'success');
         }
 
-        // ==================== 🛡️ 7. BLOCKED & ACTIVE DEVICES ====================
+        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
         function toggleDeviceTab(tab) {
             currentDeviceTab = tab;
             const bBtn = document.getElementById('tabBtnBlocked');
@@ -1153,7 +1233,6 @@
                 const sessions = d.sessions || [];
 
                 if (!sessions.length) {
-                    // Show current active browser
                     return list.innerHTML = `
                         <div class="device-card-item active-dev">
                             <div>
@@ -1332,7 +1411,7 @@
         loadRenewalSystem();
         loadContactInfo();
         loadBlockedDevices();
-        setInterval(loadStats, 5000);
+        setInterval(loadStats, 5000); // Live real-time stats update every 5 seconds
     </script>
 </body>
 </html>
