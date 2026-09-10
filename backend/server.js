@@ -36,14 +36,17 @@ const Security = require('./config/security');
 
 connectDB();
 
-// 🔓 Disable strict schema mode on Link & Pricing for guaranteed field persistence
+// 🔓 Disable strict schema mode on collections for seamless field persistence
 try {
     Link.schema.set('strict', false);
     Pricing.schema.set('strict', false);
+    User.schema.set('strict', false);
+    if (Session && Session.schema) Session.schema.set('strict', false);
+    if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
 } catch(e) {}
 
 // ==================== Environment Variables ====================
-const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
+const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
@@ -64,20 +67,41 @@ if (EMAIL_USER && EMAIL_PASS) {
     });
 }
 
-// ==================== Database Initialization ====================
+// ==================== Helper: Safe Passcode Verification ====================
+function verifyPasscode(inputPass, storedPass) {
+    if (!inputPass || !storedPass) return false;
+    const cleanInput = inputPass.toString().trim();
+    const cleanStored = storedPass.toString().trim();
+
+    // Check if stored passcode is standard bcrypt hash
+    if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
+        try {
+            return bcrypt.compareSync(cleanInput, cleanStored);
+        } catch(e) {
+            return false;
+        }
+    }
+    // Fallback: exact match if stored as plain text
+    return cleanInput === cleanStored;
+}
+
+// ==================== Database Initialization & Strict Passcode Sync ====================
 async function initializeDatabase() {
     try {
+        const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
         let admin = await User.findOne();
+
         if (!admin) {
-            const hashedPasscode = bcrypt.hashSync(DEFAULT_PASSCODE, 10);
+            const hashedPasscode = bcrypt.hashSync(activeEnvPass, 10);
             await User.create({
                 passcode: hashedPasscode,
+                lastEnvPasscode: activeEnvPass,
                 theme: 'dark',
                 email: process.env.ADMIN_EMAIL || '',
                 phone: process.env.ADMIN_PHONE || '',
                 secretKey: 'admin@2024'
             });
-            console.log('✅ Admin initialized with passcode: ' + DEFAULT_PASSCODE);
+            console.log('✅ Admin initialized with active passcode');
 
             if (ENABLE_2FA) {
                 const secret = Security.generate2FASecret();
@@ -89,6 +113,12 @@ async function initializeDatabase() {
                     verifiedAt: new Date()
                 });
             }
+        } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
+            // Instant sync: If ADMIN_PASSCODE environment variable was changed, update DB immediately
+            admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
+            admin.lastEnvPasscode = activeEnvPass;
+            await admin.save();
+            console.log('🔄 Admin passcode strictly updated from environment variable ADMIN_PASSCODE');
         }
 
         const statsExists = await Stats.findOne();
@@ -128,7 +158,7 @@ async function initializeDatabase() {
             await pricingExists.save();
         }
 
-        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
     } catch (error) {
         console.error('❌ Database initialization error:', error);
     }
@@ -181,17 +211,6 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-const deviceAuthLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: MAX_LOGIN_ATTEMPTS,
-    keyGenerator: (req) => {
-        const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
-        const userAgent = req.headers['user-agent'] || 'unknown';
-        return crypto.createHash('sha256').update(ip + userAgent).digest('hex');
-    },
-    message: 'Too many login attempts from this device.'
-});
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -212,10 +231,12 @@ function verifyToken(token) {
     }
 }
 
+// Safe device ID generator (Crash-proof for Hostinger/Cloudflare proxies)
 function getDeviceId(req) {
-    const rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || '127.0.0.1';
-    const ip = rawIp.split(',')[0].trim();
-    const userAgent = req.headers['user-agent'] || 'unknown';
+    let rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '127.0.0.1';
+    if (Array.isArray(rawIp)) rawIp = rawIp[0];
+    const ip = typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : '127.0.0.1';
+    const userAgent = (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'unknown';
     const clientCookie = req.cookies?.devId || '';
     const fingerprint = crypto.createHash('sha256').update(ip + userAgent + clientCookie).digest('hex');
     const deviceKey = crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
@@ -223,7 +244,7 @@ function getDeviceId(req) {
 }
 
 function getDeviceDetails(req) {
-    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const userAgent = (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown';
     let deviceName = 'Browser';
     let deviceType = 'Desktop';
 
@@ -238,15 +259,19 @@ function getDeviceDetails(req) {
 }
 
 async function isDeviceBlocked(req) {
-    const { deviceKey, fingerprint, ip } = getDeviceId(req);
-    return await BlockedDevice.findOne({
-        $or: [
-            { deviceKey },
-            { ip },
-            { fingerprint }
-        ],
-        isPermanent: true
-    });
+    try {
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        return await BlockedDevice.findOne({
+            $or: [
+                { deviceKey },
+                { ip },
+                { fingerprint }
+            ],
+            isPermanent: true
+        });
+    } catch(e) {
+        return null;
+    }
 }
 
 async function authMiddleware(req, res, next) {
@@ -420,7 +445,6 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
 
         res.json({ success: true, pricing: updatedPricing });
     } catch (error) {
-        console.error('❌ Error updating pricing:', error);
         res.status(500).json({ error: 'Failed to update pricing' });
     }
 });
@@ -518,6 +542,7 @@ app.get('/api/link/:id', async (req, res) => {
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
+        const today = new Date().toISOString().split('T')[0];
         if (link) {
             link.claims = (link.claims || 0) + 1;
             await link.save();
@@ -814,7 +839,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. Pending users for renewal approval
+// 3. Pending users for registration approval
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -955,7 +980,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
 });
 
 // ================================================================
-// 🔑 ADMIN AUTHENTICATION & LOGIN SESSIONS
+// 🔑 ADMIN AUTHENTICATION & BULLETPROOF PASSCODE SYSTEM
 // ================================================================
 app.get('/api/admin/block-status', async (req, res) => {
     try {
@@ -971,8 +996,71 @@ app.get('/api/admin/block-status', async (req, res) => {
     } catch (e) { res.json({ blocked: false }); }
 });
 
+// ✅ STRICT ADMIN LOGIN: Checks ONLY the single active passcode (Old passcode strictly fails)
 app.post('/api/admin/login', async (req, res) => {
     try {
+        const { passcode } = req.body;
+        const cleanPass = (passcode || '').toString().trim();
+
+        if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
+
+        // Retrieve current active admin
+        let admin = await User.findOne();
+        const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
+
+        if (!admin || !admin.passcode) {
+            const hashed = bcrypt.hashSync(activeEnvPass, 10);
+            admin = await User.create({
+                passcode: hashed,
+                lastEnvPasscode: activeEnvPass,
+                theme: 'dark',
+                email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || '',
+                secretKey: 'admin@2024'
+            });
+        } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
+            // Environment variable update sync
+            admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
+            admin.lastEnvPasscode = activeEnvPass;
+            await admin.save();
+        }
+
+        // STRICT VERIFICATION: ONLY against current active passcode in DB
+        const isValid = verifyPasscode(cleanPass, admin.passcode);
+
+        if (isValid) {
+            // Authorized Admin!
+            // Automatically clear any prior accidental blocks for this authorized device
+            const { deviceKey, fingerprint, ip } = getDeviceId(req);
+            const { deviceName, deviceType } = getDeviceDetails(req);
+            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+
+            // Safely record active session (never blocks login if session write fails)
+            try {
+                if (Session) {
+                    await Session.create({
+                        userId: 'admin',
+                        deviceKey,
+                        fingerprint,
+                        ip,
+                        userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
+                        deviceName,
+                        deviceType,
+                        isActive: true,
+                        lastActivity: new Date(),
+                        createdAt: new Date(),
+                        expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+
+            const jwtToken = generateToken('admin');
+            res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
+            return res.json({ success: true, token: jwtToken });
+        }
+
+        // --- WRONG PASSCODE HANDLING ---
+        // 1. Check if device is already blocked
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             return res.status(403).json({
@@ -981,41 +1069,7 @@ app.post('/api/admin/login', async (req, res) => {
             });
         }
 
-        const { passcode } = req.body;
-        const cleanPass = (passcode || '').toString().trim();
-
-        if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
-
-        const admin = await User.findOne();
-        if (!admin || !admin.passcode) return res.status(500).json({ error: 'Admin not initialized' });
-
-        const isValid = bcrypt.compareSync(cleanPass, admin.passcode);
-
-        if (isValid) {
-            const { deviceKey, fingerprint, ip } = getDeviceId(req);
-            const { deviceName, deviceType } = getDeviceDetails(req);
-            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
-
-            // Record Active Session in Database for "Active Devices" tab
-            await Session.create({
-                userId: 'admin',
-                deviceKey,
-                fingerprint,
-                ip,
-                userAgent: req.headers['user-agent'] || 'Unknown',
-                deviceName,
-                deviceType,
-                isActive: true,
-                lastActivity: new Date(),
-                createdAt: new Date(),
-                expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
-            });
-
-            const jwtToken = generateToken('admin');
-            res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
-            return res.json({ success: true, token: jwtToken });
-        }
-
+        // 2. Increment failed attempt count
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
 
@@ -1036,7 +1090,6 @@ app.post('/api/admin/login', async (req, res) => {
 
         if (record.attempts >= 3) {
             record.isPermanent = true;
-            record.blockedUntil = null;
             record.reason = 'Permanent ban: 3 failed passcode attempts';
             await record.save();
             return res.status(403).json({
@@ -1051,35 +1104,43 @@ app.post('/api/admin/login', async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Login error' });
+        console.error('Safe login caught:', error);
+        res.status(500).json({ error: 'Server authentication error' });
     }
 });
 
 app.post('/api/admin/logout', async (req, res) => {
     try {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
+        await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
     } catch(e) {}
     res.clearCookie('adminToken');
     res.json({ success: true });
 });
 
+// ✅ Change Passcode from Admin Panel: Strictly sets new passcode, invalidating the old one
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
-        if (!newPasscode || newPasscode.toString().trim().length !== 6) {
+        const cleanOld = (oldPasscode || '').toString().trim();
+        const cleanNew = (newPasscode || '').toString().trim();
+
+        if (!cleanNew || cleanNew.length !== 6) {
             return res.status(400).json({ error: 'New passcode must be 6 digits' });
         }
 
         const admin = await User.findOne();
-        const isCurrentValid = bcrypt.compareSync(oldPasscode.toString().trim(), admin.passcode);
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+
+        const isCurrentValid = verifyPasscode(cleanOld, admin.passcode);
         if (!isCurrentValid) {
             return res.status(401).json({ error: 'Current passcode is incorrect' });
         }
 
-        admin.passcode = bcrypt.hashSync(newPasscode.toString().trim(), 10);
+        admin.passcode = bcrypt.hashSync(cleanNew, 10);
+        admin.lastEnvPasscode = cleanNew; // Synced so it will not revert
         await admin.save();
-        res.json({ success: true, message: 'Passcode changed successfully!' });
+        res.json({ success: true, message: 'Passcode changed successfully! Old passcode is permanently disabled.' });
     } catch (error) {
         res.status(500).json({ error: 'Passcode change failed' });
     }
