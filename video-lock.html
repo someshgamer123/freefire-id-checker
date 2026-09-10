@@ -121,7 +121,7 @@
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
-        /* ✨ GLOWING SHINING CLAIM BUTTON (NORMAL STATE AS DESIRED) ✨ */
+        /* ✨ GLOWING SHINING CLAIM BUTTON (NORMAL STATE) ✨ */
         .claim-btn {
             position: relative;
             padding: 16px 54px;
@@ -439,7 +439,7 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON (NO LOCK TEXT, NO GREY STYLING) -->
+                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON -->
                 <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
         </div>
@@ -676,25 +676,118 @@
             }, isMobile ? 1800 : 2500);
         }
 
-        // ==================== 16:9 BANNER LOADER (ROBUST CACHE-SAFE & ZERO UID BACKGROUND) ====================
+        // ==================== 📸 ADVANCED IMAGE RESOLVER & 16:9 BANNER LOADER ====================
+        // Google Drive, Imgur, Dropbox direct high-speed image converter
+        function sanitizeImageUrl(url) {
+            if (!url) return '';
+            let u = url.trim();
+
+            // Google Drive share link -> Direct CDN image
+            if (u.includes('drive.google.com')) {
+                const m = u.match(/\/d\/([a-zA-Z0-9_-]+)/) || u.match(/id=([a-zA-Z0-9_-]+)/);
+                if (m && m) {
+                    return `https://lh3.googleusercontent.com/d/${m}`;
+                }
+            }
+
+            // Imgur page -> Direct image
+            if (u.includes('imgur.com/') && !u.includes('i.imgur.com') && !u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+                const m = u.match(/imgur\.com\/([a-zA-Z0-9]+)/);
+                if (m && m) {
+                    return `https://i.imgur.com/${m}.png`;
+                }
+            }
+
+            // Dropbox link -> Direct raw image
+            if (u.includes('dropbox.com') && u.includes('dl=0')) {
+                return u.replace('dl=0', 'raw=1');
+            }
+
+            return u;
+        }
+
+        // Deep scanner to pull 16:9 image from all possible API response keys
+        function findImageUrl(obj) {
+            if (!obj) return null;
+            const pop = obj.popupSettings || {};
+            const candidates = [
+                pop.image,
+                pop.imageUrl,
+                pop.banner,
+                pop.bannerUrl,
+                pop.popupImage,
+                pop.popupImageUrl,
+                obj.popupImage,
+                obj.popupImageUrl,
+                obj.image,
+                obj.imageUrl,
+                obj.banner,
+                obj.bannerUrl,
+                obj.bannerImage,
+                obj.img,
+                obj.imgUrl,
+                obj.linkImage,
+                obj.thumbnail
+            ];
+            for (const c of candidates) {
+                if (c && typeof c === 'string' && c.trim().length > 5 && !c.includes('youtube.com') && !c.includes('youtu.be')) {
+                    return c.trim();
+                }
+            }
+            return null;
+        }
+
+        function renderBannerImage(rawUrl) {
+            const cleanUrl = sanitizeImageUrl(rawUrl);
+            const img = document.getElementById('popupImg');
+            const placeholder = document.getElementById('popupPlaceholder');
+
+            if (!cleanUrl || cleanUrl.length < 5) {
+                img.style.display = 'none';
+                if (placeholder) placeholder.style.display = 'flex';
+                return;
+            }
+
+            img.referrerPolicy = 'no-referrer'; // Bypasses hotlink blocks on image hosts
+
+            function showImage() {
+                img.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            }
+
+            function hideImage() {
+                // Secondary attempt with standard referrer if no-referrer is rejected by certain servers
+                if (img.referrerPolicy === 'no-referrer') {
+                    img.referrerPolicy = 'strict-origin-when-cross-origin';
+                    img.src = cleanUrl;
+                } else {
+                    img.style.display = 'none';
+                    if (placeholder) placeholder.style.display = 'flex';
+                }
+            }
+
+            // Event handlers attached before setting src
+            img.onload = showImage;
+            img.onerror = hideImage;
+            img.src = cleanUrl;
+
+            // Instant execution if browser already cached the image
+            if (img.complete && img.naturalWidth > 0) {
+                showImage();
+            }
+        }
+
         async function loadPopupData() {
-            let foundBannerUrl = null;
+            let foundBanner = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') || urlParams.get('popup');
 
-            // 1. Check URL parameters
-            foundBannerUrl = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') || urlParams.get('popup');
-
-            // 2. Fetch from Link API
+            // 1. Fetch Link Data from API
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    if (data.video && data.video.trim().length > 5) {
-                        videoUrl = fixYouTubeUrl(data.video.trim());
-                    }
-                    if (data.claim && data.claim.trim().length > 1) {
-                        claimUrl = data.claim.trim();
-                    }
+
+                    if (data.video && data.video.trim().length > 5) videoUrl = fixYouTubeUrl(data.video.trim());
+                    if (data.claim && data.claim.trim().length > 1) claimUrl = data.claim.trim();
                     if (data.buttonText) {
                         buttonText = data.buttonText;
                         document.getElementById('claimBtn').textContent = '🎁 ' + buttonText;
@@ -717,75 +810,37 @@
                         if (btnSpan) btnSpan.textContent = '🔓 ' + popup.buttonText;
                     }
 
-                    // Look for 16:9 image in all possible link attributes
-                    if (!foundBannerUrl) {
-                        foundBannerUrl = (popup.image && popup.image.trim().length > 4 ? popup.image.trim() : null) ||
-                                         (data.image && data.image.trim().length > 4 ? data.image.trim() : null) ||
-                                         (data.popupImage && data.popupImage.trim().length > 4 ? data.popupImage.trim() : null) ||
-                                         (data.banner && data.banner.trim().length > 4 ? data.banner.trim() : null);
+                    if (!foundBanner) {
+                        foundBanner = findImageUrl(data);
                     }
                 }
             } catch (e) {}
 
-            // 3. Fallback to settings (Only if distinct from UID 9:16 background)
-            if (!foundBannerUrl) {
+            // 2. Fallback to localStorage
+            if (!foundBanner) {
+                foundBanner = localStorage.getItem('popupImage') || localStorage.getItem('bannerImg') || localStorage.getItem('linkBanner');
+            }
+
+            // 3. Fallback to /api/settings (Guaranteed distinct from UID 9:16 background)
+            if (!foundBanner) {
                 try {
                     const res = await fetch(`/api/settings?nocache=${Date.now()}`);
                     if (res.ok) {
                         const s = await res.json();
-                        if (s && s.popupSettings && s.popupSettings.image && s.popupSettings.image.trim().length > 4) {
-                            if (s.popupSettings.image.trim() !== (s.background || '').trim()) {
-                                foundBannerUrl = s.popupSettings.image.trim();
-                            }
+                        const bg = (s.background || '').trim();
+                        const popImg = (s.popupSettings && s.popupSettings.image) ? s.popupSettings.image.trim() : '';
+                        if (popImg && popImg.length > 5 && popImg !== bg) {
+                            foundBanner = popImg;
                         }
                     }
                 } catch(e) {}
             }
 
-            // 4. Fallback to localStorage if available
-            if (!foundBannerUrl) {
-                foundBannerUrl = localStorage.getItem('popupImage') || localStorage.getItem('bannerImg');
-            }
-
-            // Display image if found, otherwise keep clean 16:9 placeholder
-            if (foundBannerUrl && typeof foundBannerUrl === 'string' && foundBannerUrl.trim().length > 4) {
-                let cleanImgUrl = foundBannerUrl.trim();
-                
-                // Convert Google Drive share URL to direct viewable URL
-                if (cleanImgUrl.includes('drive.google.com/file/d/')) {
-                    const idMatch = cleanImgUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                    if (idMatch && idMatch) {
-                        cleanImgUrl = `https://drive.google.com/uc?export=view&id=${idMatch}`;
-                    }
-                }
-
-                const img = document.getElementById('popupImg');
-                const placeholder = document.getElementById('popupPlaceholder');
-
-                img.referrerPolicy = 'no-referrer'; // Bypasses hotlink protection on external image hosts
-
-                function showImage() {
-                    img.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-                }
-
-                function hideImage() {
-                    img.style.display = 'none';
-                    if (placeholder) placeholder.style.display = 'flex';
-                }
-
-                // Event listeners attached BEFORE setting src
-                img.onload = showImage;
-                img.onerror = hideImage;
-                img.src = cleanImgUrl;
-
-                // Instant execution if browser already loaded the image from memory
-                if (img.complete && img.naturalWidth > 0) {
-                    showImage();
-                }
+            if (foundBanner) {
+                localStorage.setItem('bannerImg', foundBanner);
+                renderBannerImage(foundBanner);
             } else {
-                document.getElementById('popupImg').style.display = 'none';
-                document.getElementById('popupPlaceholder').style.display = 'flex';
+                renderBannerImage(null);
             }
         }
 
