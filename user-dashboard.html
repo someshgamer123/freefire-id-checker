@@ -2,1199 +2,1442 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reward Video Lock</title>
+    <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 🛡️ FIX FOR YOUTUBE ERROR 153 -->
-    <meta name="referrer" content="strict-origin-when-cross-origin">
     
-    <!-- SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
-    <script>
-        (function() {
-            document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
-            window.addEventListener('keydown', function(e) {
-                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); e.stopPropagation(); return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); e.stopPropagation(); return false;
-                }
-            }, true);
-            try {
-                const noop = () => {};
-                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
-            } catch(e) {}
-        })();
-    </script>
-
+    <!-- Clean Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        :root {
+            --bg-base: #0a0e17;
+            --surface-1: #111726;
+            --surface-2: #161f33;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(99, 102, 241, 0.35);
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-glow: rgba(79, 70, 229, 0.25);
+            --accent-cyan: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         body {
-            background: #080c16;
-            color: #f8fafc;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 50px;
+        }
+
+        .ambient-layer {
             position: fixed;
             top: 0; left: 0;
-            display: flex;
-            flex-direction: column;
-            padding: 14px;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .ambient-glow {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 50% 12%, rgba(99, 102, 241, 0.16) 0%, transparent 55%),
-                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-                radial-gradient(circle at 15% 75%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
-            z-index: 0; pointer-events: none;
-        }
-
-        .top-section {
-            position: relative; z-index: 1; flex: 0 0 auto; width: 100%; max-width: 820px; margin: 0 auto;
-        }
-
-        .video-wrapper {
-            background: rgba(16, 23, 41, 0.82);
-            border-radius: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-            padding: 10px;
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            animation: fadeInDown 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px) scale(0.97); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
-        }
-        .video-container iframe, .video-container video {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;
-        }
-        .video-container iframe { z-index: 5; }
-
-        .video-badge-live {
-            position: absolute; top: 12px; left: 12px; z-index: 8;
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px;
-            padding: 4px 12px; font-size: 11px; font-weight: 800; color: #fff;
-            display: flex; align-items: center; gap: 6px; pointer-events: none;
-        }
-        .video-badge-live .live-dot {
-            width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;
-            animation: pulseLive 1.4s infinite;
-        }
-        @keyframes pulseLive { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.3); } }
-
-        /* 🚫 UNSTOPPABLE TRANSPARENT BARRIER (First Watch Only) */
-        .video-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: transparent; pointer-events: auto !important;
-            cursor: default;
-        }
-
-        .headline {
-            text-align: center; margin: 12px 0 6px; font-size: 17px; font-weight: 800;
-            color: #ffffff; letter-spacing: -0.2px; opacity: 0; transition: opacity 0.5s ease;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .headline.show { opacity: 1; }
-
-        .claim-btn-wrapper {
-            display: flex; justify-content: center; margin-top: 4px; opacity: 0; transition: opacity 0.5s ease;
-        }
-        .claim-btn-wrapper.show { opacity: 1; }
-
-        /* ✨ GLOWING SHINING CLAIM BUTTON (NORMAL STATE) ✨ */
-        .claim-btn {
-            position: relative;
-            padding: 16px 54px;
-            border: none;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 900;
-            cursor: pointer;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
-            color: #ffffff;
-            letter-spacing: 0.5px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: 0 12px 35px rgba(79, 70, 229, 0.45), 0 0 25px rgba(124, 58, 237, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            z-index: 20;
-        }
-        .claim-btn:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 18px 45px rgba(79, 70, 229, 0.6), 0 0 35px rgba(124, 58, 237, 0.45);
-        }
-        .claim-btn:active { transform: scale(0.97); }
-
-        .claim-btn::after, .popup-claim-btn::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -160%;
-            width: 75%;
-            height: 200%;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, 0.1) 20%,
-                rgba(255, 255, 255, 0.85) 50%,
-                rgba(255, 255, 255, 0.1) 80%,
-                transparent
-            );
-            transform: rotate(25deg);
-            animation: shineSweep 2.8s infinite ease-in-out;
+            width: 100vw; height: 100vh;
             pointer-events: none;
-        }
-        @keyframes shineSweep {
-            0% { left: -160%; }
-            35% { left: 160%; }
-            100% { left: 160%; }
-        }
-
-        .claim-btn .ripple, .popup-claim-btn .ripple {
-            position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.4);
-            transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none;
-        }
-        @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
-
-        /* ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
-            background: rgba(4, 7, 15, 0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-            pointer-events: none !important;
-        }
-        .popup-overlay.show { opacity: 1; visibility: visible; pointer-events: all !important; }
-        .popup-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none !important; }
-
-        .popup-card {
-            background: rgba(17, 25, 44, 0.98);
-            backdrop-filter: blur(32px);
-            -webkit-backdrop-filter: blur(32px);
-            border-radius: 28px;
-            padding: 22px;
-            max-width: 440px;
-            width: 94%;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.2);
-            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative; overflow: hidden;
-            text-align: center;
-            pointer-events: all !important;
-        }
-        .popup-card::before {
-            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 30px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.45), rgba(168, 85, 247, 0.45), rgba(236, 72, 153, 0.35));
-            z-index: -1; animation: borderPulse 3s ease-in-out infinite;
-        }
-        @keyframes borderPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.85; } }
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.85) translateY(30px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
-        /* 📸 STRICT 16:9 BANNER CONTAINER */
-        .popup-image-container {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            border-radius: 18px;
-            overflow: hidden;
-            background: #090d16;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 18px;
-            position: relative;
+        /* Top Header */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 14, 23, 0.94);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .brand-badge-icon {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            font-size: 16px;
+            color: #fff;
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        .popup-main-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover !important;
-            object-position: center !important;
-            display: block;
-            pointer-events: none !important;
+        .brand-title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .user-pill {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: #34d399;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .user-pill .live-indicator {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #34d399;
+        }
+
+        /* 3-Dot Menu Button (Hidden on login page by default) */
+        .btn-kebab {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            width: 36px; height: 36px;
+            border-radius: 9px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-kebab:hover {
+            border-color: var(--border-hover);
+            background: var(--surface-2);
+        }
+
+        .kebab-dropdown {
+            position: absolute;
+            top: 46px;
+            right: 0;
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 6px;
+            width: 210px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 200;
+        }
+        .kebab-dropdown.show { display: flex; }
+
+        .dropdown-link {
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .dropdown-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+        .dropdown-link.danger { color: #f87171; }
+        .dropdown-link.danger:hover { background: rgba(239, 68, 68, 0.12); }
+
+        /* Container */
+        .content-wrap {
+            max-width: 960px;
+            margin: 24px auto 0;
+            padding: 0 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .pro-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
             border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
-        .popup-placeholder {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 46px; color: rgba(255, 255, 255, 0.2); gap: 6px; padding: 20px 0;
+        /* Forms */
+        .form-group { margin-bottom: 14px; }
+        .form-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
         }
-        .popup-placeholder span { font-size: 12px; color: #94a3b8; font-weight: 700; }
-
-        .popup-pill-tag {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: rgba(99, 102, 241, 0.14); border: 1px solid rgba(99, 102, 241, 0.3);
-            padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800;
-            color: #818cf8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: #080c14;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s;
         }
-        .popup-pill-tag .tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
-
-        .popup-title {
-            font-size: 22px; font-weight: 900; color: #ffffff; margin-bottom: 4px;
-            letter-spacing: -0.4px;
-        }
-        .popup-sub {
-            font-size: 13.5px; color: #94a3b8; margin-bottom: 18px; font-weight: 500;
-        }
-
-        .popup-claim-btn {
-            width: 100%; padding: 15px; border: none; border-radius: 16px; font-size: 17px; font-weight: 900;
-            cursor: pointer; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff;
-            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.25s ease; position: relative; overflow: hidden;
-            pointer-events: all !important; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .popup-claim-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(79, 70, 229, 0.55); }
-        .popup-claim-btn:active { transform: scale(0.97); }
-
-        /* CONFETTI ENGINE */
-        .confetti-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999;
-            pointer-events: none; overflow: hidden;
-        }
-        .confetti-container.active { pointer-events: none; }
-
-        .confetti-piece {
-            position: absolute; width: 8px; height: 12px;
-            animation: confettiFall 2.2s linear forwards; pointer-events: none; opacity: 0;
-            will-change: transform, opacity;
-        }
-        @keyframes confettiFall {
-            0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(0.8); }
-            50% { opacity: 1; transform: translateY(50vh) rotate(180deg); }
-            100% { opacity: 0; transform: translateY(100vh) rotate(360deg); }
+        .form-input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
 
-        .confetti-burst-piece {
-            position: absolute; width: 6px; height: 10px;
-            animation: confettiBurst 1.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
-            pointer-events: none; opacity: 0;
+        .btn-action {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14.5px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        @keyframes confettiBurst {
-            0% { opacity: 1; transform: translate(0, 0) scale(0.3); }
-            40% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(200deg); }
-            100% { opacity: 0; transform: translate(var(--tx3), var(--ty3)) scale(0.2) rotate(400deg); }
+        .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-action:active { transform: scale(0.99); }
+
+        .btn-secondary {
+            background: var(--surface-2);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+        }
+        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
+
+        /* Terms Checkbox */
+        .checkbox-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 16px 0;
+            cursor: pointer;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 18px; height: 18px;
+            border-radius: 5px;
+            border: 1px solid var(--border-subtle);
+            background: #080c14;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .checkbox-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .checkbox-label a {
+            color: var(--primary-light);
+            text-decoration: underline;
+            font-weight: 600;
         }
 
-        /* LIVE CHAT WITH HUMAN TIMESTAMPS */
-        .chat-section {
-            position: relative; z-index: 1; flex: 1; width: 100%; max-width: 820px; margin: 8px auto 0;
-            min-height: 0; overflow: hidden; border-radius: 20px;
-            background: rgba(16, 23, 41, 0.68); border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(16px); animation: fadeInUp 1s ease;
-            opacity: 0; transition: opacity 0.5s ease; display: flex; flex-direction: column;
+        /* Segmented Tabs */
+        .auth-segmented {
+            display: flex;
+            background: #080c14;
+            padding: 4px;
+            border-radius: 11px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-subtle);
         }
-        .chat-section.show { opacity: 1; }
-
-        .chat-header-bar {
-            padding: 8px 16px; background: rgba(11, 15, 25, 0.6);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex; justify-content: space-between; align-items: center;
+        .segmented-btn {
+            flex: 1;
+            padding: 9px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .chat-header-bar .chat-title {
-            font-size: 12.5px; font-weight: 800; color: #cbd5e1; display: flex; align-items: center; gap: 6px;
-        }
-        .chat-header-bar .online-badge {
-            font-size: 11px; color: #10b981; font-weight: 800; display: flex; align-items: center; gap: 5px;
-        }
-        .chat-header-bar .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulseDot 1.5s infinite; }
-        @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .chat-container {
-            width: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden;
-            padding: 8px 14px 20px; scroll-behavior: smooth;
-        }
-        .chat-messages { display: flex; flex-direction: column; gap: 7px; padding-top: 15px; }
-
-        .chat-message {
-            display: flex; align-items: center; gap: 10px; padding: 9px 14px;
-            background: rgba(255, 255, 255, 0.035); border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-left: 3px solid #6366f1;
-            font-size: 13px; opacity: 0; transform: translateY(12px) scale(0.97);
-            animation: fadeInUpChat 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transition: opacity 0.6s ease, transform 0.6s ease;
-            will-change: transform, opacity;
-        }
-        @keyframes fadeInUpChat {
-            from { opacity: 0; transform: translateY(12px) scale(0.97); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .chat-message.fade-out {
-            opacity: 0 !important; transform: translateY(-20px) scale(0.9) !important;
-            pointer-events: none; transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        .chat-message .avatar {
-            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; background: linear-gradient(135deg, rgba(79, 70, 229, 0.3), rgba(124, 58, 237, 0.35));
-            border: 1px solid rgba(255,255,255,0.12);
-        }
-        .chat-message .vip-tag {
-            font-size: 9.5px; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15);
-            padding: 1px 6px; border-radius: 6px; text-transform: uppercase;
-        }
-        .chat-message .username { font-weight: 800; color: #f1f5f9; font-size: 12.5px; white-space: nowrap; }
-        .chat-message .text { color: #cbd5e1; font-size: 13px; font-weight: 500; word-break: break-word; flex: 1; }
-        .chat-message .time { color: #64748b; font-size: 10.5px; margin-left: auto; white-space: nowrap; font-weight: 600; }
-
-        .emoji-picker-wrapper {
-            position: sticky; bottom: 8px; z-index: 20; display: flex; justify-content: flex-end;
-            padding-right: 6px; margin-top: auto;
-        }
-        .emoji-picker-btn {
-            background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer;
-            transition: 0.25s; display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(12px); box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-            color: #e2e8f0; position: relative;
-        }
-        .emoji-picker-btn:hover { transform: scale(1.1); background: rgba(99, 102, 241, 0.35); }
-        .emoji-picker-btn .emoji-list {
-            position: absolute; bottom: 56px; right: 0;
-            background: #111726; border-radius: 16px; padding: 8px 10px;
-            display: none; gap: 6px; border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.7); width: 180px; justify-content: center;
-        }
-        .emoji-picker-btn .emoji-list.open { display: flex; }
-        .emoji-picker-btn .emoji-list span {
-            font-size: 22px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: 0.2s;
-        }
-        .emoji-picker-btn .emoji-list span:hover { background: rgba(99, 102, 241, 0.25); transform: scale(1.2); }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.25); border-radius: 6px; }
-
-        .flying-reaction {
-            position: fixed; font-size: 30px; z-index: 4; pointer-events: none;
-            animation: flyUpSmooth 2.8s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
-            will-change: transform, opacity;
-        }
-        @keyframes flyUpSmooth {
-            0% { opacity: 0; transform: translateY(0) scale(0.3) rotate(0deg); }
-            15% { opacity: 1; transform: translateY(-30px) scale(1.2) rotate(8deg); }
-            40% { opacity: 1; transform: translateY(-110px) scale(1.0) rotate(-5deg); }
-            70% { opacity: 0.85; transform: translateY(-220px) scale(0.85) rotate(10deg); }
-            100% { opacity: 0; transform: translateY(-340px) scale(0.4) rotate(-8deg); }
+        .segmented-btn.active {
+            background: var(--surface-1);
+            color: #fff;
+            border: 1px solid var(--border-subtle);
         }
 
-        @media (max-width: 600px) {
-            body { padding: 8px; }
-            .video-wrapper { padding: 6px; border-radius: 16px; }
-            .headline { font-size: 14.5px; margin: 8px 0 4px; }
-            .claim-btn { padding: 14px 28px; font-size: 16px; max-width: 100%; }
-            .popup-card { padding: 18px 16px; max-width: 360px; }
-            .popup-title { font-size: 19px; }
-            .popup-claim-btn { font-size: 15.5px; padding: 13px; }
-            .chat-section { border-radius: 14px; margin-top: 4px; }
-            .chat-message { padding: 7px 10px; font-size: 12px; gap: 6px; }
-            .chat-message .avatar { width: 28px; height: 28px; font-size: 12px; }
+        /* Dashboard Section */
+        #dashboardSection { display: none; }
+
+        .welcome-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 16px;
         }
+        .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
+        .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+        .link-selector-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .link-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #fff;
+        }
+        .link-badge strong {
+            color: var(--accent-cyan);
+            font-family: monospace;
+            font-size: 13.5px;
+        }
+
+        /* Progress Bar */
+        .timeline-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
+        .badge-status {
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+        .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+        .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+        .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
+
+        .progress-bar-bg {
+            width: 100%; height: 7px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+        .progress-bar-fill.active { background: var(--success); }
+        .progress-bar-fill.warning { background: var(--warning); }
+        .progress-bar-fill.expired { background: var(--danger); }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+        .metric-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+
+        /* ==================== 💎 SLIM STACKED PLAN LIST (LINE-BY-LINE) ==================== */
+        .plan-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .plan-row-item {
+            background: var(--surface-2);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .plan-row-item:hover {
+            border-color: var(--primary-light);
+            background: rgba(79, 70, 229, 0.08);
+        }
+        .plan-row-item.selected {
+            border-color: var(--primary-light);
+            background: rgba(79, 70, 229, 0.14);
+            box-shadow: 0 4px 18px rgba(79, 70, 229, 0.22);
+        }
+
+        .plan-row-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .plan-radio-circle {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .plan-row-item.selected .plan-radio-circle {
+            border-color: var(--primary-light);
+            background: var(--primary);
+        }
+        .plan-row-item.selected .plan-radio-circle::after {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        .plan-meta h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .plan-meta p {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .plan-row-right {
+            text-align: right;
+        }
+        .plan-price-tag {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--accent-cyan);
+        }
+
+        .plan-badge-pill {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .plan-badge-pill.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .plan-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+
+        /* Payment Summary Box */
+        .payment-panel {
+            background: var(--surface-2);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .qr-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .qr-wrapper img {
+            width: 120px; height: 120px;
+            background: #fff;
+            padding: 6px;
+            border-radius: 10px;
+        }
+
+        .payment-info { flex: 1; min-width: 220px; }
+        .upi-copy-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #080c14;
+            border: 1px solid var(--border-subtle);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .upi-copy-chip:hover { border-color: var(--border-hover); }
+
+        /* Table */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+        }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th {
+            background: #080c14;
+            padding: 11px 14px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-align: left;
+            font-size: 11.5px;
+        }
+        .data-table td {
+            padding: 11px 14px;
+            border-top: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        /* Custom Modal Dialog (Replaces native browser alert) */
+        .custom-dialog-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .custom-dialog-overlay.active { display: flex; animation: fadeInDialog 0.2s ease; }
+        @keyframes fadeInDialog { from { opacity: 0; } to { opacity: 1; } }
+
+        .custom-dialog-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
+        .dialog-icon { font-size: 34px; margin-bottom: 8px; }
+        .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+        .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
+
+        /* Generic Modals */
+        .app-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app-modal.active { display: flex; }
+
+        .modal-body-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            max-width: 500px;
+            width: 100%;
+            padding: 22px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+        .modal-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 10px;
+        }
+        .modal-header-row h3 { font-size: 16px; font-weight: 800; color: #fff; }
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .guide-item { margin-bottom: 14px; }
+        .guide-item h4 { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .guide-item p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
     </style>
 </head>
 <body>
-    <div class="ambient-glow"></div>
+    <div class="ambient-layer"></div>
 
-    <div class="top-section">
-        <div class="video-wrapper">
-            <div class="video-container" id="videoContainer">
-                <div class="video-badge-live">
-                    <span class="live-dot"></span> LIVE
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar">
+        <a href="#" class="navbar-brand">
+            <div class="brand-badge-icon">⚡</div>
+            <span class="brand-title">MY DASHBOARD</span>
+        </a>
+
+        <div class="navbar-right">
+            <div class="user-pill" id="navUserBadge" style="display:none;">
+                <span class="live-indicator"></span>
+                <span id="navUserName">Gamer</span>
+            </div>
+
+            <!-- 3-Dot Menu Button (Hidden on login page, visible only after login) -->
+            <button class="btn-kebab" id="btnKebab" onclick="toggleDropdown()" title="Menu">⋮</button>
+
+            <!-- 3-Dot Options Dropdown -->
+            <div class="kebab-dropdown" id="kebabDropdown">
+                <div class="dropdown-link" onclick="openPlansModal()">
+                    <span>💎</span> Renewal Plans
                 </div>
-                <div id="videoPlayer"></div>
-                <!-- 🚫 Transparent touch barrier: User cannot tap to pause or stop video during 1st watch -->
-                <div class="video-overlay" id="videoOverlay"></div>
-            </div>
-            <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
-            <div class="claim-btn-wrapper" id="claimBtnWrapper">
-                <!-- 🎁 NORMAL GLOWING CLAIM BUTTON -->
-                <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
+                <div class="dropdown-link" onclick="openGuideModal()">
+                    <span>📖</span> How to Use
+                </div>
+                <a href="https://wa.me/916372923348" target="_blank" class="dropdown-link" id="supportLink">
+                    <span>💬</span> Support
+                </a>
+                <div class="dropdown-link" onclick="openTermsModal()">
+                    <span>📜</span> Terms & Rules
+                </div>
+                <div class="dropdown-link danger" id="btnLogout" onclick="performLogout()" style="display:none;">
+                    <span>🚪</span> Logout
+                </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Live Chat Section -->
-    <div class="chat-section" id="chatSection">
-        <div class="chat-header-bar">
-            <span class="chat-title">💬 Live Activity Chat</span>
-            <span class="online-badge"><span class="online-dot"></span> 1.8k Online</span>
+    <main class="content-wrap">
+        <!-- ==================== AUTH VIEW (SIGN IN / SIGN UP) ==================== -->
+        <div id="authSection" style="max-width:420px; margin:40px auto 0;">
+            <div class="pro-card">
+                <div class="auth-segmented">
+                    <div class="segmented-btn active" id="tabLogin" onclick="switchAuth('login')">Sign In</div>
+                    <div class="segmented-btn" id="tabRegister" onclick="switchAuth('register')">Sign Up</div>
+                </div>
+
+                <!-- Sign In Form -->
+                <form id="formSignIn" onsubmit="submitSignIn(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="inEmail" class="form-input" placeholder="Enter Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" id="inPhone" class="form-input" placeholder="Enter Your Number" required>
+                    </div>
+                    <button type="submit" class="btn-action" id="btnSubmitLogin">
+                        <span>Sign In</span>
+                    </button>
+                </form>
+
+                <!-- Sign Up Form (With Mandatory Terms Checkbox in English) -->
+                <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="upName" class="form-input" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="upEmail" class="form-input" placeholder="Enter Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" id="upPhone" class="form-input" placeholder="Enter Your Number" required>
+                    </div>
+
+                    <!-- Mandatory Checkbox in English -->
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="upTermsCheck" required>
+                        <span class="checkbox-label">
+                            I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize link management.
+                        </span>
+                    </label>
+
+                    <button type="submit" class="btn-action" id="btnSubmitRegister">
+                        <span>Create Account</span>
+                    </button>
+                </form>
+            </div>
         </div>
-        <div class="chat-container" id="chatContainer">
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="emoji-picker-wrapper">
-                <div class="emoji-picker-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker()">
-                    😊
-                    <div class="emoji-list" id="emojiList">
-                        <span onclick="triggerReaction('🥳', event)">🥳</span>
-                        <span onclick="triggerReaction('🤩', event)">🤩</span>
-                        <span onclick="triggerReaction('😍', event)">😍</span>
-                        <span onclick="triggerReaction('🔥', event)">🔥</span>
-                        <span onclick="triggerReaction('💎', event)">💎</span>
+
+        <!-- ==================== AUTHENTICATED DASHBOARD VIEW ==================== -->
+        <div id="dashboardSection">
+            <!-- Welcome Header -->
+            <div class="welcome-header">
+                <div class="welcome-title">
+                    <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
+                    <p>Protected Account • Only links registered to your identity are displayed</p>
+                </div>
+                <button class="btn-action btn-secondary" onclick="openPlansModal()" style="width:auto; padding:9px 16px; font-size:13px;">
+                    <span>💎 Renewal Plans</span>
+                </button>
+            </div>
+
+            <!-- Active Link Selector Bar -->
+            <div class="link-selector-card">
+                <div class="link-badge">
+                    <span>Active Link:</span>
+                    <strong id="displayLinkId">Detecting link...</strong>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="customLinkInput" class="form-input" placeholder="Enter Link ID / URL" style="padding:6px 10px; font-size:12.5px; width:170px;">
+                    <button class="btn-action" onclick="switchActiveLink()" style="width:auto; padding:6px 12px; font-size:12px;">
+                        Connect
+                    </button>
+                </div>
+            </div>
+
+            <!-- Expiry Progress Bar -->
+            <div class="timeline-card">
+                <div class="timeline-header">
+                    <span class="timeline-label">Validity Status</span>
+                    <span class="badge-status active" id="badgeExpiry">Active</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
+                    <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
+                    <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">Lifetime</strong></span>
+                </div>
+            </div>
+
+            <!-- Analytics Row -->
+            <div class="stats-row">
+                <div class="metric-card">
+                    <div class="metric-value" id="metricToday">0</div>
+                    <div class="metric-title">Today Visits</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metric24h">0</div>
+                    <div class="metric-title">Last 24 Hours</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metric7d">0</div>
+                    <div class="metric-title">Last 7 Days</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricClaims" style="color:var(--success);">0</div>
+                    <div class="metric-title">Total Claims</div>
+                </div>
+            </div>
+
+            <!-- Recent 7 Renewal History Records -->
+            <div class="pro-card">
+                <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Renewal History (Past 7 Records)</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Plan</th>
+                                <th>Amount</th>
+                                <th>Reference ID</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableRows">
+                            <tr>
+                                <td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">
+                                    No transaction records found
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 💎 RENEWAL PLANS MODAL (COMPACT STACKED LIST) ==================== -->
+    <div class="app-modal" id="plansModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3>💎 Extension Plans</h3>
+                <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
+            </div>
+
+            <!-- 📋 SLIM STACKED PLAN LIST (LINE-BY-LINE) -->
+            <div class="plan-list-container">
+                <!-- 7 Days -->
+                <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>7 Days Extension</h4>
+                            <p>₹14.2 / day • Starter Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹100</div>
+                    </div>
+                </div>
+
+                <!-- 15 Days -->
+                <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>15 Days Extension</h4>
+                            <p>₹13.3 / day • Standard Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹200</div>
+                    </div>
+                </div>
+
+                <!-- 30 Days (Popular) -->
+                <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>30 Days Extension <span class="plan-badge-pill popular">POPULAR</span></h4>
+                            <p>₹13.3 / day • Most Recommended</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹400</div>
+                    </div>
+                </div>
+
+                <!-- 90 Days (Save 15%) -->
+                <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>90 Days Extension <span class="plan-badge-pill save">SAVE 15%</span></h4>
+                            <p>₹11.1 / day • Quarterly Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹1000</div>
+                    </div>
+                </div>
+
+                <!-- 1 Year (Best Value) -->
+                <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>1 Year Extension <span class="plan-badge-pill best">BEST VALUE</span></h4>
+                            <p>₹8.2 / day • Maximum Savings</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹3000</div>
                     </div>
                 </div>
             </div>
+
+            <!-- Payment Details (QR & UPI ID) -->
+            <div class="payment-panel">
+                <div class="qr-wrapper">
+                    <img id="qrImageElement" src="" alt="Payment QR">
+                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan to Pay</span>
+                </div>
+                <div class="payment-info">
+                    <div class="upi-copy-chip" onclick="copyUpiText()">
+                        <span>UPI: <strong id="upiIdDisplay">admin@upi</strong></span>
+                        <span>📋</span>
+                    </div>
+
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+                        Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
+                        Scan QR or pay to UPI ID, then submit your renewal request below.
+                    </div>
+
+                    <!-- 📩 EXCLUSIVELY MANUAL VERIFY / WHATSAPP REQUEST RENEWAL BUTTON -->
+                    <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
+                        <span>📩 Request Admin Renewal via WhatsApp</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ==================== ✨ ENTRANCE POPUP MODAL ✨ ==================== -->
-    <div class="popup-overlay" id="popupOverlay">
-        <div class="popup-card" id="popupCard">
-            <!-- 16:9 Banner Container -->
-            <div class="popup-image-container" id="popupImageContainer">
-                <div class="popup-placeholder" id="popupPlaceholder">
-                    🎬
-                    <span>Reward Banner (16:9)</span>
-                </div>
-                <img id="popupImg" class="popup-main-img" referrerpolicy="no-referrer" style="display:none;" alt="16:9 Banner Image">
+    <!-- ==================== 📖 HOW TO USE MODAL (100% ENGLISH) ==================== -->
+    <div class="app-modal" id="guideModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3>📖 How to Use Your Dashboard</h3>
+                <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
+            </div>
+            
+            <div class="guide-item">
+                <h4>1. Account Access & Ownership</h4>
+                <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
             </div>
 
-            <div class="popup-pill-tag">
-                <span class="tag-dot"></span> Special Reward Unlocked
+            <div class="guide-item">
+                <h4>2. Traffic & Claim Analytics</h4>
+                <p>Track real-time performance of your active links, including Today Visits, 24-hour visitors, 7-day trends, and reward claims.</p>
             </div>
-            <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
-            <div class="popup-sub" id="popupSub">Tap below to unlock your reward</div>
-            <button class="popup-claim-btn" id="popupClaimBtn">
-                <span>🔓 Unlock Now</span> <span>➜</span>
+
+            <div class="guide-item">
+                <h4>3. Selecting an Extension Plan</h4>
+                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
+            </div>
+
+            <!-- Explicitly Named "Payment Verification" -->
+            <div class="guide-item">
+                <h4>4. Payment Verification</h4>
+                <p>Scan the dynamic QR code with any UPI app. After sending payment, click "Request Admin Renewal" to notify the administrator for instant approval.</p>
+            </div>
+
+            <div class="guide-item">
+                <h4>5. Manual Admin Assistance</h4>
+                <p>Clicking "Request Admin Renewal" opens WhatsApp with pre-composed transaction details for direct review and extension.</p>
+            </div>
+
+            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
+                <span>Understood, Close Guide</span>
             </button>
         </div>
     </div>
 
-    <div class="confetti-container" id="confettiContainer"></div>
+    <!-- ==================== 📜 TERMS & RULES MODAL (100% ENGLISH - NO BHARATPE) ==================== -->
+    <div class="app-modal" id="termsModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3>📜 Terms & Guidelines</h3>
+                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
+            </div>
+            
+            <div class="guide-item">
+                <h4>1. Account Integrity</h4>
+                <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
+            </div>
+
+            <div class="guide-item">
+                <h4>2. Genuine Payment Submissions</h4>
+                <p>Submission of fabricated, duplicate, or expired reference numbers will result in immediate account suspension.</p>
+            </div>
+
+            <div class="guide-item">
+                <h4>3. Extension Policy</h4>
+                <p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p>
+            </div>
+
+            <div class="guide-item">
+                <h4>4. Support Desk</h4>
+                <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
+            </div>
+
+            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;">
+                <span>I Understand & Agree</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 🔔 CUSTOM MODAL DIALOG (REPLACES NATIVE ALERT) ==================== -->
+    <div class="custom-dialog-overlay" id="customDialog">
+        <div class="custom-dialog-card">
+            <div class="dialog-icon" id="dialogIcon">🔔</div>
+            <div class="dialog-title" id="dialogTitle">Notification</div>
+            <div class="dialog-message" id="dialogMessage">Alert message goes here.</div>
+            <button class="btn-action" onclick="closeCustomDialog()">OK</button>
+        </div>
+    </div>
 
     <script>
-        // ==================== CONFIG & CLEAN ID RESOLVER ====================
-        let pathClean = window.location.pathname.replace(/\/+$/, '');
-        let linkId = pathClean.split('/').pop() || 'default';
-        if (linkId.includes('?')) linkId = linkId.split('?')[0];
+        // ==================== APPLICATION STATE ====================
+        let userProfile = null;
+        let activeLinkRecord = null;
+        let activePlan = { key: '30days', days: 30, cost: 400 };
+        let activeAdminUpi = 'admin@upi';
+        let adminPhone = '916372923348';
 
-        const urlParams = new URLSearchParams(window.location.search);
-        let videoUrl = urlParams.get('video') || localStorage.getItem('videoUrl') || 'https://youtu.be/dQw4w9WgXcQ';
-        let claimUrl = urlParams.get('claim') || localStorage.getItem('claimUrl') || '#';
-        let buttonText = urlParams.get('btn') || localStorage.getItem('buttonText') || 'Claim Now';
-        let headline = urlParams.get('headline') || localStorage.getItem('headline') || '🎬 Watch Video & Unlock Reward';
-
-        document.getElementById('headline').textContent = headline;
-        document.getElementById('claimBtn').textContent = buttonText ? '🎁 ' + buttonText : '🎁 Claim Now';
-
-        // Robust YouTube URL Parser
-        function fixYouTubeUrl(url) {
-            if (!url) return 'https://youtu.be/dQw4w9WgXcQ';
-            const clean = url.trim();
-            if (clean.includes('youtube.com/watch?v=')) {
-                const parts = clean.split('v=');
-                const videoId = parts ? parts.split('&')[0] : '';
-                return 'https://youtu.be/' + videoId;
-            }
-            if (clean.includes('youtu.be/')) return clean;
-            if (clean.includes('youtube.com/embed/')) return clean;
-            if (clean.includes('youtube.com/shorts/')) {
-                const parts = clean.split('shorts/');
-                const videoId = parts ? parts.split('?')[0] : '';
-                return 'https://youtu.be/' + videoId;
-            }
-            if (clean.match(/^[a-zA-Z0-9_-]{11}$/)) return 'https://youtu.be/' + clean;
-            return clean;
+        // Custom Sleek Modal Alert (Replaces browser alert)
+        function notify(message, title = 'Notification', icon = 'ℹ️') {
+            document.getElementById('dialogIcon').textContent = icon;
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = message;
+            document.getElementById('customDialog').classList.add('active');
         }
-        videoUrl = fixYouTubeUrl(videoUrl);
-
-        // 100% Reliable YouTube ID Extractor
-        function extractYouTubeId(url) {
-            if (!url) return null;
-            const clean = url.trim();
-            if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
-            const match = clean.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-            return (match && match) ? match : null;
+        function closeCustomDialog() {
+            document.getElementById('customDialog').classList.remove('active');
         }
 
-        // ==================== STATE ====================
-        let isUnlocked = false, isExiting = false;
-        let watchCount = 0; // 0 = first watch (locked), >=1 = second watch (controls enabled)
-        let isVideoPlaying = false, isPopupClaimed = false, isCelebrationActive = false;
-        let isPopupClickProcessed = false;
-        let isRedirecting = false;
-        let isClaimTracked = false;
-
-        const isMobile = window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        // ==================== 🛡️ UNBREAKABLE SITE LOCK (BACK-PRESS TRAP) ====================
-        function floodHistoryLock() {
-            for (let i = 0; i < 30; i++) {
-                history.pushState({ locked: true, id: i }, null, window.location.href);
-            }
-        }
-        floodHistoryLock();
-
-        // Har back press par turant 25 nayi states flood hongi (User lagatar fast back press karke bhi exit nahi ho sakega)
-        window.addEventListener('popstate', function(e) {
-            if (isExiting) return;
-
-            if (!isUnlocked) {
-                for (let i = 0; i < 25; i++) {
-                    history.pushState({ locked: true, t: Date.now() + i }, null, window.location.href);
-                }
-                if (navigator.vibrate) navigator.vibrate(60);
-                return false;
-            } else {
-                // Video finish hone par hi exit allow hoga
-                isExiting = true;
-                document.body.innerHTML = '';
-                window.location.replace('about:blank');
-            }
-        });
-
-        // Background interval check to ensure history stack is continuously locked
-        setInterval(() => {
-            if (!isUnlocked) {
-                history.pushState({ locked: true }, null, window.location.href);
-            }
-        }, 1000);
-
-        document.addEventListener('keydown', function(e) {
-            if (['Escape', 'F5'].includes(e.key) || (e.ctrlKey && ['w', 'r'].includes(e.key)) || (e.altKey && e.key === 'F4')) {
-                e.preventDefault(); e.stopPropagation();
-                return false;
-            }
-        }, true);
-
-        // ==================== AUDIO SYNTHESIZER ====================
-        function playCelebrationSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const notes = [523.25, 587.33, 659.25, 783.99, 1046.50];
-                notes.forEach((freq, index) => {
-                    setTimeout(() => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        osc.connect(gain); gain.connect(audioCtx.destination);
-                        osc.frequency.value = freq; osc.type = 'sine';
-                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.35);
-                    }, index * 120);
-                });
-                setTimeout(() => {
-                    const freqs = [523.25, 659.25, 783.99, 1046.50];
-                    freqs.forEach((freq, i) => {
-                        setTimeout(() => {
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
-                            osc.connect(gain); gain.connect(audioCtx.destination);
-                            osc.frequency.value = freq; osc.type = 'sine';
-                            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-                            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.6);
-                        }, i * 80);
-                    });
-                }, 550);
-            } catch(e) {}
-        }
-
-        // ==================== CONFETTI ENGINE ====================
-        function triggerCelebration() {
-            if (isCelebrationActive) return;
-            isCelebrationActive = true;
-            const container = document.getElementById('confettiContainer');
-            container.innerHTML = ''; container.classList.add('active');
-            playCelebrationSound();
-
-            const colors = ['#6366f1', '#8b5cf6', '#10b981', '#3b82f6', '#f59e0b', '#f43f5e', '#ec4899', '#14b8a6', '#f97316'];
-            const burstCount = isMobile ? 35 : 60;
-            const fallCount = isMobile ? 50 : 80;
-
-            for (let i = 0; i < burstCount; i++) {
-                const el = document.createElement('div');
-                el.className = 'confetti-burst-piece';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
-                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
-                el.style.width = w + 'px'; el.style.height = h + 'px';
-                el.style.background = color;
-                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = isMobile ? 80 + Math.random() * 200 : 150 + Math.random() * 400;
-                const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist - (isMobile ? 50 : 100);
-                const tx3 = Math.cos(angle + 0.8) * (dist * 0.25), ty3 = Math.sin(angle + 0.8) * (dist * 0.25) - (isMobile ? 15 : 20);
-                el.style.setProperty('--tx', tx + 'px'); el.style.setProperty('--ty', ty + 'px');
-                el.style.setProperty('--tx3', tx3 + 'px'); el.style.setProperty('--ty3', ty3 + 'px');
-                el.style.left = '50%'; el.style.top = '45%';
-                container.appendChild(el);
-            }
-
-            for (let i = 0; i < fallCount; i++) {
-                const el = document.createElement('div');
-                el.className = 'confetti-piece';
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const w = isMobile ? 3 + Math.random() * 5 : 6 + Math.random() * 12;
-                const h = isMobile ? 4 + Math.random() * 7 : 8 + Math.random() * 14;
-                el.style.width = w + 'px'; el.style.height = h + 'px';
-                el.style.background = color;
-                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                const angle = Math.random() * 2 * Math.PI;
-                el.style.left = Math.random() * 100 + '%';
-                el.style.top = '-10%';
-                const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
-                el.style.animationDuration = duration + 's';
-                container.appendChild(el);
-            }
-
-            setTimeout(() => { 
-                container.innerHTML = ''; 
-                container.classList.remove('active'); 
-                isCelebrationActive = false; 
-            }, isMobile ? 1800 : 2500);
-        }
-
-        // ==================== 📸 ADVANCED IMAGE RESOLVER & 16:9 BANNER LOADER ====================
-        // Google Drive, Imgur, Dropbox direct high-speed image converter
-        function sanitizeImageUrl(url) {
-            if (!url) return '';
-            let u = url.trim();
-
-            // Google Drive share link -> Direct CDN image
-            if (u.includes('drive.google.com')) {
-                const m = u.match(/\/d\/([a-zA-Z0-9_-]+)/) || u.match(/id=([a-zA-Z0-9_-]+)/);
-                if (m && m) {
-                    return `https://lh3.googleusercontent.com/d/${m}`;
-                }
-            }
-
-            // Imgur page -> Direct image
-            if (u.includes('imgur.com/') && !u.includes('i.imgur.com') && !u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-                const m = u.match(/imgur\.com\/([a-zA-Z0-9]+)/);
-                if (m && m) {
-                    return `https://i.imgur.com/${m}.png`;
-                }
-            }
-
-            // Dropbox link -> Direct raw image
-            if (u.includes('dropbox.com') && u.includes('dl=0')) {
-                return u.replace('dl=0', 'raw=1');
-            }
-
-            return u;
-        }
-
-        // Deep scanner to pull 16:9 image from all possible API response keys
-        function findImageUrl(obj) {
-            if (!obj) return null;
-            const pop = obj.popupSettings || {};
-            const candidates = [
-                pop.image,
-                pop.imageUrl,
-                pop.banner,
-                pop.bannerUrl,
-                pop.popupImage,
-                pop.popupImageUrl,
-                obj.popupImage,
-                obj.popupImageUrl,
-                obj.image,
-                obj.imageUrl,
-                obj.banner,
-                obj.bannerUrl,
-                obj.bannerImage,
-                obj.img,
-                obj.imgUrl,
-                obj.linkImage,
-                obj.thumbnail
-            ];
-            for (const c of candidates) {
-                if (c && typeof c === 'string' && c.trim().length > 5 && !c.includes('youtube.com') && !c.includes('youtu.be')) {
-                    return c.trim();
-                }
-            }
-            return null;
-        }
-
-        function renderBannerImage(rawUrl) {
-            const cleanUrl = sanitizeImageUrl(rawUrl);
-            const img = document.getElementById('popupImg');
-            const placeholder = document.getElementById('popupPlaceholder');
-
-            if (!cleanUrl || cleanUrl.length < 5) {
-                img.style.display = 'none';
-                if (placeholder) placeholder.style.display = 'flex';
-                return;
-            }
-
-            img.referrerPolicy = 'no-referrer'; // Bypasses hotlink blocks on image hosts
-
-            function showImage() {
-                img.style.display = 'block';
-                if (placeholder) placeholder.style.display = 'none';
-            }
-
-            function hideImage() {
-                // Secondary attempt with standard referrer if no-referrer is rejected by certain servers
-                if (img.referrerPolicy === 'no-referrer') {
-                    img.referrerPolicy = 'strict-origin-when-cross-origin';
-                    img.src = cleanUrl;
-                } else {
-                    img.style.display = 'none';
-                    if (placeholder) placeholder.style.display = 'flex';
-                }
-            }
-
-            // Event handlers attached before setting src
-            img.onload = showImage;
-            img.onerror = hideImage;
-            img.src = cleanUrl;
-
-            // Instant execution if browser already cached the image
-            if (img.complete && img.naturalWidth > 0) {
-                showImage();
-            }
-        }
-
-        async function loadPopupData() {
-            let foundBanner = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') || urlParams.get('popup');
-
-            // 1. Fetch Link Data from API
-            try {
-                const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
-                if (response.ok) {
-                    const data = await response.json();
-
-                    if (data.video && data.video.trim().length > 5) videoUrl = fixYouTubeUrl(data.video.trim());
-                    if (data.claim && data.claim.trim().length > 1) claimUrl = data.claim.trim();
-                    if (data.buttonText) {
-                        buttonText = data.buttonText;
-                        document.getElementById('claimBtn').textContent = '🎁 ' + buttonText;
-                    }
-                    if (data.headline) {
-                        headline = data.headline;
-                        document.getElementById('headline').textContent = headline;
-                    }
-
-                    let popup = data.popupSettings;
-                    if (typeof popup === 'string') {
-                        try { popup = JSON.parse(popup); } catch(e) { popup = {}; }
-                    }
-                    popup = popup || {};
-
-                    if (popup.title) document.getElementById('popupTitle').textContent = popup.title;
-                    if (popup.subtitle) document.getElementById('popupSub').textContent = popup.subtitle;
-                    if (popup.buttonText) {
-                        const btnSpan = document.getElementById('popupClaimBtn').querySelector('span');
-                        if (btnSpan) btnSpan.textContent = '🔓 ' + popup.buttonText;
-                    }
-
-                    if (!foundBanner) {
-                        foundBanner = findImageUrl(data);
-                    }
-                }
-            } catch (e) {}
-
-            // 2. Fallback to localStorage
-            if (!foundBanner) {
-                foundBanner = localStorage.getItem('popupImage') || localStorage.getItem('bannerImg') || localStorage.getItem('linkBanner');
-            }
-
-            // 3. Fallback to /api/settings (Guaranteed distinct from UID 9:16 background)
-            if (!foundBanner) {
+        // Initialize Session on Load
+        function initApp() {
+            const cached = localStorage.getItem('activeUserSession');
+            if (cached) {
                 try {
-                    const res = await fetch(`/api/settings?nocache=${Date.now()}`);
-                    if (res.ok) {
-                        const s = await res.json();
-                        const bg = (s.background || '').trim();
-                        const popImg = (s.popupSettings && s.popupSettings.image) ? s.popupSettings.image.trim() : '';
-                        if (popImg && popImg.length > 5 && popImg !== bg) {
-                            foundBanner = popImg;
-                        }
-                    }
-                } catch(e) {}
-            }
-
-            if (foundBanner) {
-                localStorage.setItem('bannerImg', foundBanner);
-                renderBannerImage(foundBanner);
+                    userProfile = JSON.parse(cached);
+                    showDashboardView();
+                } catch(e) {
+                    localStorage.removeItem('activeUserSession');
+                    hide3DotMenu();
+                }
             } else {
-                renderBannerImage(null);
+                hide3DotMenu();
             }
         }
 
-        function showPopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('hidden');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
+        function hide3DotMenu() {
+            document.getElementById('btnKebab').style.display = 'none';
+            document.getElementById('kebabDropdown').classList.remove('show');
         }
 
-        function hidePopup() {
-            const overlay = document.getElementById('popupOverlay');
-            overlay.classList.remove('show');
-            overlay.classList.add('hidden');
-            document.body.style.overflow = '';
+        function show3DotMenu() {
+            document.getElementById('btnKebab').style.display = 'flex';
         }
 
-        // ==================== UNLOCK & PLAY SYSTEM ====================
-        function unlockAndPlay() {
-            if (isPopupClaimed) return;
-            isPopupClaimed = true;
-            hidePopup();
-
-            // ✨ POPUP CLICK CELEBRATION EFFECT (Confetti + Sound + Ripple) ✨
-            triggerCelebration();
-
-            floodHistoryLock();
-
-            // Round 1 begins: Video is locked initially
-            isUnlocked = false;
-            watchCount = 0;
-            
-            setTimeout(() => {
-                document.getElementById('headline').classList.add('show');
-                document.getElementById('claimBtnWrapper').classList.add('show');
-                document.getElementById('chatSection').classList.add('show');
-                loadVideo();
-                setTimeout(() => {
-                    const iframe = document.getElementById('ytPlayer');
-                    if (iframe) forcePlayVideo(iframe);
-                    const video = document.querySelector('#videoPlayer video');
-                    if (video) video.play().catch(() => {});
-                }, 400);
-            }, 200);
+        // Navigation Dropdown
+        function toggleDropdown() {
+            document.getElementById('kebabDropdown').classList.toggle('show');
         }
-
-        // Called whenever the video finishes playing a cycle
-        function onVideoFinished() {
-            watchCount++;
-            
-            // On 1st watch complete: unlock site lock and enable player controls for 2nd watch!
-            if (!isUnlocked) {
-                isUnlocked = true;
-                document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
-                triggerCelebration();
-                enableUserControls(); // Enables pause/play/seek for 2nd watch!
-            } else {
-                // If it finishes again, continuously restart/loop
-                restartVideoPlayback();
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.navbar-right')) {
+                document.getElementById('kebabDropdown').classList.remove('show');
             }
-        }
-
-        // 🎛️ ENABLES CONTROLS FOR SECOND PLAY AND ONWARDS
-        function enableUserControls() {
-            // Remove transparent barrier so user can interact with player
-            const overlay = document.getElementById('videoOverlay');
-            if (overlay) overlay.style.display = 'none';
-
-            const ytVideoId = extractYouTubeId(videoUrl);
-            const iframe = document.getElementById('ytPlayer');
-            
-            // Reload with full interactive controls (controls=1) and loop active
-            if (iframe && ytVideoId) {
-                iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
-                    '?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1&loop=1&playlist=' + ytVideoId +
-                    '&origin=' + encodeURIComponent(window.location.origin);
-            }
-
-            const video = document.querySelector('#videoPlayer video');
-            if (video) {
-                video.controls = true;
-                video.loop = true;
-                video.play().catch(() => {});
-            }
-        }
-
-        // Restarts video smoothly in an infinite loop
-        function restartVideoPlayback() {
-            const iframe = document.getElementById('ytPlayer');
-            if (iframe) {
-                iframe.contentWindow.postMessage('{"event":"command","func":"seekTo","args":[0, true]}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-            }
-            const video = document.querySelector('#videoPlayer video');
-            if (video) {
-                video.currentTime = 0;
-                video.play().catch(() => {});
-            }
-        }
-
-        function trackClaimOnce() {
-            if (isClaimTracked) return;
-            isClaimTracked = true;
-            fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
-        }
-
-        // Normal claim button action (Always accessible, no lock text)
-        function handleClaimClick() {
-            if (isRedirecting) return;
-            isRedirecting = true;
-            trackClaimOnce();
-            
-            if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
-                setTimeout(() => { window.location.replace(claimUrl); }, 300);
-            } else {
-                setTimeout(() => { alert('🎉 Reward Claimed Successfully!'); }, 300);
-            }
-        }
-
-        function addRipple(e, btn) {
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple';
-            const rect = btn.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            btn.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-        }
-
-        document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            e.stopPropagation(); e.preventDefault();
-            if (isPopupClaimed || isPopupClickProcessed) return;
-            isPopupClickProcessed = true;
-            addRipple(e, this);
-            unlockAndPlay();
         });
 
-        document.getElementById('popupCard').addEventListener('click', function(e) {
-            if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
-            isPopupClickProcessed = true;
-            unlockAndPlay();
-        });
+        // Modals Management
+        function openPlansModal() {
+            document.getElementById('kebabDropdown').classList.remove('show');
+            document.getElementById('plansModal').classList.add('active');
+            updateQrCode(activePlan.cost);
+        }
+        function closePlansModal() {
+            document.getElementById('plansModal').classList.remove('active');
+        }
 
-        document.getElementById('claimBtn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            addRipple(e, this);
-            handleClaimClick();
-        });
+        function openGuideModal() {
+            document.getElementById('kebabDropdown').classList.remove('show');
+            document.getElementById('guideModal').classList.add('active');
+        }
+        function closeGuideModal() {
+            document.getElementById('guideModal').classList.remove('active');
+        }
 
-        // ==================== YOUTUBE & VIDEO ENGINE ====================
-        function forcePlayVideo(iframe) {
+        function openTermsModal(e) {
+            if (e) e.preventDefault();
+            document.getElementById('kebabDropdown').classList.remove('show');
+            document.getElementById('termsModal').classList.add('active');
+        }
+        function closeTermsModal() {
+            document.getElementById('termsModal').classList.remove('active');
+        }
+
+        // Auth switch
+        function switchAuth(mode) {
+            const isLogin = mode === 'login';
+            document.getElementById('tabLogin').classList.toggle('active', isLogin);
+            document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+            document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
+            document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
+        }
+
+        // Sign In
+        async function submitSignIn(e) {
+            e.preventDefault();
+            const email = document.getElementById('inEmail').value.trim();
+            const phone = document.getElementById('inPhone').value.trim();
+            const btn = document.getElementById('btnSubmitLogin');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Verifying...</span>';
+
             try {
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
-            } catch(e) {}
+                const res = await fetch('/api/user/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, phone })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    userProfile = data.user;
+                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                    showDashboardView();
+                } else {
+                    notify(data.error || 'Authentication failed. Please verify credentials.', 'Sign In Failed', '❌');
+                }
+            } catch (err) {
+                notify('Unable to reach server. Please check your network connection.', 'Connection Error', '⚠️');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Sign In</span>';
+            }
         }
 
-        function loadVideo() {
-            const container = document.getElementById('videoPlayer');
-            container.innerHTML = '';
-            
-            const ytVideoId = extractYouTubeId(videoUrl);
-            if (ytVideoId) {
-                const iframe = document.createElement('iframe');
-                iframe.id = 'ytPlayer';
-                // 🛡️ referrerpolicy="strict-origin-when-cross-origin" eliminates Error 153 on YouTube iframe
-                iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-                // Round 1: controls=0 & disablekb=1 prevents user from stopping or pausing
-                iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
-                    '?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&loop=1&playlist=' + ytVideoId +
-                    '&origin=' + encodeURIComponent(window.location.origin);
-                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;z-index:5;';
-                container.appendChild(iframe);
-                
-                iframe.onload = function() {
-                    forcePlayVideo(iframe);
-                    setTimeout(() => forcePlayVideo(iframe), 500);
-                    setTimeout(() => forcePlayVideo(iframe), 1200);
-                };
+        // Sign Up (With Mandatory Terms Validation in English)
+        async function submitSignUp(e) {
+            e.preventDefault();
+            const name = document.getElementById('upName').value.trim();
+            const email = document.getElementById('upEmail').value.trim();
+            const phone = document.getElementById('upPhone').value.trim();
+            const termsAgreed = document.getElementById('upTermsCheck').checked;
+
+            if (!termsAgreed) {
+                notify('Please accept the Terms & Conditions before registering.', 'Terms Required', '⚠️');
                 return;
             }
 
-            // Fallback for MP4 videos
-            const video = document.createElement('video');
-            video.muted = false;
-            video.playsInline = true;
-            video.autoplay = true;
-            video.loop = true;
-            video.controls = false;
-            video.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:5;background:#000;';
-            const source = document.createElement('source');
-            source.src = videoUrl;
-            video.appendChild(source);
-            container.appendChild(video);
-            
-            video.onended = function() {
-                onVideoFinished();
-            };
-            
-            // Auto-resume during Round 1 if paused
-            video.onpause = function() {
-                if (watchCount === 0) video.play().catch(() => {});
-            };
+            const btn = document.getElementById('btnSubmitRegister');
+            btn.disabled = true;
+            btn.innerHTML = '<span>Submitting Registration...</span>';
 
-            video.play().catch(() => {
-                video.muted = true;
-                video.play().catch(() => {});
-            });
-        }
-
-        // YouTube postMessage detector: End hone par loop/unlock, Round 1 me pause hone par auto-resume
-        window.addEventListener('message', function(event) {
             try {
-                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                if (data && data.event === 'onStateChange') {
-                    if (data.info === 0) { // 0 = ENDED (Finished 1 cycle)
-                        onVideoFinished();
-                    } else if (data.info === 2) { // 2 = PAUSED
-                        // Sirf Round 1 me pause block rahega
-                        if (watchCount === 0) {
-                            const iframe = document.getElementById('ytPlayer');
-                            if (iframe) forcePlayVideo(iframe);
-                        }
-                    } else if (data.info === 1) {
-                        isVideoPlaying = true;
-                    }
-                }
-            } catch (err) {}
-        });
+                const res = await fetch('/api/user/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone })
+                });
+                const data = await res.json();
 
-        // ==================== ALL 20 GAMERS LIVE CHAT WITH HUMAN TIME ====================
-        const users = [
-            { name: 'GamerPro', emoji: '🎮', vip: true }, { name: 'KingSlayer', emoji: '👑', vip: true }, { name: 'NightWolf', emoji: '🐺', vip: false },
-            { name: 'ShadowX', emoji: '🌙', vip: false }, { name: 'BlazeIt', emoji: '🔥', vip: true }, { name: 'SniperPro', emoji: '🎯', vip: false },
-            { name: 'DemonKing', emoji: '😈', vip: true }, { name: 'Phoenix', emoji: '🐦', vip: false }, { name: 'DarkKnight', emoji: '🦇', vip: true },
-            { name: 'StarGamer', emoji: '⭐', vip: false }, { name: 'ThunderX', emoji: '⚡', vip: true }, { name: 'IceQueen', emoji: '❄️', vip: false },
-            { name: 'FireLord', emoji: '🔥', vip: true }, { name: 'CryptoKing', emoji: '💰', vip: true }, { name: 'GhostRider', emoji: '👻', vip: false },
-            { name: 'Venom', emoji: '🕷️', vip: false }, { name: 'WizardX', emoji: '🧙', vip: true }, { name: 'NinjaPro', emoji: '🥷', vip: false },
-            { name: 'DragonSlayer', emoji: '🐉', vip: true }, { name: 'MysticMoon', emoji: '🌙', vip: false }
-        ];
-        const messages = [
-            'Thanks bhai! 500₹ ka code mil gaya!🥳', 'Redeem code working 100%!💎', '1000₹ ka redeem code milgeya 🎁',
-            'Best website ever bro🥰', 'Kya hi mast trick hai 🤩!', 'Bro thanks a lot for the code🥳',
-            'Amazing! 100% trusted 🥳', ',Mujhe 2000₹ code milgeya💎', 'Love this reward', 'Best app for gamers!',
-            'Working perfectly bhai!', 'Awesome experience!', 'Claimed successfully!', 'Super fast reward!',
-            'Thanks team!', 'Nice! Working 100% 😱!', 'Love it, instant delivery!', 'Booyah! Got the skin!'
-        ];
-        const chatContainer = document.getElementById('chatMessages');
-        let activeChatList = [];
-
-        function formatHumanTime(diffSec) {
-            if (diffSec <= 1) return 'just now';
-            if (diffSec < 60) return diffSec + 's ago';
-            const m = Math.floor(diffSec / 60);
-            return m + 'm ago';
-        }
-
-        function updateChatTimes() {
-            const now = Date.now();
-            activeChatList.forEach(item => {
-                const diff = Math.max(0, Math.floor((now - item.created) / 1000));
-                const timeSpan = item.el.querySelector('.time');
-                if (timeSpan) timeSpan.textContent = formatHumanTime(diff);
-            });
-        }
-
-        function addChat() {
-            const user = users[Math.floor(Math.random() * users.length)];
-            const msg = messages[Math.floor(Math.random() * messages.length)];
-            const el = document.createElement('div');
-            el.className = 'chat-message';
-            el.innerHTML = `
-                <span class="avatar">${user.emoji}</span>
-                <span class="username">${user.name}</span>
-                ${user.vip ? '<span class="vip-tag">VIP</span>' : ''}
-                <span class="text">${msg}</span>
-                <span class="time">just now</span>
-            `;
-            chatContainer.appendChild(el);
-            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
-
-            activeChatList.push({ el: el, created: Date.now() });
-
-            while (activeChatList.length > 25) {
-                const oldest = activeChatList.shift();
-                if (oldest && oldest.el && oldest.el.parentNode) oldest.el.parentNode.removeChild(oldest.el);
-            }
-            applyFadeEffect();
-        }
-
-        function applyFadeEffect() {
-            const msgs = chatContainer.querySelectorAll('.chat-message');
-            const total = msgs.length;
-            msgs.forEach((msg, index) => {
-                if (index >= total - 4) {
-                    msg.classList.remove('fade-out');
-                    msg.style.opacity = '1';
-                } else if (index >= total - 8) {
-                    msg.classList.remove('fade-out');
-                    msg.style.opacity = '0.75';
+                if (res.ok && data.success) {
+                    notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
+                    switchAuth('login');
                 } else {
-                    msg.classList.add('fade-out');
+                    notify(data.error || 'Registration failed.', 'Registration Failed', '❌');
+                }
+            } catch (err) {
+                notify('Connection error during registration.', 'Error', '⚠️');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Create Account</span>';
+            }
+        }
+
+        // View Dashboard
+        function showDashboardView() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('navUserBadge').style.display = 'flex';
+            document.getElementById('btnLogout').style.display = 'flex';
+
+            // Show 3-dot menu ONLY after login
+            show3DotMenu();
+
+            document.getElementById('navUserName').textContent = userProfile.name;
+            document.getElementById('labelUserName').textContent = userProfile.name;
+
+            fetchUserLinkData();
+        }
+
+        // Safe Link Query: checks saved linkId, query parameter, or user name
+        async function fetchUserLinkData(explicitInput) {
+            const displayEl = document.getElementById('displayLinkId');
+            displayEl.textContent = 'Fetching link details...';
+
+            let candidate = explicitInput;
+            if (!candidate) {
+                const urlParam = new URLSearchParams(window.location.search).get('link');
+                const pathId = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+                const cachedId = localStorage.getItem('userActiveLinkId');
+
+                candidate = urlParam || (pathId !== 'user-dashboard' ? pathId : null) || cachedId || userProfile.name;
+            }
+
+            try {
+                const res = await fetch('/api/user/link-details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName: userProfile.name, linkInput: candidate })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    activeLinkRecord = data.link;
+                    activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
+                    adminPhone = data.whatsappNumber || '916372923348';
+
+                    // Update live pricing if present from database
+                    if (data.pricing) {
+                        applyLivePricing(data.pricing);
+                    }
+
+                    // Update Support Link
+                    document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
+
+                    // Cache verified linkId
+                    localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
+
+                    populateDashboardMetrics(data);
+                    fetchHistoryRecords(activeLinkRecord.id);
+                } else {
+                    activeLinkRecord = null;
+                    displayEl.textContent = 'No active link assigned';
+                    displayEmptyState(data.error);
+                }
+            } catch (err) {
+                displayEl.textContent = 'Offline';
+            }
+        }
+
+        // Sync live pricing numbers onto plan rows
+        function applyLivePricing(p) {
+            if (p['7days']) updatePlanRowText('7days', p['7days'], 7);
+            if (p['15days']) updatePlanRowText('15days', p['15days'], 15);
+            if (p['30days']) updatePlanRowText('30days', p['30days'], 30);
+            if (p['90days']) updatePlanRowText('90days', p['90days'], 90);
+            if (p['1year']) updatePlanRowText('1year', p['1year'], 365);
+        }
+
+        function updatePlanRowText(key, cost, days) {
+            const rows = document.querySelectorAll('.plan-row-item');
+            rows.forEach(r => {
+                const onclickStr = r.getAttribute('onclick') || '';
+                if (onclickStr.includes(`'${key}'`)) {
+                    r.setAttribute('onclick', `pickPlan('${key}', ${days}, ${cost}, this)`);
+                    const tag = r.querySelector('.plan-price-tag');
+                    if (tag) tag.textContent = `₹${cost}`;
+                    const sub = r.querySelector('.plan-meta p');
+                    if (sub) sub.textContent = `₹${(cost / days).toFixed(1)} / day`;
                 }
             });
         }
 
-        for (let i = 0; i < 3; i++) {
-            setTimeout(addChat, i * 400);
-        }
-        setInterval(addChat, 2200);
-        setInterval(updateChatTimes, 1000);
-
-        // ==================== EMOJI PICKER & REACTIONS ====================
-        function toggleEmojiPicker() {
-            document.getElementById('emojiList').classList.toggle('open');
-        }
-        document.addEventListener('click', function(e) {
-            const picker = document.getElementById('emojiPickerBtn');
-            if (picker && !picker.contains(e.target)) document.getElementById('emojiList').classList.remove('open');
-        });
-
-        const flyingEmojis = ['🎁', '💎', '🥳', '🎊', '🎉', '❤️', '🤩', '🔥', '🤑', '👑'];
-        function createFlyingReaction(emoji) {
-            const el = document.createElement('div');
-            el.className = 'flying-reaction';
-            el.textContent = emoji || flyingEmojis[Math.floor(Math.random() * flyingEmojis.length)];
-            el.style.left = (10 + Math.random() * 80) + '%';
-            el.style.top = (55 + Math.random() * 35) + '%';
-            document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3200);
+        function switchActiveLink() {
+            const input = document.getElementById('customLinkInput').value.trim();
+            if (!input) {
+                notify('Please enter a Link ID or URL to connect.', 'Input Required', '⚠️');
+                return;
+            }
+            fetchUserLinkData(input);
         }
 
-        function triggerReaction(emoji, event) {
-            document.getElementById('emojiList').classList.remove('open');
-            createFlyingReaction(emoji);
+        function displayEmptyState(errMsg) {
+            document.getElementById('metricToday').textContent = '0';
+            document.getElementById('metric24h').textContent = '0';
+            document.getElementById('metric7d').textContent = '0';
+            document.getElementById('metricClaims').textContent = '0';
+            document.getElementById('badgeExpiry').className = 'badge-status expired';
+            document.getElementById('badgeExpiry').textContent = 'Unassigned';
+            document.getElementById('barExpiryProgress').style.width = '0%';
+            document.getElementById('txtExpiryDate').textContent = 'None';
         }
 
-        setInterval(() => { if (Math.random() > 0.5) createFlyingReaction(); }, 3500);
+        // Populate Analytics & Progress Bar
+        function populateDashboardMetrics(data) {
+            const l = data.link;
+            document.getElementById('displayLinkId').textContent = l.id;
+            document.getElementById('metricToday').textContent = l.todayVisits || 0;
+            document.getElementById('metric24h').textContent = l.v24h || 0;
+            document.getElementById('metric7d').textContent = l.v7d || 0;
+            document.getElementById('metricClaims').textContent = l.todayClaims || 0;
 
-        // ==================== FULLSCREEN & WAKELOCK ====================
-        async function keepAwake() { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
-        keepAwake();
+            document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
-        // ==================== INIT ====================
-        async function init() {
-            await loadPopupData();
-            showPopup();
+            // Expiry Bar Logic
+            const badge = document.getElementById('badgeExpiry');
+            const progress = document.getElementById('barExpiryProgress');
+            const expText = document.getElementById('txtExpiryDate');
+
+            if (l.expiryDate) {
+                const d = new Date(l.expiryDate);
+                expText.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const left = typeof l.daysLeft === 'number' ? l.daysLeft : 0;
+
+                if (left <= 0) {
+                    badge.className = 'badge-status expired';
+                    badge.textContent = 'Expired';
+                    progress.className = 'progress-bar-fill expired';
+                    progress.style.width = '100%';
+                } else if (left <= 3) {
+                    badge.className = 'badge-status warning';
+                    badge.textContent = `Expiring (${left} Days Left)`;
+                    progress.className = 'progress-bar-fill warning';
+                    progress.style.width = `${Math.min(100, left * 33)}%`;
+                } else {
+                    badge.className = 'badge-status active';
+                    badge.textContent = `Active (${left} Days Left)`;
+                    progress.className = 'progress-bar-fill active';
+                    progress.style.width = '100%';
+                }
+            } else {
+                badge.className = 'badge-status active';
+                badge.textContent = 'Lifetime Active';
+                progress.className = 'progress-bar-fill active';
+                progress.style.width = '100%';
+                expText.textContent = 'Lifetime Active';
+            }
         }
-        init();
+
+        // Slim Stacked Plan Selection
+        function pickPlan(key, days, cost, elem) {
+            document.querySelectorAll('.plan-row-item').forEach(b => b.classList.remove('selected'));
+            elem.classList.add('selected');
+            activePlan = { key, days, cost };
+            document.getElementById('txtSelectedPlanSummary').textContent = `${days} Days (₹${cost})`;
+            updateQrCode(cost);
+        }
+
+        function updateQrCode(cost) {
+            document.getElementById('upiIdDisplay').textContent = activeAdminUpi;
+            const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${cost}&cu=INR`;
+            document.getElementById('qrImageElement').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
+        }
+
+        function copyUpiText() {
+            navigator.clipboard.writeText(activeAdminUpi).then(() => {
+                notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋');
+            });
+        }
+
+        // 📩 Manual WhatsApp Admin Request Action (Auto-fills Details)
+        async function requestAdminRenewal() {
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
+
+            if (!currentId) {
+                notify('Please enter and connect your Link ID before requesting renewal.', 'Link Required', '⚠️');
+                return;
+            }
+
+            // Create pending request record in database
+            try {
+                fetch('/api/user/renew-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        linkId: currentId,
+                        userName: userProfile.name,
+                        plan: activePlan.key,
+                        days: activePlan.days,
+                        amount: activePlan.cost,
+                        refNo: 'Manual-WhatsApp'
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+
+            const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const message = 
+`Hello Admin, I want to renew my link:
+👤 User Name: ${userProfile.name}
+🔗 Link ID: ${currentId}
+💎 Extension Plan: ${activePlan.days} Days (${activePlan.key.toUpperCase()})
+💰 Total Amount: ₹${activePlan.cost}
+📅 Date: ${today}
+
+Please verify my payment and approve my extension. Thank you!`;
+
+            const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank');
+
+            closePlansModal();
+            setTimeout(() => { fetchHistoryRecords(currentId); }, 1500);
+        }
+
+        // Fetch and Render ONLY the Past 7 Renewal Records
+        async function fetchHistoryRecords(linkId) {
+            try {
+                const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = data.history || [];
+                    const tbody = document.getElementById('historyTableRows');
+
+                    const pastSeven = list.slice(0, 7);
+
+                    if (pastSeven.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = pastSeven.map(record => {
+                        const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                        const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
+                        
+                        return `
+                            <tr>
+                                <td>${dateStr}</td>
+                                <td><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td>
+                                <td>₹${record.amount || 0}</td>
+                                <td><code style="font-family:monospace; color:var(--accent-cyan);">${record.transactionId || 'N/A'}</code></td>
+                                <td><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // Logout
+        function performLogout() {
+            localStorage.removeItem('activeUserSession');
+            localStorage.removeItem('userActiveLinkId');
+            window.location.reload();
+        }
+
+        // Initialize on page load
+        initApp();
     </script>
 </body>
 </html>
