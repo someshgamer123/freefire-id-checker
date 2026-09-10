@@ -46,7 +46,6 @@ try {
 } catch(e) {}
 
 // ==================== 🕒 24-HOUR UNIQUE VISITOR ACTIVITY MODEL ====================
-// Tracks 24-hour unique visits, unique claims, and active streaming
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -264,8 +263,10 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
+// Safe timeout-protected block check
 async function isDeviceBlocked(req) {
     try {
+        if (mongoose.connection.readyState !== 1) return null;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         return await BlockedDevice.findOne({
             $or: [
@@ -274,7 +275,7 @@ async function isDeviceBlocked(req) {
                 { fingerprint }
             ],
             isPermanent: true
-        });
+        }).maxTimeMS(2000);
     } catch(e) {
         return null;
     }
@@ -506,7 +507,7 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // ==================== 🛡️ 24-HOUR UNIQUE VISIT TRACKING ====================
+        // 🛡️ 24-Hour Unique Visit Tracking
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -519,7 +520,6 @@ app.get('/api/link/:id', async (req, res) => {
         }).catch(() => null);
 
         if (!recentVisit) {
-            // Unique Visit within 24 Hours! Count it!
             const today = new Date().toISOString().split('T')[0];
             Link.updateOne(
                 { _id: link._id },
@@ -532,7 +532,7 @@ app.get('/api/link/:id', async (req, res) => {
             ).catch(() => {});
         }
 
-        // Always update lastSeen for Real-Time Active Watching
+        // Update lastSeen for Real-Time Active Watching
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -585,7 +585,6 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
         }).catch(() => null);
 
         if (!recentClaim) {
-            // Unique Claim within 24 Hours!
             const today = new Date().toISOString().split('T')[0];
             link.claims = (link.claims || 0) + 1;
             if (!link.dailyClaims) link.dailyClaims = new Map();
@@ -600,7 +599,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             ).catch(() => {});
         }
 
-        // Always update lastSeen for Real-Time Active Claiming
+        // Update lastSeen for Real-Time Active Claiming
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
             { $set: { lastSeen: new Date() } },
@@ -613,7 +612,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
     }
 });
 
-// ✅ History Route: Live Fetch of Past 7 Transactions
+// History Route
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -735,7 +734,7 @@ app.post('/api/user/signin', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/link-details - Auto-Resolves Link & Serves Live Manual Pricing
+// ✅ POST /api/user/link-details
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -832,7 +831,7 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/renew-payment - Creates Manual Renewal Requests
+// POST /api/user/renew-payment
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, plan, days, amount, refNo, userName } = req.body;
@@ -1035,7 +1034,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
 });
 
 // ================================================================
-// 🔑 ADMIN AUTHENTICATION & BULLETPROOF PASSCODE SYSTEM
+// 🔑 ADMIN AUTHENTICATION & STRICT PASSCODE SYSTEM
 // ================================================================
 app.get('/api/admin/block-status', async (req, res) => {
     try {
@@ -1082,13 +1081,10 @@ app.post('/api/admin/login', async (req, res) => {
         const isValid = verifyPasscode(cleanPass, admin.passcode);
 
         if (isValid) {
-            // Authorized Admin!
-            // Clear prior accidental blocks for this authorized device
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
 
-            // Safely record active session
             try {
                 if (Session) {
                     await Session.create({
@@ -1169,7 +1165,7 @@ app.post('/api/admin/logout', async (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ Change Passcode from Admin Panel: Strictly updates current passcode, invalidating the old one
+// Change Passcode from Admin Panel
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -1671,7 +1667,7 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== 🔗 SHORT LINKS ====================
+// ==================== 🔗 SHORT LINKS (100% FIXED SYNTAX) ====================
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
@@ -1716,11 +1712,10 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
 });
 
+// ✅ Line 1723 Syntax Issue Permanently Fixed Here
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json({ success: true, link });
-    , req.body, { new: true });
         res.json({ success: true, link });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update short link' });
