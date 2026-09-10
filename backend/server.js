@@ -443,7 +443,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH REAL-TIME DATA)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -454,24 +454,30 @@ app.get('/api/link/:id', async (req, res) => {
         let rawId = (req.params.id || '').trim();
         if (rawId.includes('?')) rawId = rawId.split('?')[0];
 
-        let link = await Link.findOne(getLinkQuery(rawId));
+        let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
+        // If linkId is 'default' or not found, fall back to the newest active link in database
         if (!link && (rawId === 'default' || !rawId)) {
-            return res.json({
-                id: 'default',
-                name: 'Welcome Bonus Reward',
-                video: 'https://youtu.be/dQw4w9WgXcQ',
-                claim: '#',
-                buttonText: 'Claim Now',
-                headline: '🎬 Watch Video & Unlock Reward',
-                status: 'active',
-                popupSettings: {
-                    image: null,
-                    title: '🎁 Claim Your Reward',
+            const activeFallback = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+            if (activeFallback) {
+                link = activeFallback;
+            } else {
+                return res.json({
+                    id: 'default',
+                    name: 'Welcome Bonus Reward',
+                    video: 'https://youtu.be/dQw4w9WgXcQ',
+                    claim: '#',
                     buttonText: 'Claim Now',
-                    subtitle: 'Tap below to unlock your reward'
-                }
-            });
+                    headline: '🎬 Watch Video & Unlock Reward',
+                    status: 'active',
+                    popupSettings: {
+                        image: null,
+                        title: '🎁 Claim Your Reward',
+                        buttonText: 'Claim Now',
+                        subtitle: 'Tap below to unlock your reward'
+                    }
+                });
+            }
         }
 
         if (!link) {
@@ -489,21 +495,19 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
+        // Track stats asynchronously
         const today = new Date().toISOString().split('T')[0];
-        let stats = await Stats.findOne();
-        if (!stats) stats = await Stats.create({});
+        Link.updateOne(
+            { _id: link._id },
+            { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
+        ).catch(() => {});
 
-        link.visits = (link.visits || 0) + 1;
-        if (!link.dailyVisits) link.dailyVisits = new Map();
-        link.dailyVisits.set(today, (link.dailyVisits.get(today) || 0) + 1);
-        await link.save();
+        Stats.updateOne(
+            {},
+            { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
+        ).catch(() => {});
 
-        stats.totalVisitors = (stats.totalVisitors || 0) + 1;
-        if (!stats.dailyVisitors) stats.dailyVisitors = new Map();
-        stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
-        await stats.save();
-
-        // Ensure 16:9 banner image is returned in all expected formats
+        // Comprehensive 16:9 banner image lookup
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.banner || null;
 
@@ -537,15 +541,11 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
         const today = new Date().toISOString().split('T')[0];
         if (link) {
             link.claims = (link.claims || 0) + 1;
-            if (!link.dailyClaims) link.dailyClaims = new Map();
-            link.dailyClaims.set(today, (link.dailyClaims.get(today) || 0) + 1);
             await link.save();
         }
         let stats = await Stats.findOne();
         if (stats) {
             stats.totalClaims = (stats.totalClaims || 0) + 1;
-            if (!stats.dailyClaims) stats.dailyClaims = new Map();
-            stats.dailyClaims.set(today, (stats.dailyClaims.get(today) || 0) + 1);
             await stats.save();
         }
         res.json({ success: true, claims: stats?.totalClaims || 0 });
@@ -597,6 +597,12 @@ app.get('/api/settings', async (req, res) => {
         res.json({
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            },
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
@@ -1133,10 +1139,30 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 });
 
 // ==================== 🔗 ADMIN: LINKS CRUD & EDIT FIX ====================
+// Format all links so Admin Panel table & edit modal receives image in all field names
 app.get('/api/links', authMiddleware, async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-    const links = await Link.find().sort({ created: -1 });
-    res.json(links);
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const links = await Link.find().sort({ created: -1 }).lean();
+        
+        const formatted = links.map(l => {
+            const popup = l.popupSettings || {};
+            const img = popup.image || l.image || l.popupImage || l.banner || null;
+            return {
+                ...l,
+                image: img,
+                popupImage: img,
+                banner: img,
+                popupSettings: {
+                    ...popup,
+                    image: img
+                }
+            };
+        });
+        res.json(formatted);
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to fetch links' });
+    }
 });
 
 app.post('/api/links', authMiddleware, async (req, res) => {
@@ -1147,14 +1173,14 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        // 📅 Parse Expiry Date from any input field
+        // 📅 Parse Expiry Date
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
         let cleanExpiry = null;
         if (rawExpiry && !isNaN(new Date(rawExpiry).getTime())) {
             cleanExpiry = new Date(rawExpiry);
         }
 
-        // 📸 Parse 16:9 Banner Image from any possible input name
+        // 📸 Parse 16:9 Banner Image from any field name
         let incomingImage = req.body.popupImage || 
                             req.body.image || 
                             req.body.popupImageUrl || 
@@ -1199,51 +1225,59 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         });
 
         await newLink.save();
-        res.json(newLink);
+        res.json({
+            ...newLink.toObject(),
+            image: finalBanner,
+            popupImage: finalBanner,
+            banner: finalBanner,
+            popupSettings: finalPopup
+        });
     } catch (e) {
         console.error('❌ Error creating link:', e);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
-// ✅ PUT /api/links/:id - 100% RELIABLE UPDATE HANDLER FOR POPUP IMAGE & EXPIRY
+// ✅ PUT /api/links/:id - 100% DIRECT ATOMIC MONGODB UPDATE
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
         const link = await Link.findOne(query);
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
-        // Name
-        if (req.body.name !== undefined) link.name = req.body.name.trim();
-        else if (req.body.title !== undefined) link.name = req.body.title.trim();
+        const updateData = {};
 
-        // Video
+        // Name / Title
+        if (req.body.name !== undefined) updateData.name = req.body.name.trim();
+        else if (req.body.title !== undefined) updateData.name = req.body.title.trim();
+
+        // Video URL
         const incomingVideo = req.body.video !== undefined ? req.body.video :
                               (req.body.videoUrl !== undefined ? req.body.videoUrl :
                               (req.body.url !== undefined ? req.body.url : req.body.youtubeUrl));
-        if (incomingVideo !== undefined) link.video = incomingVideo.trim();
+        if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
 
-        // Claim
+        // Claim URL
         const incomingClaim = req.body.claim !== undefined ? req.body.claim :
                               (req.body.claimUrl !== undefined ? req.body.claimUrl :
                               (req.body.claimLink !== undefined ? req.body.claimLink :
                               (req.body.rewardUrl !== undefined ? req.body.rewardUrl : req.body.targetUrl)));
-        if (incomingClaim !== undefined) link.claim = incomingClaim.trim();
+        if (incomingClaim !== undefined) updateData.claim = incomingClaim.trim();
 
         // Button Text
         const incomingBtn = req.body.buttonText !== undefined ? req.body.buttonText :
                             (req.body.btnText !== undefined ? req.body.btnText : req.body.button_text);
-        if (incomingBtn !== undefined) link.buttonText = incomingBtn.trim();
+        if (incomingBtn !== undefined) updateData.buttonText = incomingBtn.trim();
 
         // Headline
         const incomingHeadline = req.body.headline !== undefined ? req.body.headline :
                                  (req.body.heading !== undefined ? req.body.heading : req.body.headLine);
-        if (incomingHeadline !== undefined) link.headline = incomingHeadline.trim();
+        if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
 
         // Status
-        if (req.body.status !== undefined) link.status = req.body.status;
+        if (req.body.status !== undefined) updateData.status = req.body.status;
 
-        // 📅 Update Expiry Date (Accepts any date format from admin date picker)
+        // 📅 Expiry Date
         const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
                                (req.body.expiry !== undefined ? req.body.expiry :
                                (req.body.expDate !== undefined ? req.body.expDate :
@@ -1251,13 +1285,13 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         
         if (incomingExpiry !== undefined) {
             if (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) {
-                link.expiryDate = new Date(incomingExpiry);
+                updateData.expiryDate = new Date(incomingExpiry);
             } else {
-                link.expiryDate = null;
+                updateData.expiryDate = null;
             }
         }
 
-        // 📸 Update 16:9 Banner Image (Catches all possible form field names)
+        // 📸 16:9 Banner Image (Catches Popup Image URL (16:9) form field)
         let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
                             (req.body.image !== undefined ? req.body.image :
                             (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
@@ -1274,47 +1308,51 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             incomingImage = parsedPopup.image;
         }
 
-        if (!link.popupSettings) {
-            link.popupSettings = {
-                title: '🎁 Claim Your Reward',
-                subtitle: 'Tap below to unlock your reward',
-                buttonText: link.buttonText || 'Claim Now',
-                image: null
-            };
-        }
+        const currentPopup = link.popupSettings || {};
+        const newPopup = {
+            title: currentPopup.title || '🎁 Claim Your Reward',
+            subtitle: currentPopup.subtitle || 'Tap below to unlock your reward',
+            buttonText: currentPopup.buttonText || link.buttonText || 'Claim Now',
+            image: currentPopup.image || null
+        };
 
         if (incomingImage !== undefined) {
             const cleanImg = (incomingImage || '').trim();
             const finalImg = cleanImg.length > 4 ? cleanImg : null;
-            link.popupSettings.image = finalImg;
-            link.image = finalImg;
-            link.popupImage = finalImg;
-            link.banner = finalImg;
-            link.markModified('popupSettings');
+            newPopup.image = finalImg;
+            updateData.image = finalImg;
+            updateData.popupImage = finalImg;
+            updateData.banner = finalImg;
         }
 
-        // Additional popup settings
         if (parsedPopup && typeof parsedPopup === 'object') {
-            if (parsedPopup.title !== undefined) link.popupSettings.title = parsedPopup.title.trim();
-            if (parsedPopup.subtitle !== undefined) link.popupSettings.subtitle = parsedPopup.subtitle.trim();
-            if (parsedPopup.buttonText !== undefined) link.popupSettings.buttonText = parsedPopup.buttonText.trim();
-            link.markModified('popupSettings');
+            if (parsedPopup.title !== undefined) newPopup.title = parsedPopup.title.trim();
+            if (parsedPopup.subtitle !== undefined) newPopup.subtitle = parsedPopup.subtitle.trim();
+            if (parsedPopup.buttonText !== undefined) newPopup.buttonText = parsedPopup.buttonText.trim();
         }
-        if (req.body.popupTitle !== undefined) {
-            link.popupSettings.title = req.body.popupTitle.trim();
-            link.markModified('popupSettings');
-        }
-        if (req.body.popupSubtitle !== undefined) {
-            link.popupSettings.subtitle = req.body.popupSubtitle.trim();
-            link.markModified('popupSettings');
-        }
-        if (req.body.popupButtonText !== undefined) {
-            link.popupSettings.buttonText = req.body.popupButtonText.trim();
-            link.markModified('popupSettings');
-        }
+        if (req.body.popupTitle !== undefined) newPopup.title = req.body.popupTitle.trim();
+        if (req.body.popupSubtitle !== undefined) newPopup.subtitle = req.body.popupSubtitle.trim();
+        if (req.body.popupButtonText !== undefined) newPopup.buttonText = req.body.popupButtonText.trim();
 
-        await link.save();
-        res.json({ success: true, link });
+        updateData.popupSettings = newPopup;
+
+        // Perform direct atomic MongoDB update using findOneAndUpdate
+        const updatedLink = await Link.findOneAndUpdate(
+            query,
+            { $set: updateData },
+            { new: true, lean: true }
+        );
+
+        res.json({
+            success: true,
+            link: {
+                ...updatedLink,
+                image: newPopup.image,
+                popupImage: newPopup.image,
+                banner: newPopup.image,
+                popupSettings: newPopup
+            }
+        });
     } catch (e) {
         console.error('❌ Error updating link:', e);
         res.status(500).json({ error: 'Failed to update link', details: e.message });
