@@ -154,7 +154,7 @@ function getLinkQuery(rawId) {
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false,
-    // Fixes YouTube Error 153 globally across all browsers
+    // 🛡️ Permanently fixes YouTube Error 153 across all browsers & webviews
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
@@ -443,7 +443,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
+// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH REAL-TIME DATA)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -503,6 +503,10 @@ app.get('/api/link/:id', async (req, res) => {
         stats.dailyVisitors.set(today, (stats.dailyVisitors.get(today) || 0) + 1);
         await stats.save();
 
+        // Ensure 16:9 banner image is returned in all expected formats
+        const popup = link.popupSettings || {};
+        const bannerImage = popup.image || link.image || link.popupImage || link.banner || null;
+
         res.json({
             id: link.id,
             name: link.name,
@@ -511,11 +515,15 @@ app.get('/api/link/:id', async (req, res) => {
             buttonText: link.buttonText || 'Claim Now',
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
             status: link.status || 'active',
-            popupSettings: link.popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
+            expiryDate: link.expiryDate || null,
+            image: bannerImage,
+            popupImage: bannerImage,
+            banner: bannerImage,
+            popupSettings: {
+                image: bannerImage,
+                title: popup.title || '🎁 Claim Your Reward',
+                buttonText: popup.buttonText || link.buttonText || 'Claim Now',
+                subtitle: popup.subtitle || 'Tap below to unlock your reward'
             }
         });
     } catch (error) {
@@ -988,8 +996,6 @@ app.post('/api/admin/login', async (req, res) => {
         }
 
         const { passcode } = req.body;
-        const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        const { deviceName, deviceType } = getDeviceDetails(req);
         const cleanPass = (passcode || '').toString().trim();
 
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
@@ -1000,11 +1006,15 @@ app.post('/api/admin/login', async (req, res) => {
         const isValid = bcrypt.compareSync(cleanPass, admin.passcode);
 
         if (isValid) {
+            const { deviceKey, fingerprint, ip } = getDeviceId(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
             const jwtToken = generateToken('admin');
             res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
             return res.json({ success: true, token: jwtToken });
         }
+
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
 
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
         if (!record) {
@@ -1079,7 +1089,7 @@ app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     }
 });
 
-// UID Background (Strictly isolated for 9:16 UID Background Image Only)
+// Admin Background (For 9:16 UID Background Image Only)
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         let popup = await PopupSettings.findOne();
@@ -1122,7 +1132,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== ADMIN: LINKS CRUD ====================
+// ==================== 🔗 ADMIN: LINKS CRUD & EDIT FIX ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const links = await Link.find().sort({ created: -1 });
@@ -1131,37 +1141,46 @@ app.get('/api/links', authMiddleware, async (req, res) => {
 
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
-        const {
-            name, title,
-            video, videoUrl, url, youtubeUrl,
-            claim, claimUrl, claimLink,
-            buttonText, btnText,
-            headline, heading,
-            expiryDate,
-            popupSettings,
-            image, popupImage, banner
-        } = req.body;
+        const cleanName = (req.body.name || req.body.title || 'Untitled Link').trim();
+        const cleanVideo = (req.body.video || req.body.videoUrl || req.body.url || req.body.youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ').trim();
+        const cleanClaim = (req.body.claim || req.body.claimUrl || req.body.claimLink || '#').trim();
+        const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
+        const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        const cleanName = (name || title || 'Untitled Link').trim();
-        const cleanVideo = (video || videoUrl || url || youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ').trim();
-        const cleanClaim = (claim || claimUrl || claimLink || '#').trim();
-        const cleanButtonText = (buttonText || btnText || 'Claim Now').trim();
-        const cleanHeadline = (headline || heading || '🎬 Watch Video & Unlock Reward').trim();
+        // 📅 Parse Expiry Date from any input field
+        const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
+        let cleanExpiry = null;
+        if (rawExpiry && !isNaN(new Date(rawExpiry).getTime())) {
+            cleanExpiry = new Date(rawExpiry);
+        }
 
-        let parsedPopup = popupSettings;
+        // 📸 Parse 16:9 Banner Image from any possible input name
+        let incomingImage = req.body.popupImage || 
+                            req.body.image || 
+                            req.body.popupImageUrl || 
+                            req.body.banner || 
+                            req.body.bannerImage || 
+                            req.body.bannerUrl || 
+                            req.body.popupImg || 
+                            req.body.img;
+
+        let parsedPopup = req.body.popupSettings;
         if (typeof parsedPopup === 'string') {
-            try { parsedPopup = JSON.parse(parsedPopup); } catch (e) { parsedPopup = null; }
+            try { parsedPopup = JSON.parse(parsedPopup); } catch(e) { parsedPopup = {}; }
         }
         parsedPopup = parsedPopup || {};
 
-        // 16:9 Banner parsing (Supports all naming conventions)
-        const bannerImage = image || popupImage || banner || parsedPopup.image || req.body.popupImage || null;
+        if (!incomingImage && parsedPopup.image) {
+            incomingImage = parsedPopup.image;
+        }
+
+        const finalBanner = incomingImage && incomingImage.trim().length > 4 ? incomingImage.trim() : null;
 
         const finalPopup = {
             title: parsedPopup.title || req.body.popupTitle || '🎁 Claim Your Reward',
             subtitle: parsedPopup.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
-            buttonText: parsedPopup.buttonText || req.body.popupButtonText || 'Claim Now',
-            image: bannerImage ? bannerImage.trim() : null
+            buttonText: parsedPopup.buttonText || req.body.popupButtonText || cleanButtonText,
+            image: finalBanner
         };
 
         const newLink = new Link({
@@ -1171,73 +1190,134 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             claim: cleanClaim,
             buttonText: cleanButtonText,
             headline: cleanHeadline,
+            expiryDate: cleanExpiry,
             status: 'active',
+            image: finalBanner,
+            popupImage: finalBanner,
+            banner: finalBanner,
             popupSettings: finalPopup
         });
+
         await newLink.save();
         res.json(newLink);
     } catch (e) {
+        console.error('❌ Error creating link:', e);
         res.status(500).json({ error: 'Failed to create link' });
     }
 });
 
+// ✅ PUT /api/links/:id - 100% RELIABLE UPDATE HANDLER FOR POPUP IMAGE & EXPIRY
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
         const link = await Link.findOne(query);
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
-        const {
-            name, title,
-            video, videoUrl, url, youtubeUrl,
-            claim, claimUrl, claimLink,
-            buttonText, btnText,
-            headline, heading,
-            status,
-            popupSettings,
-            image, popupImage, banner
-        } = req.body;
+        // Name
+        if (req.body.name !== undefined) link.name = req.body.name.trim();
+        else if (req.body.title !== undefined) link.name = req.body.title.trim();
 
-        if (name !== undefined) link.name = name.trim();
-        else if (title !== undefined) link.name = title.trim();
+        // Video
+        const incomingVideo = req.body.video !== undefined ? req.body.video :
+                              (req.body.videoUrl !== undefined ? req.body.videoUrl :
+                              (req.body.url !== undefined ? req.body.url : req.body.youtubeUrl));
+        if (incomingVideo !== undefined) link.video = incomingVideo.trim();
 
-        if (video !== undefined) link.video = video.trim();
-        else if (videoUrl !== undefined) link.video = videoUrl.trim();
-        else if (url !== undefined) link.video = url.trim();
-        else if (youtubeUrl !== undefined) link.video = youtubeUrl.trim();
+        // Claim
+        const incomingClaim = req.body.claim !== undefined ? req.body.claim :
+                              (req.body.claimUrl !== undefined ? req.body.claimUrl :
+                              (req.body.claimLink !== undefined ? req.body.claimLink :
+                              (req.body.rewardUrl !== undefined ? req.body.rewardUrl : req.body.targetUrl)));
+        if (incomingClaim !== undefined) link.claim = incomingClaim.trim();
 
-        if (claim !== undefined) link.claim = claim.trim();
-        else if (claimUrl !== undefined) link.claim = claimUrl.trim();
-        else if (claimLink !== undefined) link.claim = claimLink.trim();
+        // Button Text
+        const incomingBtn = req.body.buttonText !== undefined ? req.body.buttonText :
+                            (req.body.btnText !== undefined ? req.body.btnText : req.body.button_text);
+        if (incomingBtn !== undefined) link.buttonText = incomingBtn.trim();
 
-        if (buttonText !== undefined) link.buttonText = buttonText.trim();
-        else if (btnText !== undefined) link.buttonText = btnText.trim();
+        // Headline
+        const incomingHeadline = req.body.headline !== undefined ? req.body.headline :
+                                 (req.body.heading !== undefined ? req.body.heading : req.body.headLine);
+        if (incomingHeadline !== undefined) link.headline = incomingHeadline.trim();
 
-        if (headline !== undefined) link.headline = headline.trim();
-        else if (heading !== undefined) link.headline = heading.trim();
+        // Status
+        if (req.body.status !== undefined) link.status = req.body.status;
 
-        if (status !== undefined) link.status = status;
-
-        let parsedPopup = popupSettings;
-        if (typeof parsedPopup === 'string') {
-            try { parsedPopup = JSON.parse(parsedPopup); } catch (e) { parsedPopup = null; }
+        // 📅 Update Expiry Date (Accepts any date format from admin date picker)
+        const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
+                               (req.body.expiry !== undefined ? req.body.expiry :
+                               (req.body.expDate !== undefined ? req.body.expDate :
+                               (req.body.expireDate !== undefined ? req.body.expireDate : req.body.expiry_date)));
+        
+        if (incomingExpiry !== undefined) {
+            if (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) {
+                link.expiryDate = new Date(incomingExpiry);
+            } else {
+                link.expiryDate = null;
+            }
         }
 
-        const bannerImage = image || popupImage || banner || parsedPopup?.image || req.body.popupImage;
+        // 📸 Update 16:9 Banner Image (Catches all possible form field names)
+        let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
+                            (req.body.image !== undefined ? req.body.image :
+                            (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
+                            (req.body.banner !== undefined ? req.body.banner :
+                            (req.body.bannerImage !== undefined ? req.body.bannerImage :
+                            (req.body.bannerUrl !== undefined ? req.body.bannerUrl :
+                            (req.body.popupImg !== undefined ? req.body.popupImg : req.body.img))))));
 
-        if (parsedPopup !== undefined || bannerImage !== undefined) {
-            if (!link.popupSettings) link.popupSettings = {};
-            if (parsedPopup?.title !== undefined) link.popupSettings.title = parsedPopup.title;
-            if (parsedPopup?.subtitle !== undefined) link.popupSettings.subtitle = parsedPopup.subtitle;
-            if (parsedPopup?.buttonText !== undefined) link.popupSettings.buttonText = parsedPopup.buttonText;
-            if (bannerImage !== undefined) link.popupSettings.image = bannerImage ? bannerImage.trim() : null;
+        let parsedPopup = req.body.popupSettings;
+        if (typeof parsedPopup === 'string') {
+            try { parsedPopup = JSON.parse(parsedPopup); } catch(e) { parsedPopup = {}; }
+        }
+        if (parsedPopup && typeof parsedPopup === 'object' && parsedPopup.image !== undefined && incomingImage === undefined) {
+            incomingImage = parsedPopup.image;
+        }
+
+        if (!link.popupSettings) {
+            link.popupSettings = {
+                title: '🎁 Claim Your Reward',
+                subtitle: 'Tap below to unlock your reward',
+                buttonText: link.buttonText || 'Claim Now',
+                image: null
+            };
+        }
+
+        if (incomingImage !== undefined) {
+            const cleanImg = (incomingImage || '').trim();
+            const finalImg = cleanImg.length > 4 ? cleanImg : null;
+            link.popupSettings.image = finalImg;
+            link.image = finalImg;
+            link.popupImage = finalImg;
+            link.banner = finalImg;
+            link.markModified('popupSettings');
+        }
+
+        // Additional popup settings
+        if (parsedPopup && typeof parsedPopup === 'object') {
+            if (parsedPopup.title !== undefined) link.popupSettings.title = parsedPopup.title.trim();
+            if (parsedPopup.subtitle !== undefined) link.popupSettings.subtitle = parsedPopup.subtitle.trim();
+            if (parsedPopup.buttonText !== undefined) link.popupSettings.buttonText = parsedPopup.buttonText.trim();
+            link.markModified('popupSettings');
+        }
+        if (req.body.popupTitle !== undefined) {
+            link.popupSettings.title = req.body.popupTitle.trim();
+            link.markModified('popupSettings');
+        }
+        if (req.body.popupSubtitle !== undefined) {
+            link.popupSettings.subtitle = req.body.popupSubtitle.trim();
+            link.markModified('popupSettings');
+        }
+        if (req.body.popupButtonText !== undefined) {
+            link.popupSettings.buttonText = req.body.popupButtonText.trim();
             link.markModified('popupSettings');
         }
 
         await link.save();
         res.json({ success: true, link });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to update link' });
+        console.error('❌ Error updating link:', e);
+        res.status(500).json({ error: 'Failed to update link', details: e.message });
     }
 });
 
@@ -1246,6 +1326,7 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
         const { status } = req.body;
         const query = getLinkQuery(req.params.id);
         const link = await Link.findOneAndUpdate(query, { status }, { new: true });
+        if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update status' });
