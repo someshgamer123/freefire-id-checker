@@ -43,6 +43,7 @@ try {
     User.schema.set('strict', false);
     if (Session && Session.schema) Session.schema.set('strict', false);
     if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
+    if (ShortLink && ShortLink.schema) ShortLink.schema.set('strict', false);
 } catch(e) {}
 
 // ==================== 🕒 24-HOUR UNIQUE VISITOR ACTIVITY MODEL ====================
@@ -734,12 +735,17 @@ app.post('/api/user/signin', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/link-details
+// ✅ POST /api/user/link-details (RETURNS ACTIVE LINK + ALL USER ASSIGNED LINKS FOR DROPDOWN)
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { userName, linkInput } = req.body;
         const cleanUser = (userName || '').trim();
+
+        // 1. Fetch ALL links assigned to this user for the dropdown selector
+        const allUserLinks = await Link.find({ 
+            name: new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+        }).sort({ created: -1 }).lean();
 
         let link = null;
         let searchId = (linkInput || '').trim();
@@ -752,7 +758,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         if (!link && cleanUser) {
-            link = await Link.findOne({ name: new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).sort({ created: -1 });
+            link = allUserLinks.length > 0 ? allUserLinks[0] : null;
         }
 
         if (!link && searchId) {
@@ -760,7 +766,10 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         if (!link) {
-            return res.status(404).json({ error: `No active link found for user "${cleanUser}". Please connect your assigned Link ID.` });
+            return res.status(404).json({ 
+                error: `No active link found for user "${cleanUser}". Please connect your assigned Link ID.`,
+                userLinks: allUserLinks
+            });
         }
 
         if (link.name && cleanUser && link.name.toLowerCase().trim() !== cleanUser.toLowerCase()) {
@@ -821,6 +830,7 @@ app.post('/api/user/link-details', async (req, res) => {
                 todayClaims: cToday,
                 v24h, c24h, v7d, c7d, v30d, c30d
             },
+            userLinks: allUserLinks, // 👈 Populates user dropdown selector
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
             paymentSettings: pricingDoc?.paymentSettings || { details: { upiId: 'admin@upi' } },
             autoPaymentEnabled: false,
@@ -857,6 +867,49 @@ app.post('/api/user/renew-payment', async (req, res) => {
         });
     } catch (e) {
         res.status(500).json({ error: 'Payment processing error' });
+    }
+});
+
+// ================================================================
+// ==================== 🔗 USER DASHBOARD: SHORT LINKS ====================
+// ================================================================
+app.get('/api/user/short-links', async (req, res) => {
+    try {
+        const { userName } = req.query;
+        const filter = userName ? { creator: userName } : {};
+        const links = await ShortLink.find(filter).sort({ createdAt: -1 }).lean();
+        res.json({ success: true, links });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to fetch short links' });
+    }
+});
+
+app.post('/api/user/short-links', async (req, res) => {
+    try {
+        const { originalUrl, title, userName, appOpen, appScheme } = req.body;
+        if (!originalUrl) return res.status(400).json({ error: 'URL required' });
+        const link = new ShortLink({
+            code: Math.random().toString(36).substring(2, 8),
+            originalUrl,
+            title: title || 'Untitled',
+            creator: userName || 'User',
+            appOpen: !!appScheme,
+            appScheme: appScheme || ''
+        });
+        await link.save();
+        res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to create short link' });
+    }
+});
+
+app.delete('/api/user/short-links/:id', async (req, res) => {
+    try {
+        await ShortLink.findByIdAndDelete(req.params.id);
+        await ShortLinkClick.deleteMany({ shortLinkId: req.params.id }).catch(() => {});
+        res.json({ success: true });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to delete short link' });
     }
 });
 
@@ -1667,7 +1720,7 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== 🔗 SHORT LINKS (100% FIXED SYNTAX) ====================
+// ==================== 🔗 ADMIN SHORT LINKS ====================
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
@@ -1712,7 +1765,6 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
 });
 
-// ✅ Line 1723 Syntax Issue Permanently Fixed Here
 app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
