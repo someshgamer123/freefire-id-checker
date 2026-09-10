@@ -36,6 +36,11 @@ const Security = require('./config/security');
 
 connectDB();
 
+// 🔓 Disable Mongoose strict mode on Link so all image fields (popupImage, banner, image) save permanently
+try {
+    Link.schema.set('strict', false);
+} catch(e) {}
+
 // ==================== Environment Variables ====================
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE || '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
@@ -154,7 +159,6 @@ function getLinkQuery(rawId) {
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false,
-    // 🛡️ Permanently fixes YouTube Error 153 across all browsers & webviews
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
@@ -443,7 +447,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (ALWAYS ACTIVE & FRESH DATA)
+// ✅ VISITOR LINK RESOLVER (REAL-TIME SYNCED)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -456,7 +460,7 @@ app.get('/api/link/:id', async (req, res) => {
 
         let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
-        // If linkId is 'default' or not found, fall back to the newest active link in database
+        // If linkId is 'default' or not found, fall back to newest active link in database
         if (!link && (rawId === 'default' || !rawId)) {
             const activeFallback = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
             if (activeFallback) {
@@ -507,9 +511,9 @@ app.get('/api/link/:id', async (req, res) => {
             { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
         ).catch(() => {});
 
-        // Comprehensive 16:9 banner image lookup
+        // Comprehensive 16:9 banner image lookup across all fields
         const popup = link.popupSettings || {};
-        const bannerImage = popup.image || link.image || link.popupImage || link.banner || null;
+        const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
 
         res.json({
             id: link.id,
@@ -522,6 +526,7 @@ app.get('/api/link/:id', async (req, res) => {
             expiryDate: link.expiryDate || null,
             image: bannerImage,
             popupImage: bannerImage,
+            popupImageUrl: bannerImage,
             banner: bannerImage,
             popupSettings: {
                 image: bannerImage,
@@ -1147,21 +1152,51 @@ app.get('/api/links', authMiddleware, async (req, res) => {
         
         const formatted = links.map(l => {
             const popup = l.popupSettings || {};
-            const img = popup.image || l.image || l.popupImage || l.banner || null;
+            const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
             return {
                 ...l,
                 image: img,
                 popupImage: img,
+                popupImageUrl: img,
                 banner: img,
                 popupSettings: {
                     ...popup,
-                    image: img
+                    image: img,
+                    popupImage: img,
+                    popupImageUrl: img
                 }
             };
         });
         res.json(formatted);
     } catch(e) {
         res.status(500).json({ error: 'Failed to fetch links' });
+    }
+});
+
+// Single link getter for edit modal
+app.get('/api/links/:id', authMiddleware, async (req, res) => {
+    try {
+        const query = getLinkQuery(req.params.id);
+        const l = await Link.findOne(query).lean();
+        if (!l) return res.status(404).json({ error: 'Link not found' });
+        
+        const popup = l.popupSettings || {};
+        const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
+        res.json({
+            ...l,
+            image: img,
+            popupImage: img,
+            popupImageUrl: img,
+            banner: img,
+            popupSettings: {
+                ...popup,
+                image: img,
+                popupImage: img,
+                popupImageUrl: img
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch link' });
     }
 });
 
@@ -1220,6 +1255,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             status: 'active',
             image: finalBanner,
             popupImage: finalBanner,
+            popupImageUrl: finalBanner,
             banner: finalBanner,
             popupSettings: finalPopup
         });
@@ -1229,6 +1265,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             ...newLink.toObject(),
             image: finalBanner,
             popupImage: finalBanner,
+            popupImageUrl: finalBanner,
             banner: finalBanner,
             popupSettings: finalPopup
         });
@@ -1238,7 +1275,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ PUT /api/links/:id - 100% DIRECT ATOMIC MONGODB UPDATE
+// ✅ PUT /api/links/:id - 100% DIRECT ATOMIC MONGODB UPDATE (GUARANTEED PERSISTENCE)
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1291,7 +1328,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             }
         }
 
-        // 📸 16:9 Banner Image (Catches Popup Image URL (16:9) form field)
+        // 📸 16:9 Banner Image (Catches Popup Image URL (16:9) form input)
         let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
                             (req.body.image !== undefined ? req.body.image :
                             (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
@@ -1322,6 +1359,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             newPopup.image = finalImg;
             updateData.image = finalImg;
             updateData.popupImage = finalImg;
+            updateData.popupImageUrl = finalImg;
             updateData.banner = finalImg;
         }
 
@@ -1340,7 +1378,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         const updatedLink = await Link.findOneAndUpdate(
             query,
             { $set: updateData },
-            { new: true, lean: true }
+            { new: true, lean: true, strict: false }
         );
 
         res.json({
@@ -1349,6 +1387,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
                 ...updatedLink,
                 image: newPopup.image,
                 popupImage: newPopup.image,
+                popupImageUrl: newPopup.image,
                 banner: newPopup.image,
                 popupSettings: newPopup
             }
