@@ -5,6 +5,26 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- 🛡️ SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
+    <script>
+        (function() {
+            document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
+            window.addEventListener('keydown', function(e) {
+                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); return false;
+                }
+            }, true);
+            try {
+                const noop = () => {};
+                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
+            } catch(e) {}
+        })();
+    </script>
+
     <!-- Clean Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,7 +76,7 @@
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
-        /* Top Header */
+        /* Top Navbar */
         .top-navbar {
             position: sticky;
             top: 0;
@@ -64,10 +84,37 @@
             background: rgba(10, 14, 23, 0.94);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 14px 20px;
+            padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+        }
+
+        /* ☰ Top-Left Hamburger Button */
+        .btn-hamburger {
+            width: 40px; height: 40px;
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .btn-hamburger:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--border-hover);
+        }
+        .btn-hamburger span {
+            display: block;
+            width: 20px; height: 2.2px;
+            background: var(--text-primary);
+            border-radius: 3px;
+            transition: 0.3s;
         }
 
         .navbar-brand {
@@ -100,7 +147,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            position: relative;
         }
 
         .user-pill {
@@ -121,61 +167,53 @@
             background: #34d399;
         }
 
-        /* 3-Dot Menu Button (Hidden on login page by default) */
-        .btn-kebab {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            width: 36px; height: 36px;
-            border-radius: 9px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        /* Slide-out Sidebar Drawer */
+        .sidebar-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            z-index: 9998;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
         }
-        .btn-kebab:hover {
-            border-color: var(--border-hover);
-            background: var(--surface-2);
-        }
+        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
 
-        .kebab-dropdown {
-            position: absolute;
-            top: 46px;
-            right: 0;
+        .sidebar-drawer {
+            position: fixed; top: 0; left: 0;
+            width: 290px; height: 100vh;
             background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 6px;
-            width: 210px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-            display: none;
-            flex-direction: column;
-            gap: 2px;
-            z-index: 200;
+            border-right: 1px solid var(--border-subtle);
+            z-index: 9999;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            padding: 24px 18px;
+            box-shadow: 10px 0 40px rgba(0,0,0,0.8);
         }
-        .kebab-dropdown.show { display: flex; }
+        .sidebar-drawer.show { transform: translateX(0); }
 
-        .dropdown-link {
-            padding: 10px 14px;
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-size: 13.5px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-decoration: none;
+        .sidebar-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 22px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
         }
-        .dropdown-link:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
+        .sidebar-head h2 { font-size: 16px; font-weight: 800; color: #fff; }
+        .sidebar-close {
+            background: none; border: none; font-size: 24px;
+            color: var(--text-muted); cursor: pointer; line-height: 1;
         }
-        .dropdown-link.danger { color: #f87171; }
-        .dropdown-link.danger:hover { background: rgba(239, 68, 68, 0.12); }
+        .sidebar-close:hover { color: #fff; }
+
+        .sidebar-links-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+        .drawer-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 10px;
+            color: var(--text-secondary); font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .drawer-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+        .drawer-item.danger { color: #f87171; }
+        .drawer-item.danger:hover { background: rgba(239, 68, 68, 0.12); }
 
         /* Container */
         .content-wrap {
@@ -252,7 +290,6 @@
             color: #fff;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
         }
-        .btn-whatsapp:hover { opacity: 0.95; transform: translateY(-1px); }
 
         /* Terms Checkbox */
         .checkbox-container {
@@ -322,29 +359,30 @@
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
+        /* 👤 Active Link Selector with Dropdown */
         .link-selector-card {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 12px 16px;
+            border-radius: 14px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 16px;
         }
         .link-badge {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 13px;
+            font-size: 13.5px;
             color: #fff;
         }
         .link-badge strong {
             color: var(--accent-cyan);
             font-family: monospace;
-            font-size: 13.5px;
+            font-size: 14px;
         }
 
         /* Progress Bar */
@@ -405,275 +443,154 @@
         .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
 
-        /* ==================== 💎 SLIM STACKED PLAN LIST (LINE-BY-LINE) ==================== */
-        .plan-list-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
+        /* Plan List */
+        .plan-list-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
         .plan-row-item {
-            background: var(--surface-2);
-            border: 1.5px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: var(--surface-2); border: 1.5px solid var(--border-subtle);
+            border-radius: 12px; padding: 12px 16px; display: flex; align-items: center;
+            justify-content: space-between; cursor: pointer; transition: all 0.2s ease;
         }
-        .plan-row-item:hover {
-            border-color: var(--primary-light);
-            background: rgba(79, 70, 229, 0.08);
-        }
-        .plan-row-item.selected {
-            border-color: var(--primary-light);
-            background: rgba(79, 70, 229, 0.14);
-            box-shadow: 0 4px 18px rgba(79, 70, 229, 0.22);
-        }
-
-        .plan-row-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .plan-row-item:hover { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.08); }
+        .plan-row-item.selected { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.14); box-shadow: 0 4px 18px rgba(79, 70, 229, 0.22); }
+        .plan-row-left { display: flex; align-items: center; gap: 12px; }
         .plan-radio-circle {
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            border: 2px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.2s;
+            width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-subtle);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;
         }
-        .plan-row-item.selected .plan-radio-circle {
-            border-color: var(--primary-light);
-            background: var(--primary);
-        }
-        .plan-row-item.selected .plan-radio-circle::after {
-            content: '';
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #fff;
-        }
-
-        .plan-meta h4 {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .plan-meta p {
-            font-size: 11.5px;
-            color: var(--text-muted);
-            margin-top: 1px;
-        }
-
-        .plan-row-right {
-            text-align: right;
-        }
-        .plan-price-tag {
-            font-size: 17px;
-            font-weight: 800;
-            color: var(--accent-cyan);
-        }
-
-        .plan-badge-pill {
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 7px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
+        .plan-row-item.selected .plan-radio-circle { border-color: var(--primary-light); background: var(--primary); }
+        .plan-row-item.selected .plan-radio-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+        .plan-meta h4 { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .plan-meta p { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+        .plan-price-tag { font-size: 17px; font-weight: 800; color: var(--accent-cyan); }
+        .plan-badge-pill { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; }
         .plan-badge-pill.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
         .plan-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .plan-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
 
-        /* Payment Summary Box */
+        /* Payment Panel */
         .payment-panel {
-            background: var(--surface-2);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 16px;
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
+            background: var(--surface-2); border: 1px solid var(--border-subtle);
+            border-radius: 14px; padding: 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
         }
-        .qr-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-        .qr-wrapper img {
-            width: 120px; height: 120px;
-            background: #fff;
-            padding: 6px;
-            border-radius: 10px;
-        }
-
+        .qr-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .qr-wrapper img { width: 120px; height: 120px; background: #fff; padding: 6px; border-radius: 10px; }
         .payment-info { flex: 1; min-width: 220px; }
         .upi-copy-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #080c14;
-            border: 1px solid var(--border-subtle);
-            padding: 7px 12px;
-            border-radius: 8px;
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--accent-cyan);
-            margin-bottom: 12px;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; background: #080c14;
+            border: 1px solid var(--border-subtle); padding: 7px 12px; border-radius: 8px;
+            font-size: 12.5px; font-weight: 600; color: var(--accent-cyan); margin-bottom: 12px; cursor: pointer;
         }
-        .upi-copy-chip:hover { border-color: var(--border-hover); }
 
         /* Table */
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            border-radius: 10px;
-            border: 1px solid var(--border-subtle);
-        }
+        .table-container { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid var(--border-subtle); }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .data-table th {
-            background: #080c14;
-            padding: 11px 14px;
-            color: var(--text-muted);
-            font-weight: 700;
-            text-align: left;
-            font-size: 11.5px;
-        }
-        .data-table td {
-            padding: 11px 14px;
-            border-top: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-        }
+        .data-table th { background: #080c14; padding: 11px 14px; color: var(--text-muted); font-weight: 700; text-align: left; font-size: 11.5px; }
+        .data-table td { padding: 11px 14px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); }
 
-        /* Custom Modal Dialog (Replaces native browser alert) */
-        .custom-dialog-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.85);
-            backdrop-filter: blur(10px);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .custom-dialog-overlay.active { display: flex; animation: fadeInDialog 0.2s ease; }
-        @keyframes fadeInDialog { from { opacity: 0; } to { opacity: 1; } }
+        /* Switch */
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 22px; }
+        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+        .switch input:checked + span { background: var(--primary); }
+        .switch input:checked + span:before { transform: translateX(20px); }
 
-        .custom-dialog-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 380px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-        }
-        .dialog-icon { font-size: 34px; margin-bottom: 8px; }
-        .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-        .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
-
-        /* Generic Modals */
+        /* Modals */
         .app-modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.85);
-            backdrop-filter: blur(12px);
-            z-index: 1000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(12px); z-index: 10000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
         }
         .app-modal.active { display: flex; }
-
         .modal-body-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            max-width: 500px;
-            width: 100%;
-            padding: 22px;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            background: var(--surface-1); border: 1px solid var(--border-subtle);
+            border-radius: 18px; max-width: 520px; width: 100%; padding: 22px;
+            max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
         }
         .modal-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            border-bottom: 1px solid var(--border-subtle);
-            padding-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;
         }
         .modal-header-row h3 { font-size: 16px; font-weight: 800; color: #fff; }
-        .modal-close-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 20px;
-            cursor: pointer;
-        }
+        .modal-close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
 
         .guide-item { margin-bottom: 14px; }
         .guide-item h4 { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 3px; }
         .guide-item p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+
+        .short-item {
+            background: #080c14; padding: 12px 14px; margin: 8px 0; border-radius: 10px;
+            border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+
+        /* Custom Dialog Alert */
+        .custom-dialog-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(10px); z-index: 20000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .custom-dialog-overlay.active { display: flex; }
+        .custom-dialog-card {
+            background: var(--surface-1); border: 1px solid var(--border-subtle);
+            border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center;
+        }
+        .dialog-icon { font-size: 34px; margin-bottom: 8px; }
+        .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+        .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
     </style>
 </head>
 <body>
     <div class="ambient-layer"></div>
 
+    <!-- ☰ Slide-out Sidebar Drawer & Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar-drawer" id="sidebarDrawer">
+        <div class="sidebar-head">
+            <h2>⚡ Quick Menu</h2>
+            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
+        </div>
+        <div class="sidebar-links-list">
+            <div class="drawer-item" onclick="openShortenerModal()">
+                <span>🔗</span> URL Shortener
+            </div>
+            <div class="drawer-item" onclick="openPlansModal()">
+                <span>💎</span> Renewal Plans
+            </div>
+            <div class="drawer-item" onclick="openGuideModal()">
+                <span>📖</span> How to Use
+            </div>
+            <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
+                <span>💬</span> WhatsApp Support
+            </a>
+            <div class="drawer-item" onclick="openTermsModal()">
+                <span>📜</span> Terms & Rules
+            </div>
+            <div class="drawer-item danger" onclick="performLogout()" style="margin-top:auto;">
+                <span>🚪</span> Logout
+            </div>
+        </div>
+    </aside>
+
     <!-- Top Navigation Bar -->
     <header class="top-navbar">
-        <a href="#" class="navbar-brand">
-            <div class="brand-badge-icon">⚡</div>
-            <span class="brand-title">MY DASHBOARD</span>
-        </a>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <!-- ☰ 3-Line Hamburger Button on Top-Left -->
+            <button class="btn-hamburger" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <a href="#" class="navbar-brand">
+                <div class="brand-badge-icon">⚡</div>
+                <span class="brand-title">MY DASHBOARD</span>
+            </a>
+        </div>
 
         <div class="navbar-right">
             <div class="user-pill" id="navUserBadge" style="display:none;">
                 <span class="live-indicator"></span>
                 <span id="navUserName">Gamer</span>
-            </div>
-
-            <!-- 3-Dot Menu Button (Hidden on login page, visible only after login) -->
-            <button class="btn-kebab" id="btnKebab" onclick="toggleDropdown()" title="Menu">⋮</button>
-
-            <!-- 3-Dot Options Dropdown -->
-            <div class="kebab-dropdown" id="kebabDropdown">
-                <div class="dropdown-link" onclick="openPlansModal()">
-                    <span>💎</span> Renewal Plans
-                </div>
-                <div class="dropdown-link" onclick="openGuideModal()">
-                    <span>📖</span> How to Use
-                </div>
-                <a href="https://wa.me/916372923348" target="_blank" class="dropdown-link" id="supportLink">
-                    <span>💬</span> Support
-                </a>
-                <div class="dropdown-link" onclick="openTermsModal()">
-                    <span>📜</span> Terms & Rules
-                </div>
-                <div class="dropdown-link danger" id="btnLogout" onclick="performLogout()" style="display:none;">
-                    <span>🚪</span> Logout
-                </div>
             </div>
         </div>
     </header>
@@ -691,18 +608,18 @@
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="inEmail" class="form-input" placeholder="Enter Your Email" required>
+                        <input type="email" id="inEmail" class="form-input" placeholder="name@domain.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" id="inPhone" class="form-input" placeholder="Enter Your Number" required>
+                        <input type="tel" id="inPhone" class="form-input" placeholder="10-digit mobile number" required>
                     </div>
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
                 </form>
 
-                <!-- Sign Up Form (With Mandatory Terms Checkbox in English) -->
+                <!-- Sign Up Form -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
@@ -710,14 +627,13 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" id="upEmail" class="form-input" placeholder="Enter Your Email" required>
+                        <input type="email" id="upEmail" class="form-input" placeholder="name@domain.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" id="upPhone" class="form-input" placeholder="Enter Your Number" required>
+                        <input type="tel" id="upPhone" class="form-input" placeholder="10-digit mobile number" required>
                     </div>
 
-                    <!-- Mandatory Checkbox in English -->
                     <label class="checkbox-container">
                         <input type="checkbox" id="upTermsCheck" required>
                         <span class="checkbox-label">
@@ -740,21 +656,34 @@
                     <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
                     <p>Protected Account • Only links registered to your identity are displayed</p>
                 </div>
-                <button class="btn-action btn-secondary" onclick="openPlansModal()" style="width:auto; padding:9px 16px; font-size:13px;">
-                    <span>💎 Renewal Plans</span>
-                </button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-action btn-secondary" onclick="openShortenerModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
+                        <span>🔗 Short Link</span>
+                    </button>
+                    <button class="btn-action" onclick="openPlansModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
+                        <span>💎 Renewal</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Active Link Selector Bar -->
+            <!-- 👤 ACTIVE LINK SELECTOR (DROPDOWN WITH ONLY THIS USER'S LINKS) -->
             <div class="link-selector-card">
-                <div class="link-badge">
-                    <span>Active Link:</span>
-                    <strong id="displayLinkId">Detecting link...</strong>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div class="link-badge">
+                        <span>Active Link:</span>
+                        <strong id="displayLinkId">Detecting link...</strong>
+                    </div>
+                    <span style="font-size:11px; color:var(--text-muted);">Choose from your authorized campaign links</span>
                 </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="text" id="customLinkInput" class="form-input" placeholder="Enter Link ID / URL" style="padding:6px 10px; font-size:12.5px; width:170px;">
-                    <button class="btn-action" onclick="switchActiveLink()" style="width:auto; padding:6px 12px; font-size:12px;">
-                        Connect
+                
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <!-- User's Links Dropdown -->
+                    <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:210px; background:#080c14; cursor:pointer;">
+                        <option value="">-- Choose Your Link --</option>
+                    </select>
+
+                    <button class="btn-action btn-secondary" onclick="refreshCurrentLinkData()" style="width:auto; padding:9px 13px; font-size:12px;">
+                        🔄 Refresh
                     </button>
                 </div>
             </div>
@@ -774,23 +703,23 @@
                 </div>
             </div>
 
-            <!-- Analytics Row -->
+            <!-- 📊 UNIQUE 24-HOUR REAL ANALYTICS ROW -->
             <div class="stats-row">
                 <div class="metric-card">
                     <div class="metric-value" id="metricToday">0</div>
-                    <div class="metric-title">Today Visits</div>
+                    <div class="metric-title">Today Visits (Unique)</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metric24h">0</div>
-                    <div class="metric-title">Last 24 Hours</div>
+                    <div class="metric-title">Last 24 Hours (Unique)</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metric7d">0</div>
-                    <div class="metric-title">Last 7 Days</div>
+                    <div class="metric-title">Last 7 Days (Unique)</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricClaims" style="color:var(--success);">0</div>
-                    <div class="metric-title">Total Claims</div>
+                    <div class="metric-title">Total Claims (Unique)</div>
                 </div>
             </div>
 
@@ -821,7 +750,47 @@
         </div>
     </main>
 
-    <!-- ==================== 💎 RENEWAL PLANS MODAL (COMPACT STACKED LIST) ==================== -->
+    <!-- ==================== 🔗 URL SHORTENER MODAL (NEW FEATURE) ==================== -->
+    <div class="app-modal" id="shortenerModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3>🔗 URL Shortener</h3>
+                <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Destination URL</label>
+                <input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Title / Label</label>
+                <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <label style="font-size:12px;color:var(--text-secondary);">📱 Open in App:</label>
+                <label class="switch">
+                    <input type="checkbox" id="uShortAppOpen" onchange="toggleUserAppScheme()">
+                    <span></span>
+                </label>
+                <span style="font-size:11px;color:var(--text-muted);">(Deep link app open)</span>
+            </div>
+            <div id="uAppSchemeBox" style="display:none;margin-bottom:12px;">
+                <input type="text" id="uShortScheme" class="form-input" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
+            </div>
+
+            <button class="btn-action" onclick="createUserShortLink()">
+                <span>Create Short Link ➜</span>
+            </button>
+
+            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle);">
+                <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
+                <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading short links...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 💎 RENEWAL PLANS MODAL ==================== -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -829,9 +798,7 @@
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
 
-            <!-- 📋 SLIM STACKED PLAN LIST (LINE-BY-LINE) -->
             <div class="plan-list-container">
-                <!-- 7 Days -->
                 <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -845,7 +812,6 @@
                     </div>
                 </div>
 
-                <!-- 15 Days -->
                 <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -859,7 +825,6 @@
                     </div>
                 </div>
 
-                <!-- 30 Days (Popular) -->
                 <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -873,7 +838,6 @@
                     </div>
                 </div>
 
-                <!-- 90 Days (Save 15%) -->
                 <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -887,7 +851,6 @@
                     </div>
                 </div>
 
-                <!-- 1 Year (Best Value) -->
                 <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -916,10 +879,9 @@
 
                     <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
                         Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
-                        Scan QR or pay to UPI ID, then submit your renewal request below.
+                        Scan QR or pay to UPI ID, then submit your request below.
                     </div>
 
-                    <!-- 📩 EXCLUSIVELY MANUAL VERIFY / WHATSAPP REQUEST RENEWAL BUTTON -->
                     <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
                         <span>📩 Request Admin Renewal via WhatsApp</span>
                     </button>
@@ -928,7 +890,7 @@
         </div>
     </div>
 
-    <!-- ==================== 📖 HOW TO USE MODAL (100% ENGLISH) ==================== -->
+    <!-- ==================== 📖 HOW TO USE MODAL ==================== -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -940,26 +902,17 @@
                 <h4>1. Account Access & Ownership</h4>
                 <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
             </div>
-
             <div class="guide-item">
                 <h4>2. Traffic & Claim Analytics</h4>
-                <p>Track real-time performance of your active links, including Today Visits, 24-hour visitors, 7-day trends, and reward claims.</p>
+                <p>Track 24-hour unique visitors, 7-day performance, and reward claims without duplicate count distortions.</p>
             </div>
-
             <div class="guide-item">
                 <h4>3. Selecting an Extension Plan</h4>
                 <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
             </div>
-
-            <!-- Explicitly Named "Payment Verification" -->
             <div class="guide-item">
-                <h4>4. Payment Verification</h4>
-                <p>Scan the dynamic QR code with any UPI app. After sending payment, click "Request Admin Renewal" to notify the administrator for instant approval.</p>
-            </div>
-
-            <div class="guide-item">
-                <h4>5. Manual Admin Assistance</h4>
-                <p>Clicking "Request Admin Renewal" opens WhatsApp with pre-composed transaction details for direct review and extension.</p>
+                <h4>4. URL Shortener</h4>
+                <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns.</p>
             </div>
 
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
@@ -968,7 +921,7 @@
         </div>
     </div>
 
-    <!-- ==================== 📜 TERMS & RULES MODAL (100% ENGLISH - NO BHARATPE) ==================== -->
+    <!-- ==================== 📜 TERMS & RULES MODAL ==================== -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -980,19 +933,12 @@
                 <h4>1. Account Integrity</h4>
                 <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
             </div>
-
             <div class="guide-item">
-                <h4>2. Genuine Payment Submissions</h4>
-                <p>Submission of fabricated, duplicate, or expired reference numbers will result in immediate account suspension.</p>
-            </div>
-
-            <div class="guide-item">
-                <h4>3. Extension Policy</h4>
+                <h4>2. Extension Policy</h4>
                 <p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p>
             </div>
-
             <div class="guide-item">
-                <h4>4. Support Desk</h4>
+                <h4>3. Support Desk</h4>
                 <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
             </div>
 
@@ -1002,7 +948,7 @@
         </div>
     </div>
 
-    <!-- ==================== 🔔 CUSTOM MODAL DIALOG (REPLACES NATIVE ALERT) ==================== -->
+    <!-- ==================== 🔔 CUSTOM MODAL DIALOG ==================== -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="dialog-icon" id="dialogIcon">🔔</div>
@@ -1016,11 +962,11 @@
         // ==================== APPLICATION STATE ====================
         let userProfile = null;
         let activeLinkRecord = null;
+        let myLinksList = [];
         let activePlan = { key: '30days', days: 30, cost: 400 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
 
-        // Custom Sleek Modal Alert (Replaces browser alert)
         function notify(message, title = 'Notification', icon = 'ℹ️') {
             document.getElementById('dialogIcon').textContent = icon;
             document.getElementById('dialogTitle').textContent = title;
@@ -1040,35 +986,38 @@
                     showDashboardView();
                 } catch(e) {
                     localStorage.removeItem('activeUserSession');
-                    hide3DotMenu();
+                    hideHamburger();
                 }
             } else {
-                hide3DotMenu();
+                hideHamburger();
             }
         }
 
-        function hide3DotMenu() {
-            document.getElementById('btnKebab').style.display = 'none';
-            document.getElementById('kebabDropdown').classList.remove('show');
+        function hideHamburger() {
+            document.getElementById('btnHamburger').style.display = 'none';
+            toggleSidebar(false);
         }
 
-        function show3DotMenu() {
-            document.getElementById('btnKebab').style.display = 'flex';
+        function showHamburger() {
+            document.getElementById('btnHamburger').style.display = 'flex';
         }
 
-        // Navigation Dropdown
-        function toggleDropdown() {
-            document.getElementById('kebabDropdown').classList.toggle('show');
-        }
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.navbar-right')) {
-                document.getElementById('kebabDropdown').classList.remove('show');
+        // Toggle Sidebar Drawer
+        function toggleSidebar(open) {
+            const sb = document.getElementById('sidebarDrawer');
+            const ov = document.getElementById('sidebarOverlay');
+            if (open) {
+                sb.classList.add('show');
+                ov.classList.add('show');
+            } else {
+                sb.classList.remove('show');
+                ov.classList.remove('show');
             }
-        });
+        }
 
         // Modals Management
         function openPlansModal() {
-            document.getElementById('kebabDropdown').classList.remove('show');
+            toggleSidebar(false);
             document.getElementById('plansModal').classList.add('active');
             updateQrCode(activePlan.cost);
         }
@@ -1077,7 +1026,7 @@
         }
 
         function openGuideModal() {
-            document.getElementById('kebabDropdown').classList.remove('show');
+            toggleSidebar(false);
             document.getElementById('guideModal').classList.add('active');
         }
         function closeGuideModal() {
@@ -1086,11 +1035,20 @@
 
         function openTermsModal(e) {
             if (e) e.preventDefault();
-            document.getElementById('kebabDropdown').classList.remove('show');
+            toggleSidebar(false);
             document.getElementById('termsModal').classList.add('active');
         }
         function closeTermsModal() {
             document.getElementById('termsModal').classList.remove('active');
+        }
+
+        function openShortenerModal() {
+            toggleSidebar(false);
+            document.getElementById('shortenerModal').classList.add('active');
+            loadUserShortLinks();
+        }
+        function closeShortenerModal() {
+            document.getElementById('shortenerModal').classList.remove('active');
         }
 
         // Auth switch
@@ -1135,7 +1093,7 @@
             }
         }
 
-        // Sign Up (With Mandatory Terms Validation in English)
+        // Sign Up
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1179,10 +1137,8 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('navUserBadge').style.display = 'flex';
-            document.getElementById('btnLogout').style.display = 'flex';
 
-            // Show 3-dot menu ONLY after login
-            show3DotMenu();
+            showHamburger();
 
             document.getElementById('navUserName').textContent = userProfile.name;
             document.getElementById('labelUserName').textContent = userProfile.name;
@@ -1190,25 +1146,18 @@
             fetchUserLinkData();
         }
 
-        // Safe Link Query: checks saved linkId, query parameter, or user name
-        async function fetchUserLinkData(explicitInput) {
+        // ==================== 👤 SAFE LINK QUERY & USER-SPECIFIC DROPDOWN ====================
+        async function fetchUserLinkData(explicitLinkId) {
             const displayEl = document.getElementById('displayLinkId');
             displayEl.textContent = 'Fetching link details...';
 
-            let candidate = explicitInput;
-            if (!candidate) {
-                const urlParam = new URLSearchParams(window.location.search).get('link');
-                const pathId = window.location.pathname.replace(/\/+$/, '').split('/').pop();
-                const cachedId = localStorage.getItem('userActiveLinkId');
-
-                candidate = urlParam || (pathId !== 'user-dashboard' ? pathId : null) || cachedId || userProfile.name;
-            }
+            const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
 
             try {
                 const res = await fetch('/api/user/link-details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name, linkInput: candidate })
+                    body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId })
                 });
                 const data = await res.json();
 
@@ -1216,18 +1165,14 @@
                     activeLinkRecord = data.link;
                     activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
                     adminPhone = data.whatsappNumber || '916372923348';
+                    myLinksList = data.userLinks || [];
 
-                    // Update live pricing if present from database
-                    if (data.pricing) {
-                        applyLivePricing(data.pricing);
-                    }
+                    if (data.pricing) applyLivePricing(data.pricing);
 
-                    // Update Support Link
                     document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
-
-                    // Cache verified linkId
                     localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
 
+                    populateUserLinksDropdown(myLinksList, activeLinkRecord.id);
                     populateDashboardMetrics(data);
                     fetchHistoryRecords(activeLinkRecord.id);
                 } else {
@@ -1240,7 +1185,31 @@
             }
         }
 
-        // Sync live pricing numbers onto plan rows
+        function populateUserLinksDropdown(links, currentActiveId) {
+            const selectEl = document.getElementById('userLinkSelect');
+            if (!links || !links.length) {
+                selectEl.innerHTML = '<option value="">No links assigned to your account</option>';
+                return;
+            }
+
+            selectEl.innerHTML = links.map(l => {
+                const isSelected = l.id === currentActiveId ? 'selected' : '';
+                return `<option value="${l.id}" ${isSelected}>🔗 ${l.name} (${l.id})</option>`;
+            }).join('');
+        }
+
+        function onSelectUserLink(selectedId) {
+            if (!selectedId) return;
+            localStorage.setItem('userActiveLinkId', selectedId);
+            fetchUserLinkData(selectedId);
+        }
+
+        function refreshCurrentLinkData() {
+            const selectEl = document.getElementById('userLinkSelect');
+            const targetId = selectEl.value || localStorage.getItem('userActiveLinkId');
+            fetchUserLinkData(targetId);
+        }
+
         function applyLivePricing(p) {
             if (p['7days']) updatePlanRowText('7days', p['7days'], 7);
             if (p['15days']) updatePlanRowText('15days', p['15days'], 15);
@@ -1263,15 +1232,6 @@
             });
         }
 
-        function switchActiveLink() {
-            const input = document.getElementById('customLinkInput').value.trim();
-            if (!input) {
-                notify('Please enter a Link ID or URL to connect.', 'Input Required', '⚠️');
-                return;
-            }
-            fetchUserLinkData(input);
-        }
-
         function displayEmptyState(errMsg) {
             document.getElementById('metricToday').textContent = '0';
             document.getElementById('metric24h').textContent = '0';
@@ -1283,7 +1243,7 @@
             document.getElementById('txtExpiryDate').textContent = 'None';
         }
 
-        // Populate Analytics & Progress Bar
+        // Populate Analytics & Progress Bar (Unique 24h Values)
         function populateDashboardMetrics(data) {
             const l = data.link;
             document.getElementById('displayLinkId').textContent = l.id;
@@ -1294,7 +1254,6 @@
 
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
-            // Expiry Bar Logic
             const badge = document.getElementById('badgeExpiry');
             const progress = document.getElementById('barExpiryProgress');
             const expText = document.getElementById('txtExpiryDate');
@@ -1329,7 +1288,6 @@
             }
         }
 
-        // Slim Stacked Plan Selection
         function pickPlan(key, days, cost, elem) {
             document.querySelectorAll('.plan-row-item').forEach(b => b.classList.remove('selected'));
             elem.classList.add('selected');
@@ -1350,16 +1308,15 @@
             });
         }
 
-        // 📩 Manual WhatsApp Admin Request Action (Auto-fills Details)
+        // WhatsApp Admin Request Action
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
 
             if (!currentId) {
-                notify('Please enter and connect your Link ID before requesting renewal.', 'Link Required', '⚠️');
+                notify('Please select your Link ID before requesting renewal.', 'Link Required', '⚠️');
                 return;
             }
 
-            // Create pending request record in database
             try {
                 fetch('/api/user/renew-payment', {
                     method: 'POST',
@@ -1393,7 +1350,6 @@ Please verify my payment and approve my extension. Thank you!`;
             setTimeout(() => { fetchHistoryRecords(currentId); }, 1500);
         }
 
-        // Fetch and Render ONLY the Past 7 Renewal Records
         async function fetchHistoryRecords(linkId) {
             try {
                 const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
@@ -1401,7 +1357,6 @@ Please verify my payment and approve my extension. Thank you!`;
                     const data = await res.json();
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
-
                     const pastSeven = list.slice(0, 7);
 
                     if (pastSeven.length === 0) {
@@ -1424,9 +1379,94 @@ Please verify my payment and approve my extension. Thank you!`;
                         `;
                     }).join('');
                 }
+            } catch(e) {}
+        }
+
+        // ==================== 🔗 URL SHORTENER FEATURE ====================
+        function toggleUserAppScheme() {
+            const chk = document.getElementById('uShortAppOpen').checked;
+            document.getElementById('uAppSchemeBox').style.display = chk ? 'block' : 'none';
+        }
+
+        async function loadUserShortLinks() {
+            const container = document.getElementById('userShortLinksList');
+            container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
+
+            try {
+                const res = await fetch(`/api/user/short-links?userName=${encodeURIComponent(userProfile.name)}`);
+                const data = await res.json();
+                const links = data.links || [];
+
+                if (!links.length) {
+                    return container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created yet.</p>';
+                }
+
+                container.innerHTML = links.map(l => `
+                    <div class="short-item">
+                        <div>
+                            <div style="font-weight:700;font-size:13px;color:#fff;">${l.title || 'Untitled'}</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                                <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Short Link Copied!','Copied','📋'))" style="width:auto;padding:5px 10px;font-size:11px;">
+                                📋 Copy
+                            </button>
+                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
             } catch(e) {
-                console.error(e);
+                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
             }
+        }
+
+        async function createUserShortLink() {
+            const originalUrl = document.getElementById('uShortUrl').value.trim();
+            const title = document.getElementById('uShortTitle').value.trim();
+            const appScheme = document.getElementById('uShortScheme').value.trim();
+
+            if (!originalUrl) {
+                notify('Please enter a destination URL', 'URL Required', '⚠️');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/user/short-links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        originalUrl,
+                        title,
+                        userName: userProfile.name,
+                        appOpen: !!appScheme,
+                        appScheme
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    notify('Short link created successfully!', 'Success', '🎉');
+                    document.getElementById('uShortUrl').value = '';
+                    document.getElementById('uShortTitle').value = '';
+                    loadUserShortLinks();
+                } else {
+                    notify(data.error || 'Failed to create short link', 'Error', '❌');
+                }
+            } catch(e) {
+                notify('Server connection error', 'Error', '⚠️');
+            }
+        }
+
+        async function deleteUserShortLink(id) {
+            if (!confirm('Are you sure you want to delete this short link?')) return;
+            try {
+                await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' });
+                notify('Short link deleted', 'Removed', '🗑️');
+                loadUserShortLinks();
+            } catch(e) {}
         }
 
         // Logout
