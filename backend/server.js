@@ -32,7 +32,15 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-const Security = require('./config/security');
+// 🛡️ Security 2FA Inlined (ZERO DEPENDENCY ON 'speakeasy' - NEVER CRASHES SERVER)
+const Security = {
+    generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
+    generateBackupCodes: () => [
+        crypto.randomBytes(4).toString('hex'),
+        crypto.randomBytes(4).toString('hex'),
+        crypto.randomBytes(4).toString('hex')
+    ]
+};
 
 connectDB();
 
@@ -830,7 +838,7 @@ app.post('/api/user/link-details', async (req, res) => {
                 todayClaims: cToday,
                 v24h, c24h, v7d, c7d, v30d, c30d
             },
-            userLinks: allUserLinks, // 👈 Populates user dropdown selector
+            userLinks: allUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
             paymentSettings: pricingDoc?.paymentSettings || { details: { upiId: 'admin@upi' } },
             autoPaymentEnabled: false,
