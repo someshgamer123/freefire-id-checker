@@ -190,14 +190,14 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
-// Security Headers
+// ==================== Middlewares & Reverse Proxy ====================
+app.set('trust proxy', 1);
+
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
-
-app.set('trust proxy', 1);
 
 app.use(cors({
     origin: true,
@@ -217,11 +217,38 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rate Limiting
+// ==================== Health Check (Bypasses Rate Limiter) ====================
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        uptime: Math.floor(process.uptime()),
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
+// ==================== Rate Limiting (Updated: 600 -> 50,000) ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 600,
-    message: 'Too many requests, please try again later.'
+    max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        return (
+            req.path === '/health' ||
+            req.path === '/ping' ||
+            req.path.endsWith('.css') ||
+            req.path.endsWith('.js') ||
+            req.path.endsWith('.png') ||
+            req.path.endsWith('.jpg') ||
+            req.path.endsWith('.ico')
+        );
+    },
+    message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api', globalLimiter);
 
@@ -743,14 +770,13 @@ app.post('/api/user/signin', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/link-details (RETURNS ACTIVE LINK + ALL USER ASSIGNED LINKS FOR DROPDOWN)
+// ✅ POST /api/user/link-details
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { userName, linkInput } = req.body;
         const cleanUser = (userName || '').trim();
 
-        // 1. Fetch ALL links assigned to this user for the dropdown selector
         const allUserLinks = await Link.find({ 
             name: new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
         }).sort({ created: -1 }).lean();
@@ -925,7 +951,6 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
 // ==================== 👥 ADMIN: USER MANAGEMENT ====================
 // ================================================================
 
-// 1. Fetch all registered users with their created link count
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
@@ -944,7 +969,6 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     }
 });
 
-// 2. Delete a user permanently
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         await RenewalUser.findByIdAndDelete(req.params.id);
@@ -954,7 +978,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. Pending users for registration approval
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -1111,7 +1134,6 @@ app.get('/api/admin/block-status', async (req, res) => {
     } catch (e) { res.json({ blocked: false }); }
 });
 
-// ✅ STRICT ADMIN LOGIN: Checks ONLY the single active passcode (Old passcode strictly fails)
 app.post('/api/admin/login', async (req, res) => {
     try {
         const { passcode } = req.body;
@@ -1138,7 +1160,6 @@ app.post('/api/admin/login', async (req, res) => {
             await admin.save();
         }
 
-        // STRICT VERIFICATION: ONLY against current active passcode in DB
         const isValid = verifyPasscode(cleanPass, admin.passcode);
 
         if (isValid) {
@@ -1169,7 +1190,7 @@ app.post('/api/admin/login', async (req, res) => {
             return res.json({ success: true, token: jwtToken });
         }
 
-        // --- WRONG PASSCODE HANDLING ---
+        // WRONG PASSCODE HANDLING
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             return res.status(403).json({
@@ -1226,7 +1247,6 @@ app.post('/api/admin/logout', async (req, res) => {
     res.json({ success: true });
 });
 
-// Change Passcode from Admin Panel
 app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
     try {
         const { oldPasscode, newPasscode } = req.body;
@@ -1587,7 +1607,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     }
 });
 
-// ==================== 📊 ACCURATE 24H UNIQUE REAL-TIME LIVELY STATS API ====================
+// ==================== 📊 STATS API ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().lean();
@@ -1612,14 +1632,12 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             }
         });
 
-        // Real active users in the last 3 minutes
         const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
         const activeWatching = await VisitorActivity.countDocuments({
             type: 'visit',
             lastSeen: { $gte: threeMinutesAgo }
         }).catch(() => 0);
 
-        // Real active claims in the last 5 minutes
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         const activeClaiming = await VisitorActivity.countDocuments({
             type: 'claim',
@@ -1646,7 +1664,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
 // ================================================================
 
-// 1. Blocked Devices List
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
     res.json({ success: true, devices });
@@ -1684,7 +1701,6 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     }
 });
 
-// 2. Active Sessions List
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
         const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
@@ -1694,7 +1710,6 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. Terminate an Active Session
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         await Session.findByIdAndDelete(req.params.id);
@@ -1704,7 +1719,6 @@ app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// 4. Permanently Block an Active Device
 app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     try {
         const session = await Session.findById(req.params.id);
