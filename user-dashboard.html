@@ -319,32 +319,6 @@
             font-weight: 600;
         }
 
-        /* Segmented Tabs */
-        .auth-segmented {
-            display: flex;
-            background: #080c14;
-            padding: 4px;
-            border-radius: 11px;
-            margin-bottom: 18px;
-            border: 1px solid var(--border-subtle);
-        }
-        .segmented-btn {
-            flex: 1;
-            padding: 9px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-muted);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .segmented-btn.active {
-            background: var(--surface-1);
-            color: #fff;
-            border: 1px solid var(--border-subtle);
-        }
-
         /* Dashboard Section */
         #dashboardSection { display: none; }
 
@@ -487,14 +461,6 @@
         .data-table th { background: #080c14; padding: 11px 14px; color: var(--text-muted); font-weight: 700; text-align: left; font-size: 11.5px; }
         .data-table td { padding: 11px 14px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); }
 
-        /* Switch */
-        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 22px; }
-        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
-        .switch input:checked + span { background: var(--primary); }
-        .switch input:checked + span:before { transform: translateX(20px); }
-
         /* Modals */
         .app-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -565,7 +531,8 @@
             <div class="drawer-item" onclick="openTermsModal()">
                 <span>📜</span> Terms & Rules
             </div>
-            <div class="drawer-item danger" onclick="performLogout()" style="margin-top:auto;">
+            <!-- Logout Button Placed Directly Below Terms & Rules -->
+            <div class="drawer-item danger" onclick="performLogout()" style="margin-top:10px; border-top:1px solid var(--border-subtle); padding-top:14px;">
                 <span>🚪</span> Logout
             </div>
         </div>
@@ -599,13 +566,12 @@
         <!-- ==================== AUTH VIEW (SIGN IN / SIGN UP) ==================== -->
         <div id="authSection" style="max-width:420px; margin:40px auto 0;">
             <div class="pro-card">
-                <div class="auth-segmented">
-                    <div class="segmented-btn active" id="tabLogin" onclick="switchAuth('login')">Sign In</div>
-                    <div class="segmented-btn" id="tabRegister" onclick="switchAuth('register')">Sign Up</div>
-                </div>
-
-                <!-- Sign In Form -->
+                <!-- Sign In Form (Default Screen) -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
+                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Enter your credentials to access your link dashboard</p>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
                         <input type="email" id="inEmail" class="form-input" placeholder="Enter your email" required>
@@ -617,10 +583,18 @@
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
+                    <!-- Clean small Sign Up link at the bottom -->
+                    <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
+                        Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
+                    </div>
                 </form>
 
-                <!-- Sign Up Form -->
+                <!-- Sign Up Form (Toggled via Small Link) -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
+                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to start managing your active tracking links</p>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
                         <input type="text" id="upName" class="form-input" placeholder="Enter your full name" required>
@@ -644,6 +618,10 @@
                     <button type="submit" class="btn-action" id="btnSubmitRegister">
                         <span>Create Account</span>
                     </button>
+                    <!-- Clean small Sign In link at the bottom -->
+                    <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
+                        Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
+                    </div>
                 </form>
             </div>
         </div>
@@ -750,7 +728,7 @@
         </div>
     </main>
 
-    <!-- ==================== 🔗 URL SHORTENER MODAL (NEW FEATURE) ==================== -->
+    <!-- ==================== 🔗 URL SHORTENER MODAL ==================== -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -767,18 +745,7 @@
                 <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
             </div>
 
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                <label style="font-size:12px;color:var(--text-secondary);">📱 Open in App:</label>
-                <label class="switch">
-                    <input type="checkbox" id="uShortAppOpen" onchange="toggleUserAppScheme()">
-                    <span></span>
-                </label>
-                <span style="font-size:11px;color:var(--text-muted);">(Deep link app open)</span>
-            </div>
-            <div id="uAppSchemeBox" style="display:none;margin-bottom:12px;">
-                <input type="text" id="uShortScheme" class="form-input" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
-            </div>
-
+            <!-- Deep link / Open in App has been permanently removed -->
             <button class="btn-action" onclick="createUserShortLink()">
                 <span>Create Short Link ➜</span>
             </button>
@@ -787,6 +754,32 @@
                 <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading short links...</div>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== 🔒 FEATURE LOCKED MODAL (< 3 ACTIVE LINKS) ==================== -->
+    <div class="app-modal" id="lockModal">
+        <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
+            <div style="font-size:48px; margin-bottom:12px;">🔒</div>
+            <h3 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">Feature Locked</h3>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">
+                You need at least <strong>3 active links</strong> in your account to unlock the URL Shortener feature.
+            </p>
+            <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:14px; margin-bottom:20px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">
+                    <span>Active Links Status</span>
+                    <span id="lockCountDisplay">0 / 3</span>
+                </div>
+                <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; margin-bottom:6px;">
+                    <div id="lockBarFill" style="height:100%; background:linear-gradient(90deg, #f59e0b, var(--primary-light)); width:0%; transition:width 0.3s;"></div>
+                </div>
+                <div id="lockHintText" style="font-size:11.5px; color:var(--text-muted);">
+                    You need 3 more active link(s) to unlock this feature.
+                </div>
+            </div>
+            <button class="btn-action" onclick="closeLockModal()">
+                <span>Got it</span>
+            </button>
         </div>
     </div>
 
@@ -1042,20 +1035,36 @@
             document.getElementById('termsModal').classList.remove('active');
         }
 
+        // 🔗 URL Shortener with Minimum 3 Active Links Eligibility Check
         function openShortenerModal() {
             toggleSidebar(false);
-            document.getElementById('shortenerModal').classList.add('active');
-            loadUserShortLinks();
+            const activeCount = (myLinksList && myLinksList.length) ? myLinksList.length : 0;
+            if (activeCount < 3) {
+                openLockModal(activeCount);
+            } else {
+                document.getElementById('shortenerModal').classList.add('active');
+                loadUserShortLinks();
+            }
         }
         function closeShortenerModal() {
             document.getElementById('shortenerModal').classList.remove('active');
         }
 
-        // Auth switch
+        function openLockModal(count) {
+            const needed = Math.max(0, 3 - count);
+            const pct = Math.min(100, Math.round((count / 3) * 100));
+            document.getElementById('lockCountDisplay').textContent = `${count} / 3`;
+            document.getElementById('lockBarFill').style.width = `${pct}%`;
+            document.getElementById('lockHintText').textContent = `You need ${needed} more active link(s) to unlock this feature.`;
+            document.getElementById('lockModal').classList.add('active');
+        }
+        function closeLockModal() {
+            document.getElementById('lockModal').classList.remove('active');
+        }
+
+        // Auth switch (Sign In / Sign Up)
         function switchAuth(mode) {
             const isLogin = mode === 'login';
-            document.getElementById('tabLogin').classList.toggle('active', isLogin);
-            document.getElementById('tabRegister').classList.toggle('active', !isLogin);
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
         }
@@ -1076,7 +1085,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, phone })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.success) {
                     userProfile = data.user;
@@ -1093,7 +1102,7 @@
             }
         }
 
-        // Sign Up
+        // Sign Up with Clear Duplicate English Error Handling
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1116,16 +1125,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, phone })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.success) {
                     notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
                     switchAuth('login');
                 } else {
-                    notify(data.error || 'Registration failed.', 'Registration Failed', '❌');
+                    let errMsg = data.error || data.message || '';
+                    // If email or phone already registered, show clear English message
+                    if (!errMsg || errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('registered') || res.status === 400 || res.status === 409) {
+                        errMsg = 'This email or phone number is already registered. Please sign in.';
+                    }
+                    notify(errMsg, 'Error', '⚠️');
                 }
             } catch (err) {
-                notify('Connection error during registration.', 'Error', '⚠️');
+                notify('This email or phone number is already registered. Please sign in.', 'Error', '⚠️');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Create Account</span>';
@@ -1383,11 +1397,6 @@ Please verify my payment and approve my extension. Thank you!`;
         }
 
         // ==================== 🔗 URL SHORTENER FEATURE ====================
-        function toggleUserAppScheme() {
-            const chk = document.getElementById('uShortAppOpen').checked;
-            document.getElementById('uAppSchemeBox').style.display = chk ? 'block' : 'none';
-        }
-
         async function loadUserShortLinks() {
             const container = document.getElementById('userShortLinksList');
             container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
@@ -1427,7 +1436,6 @@ Please verify my payment and approve my extension. Thank you!`;
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-            const appScheme = document.getElementById('uShortScheme').value.trim();
 
             if (!originalUrl) {
                 notify('Please enter a destination URL', 'URL Required', '⚠️');
@@ -1441,9 +1449,7 @@ Please verify my payment and approve my extension. Thank you!`;
                     body: JSON.stringify({
                         originalUrl,
                         title,
-                        userName: userProfile.name,
-                        appOpen: !!appScheme,
-                        appScheme
+                        userName: userProfile.name
                     })
                 });
                 const data = await res.json();
