@@ -876,7 +876,7 @@ app.post('/api/user/link-details', async (req, res) => {
         const escapedUser = cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const userRegex = new RegExp('^' + escapedUser + '$', 'i');
 
-        // Fetch all links belonging to this user (name, creator, userName, or assignedUser)
+        // Fetch all links belonging to this user
         const allUserLinks = await Link.find({ 
             $or: [
                 { name: userRegex },
@@ -2207,3 +2207,50 @@ app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res)
             link = await Link.findOne(getLinkQuery(cleanId)).lean();
         }
         if (!link) {
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+        }
+
+        const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
+        const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
+        const isLinkOff = link && isUidCheckDisabled(link.uidChecking);
+
+        // 🔴 AGAR UID CHECKING BUTTON OFF HAI:
+        // Screen par "Enter Player UID" wala page 0.1 second ke liye bhi NAHI aayega!
+        // Seedha direct 16:9 entrance popup image aur video (/v/:id) par redirect ho jayega!
+        if (isLinkOff || isGlobalOff) {
+            const targetId = (link && link.id) ? link.id : (cleanId || 'default');
+            return res.redirect('/v/' + encodeURIComponent(targetId));
+        }
+    } catch(err) {
+        console.error('Error handling /uid route:', err);
+    }
+
+    // 🟢 AGAR UID CHECKING ON HAI:
+    // Tabhi "Enter Player UID" wala page screen par aayega
+    sendUidCheckerFile(res, cleanId);
+});
+
+app.get('/v/:id', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    const cleanId = extractCleanId(req.params.id);
+    sendVideoLockFile(res, cleanId);
+});
+
+app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
+app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
+app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
+app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
+
+// Session Cleanup Interval
+setInterval(async () => {
+    try {
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+    } catch (error) {
+        console.error('❌ Session cleanup error:', error);
+    }
+}, 60 * 60 * 1000);
+
+// Start Server
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
