@@ -47,7 +47,7 @@ connectDB();
 // 🔓 Disable strict schema mode & ensure uidChecking field is registered
 try {
     if (Link && Link.schema) {
-        Link.schema.add({ uidChecking: { type: Boolean, default: false } });
+        Link.schema.add({ uidChecking: { type: Boolean, default: true } });
         Link.schema.set('strict', false);
     }
     Pricing.schema.set('strict', false);
@@ -414,7 +414,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
-            uidChecking: link.uidChecking === true
+            uidChecking: link.uidChecking !== false
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch stats' });
@@ -497,7 +497,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (RETURNS uidChecking STATUS)
+// ✅ VISITOR LINK RESOLVER (RETURNS uidChecking: true/false TO FRONTEND)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -523,7 +523,7 @@ app.get('/api/link/:id', async (req, res) => {
                     buttonText: 'Claim Now',
                     headline: '🎬 Watch Video & Unlock Reward',
                     status: 'active',
-                    uidChecking: false,
+                    uidChecking: true,
                     popupSettings: {
                         image: null,
                         title: '🎁 Claim Your Reward',
@@ -593,7 +593,7 @@ app.get('/api/link/:id', async (req, res) => {
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
-            uidChecking: link.uidChecking === true,
+            uidChecking: link.uidChecking !== false, // Defaults to true if not explicitly false
             image: bannerImage,
             popupImage: bannerImage,
             popupImageUrl: bannerImage,
@@ -896,7 +896,7 @@ app.post('/api/user/link-details', async (req, res) => {
                 todayVisits: vToday,
                 todayClaims: cToday,
                 v24h, c24h, v7d, c7d, v30d, c30d,
-                uidChecking: link.uidChecking === true
+                uidChecking: link.uidChecking !== false
             },
             userLinks: allUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -1357,7 +1357,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
             return {
                 ...l,
-                uidChecking: l.uidChecking === true,
+                uidChecking: l.uidChecking !== false, // Defaults to true
                 image: img,
                 popupImage: img,
                 popupImageUrl: img,
@@ -1386,7 +1386,7 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
         res.json({
             ...l,
-            uidChecking: l.uidChecking === true,
+            uidChecking: l.uidChecking !== false,
             image: img,
             popupImage: img,
             popupImageUrl: img,
@@ -1413,13 +1413,16 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
         // 🎯 UID CHECKING (ON / OFF)
-        const cleanUidChecking = (
-            req.body.uidChecking === true ||
-            req.body.uidChecking === 'true' ||
-            req.body.uidChecking === 1 ||
-            req.body.uidChecking === '1' ||
-            req.body.uidChecking === 'on'
-        );
+        let cleanUidChecking = true;
+        if (req.body.uidChecking !== undefined) {
+            cleanUidChecking = (
+                req.body.uidChecking === true ||
+                req.body.uidChecking === 'true' ||
+                req.body.uidChecking === 1 ||
+                req.body.uidChecking === '1' ||
+                req.body.uidChecking === 'on'
+            );
+        }
 
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
         let cleanExpiry = null;
@@ -1600,7 +1603,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             success: true,
             link: {
                 ...updatedLink,
-                uidChecking: updatedLink.uidChecking === true,
+                uidChecking: updatedLink.uidChecking !== false,
                 image: newPopup.image,
                 popupImage: newPopup.image,
                 popupImageUrl: newPopup.image,
@@ -1912,7 +1915,7 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
-app.get('/uid', (req, res) => sendAppFile(res, 'uid-checker.html'));
+app.get(['/uid', '/uid.html'], (req, res) => sendAppFile(res, 'uid-checker.html', 'uid.html'));
 app.get('/v/:id', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
