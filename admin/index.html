@@ -52,7 +52,7 @@
         .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
         .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text); border-radius: 3px; }
 
-        /* 🚀 TOP HORIZONTAL NAVIGATION BAR (Always visible directly) */
+        /* 🚀 TOP HORIZONTAL NAVIGATION BAR */
         .top-nav-bar {
             display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px;
             background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
@@ -363,24 +363,24 @@
                     </div>
                 </div>
                 <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
+                    <input type="text" id="searchLinksInput" placeholder="Search by user, link name, or ID..." oninput="filterLinks()">
                     <span id="searchResultsCount" style="font-size:12px;color:var(--text-light);">Showing all links</span>
                 </div>
                 <div id="linksList">Loading links...</div>
             </div>
         </div>
 
-        <!-- 3. CREATE LINK -->
+        <!-- 3. CREATE LINK (WITH USER SELECTION & NEW LINK NAME FEATURE) -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
                 
-                <!-- Campaign Name & User Selector -->
+                <!-- Campaign Name / User Selector & New Link Name -->
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
                     <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
-                        🏷️ Campaign Name / Client Name:
+                        👤 Client Name / User Name:
                     </label>
-                    <input type="text" id="cCampaignName" placeholder="e.g. Free Fire Diamond Reward, Client John..." style="margin-bottom:8px;">
+                    <input type="text" id="cCampaignName" placeholder="Enter user name (e.g. Rahul Sharma, John Doe...)" style="margin-bottom:8px;">
 
                     <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:4px;">
                         Or Assign to Registered User (Optional):
@@ -392,6 +392,15 @@
                     <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;align-items:center;justify-content:space-between;">
                         <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
+                    </div>
+
+                    <!-- 🌟 NEW FEATURE: ENTER LINK NAME -->
+                    <label style="display:block;font-size:12px;font-weight:700;color:#38bdf8;margin-top:14px;margin-bottom:4px;">
+                        🏷️ Enter Link Name (Custom Label):
+                    </label>
+                    <input type="text" id="cLinkName" placeholder="Enter link name (e.g. Free Fire Diamond, Event 1...)" style="margin-bottom:4px;">
+                    <div style="font-size:11px;color:var(--text-light);line-height:1.4;">
+                        Yeh name Admin Panel me user name ke side me <b>( User Name ) ( Link Name )</b> ke roop me dikhega.
                     </div>
                 </div>
 
@@ -424,7 +433,7 @@
                             <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
                         </div>
                         <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            🟢 <b>ON</b> 
+                            🟢 <b>ON</b> (UID screen pehle aayegi)
                         </div>
                     </div>
                     <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
@@ -633,7 +642,7 @@
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL -->
+    <!-- ✏️ EDIT MODAL (WITH USER NAME & LINK NAME FIELDS) -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -673,7 +682,7 @@
             setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
         }
 
-        // 📋 100% Reliable Clipboard Copy (Works on HTTP & HTTPS)
+        // 📋 Reliable Clipboard Copy
         function copyText(text, successMsg = 'Copied to clipboard!') {
             if (!text) return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -730,7 +739,7 @@
             }
         }
 
-        // Main Navigation Controller (Syncs Top Bar & Sidebar)
+        // Main Navigation Controller
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
@@ -791,7 +800,7 @@
                     badge.textContent = 'ON UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🟢 <b>ON</b>';
+                    desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-success';
@@ -805,7 +814,7 @@
                     badge.textContent = 'OFF UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🔴 <b>OFF</b> ';
+                    desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video chalegi)';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-danger';
@@ -828,7 +837,7 @@
                     badge.textContent = 'ON UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🟢 <b>ON</b> ';
+                    desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-success';
@@ -841,7 +850,7 @@
                     badge.textContent = 'OFF UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🔴 <b>OFF:</b> ';
+                    desc.innerHTML = '🔴 <b>OFF:</b> (Direct 16:9 Popup & Video)';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-danger';
@@ -881,7 +890,9 @@
             } catch(e) {}
         }
 
-        // ==================== 🔗 LINKS MANAGER ====================
+        // ==============================================================
+        // 🔗 LINKS MANAGER (SHOWS: ( USER NAME ) ( LINK NAME ))
+        // ==============================================================
         async function loadLinks() {
             const list = document.getElementById('linksList');
             if (list) list.innerHTML = '<p style="color:var(--text-light);font-size:12px;">Loading links...</p>';
@@ -915,7 +926,13 @@
 
         function filterLinks() {
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allLinks.filter(l => l && ((l.name || '').toLowerCase().includes(q) || String(l.id || l._id || '').toLowerCase().includes(q))) : allLinks;
+            const filtered = q ? allLinks.filter(l => l && (
+                (l.name || '').toLowerCase().includes(q) || 
+                (l.linkName || '').toLowerCase().includes(q) || 
+                (l.title || '').toLowerCase().includes(q) || 
+                String(l.id || l._id || '').toLowerCase().includes(q)
+            )) : allLinks;
+
             const list = document.getElementById('linksList');
             const countEl = document.getElementById('searchResultsCount');
 
@@ -937,10 +954,19 @@
                     ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
                     : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
 
+                // 🌟 USER NAME & LINK NAME DISPLAY: ( user name ) ( link name )
+                const userName = l.name || 'User';
+                const linkName = l.linkName || l.title || 'Link';
+
                 return `
                     <div class="link-item">
                         <div>
-                            <span class="name">${escapeHTML(l.name || 'Untitled Campaign')}</span>
+                            <!-- 🌟 EXACT REQUIRED FORMAT: ( user name ) ( link name ) -->
+                            <div class="name" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                                <span style="color:#a5b4fc;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(userName)} )</span>
+                                <span style="color:#38bdf8;background:rgba(6,182,212,0.14);border:1px solid rgba(6,182,212,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(linkName)} )</span>
+                            </div>
+
                             <div class="details">
                                 <span>ID: <b>#${escapeHTML(linkId)}</b></span>
                                 <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
@@ -981,6 +1007,9 @@
             }
         }
 
+        // ==============================================================
+        // ✏️ EDIT LINK MODAL (WITH USER NAME & LINK NAME)
+        // ==============================================================
         function openEditModal(id) {
             const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
             if (!link) return showToast('Link not found', 'error');
@@ -993,7 +1022,16 @@
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name || '')}"></div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>👤 User Name (Client)</label>
+                        <input type="text" id="eName" value="${escapeHTML(link.name || '')}" placeholder="User Name">
+                    </div>
+                    <div class="form-group">
+                        <label style="color:#38bdf8;">🏷️ Link Name</label>
+                        <input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name">
+                    </div>
+                </div>
                 <div class="form-row-2">
                     <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
                     <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
@@ -1025,8 +1063,8 @@
                         </div>
                         <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
                             ${editUidChecking 
-                                ? '🟢 <b>ON</b>' 
-                                : '🔴 <b>OFF</b>'}
+                                ? '🟢 <b>ON</b> (UID screen aayegi)' 
+                                : '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)'}
                         </div>
                     </div>
                     <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
@@ -1064,6 +1102,7 @@
 
         async function saveLinkEdit() {
             const name = document.getElementById('eName')?.value.trim();
+            const linkName = document.getElementById('eLinkName')?.value.trim() || 'Link';
             const video = document.getElementById('eVideo')?.value.trim();
             const claim = document.getElementById('eClaim')?.value.trim();
             const buttonText = document.getElementById('eBtnText')?.value.trim();
@@ -1084,7 +1123,20 @@
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking })
+                    body: JSON.stringify({ 
+                        name, 
+                        linkName,
+                        title: linkName,
+                        video, 
+                        claim, 
+                        buttonText, 
+                        headline, 
+                        status, 
+                        expiryDate, 
+                        popupSettings, 
+                        uidChecking,
+                        isEditForm: true
+                    })
                 });
 
                 if (!res.ok) {
@@ -1094,10 +1146,10 @@
 
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(editingLinkId));
                 if (link) {
-                    Object.assign(link, { name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
+                    Object.assign(link, { name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
                 }
 
-                showToast('✅ Link updated successfully! Changes are live.', 'success');
+                showToast(`✅ Updated: ( ${name} ) ( ${linkName} )`, 'success');
                 closeEditModal();
                 filterLinks();
             } catch(e) {
@@ -1117,7 +1169,7 @@
             }
         }
 
-        // ==================== ➕ CREATE LINK ====================
+        // ==================== ➕ CREATE LINK (WITH REGISTERED USER & LINK NAME) ====================
         async function loadCreateUserDropdown() {
             if (!allUsers.length) {
                 try {
@@ -1168,7 +1220,8 @@
         async function createLink() {
             const campaignInput = document.getElementById('cCampaignName')?.value.trim();
             const selectedUser = document.getElementById('cUserSelect')?.value.trim();
-            const name = campaignInput || selectedUser;
+            const userName = selectedUser || campaignInput;
+            const linkName = document.getElementById('cLinkName')?.value.trim() || 'Link';
             const video = document.getElementById('cVideo')?.value.trim();
             const claim = document.getElementById('cClaim')?.value.trim();
             const headline = document.getElementById('cHeadline')?.value.trim();
@@ -1181,8 +1234,8 @@
                 image: document.getElementById('cPopImg')?.value.trim() || null
             };
 
-            if (!name) {
-                return showToast('Please enter a Campaign Name or choose a registered user!', 'error');
+            if (!userName) {
+                return showToast('Please enter a Client/User Name or choose a registered user!', 'error');
             }
 
             try {
@@ -1191,7 +1244,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ 
-                        name, 
+                        name: userName, 
+                        linkName: linkName,
+                        title: linkName,
                         url: claim,
                         claim, 
                         video, 
@@ -1211,7 +1266,7 @@
                 const d = await res.json();
                 const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
 
-                showToast('✅ Link Created Successfully for ' + name + '!', 'success');
+                showToast(`✅ Link Created: ( ${userName} ) ( ${linkName} )`, 'success');
                 const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
                 const genBox = document.getElementById('generatedLinkBox');
                 const genInp = document.getElementById('generatedLinkUrl');
@@ -1785,6 +1840,7 @@
         }
 
         function logout() {
+            document.cookie = 'adminToken=; Max-Age=0; path=/;function logout() {
             document.cookie = 'adminToken=; Max-Age=0; path=/;';
             window.location.href = '/admin/login.html';
         }
