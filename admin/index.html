@@ -52,7 +52,7 @@
         .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
         .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text); border-radius: 3px; }
 
-        /* 🚀 TOP HORIZONTAL NAVIGATION BAR */
+        /* 🚀 TOP HORIZONTAL NAVIGATION BAR (Always visible directly) */
         .top-nav-bar {
             display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px;
             background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
@@ -352,7 +352,7 @@
             </div>
         </div>
 
-        <!-- 2. LINKS MANAGER -->
+        <!-- 2. LINKS MANAGER (SHOWS: ( USER NAME ) ( LINK NAME )) -->
         <div class="section" id="sec-links">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -363,14 +363,14 @@
                     </div>
                 </div>
                 <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by user, link name, or ID..." oninput="filterLinks()">
+                    <input type="text" id="searchLinksInput" placeholder="Search by user name, link name, or ID..." oninput="filterLinks()">
                     <span id="searchResultsCount" style="font-size:12px;color:var(--text-light);">Showing all links</span>
                 </div>
                 <div id="linksList">Loading links...</div>
             </div>
         </div>
 
-        <!-- 3. CREATE LINK (WITH USER SELECTION & NEW LINK NAME FEATURE) -->
+        <!-- 3. CREATE LINK (WITH USER SELECTION & ENTER LINK NAME) -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
@@ -395,12 +395,14 @@
                     </div>
 
                     <!-- 🌟 NEW FEATURE: ENTER LINK NAME -->
-                    <label style="display:block;font-size:12px;font-weight:700;color:#38bdf8;margin-top:14px;margin-bottom:4px;">
-                        🏷️ Enter Link Name (Custom Label):
-                    </label>
-                    <input type="text" id="cLinkName" placeholder="Enter link name (e.g. Free Fire Diamond, Event 1...)" style="margin-bottom:4px;">
-                    <div style="font-size:11px;color:var(--text-light);line-height:1.4;">
-                        Yeh name Admin Panel me user name ke side me <b>( User Name ) ( Link Name )</b> ke roop me dikhega.
+                    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
+                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">
+                            🏷️ Enter Link Name (Custom Label):
+                        </label>
+                        <input type="text" id="cLinkName" placeholder="e.g. Free Fire Diamond, Event 1, Giveaway..." style="margin-bottom:4px;">
+                        <div style="font-size:11px;color:var(--text-light);line-height:1.4;">
+                            Yeh name Admin Panel me user name ke side me <b>( User Name ) ( Link Name )</b> ke roop me dikhega.
+                        </div>
                     </div>
                 </div>
 
@@ -682,7 +684,7 @@
             setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
         }
 
-        // 📋 Reliable Clipboard Copy
+        // 📋 100% Reliable Clipboard Copy (Works on HTTP & HTTPS)
         function copyText(text, successMsg = 'Copied to clipboard!') {
             if (!text) return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -739,7 +741,7 @@
             }
         }
 
-        // Main Navigation Controller
+        // Main Navigation Controller (Syncs Top Bar & Sidebar)
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
@@ -954,7 +956,7 @@
                     ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
                     : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
 
-                // 🌟 USER NAME & LINK NAME DISPLAY: ( user name ) ( link name )
+                // 🌟 USER NAME & LINK NAME: ( USER NAME ) ( LINK NAME )
                 const userName = l.name || 'User';
                 const linkName = l.linkName || l.title || 'Link';
 
@@ -1008,7 +1010,7 @@
         }
 
         // ==============================================================
-        // ✏️ EDIT LINK MODAL (WITH USER NAME & LINK NAME)
+        // ✏️ EDIT LINK MODAL (CHANGE USER NAME & LINK NAME)
         // ==============================================================
         function openEditModal(id) {
             const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
@@ -1027,6 +1029,7 @@
                         <label>👤 User Name (Client)</label>
                         <input type="text" id="eName" value="${escapeHTML(link.name || '')}" placeholder="User Name">
                     </div>
+                    <!-- 🌟 EDIT LINK NAME FIELD -->
                     <div class="form-group">
                         <label style="color:#38bdf8;">🏷️ Link Name</label>
                         <input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name">
@@ -1149,7 +1152,7 @@
                     Object.assign(link, { name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
                 }
 
-                showToast(`✅ Updated: ( ${name} ) ( ${linkName} )`, 'success');
+                showToast(`✅ Link updated: ( ${name} ) ( ${linkName} )`, 'success');
                 closeEditModal();
                 filterLinks();
             } catch(e) {
@@ -1840,7 +1843,6 @@
         }
 
         function logout() {
-            document.cookie = 'adminToken=; Max-Age=0; path=/;function logout() {
             document.cookie = 'adminToken=; Max-Age=0; path=/;';
             window.location.href = '/admin/login.html';
         }
