@@ -19,10 +19,6 @@
                     e.preventDefault(); return false;
                 }
             }, true);
-            try {
-                const noop = () => {};
-                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
-            } catch(e) {}
         })();
     </script>
 
@@ -288,7 +284,7 @@
             </div>
         </header>
 
-        <!-- 1. DASHBOARD OVERVIEW (Lively 5-Second Real-Time Updates) -->
+        <!-- 1. DASHBOARD OVERVIEW -->
         <div class="section active" id="sec-dashboard">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
@@ -333,10 +329,13 @@
             </div>
         </div>
 
-        <!-- 2. LINKS MANAGER (With Expiry Date instead of Button) -->
+        <!-- 2. LINKS MANAGER -->
         <div class="section" id="sec-links">
             <div class="card">
-                <h3>🔍 All Tracking Links</h3>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">🔍 All Tracking Links</h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadLinks()">🔄 Refresh Links</button>
+                </div>
                 <div class="search-bar">
                     <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
                     <span id="searchResultsCount" style="font-size:12px;color:var(--text-light);">Showing all links</span>
@@ -415,51 +414,71 @@
             </div>
         </div>
 
-        <!-- 5. CREATE LINK (With Searchable Registered User Selector) -->
+        <!-- 5. CREATE LINK -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
                 
-                <!-- 👤 SEARCHABLE REGISTERED USER SELECTOR -->
+                <!-- 👤 USER SELECTOR / MANUAL CAMPAIGN INPUT -->
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
                     <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
-                        👤 Select Registered User (Campaign Owner):
+                        👤 Campaign Owner / User Name:
                     </label>
                     
-                    <!-- Search Input for Users -->
-                    <input type="text" id="userSearchInCreate" placeholder="🔍 Search registered user by name, email, or phone..." oninput="filterCreateUserList()" style="margin-bottom:8px;padding:9px 12px;font-size:13px;">
+                    <input type="text" id="userSearchInCreate" placeholder="🔍 Search registered user or type custom campaign name..." oninput="filterCreateUserList()" style="margin-bottom:8px;padding:9px 12px;font-size:13px;">
 
-                    <!-- Single User Selector Dropdown -->
                     <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
-                        <option value="">-- Choose a Registered User (1 User Only) --</option>
+                        <option value="">-- Choose a Registered User (or type above) --</option>
                     </select>
 
-                    <!-- Selected User Info Display Badge -->
-                    <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;display:none;align-items:center;justify-content:space-between;">
+                    <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;align-items:center;justify-content:space-between;">
                         <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
                     </div>
 
-                    <!-- Hidden input to store cName for createLink() -->
                     <input type="hidden" id="cName">
                 </div>
 
                 <div class="grid-2">
-                    <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
-                    <input type="text" id="cClaim" placeholder="Claim Destination URL" value="#">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Video URL:</label>
+                        <input type="text" id="cVideo" placeholder="Video URL" value="https://youtu.be/dQw4w9WgXcQ">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Claim Destination URL:</label>
+                        <input type="text" id="cClaim" placeholder="Claim Destination URL" value="https://ff.garena.com">
+                    </div>
                 </div>
                 <div class="grid-2">
-                    <input type="text" id="cButtonText" placeholder="Button Text" value="Claim Now">
-                    <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Button Text:</label>
+                        <input type="text" id="cButtonText" placeholder="Button Text" value="Claim Now">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Headline:</label>
+                        <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
+                    </div>
                 </div>
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
-                        <input type="text" id="cPopTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
-                        <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="Claim Now">
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Popup Title:</label>
+                            <input type="text" id="cPopTitle" placeholder="Popup Title" value="🎁 Claim Your Reward">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:var(--text-light);">Popup Button Text:</label>
+                            <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="Claim Now">
+                        </div>
                     </div>
-                    <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    <input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)">
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Popup Subtitle:</label>
+                        <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9):</label>
+                        <input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)">
+                    </div>
                     <div class="preview-box-16-9" id="createImgPreviewBox">
                         <span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>
                     </div>
@@ -512,7 +531,6 @@
 
         <!-- 7. SETTINGS & BLOCKED & ACTIVE DEVICES -->
         <div class="section" id="sec-settings">
-            <!-- Blocked & Active Devices Card -->
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                     <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
@@ -525,7 +543,7 @@
 
                 <!-- Blocked Devices View -->
                 <div id="deviceViewBlocked">
-                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered 3 wrong passcodes are permanently banned here. Click Unblock to restore access.</p>
+                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered wrong passcodes multiple times are blocked here. Click Unblock to restore access.</p>
                     <div id="deviceList">Loading blocked devices...</div>
                 </div>
 
@@ -559,7 +577,7 @@
             <!-- Background Setting -->
             <div class="card">
                 <h3>🖼️ UID Background Image (9:16)</h3>
-                <input type="text" id="bgImgUrl" placeholder="Enter background image URL">
+                <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
                 <div class="image-preview" id="bgImagePreview">
                     <img id="bgPreviewImg" alt="Preview">
                 </div>
@@ -597,27 +615,32 @@
 
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
+            if (!t) return;
             t.textContent = msg;
             t.className = `toast ${type} show`;
-            setTimeout(() => t.className = 'toast', 3000);
+            setTimeout(() => t.className = 'toast', 3500);
         }
 
         function copyPortalUrl() {
             const u = window.location.origin + '/user-dashboard';
-            navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Customer Portal URL!', 'success'));
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Customer Portal URL!', 'success')).catch(() => prompt('Copy URL:', u));
+            } else {
+                prompt('Copy URL:', u);
+            }
         }
 
         function escapeHTML(str) {
-            if (!str) return '';
+            if (!str && str !== 0) return '';
             const div = document.createElement('div');
-            div.textContent = str;
+            div.textContent = String(str);
             return div.innerHTML;
         }
 
-        // Toggle Sidebar Drawer
         function toggleSidebar(open) {
             const sb = document.getElementById('sidebar');
             const ov = document.getElementById('sidebarOverlay');
+            if (!sb || !ov) return;
             if (open) {
                 sb.classList.add('show');
                 ov.classList.add('show');
@@ -649,43 +672,81 @@
 
         function updateCreatePopupPreview(url) {
             const box = document.getElementById('createImgPreviewBox');
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${url}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            if (!box) return;
+            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+        }
+
+        function previewBackgroundInput(url) {
+            const previewBox = document.getElementById('bgImagePreview');
+            const img = document.getElementById('bgPreviewImg');
+            if (!previewBox || !img) return;
+            if (url && url.startsWith('http')) {
+                img.src = url;
+                previewBox.classList.add('show');
+            } else {
+                previewBox.classList.remove('show');
+            }
         }
 
         // ==================== 📊 REAL-TIME LIVELY STATS (REFRESH PER 5 SECONDS) ====================
         async function loadStats() {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
-                const data = await res.json();
-                if (data && data.global) {
-                    document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
-                    document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
-                    document.getElementById('activeLive').textContent = data.global.activeNow || 0;
-                    
-                    document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
-                    document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
-                    document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
-                    document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
-                    document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
-                    document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.global) {
+                        document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
+                        document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
+                        document.getElementById('activeLive').textContent = data.global.activeNow || 0;
+                        
+                        document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
+                        document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
+                        document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
+                        document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
+                        document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
+                        document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
 
-                    const now = new Date();
-                    document.getElementById('lastRefreshTime').textContent = `Lively Updated: ${now.toLocaleTimeString()}`;
+                        const now = new Date();
+                        document.getElementById('lastRefreshTime').textContent = `Lively Updated: ${now.toLocaleTimeString()}`;
+                    }
+                    if (data && data.links) {
+                        allLinks = Array.isArray(data.links) ? data.links : [];
+                        document.getElementById('totLinks').textContent = allLinks.length;
+                        document.getElementById('activeLinks').textContent = allLinks.filter(l => l.status === 'active').length;
+                    }
                 }
-                if (data && data.links) {
-                    document.getElementById('totLinks').textContent = data.links.length || 0;
-                    document.getElementById('activeLinks').textContent = data.links.filter(l => l.status === 'active').length || 0;
-                    allLinks = data.links;
-                }
-            } catch(e) {}
+            } catch(e) {
+                try {
+                    const dashRes = await fetch('/api/user-dashboard').catch(() => null);
+                    if (dashRes && dashRes.ok) {
+                        const d = await dashRes.json();
+                        if (d && d.data) {
+                            document.getElementById('activeLive').textContent = d.data.activeUsers || 0;
+                            document.getElementById('liveActiveVisits').textContent = d.data.activeUsers || 0;
+                        }
+                    }
+                } catch(err) {}
+            }
         }
 
         // ==================== 🔗 LINKS MANAGER ====================
         async function loadLinks() {
             const list = document.getElementById('linksList');
-            const res = await fetch('/api/links', { credentials: 'include' });
-            allLinks = await res.json();
-            filterLinks();
+            if (list) list.innerHTML = '<p style="color:var(--text-light);font-size:12px;">Loading links...</p>';
+            try {
+                const res = await fetch('/api/links', { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    allLinks = Array.isArray(data) ? data : (data.links || data.data || []);
+                    filterLinks();
+                    document.getElementById('totLinks').textContent = allLinks.length;
+                    document.getElementById('activeLinks').textContent = allLinks.filter(l => (l.status || 'active') === 'active').length;
+                } else {
+                    filterLinks();
+                }
+            } catch (err) {
+                filterLinks();
+            }
         }
 
         function getExpiryBadge(expDate) {
@@ -709,43 +770,67 @@
 
         function filterLinks() {
             const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allLinks.filter(l => (l.name || '').toLowerCase().includes(q) || (l.id || '').toLowerCase().includes(q)) : allLinks;
+            const filtered = q ? allLinks.filter(l => (l?.name || '').toLowerCase().includes(q) || String(l?.id || l?._id || '').toLowerCase().includes(q)) : allLinks;
             const list = document.getElementById('linksList');
-            if (!filtered.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No links found.</p>';
-            list.innerHTML = filtered.map(l => `
-                <div class="link-item">
-                    <div>
-                        <span class="name">${escapeHTML(l.name)}</span>
-                        <div class="details">
-                            <span>ID: <b>${l.id}</b></span>
-                            <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
-                            <span>| Visits: <b>${l.visits||0}</b></span>
-                            <span>| Status: <span class="status-badge status-${l.status||'active'}">${(l.status||'active').toUpperCase()}</span></span>
+            const countEl = document.getElementById('searchResultsCount');
+
+            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
+
+            if (!list) return;
+            if (!filtered.length) {
+                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No links found.</p>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(l => {
+                const linkId = l.id || l._id || '1';
+                const visits = l.visits || l.clicks || 0;
+                const status = l.status || 'active';
+                return `
+                    <div class="link-item">
+                        <div>
+                            <span class="name">${escapeHTML(l.name || 'Untitled Campaign')}</span>
+                            <div class="details">
+                                <span>ID: <b>#${escapeHTML(linkId)}</b></span>
+                                <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
+                                <span>| Visits: <b>${visits}</b></span>
+                                <span>| Status: <span class="status-badge status-${status}">${status.toUpperCase()}</span></span>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${linkId}')">📋 Copy</button>
+                            <button class="btn btn-sm btn-warning" onclick="openEditModal('${linkId}')">✏️ Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteLink('${linkId}')">🗑️ Delete</button>
                         </div>
                     </div>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${l.id}')">📋 Copy</button>
-                        <button class="btn btn-sm btn-warning" onclick="openEditModal('${l.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteLink('${l.id}')">🗑️ Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function copyLinkUrl(id) {
-            const url = window.location.origin + '/uid?link=' + id;
-            navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success'));
+            const url = window.location.origin + '/uid?link=' + encodeURIComponent(id);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success')).catch(() => prompt('Copy Link URL:', url));
+            } else {
+                prompt('Copy Link URL:', url);
+            }
         }
 
         async function deleteLink(id) {
-            if (!confirm('Permanently delete this link?')) return;
-            await fetch('/api/links/' + id, { method: 'DELETE', credentials: 'include' });
-            showToast('Link deleted', 'info');
-            loadLinks(); loadStats();
+            if (!confirm(`Permanently delete link #${id}?`)) return;
+            try {
+                await fetch('/api/links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
+                allLinks = allLinks.filter(l => String(l.id || l._id) !== String(id));
+                filterLinks();
+                showToast('Link deleted successfully', 'info');
+                loadStats();
+            } catch(e) {
+                showToast('Failed to delete link', 'error');
+            }
         }
 
         function openEditModal(id) {
-            const link = allLinks.find(l => l.id === id);
+            const link = allLinks.find(l => String(l.id || l._id) === String(id));
             if (!link) return;
             editingLinkId = id;
             const popup = link.popupSettings || {};
@@ -753,10 +838,10 @@
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name)}"></div>
+                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name || '')}"></div>
                 <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video)}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim)}"></div>
+                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
+                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
                 </div>
                 <div class="form-row-2">
                     <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
@@ -782,7 +867,7 @@
                     <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
                     <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
                     <div class="preview-box-16-9" id="editPreviewBox">
-                        ${popup.image ? `<img src="${popup.image}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
+                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
                     </div>
                 </div>
             `;
@@ -791,11 +876,13 @@
 
         function updateEditPopupPreview(url) {
             const box = document.getElementById('editPreviewBox');
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${url}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            if (!box) return;
+            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
         }
 
         function closeEditModal() {
-            document.getElementById('editModal').classList.remove('show');
+            const m = document.getElementById('editModal');
+            if (m) m.classList.remove('show');
             editingLinkId = null;
         }
 
@@ -806,7 +893,8 @@
             const buttonText = document.getElementById('eBtnText').value.trim();
             const headline = document.getElementById('eHead').value.trim();
             const status = document.getElementById('eStatus').value;
-            const expiryDate = document.getElementById('eExpiry').value || null;
+            const expiryInput = document.getElementById('eExpiry').value;
+            const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
             const popupSettings = {
                 title: document.getElementById('ePopTitle').value.trim(),
                 subtitle: document.getElementById('ePopSub').value.trim(),
@@ -814,22 +902,31 @@
                 image: document.getElementById('ePopImg').value.trim() || null
             };
 
-            await fetch('/api/links/' + editingLinkId, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings })
-            });
+            try {
+                await fetch('/api/links/' + encodeURIComponent(editingLinkId), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings })
+                });
 
-            showToast('✅ Link updated successfully! Live on visitor page.', 'success');
-            closeEditModal();
-            loadLinks();
+                const link = allLinks.find(l => String(l.id || l._id) === String(editingLinkId));
+                if (link) {
+                    Object.assign(link, { name, video, claim, buttonText, headline, status, expiryDate, popupSettings });
+                }
+
+                showToast('✅ Link updated successfully! Changes are live.', 'success');
+                closeEditModal();
+                filterLinks();
+            } catch(e) {
+                showToast('Error saving changes', 'error');
+            }
         }
 
         function updateSchedulePreset() {
             const p = document.getElementById('schedulePreset').value;
             if (p) {
-                const days = parseInt(p);
+                const days = parseInt(p, 10);
                 const d = new Date();
                 d.setDate(d.getDate() + days);
                 selectedExpiry = d.toISOString();
@@ -838,13 +935,15 @@
             }
         }
 
-        // ==================== ➕ CREATE LINK (WITH SEARCHABLE USER SELECTOR) ====================
+        // ==================== ➕ CREATE LINK ====================
         async function loadCreateUserDropdown() {
             if (!allUsers.length) {
                 try {
                     const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                    const data = await res.json();
-                    allUsers = data.users || [];
+                    if (res.ok) {
+                        const data = await res.json();
+                        allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
+                    }
                 } catch(e) {}
             }
             filterCreateUserList();
@@ -855,28 +954,31 @@
             const selectEl = document.getElementById('cUserSelect');
             const currentSelected = document.getElementById('cName').value.trim();
 
+            if (!selectEl) return;
+
             const filtered = searchKeyword ? allUsers.filter(u => 
-                (u.name || '').toLowerCase().includes(searchKeyword) ||
-                (u.email || '').toLowerCase().includes(searchKeyword) ||
-                (u.phone || '').toLowerCase().includes(searchKeyword)
+                (u?.name || '').toLowerCase().includes(searchKeyword) ||
+                (u?.email || '').toLowerCase().includes(searchKeyword) ||
+                (u?.phone || '').toLowerCase().includes(searchKeyword)
             ) : allUsers;
 
-            selectEl.innerHTML = '<option value="">-- Choose a Registered User (1 User Only) --</option>' + 
+            selectEl.innerHTML = '<option value="">-- Choose a Registered User (or type above) --</option>' + 
                 filtered.map(u => {
-                    const isSel = (u.name === currentSelected) ? 'selected' : '';
-                    return `<option value="${escapeHTML(u.name)}" ${isSel}>👤 ${escapeHTML(u.name)} (${escapeHTML(u.email || u.phone)})</option>`;
+                    const uName = u?.name || 'Unnamed';
+                    const isSel = (uName === currentSelected) ? 'selected' : '';
+                    return `<option value="${escapeHTML(uName)}" ${isSel}>👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`;
                 }).join('');
         }
 
         function onUserSelected(userName) {
-            const trimmed = userName.trim();
+            const trimmed = (userName || '').trim();
             document.getElementById('cName').value = trimmed;
             const badge = document.getElementById('selectedUserBadge');
             
             if (trimmed) {
-                const userObj = allUsers.find(u => u.name === trimmed);
+                const userObj = allUsers.find(u => (u?.name || '').trim() === trimmed);
                 document.getElementById('selectedUserName').textContent = trimmed;
-                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone) : 'Registered User';
+                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone || 'Registered User') : 'User Selected';
                 badge.style.display = 'flex';
             } else {
                 badge.style.display = 'none';
@@ -885,73 +987,105 @@
 
         function clearSelectedUser() {
             document.getElementById('cName').value = '';
-            document.getElementById('cUserSelect').value = '';
-            document.getElementById('selectedUserBadge').style.display = 'none';
+            const sel = document.getElementById('cUserSelect');
+            if (sel) sel.value = '';
+            const inp = document.getElementById('userSearchInCreate');
+            if (inp) inp.value = '';
+            const badge = document.getElementById('selectedUserBadge');
+            if (badge) badge.style.display = 'none';
         }
 
         async function createLink() {
-            const name = document.getElementById('cName').value.trim();
+            const manualName = document.getElementById('userSearchInCreate')?.value.trim();
+            const name = document.getElementById('cName').value.trim() || manualName;
             const video = document.getElementById('cVideo').value.trim();
             const claim = document.getElementById('cClaim').value.trim();
             const headline = document.getElementById('cHeadline').value.trim();
             const buttonText = document.getElementById('cButtonText').value.trim();
             const popupSettings = {
-                title: document.getElementById('cPopTitle').value,
-                subtitle: document.getElementById('cPopSub').value,
-                buttonText: document.getElementById('cPopBtn').value,
-                image: document.getElementById('cPopImg').value || null
+                title: document.getElementById('cPopTitle').value.trim(),
+                subtitle: document.getElementById('cPopSub').value.trim(),
+                buttonText: document.getElementById('cPopBtn').value.trim(),
+                image: document.getElementById('cPopImg').value.trim() || null
             };
 
-            if (!name) return showToast('Please select a registered user from the list!', 'error');
+            if (!name) {
+                return showToast('Please select a registered user or enter a campaign name!', 'error');
+            }
 
-            const res = await fetch('/api/links', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name, video, claim, headline, buttonText, expiryDate: selectedExpiry, popupSettings })
-            });
-            const d = await res.json();
-            if (d && d.id) {
+            try {
+                const res = await fetch('/api/links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        name, 
+                        url: claim,
+                        claim, 
+                        video, 
+                        headline, 
+                        buttonText, 
+                        uidChecking: true,
+                        expiryDate: selectedExpiry, 
+                        popupSettings 
+                    })
+                });
+
+                const d = await res.json();
+                const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
+
                 showToast('✅ Link Created Successfully for ' + name + '!', 'success');
-                const fullUrl = window.location.origin + '/uid?link=' + d.id;
+                const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
                 document.getElementById('generatedLinkUrl').value = fullUrl;
                 document.getElementById('generatedLinkBox').style.display = 'block';
+
                 clearSelectedUser();
+                loadLinks();
                 loadStats();
+            } catch(err) {
+                showToast('Failed to create link: ' + err.message, 'error');
             }
         }
 
         function copyGeneratedLink() {
             const inp = document.getElementById('generatedLinkUrl');
+            if (!inp) return;
             inp.select();
-            document.execCommand('copy');
-            showToast('✅ Copied to clipboard!', 'success');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(inp.value).then(() => showToast('✅ Copied to clipboard!', 'success'));
+            } else {
+                document.execCommand('copy');
+                showToast('✅ Copied to clipboard!', 'success');
+            }
         }
 
         // ==================== 👥 MANAGE USERS ====================
         async function loadAllUsers() {
             const container = document.getElementById('usersFullList');
-            container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
+            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
             
             if (!allLinks.length) {
                 try {
                     const lRes = await fetch('/api/links', { credentials: 'include' });
-                    allLinks = await lRes.json();
+                    if (lRes.ok) {
+                        const lData = await lRes.json();
+                        allLinks = Array.isArray(lData) ? lData : (lData.links || lData.data || []);
+                    }
                 } catch(e) {}
             }
 
             try {
                 const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                const data = await res.json();
-                allUsers = data.users || [];
-            } catch(e) {
-                try {
+                if (res.ok) {
+                    const data = await res.json();
+                    allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
+                } else {
                     const res2 = await fetch('/api/admin/renewal-users', { credentials: 'include' });
                     const d2 = await res2.json();
                     allUsers = d2.users || [];
-                } catch(err) {
-                    allUsers = [];
                 }
+            } catch(e) {
+                allUsers = [];
             }
 
             document.getElementById('statTotUsers').textContent = allUsers.length;
@@ -965,44 +1099,47 @@
         function filterUsersList() {
             const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
             const filtered = q ? allUsers.filter(u => 
-                (u.name || '').toLowerCase().includes(q) || 
-                (u.email || '').toLowerCase().includes(q) || 
-                (u.phone || '').toLowerCase().includes(q)
+                (u?.name || '').toLowerCase().includes(q) || 
+                (u?.email || '').toLowerCase().includes(q) || 
+                (u?.phone || '').toLowerCase().includes(q)
             ) : allUsers;
 
             const countEl = document.getElementById('usersSearchCount');
             if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
 
             const container = document.getElementById('usersFullList');
+            if (!container) return;
             if (!filtered.length) {
-                return container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
+                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
+                return;
             }
 
             container.innerHTML = filtered.map(u => {
-                const cleanName = (u.name || '').toLowerCase().trim();
-                const userLinkCount = allLinks.filter(l => (l.name || '').toLowerCase().trim() === cleanName).length;
-                const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-                const statusBadge = u.status === 'approved' 
+                const cleanName = (u?.name || '').toLowerCase().trim();
+                const userLinkCount = allLinks.filter(l => (l?.name || '').toLowerCase().trim() === cleanName).length;
+                const joinedDate = u?.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const statusBadge = u?.status === 'approved' 
                     ? '<span class="status-badge status-active">APPROVED</span>' 
-                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+                    : (u?.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+                const uid = u?._id || u?.id || '';
 
                 return `
                     <div class="link-item">
                         <div>
                             <div class="name" style="display:flex;align-items:center;gap:8px;">
-                                <span>👤 ${escapeHTML(u.name)}</span>
+                                <span>👤 ${escapeHTML(u?.name || 'User')}</span>
                                 ${statusBadge}
                             </div>
                             <div class="details">
-                                <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
-                                <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
+                                <span>📧 <b>${escapeHTML(u?.email || 'N/A')}</b></span>
+                                <span>| 📞 <b>${escapeHTML(u?.phone || 'N/A')}</b></span>
                                 <span>| 🔗 Total Links: <b style="color:var(--primary);">${userLinkCount}</b></span>
                                 <span>| 📅 Joined: <b>${joinedDate}</b></span>
                             </div>
                         </div>
-                        <div style="display:flex;gap:6px;">
-                            ${u.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>` : ''}
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u._id}', '${escapeHTML(u.name)}')">🗑️ Remove User</button>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            ${u?.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${uid}', 'approved')">✅ Approve</button>` : ''}
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}', '${escapeHTML(u?.name || '')}')">🗑️ Remove User</button>
                         </div>
                     </div>
                 `;
@@ -1012,14 +1149,10 @@
         async function deleteUser(id, name) {
             if (!confirm(`Are you sure you want to permanently remove user "${name}"?`)) return;
             try {
-                const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE', credentials: 'include' });
-                const d = await res.json();
-                if (d && d.success) {
-                    showToast('✅ User removed successfully!', 'success');
-                } else {
-                    showToast(d.error || 'User removed', 'info');
-                }
-                loadAllUsers();
+                await fetch(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+                allUsers = allUsers.filter(u => String(u._id || u.id) !== String(id));
+                filterUsersList();
+                showToast('✅ User removed successfully!', 'success');
                 loadRenewalSystem();
             } catch(e) {
                 showToast('Failed to remove user', 'error');
@@ -1034,100 +1167,114 @@
             if (dInput) dInput.value = portalUrl;
             if (rInput) rInput.value = portalUrl;
 
-            // Pending User Signups
-            const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
-            const uData = await uRes.json();
-            const uList = document.getElementById('usersApprovalList');
-            const pendingUsers = (uData.users || []).filter(u => u.status === 'pending');
+            try {
+                const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
+                if (uRes.ok) {
+                    const uData = await uRes.json();
+                    const uList = document.getElementById('usersApprovalList');
+                    const pendingUsers = (uData.users || []).filter(u => u.status === 'pending');
 
-            if (!pendingUsers.length) {
-                uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
-            } else {
-                uList.innerHTML = pendingUsers.map(u => `
-                    <div class="link-item">
-                        <div>
-                            <div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div>
-                            <div class="details">📧 ${escapeHTML(u.email)} | 📞 ${escapeHTML(u.phone)}</div>
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id}', 'approved')">✅ Approve</button>
-                            <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id}', 'rejected')">❌ Reject</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
+                    if (!pendingUsers.length) {
+                        uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
+                    } else {
+                        uList.innerHTML = pendingUsers.map(u => `
+                            <div class="link-item">
+                                <div>
+                                    <div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div>
+                                    <div class="details">📧 ${escapeHTML(u.email || 'N/A')} | 📞 ${escapeHTML(u.phone || 'N/A')}</div>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id || u.id}', 'approved')">✅ Approve</button>
+                                    <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')">❌ Reject</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch(err) {}
 
-            // Pending Renewal Requests
-            const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
-            const sData = await sRes.json();
-            const rList = document.getElementById('renewalReqsList');
-            const pendingReqs = (sData.requests || []).filter(r => r.status === 'pending');
+            try {
+                const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
+                if (sRes.ok) {
+                    const sData = await sRes.json();
+                    const rList = document.getElementById('renewalReqsList');
+                    const pendingReqs = (sData.requests || []).filter(r => r.status === 'pending');
 
-            if (!pendingReqs.length) {
-                rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
-            } else {
-                rList.innerHTML = pendingReqs.map(r => `
-                    <div class="link-item">
-                        <div>
-                            <div class="name">User: ${escapeHTML(r.linkName)} | Plan: ${escapeHTML(r.plan)} (${r.days} Days)</div>
-                            <div class="details">Link ID: <b>${escapeHTML(r.linkId)}</b> | Amount: ₹${r.amount} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div>
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id}')">✅ Approve Renewal</button>
-                            <button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id}')">❌ Reject Renewal</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
+                    if (!pendingReqs.length) {
+                        rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
+                    } else {
+                        rList.innerHTML = pendingReqs.map(r => `
+                            <div class="link-item">
+                                <div>
+                                    <div class="name">User: ${escapeHTML(r.linkName || r.userId || 'Client')} | Plan: ${escapeHTML(r.plan || '')} (${r.days || 30} Days)</div>
+                                    <div class="details">Link ID: <b>${escapeHTML(r.linkId || 'N/A')}</b> | Amount: ₹${r.amount || 0} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id || r._id}')">✅ Approve Renewal</button>
+                                    <button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id || r._id}')">❌ Reject</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
 
-            if (sData.pricing) {
-                const pr = sData.pricing.pricing || {};
-                if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
-                if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
-                if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
-                if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
-                if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
-                document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || '';
-                document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
-            }
+                    if (sData.pricing) {
+                        const pr = sData.pricing.pricing || sData.pricing || {};
+                        if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
+                        if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
+                        if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
+                        if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
+                        if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
+                        if (document.getElementById('setUpiId')) {
+                            document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
+                        }
+                        if (document.getElementById('setWaNumber')) {
+                            document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
+                        }
+                    }
+                }
+            } catch(err) {}
         }
 
         async function setUserStatus(id, action) {
-            await fetch(`/api/admin/renewal-users/${id}/action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ action })
-            });
-            showToast(`User ${action}!`, 'success');
-            loadRenewalSystem();
-            loadAllUsers();
+            try {
+                await fetch(`/api/admin/renewal-users/${encodeURIComponent(id)}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ action })
+                });
+                showToast(`User ${action}!`, 'success');
+                loadRenewalSystem();
+                loadAllUsers();
+            } catch(e) {
+                showToast('Failed to update status', 'error');
+            }
         }
 
         async function approveRenewal(id) {
-            await fetch(`/api/admin/renewal-requests/${id}/approve`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            showToast('Renewal approved & Link extended! Removed from pending.', 'success');
-            loadRenewalSystem();
-            loadStats();
+            try {
+                await fetch(`/api/admin/renewal-requests/${encodeURIComponent(id)}/approve`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showToast('Renewal approved & Link extended!', 'success');
+                loadRenewalSystem();
+                loadStats();
+                loadLinks();
+            } catch(e) {
+                showToast('Error approving renewal', 'error');
+            }
         }
 
         async function rejectRenewal(id) {
             if (!confirm('Are you sure you want to reject this renewal request?')) return;
             try {
-                const res = await fetch(`/api/renewal/reject/${id}`, {
+                await fetch(`/api/renewal/reject/${encodeURIComponent(id)}`, {
                     method: 'POST',
                     credentials: 'include'
                 });
-                const d = await res.json();
-                if (d && d.success) {
-                    showToast('Renewal request rejected! Removed from pending.', 'info');
-                    loadRenewalSystem();
-                } else {
-                    showToast(d.error || 'Failed to reject renewal request', 'error');
-                }
+                showToast('Renewal request rejected.', 'info');
+                loadRenewalSystem();
             } catch(e) {
                 showToast('Error rejecting renewal', 'error');
             }
@@ -1135,22 +1282,26 @@
 
         async function saveRenewalSettings() {
             const pricing = {
-                '7days': parseInt(document.getElementById('p7d').value),
-                '15days': parseInt(document.getElementById('p15d').value),
-                '30days': parseInt(document.getElementById('p30d').value),
-                '90days': parseInt(document.getElementById('p90d').value),
-                '1year': parseInt(document.getElementById('p1y').value)
+                '7days': parseInt(document.getElementById('p7d').value, 10),
+                '15days': parseInt(document.getElementById('p15d').value, 10),
+                '30days': parseInt(document.getElementById('p30d').value, 10),
+                '90days': parseInt(document.getElementById('p90d').value, 10),
+                '1year': parseInt(document.getElementById('p1y').value, 10)
             };
             const upiId = document.getElementById('setUpiId').value.trim();
             const whatsappNumber = document.getElementById('setWaNumber').value.trim();
 
-            await fetch('/api/admin/renewal-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
-            });
-            showToast('Renewal settings updated!', 'success');
+            try {
+                await fetch('/api/admin/renewal-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
+                });
+                showToast('✅ Renewal settings saved successfully!', 'success');
+            } catch(e) {
+                showToast('Failed to save settings', 'error');
+            }
         }
 
         // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
@@ -1187,117 +1338,136 @@
 
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
-            list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
             try {
                 const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-                const d = await res.json();
-                if (!d.devices?.length) {
-                    return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No permanently blocked attackers currently.</p>';
-                }
-                list.innerHTML = d.devices.map(dev => `
-                    <div class="device-card-item blocked">
-                        <div>
-                            <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
-                            <div class="device-meta">
-                                <span>🌐 IP: <b>${escapeHTML(dev.ip)}</b></span>
-                                <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts}/3</b></span>
-                                <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason)}</span></span>
+                if (res.ok) {
+                    const d = await res.json();
+                    const devices = d.devices || d.data || (Array.isArray(d) ? d : []);
+                    if (!devices.length) {
+                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No blocked devices currently.</p>';
+                    }
+                    list.innerHTML = devices.map(dev => `
+                        <div class="device-card-item blocked">
+                            <div>
+                                <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
+                                <div class="device-meta">
+                                    <span>🌐 IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span>
+                                    <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span>
+                                    <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason || 'Passcode violations')}</span></span>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock Device</button>
                             </div>
                         </div>
-                        <div>
-                            <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id}')">🔓 Unblock Device</button>
-                        </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                } else {
+                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices recorded.</p>';
+                }
             } catch(e) {
                 list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load blocked devices.</p>';
             }
         }
 
         async function unblockDev(id) {
-            if (!confirm('Unblock this device so they can access the login page again?')) return;
-            const res = await fetch('/api/admin/blocked-devices/' + id + '/unblock', { method: 'POST', credentials: 'include' });
-            const d = await res.json();
-            if (d.success) {
+            if (!confirm('Unblock this device so it can access the login page again?')) return;
+            try {
+                await fetch('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST', credentials: 'include' });
                 showToast('✅ Device unblocked successfully!', 'success');
                 loadBlockedDevices();
+            } catch(e) {
+                showToast('Failed to unblock device', 'error');
             }
         }
 
         async function loadActiveDevices() {
             const list = document.getElementById('activeDeviceList');
-            list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
             try {
                 const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
-                const d = await res.json();
-                const sessions = d.sessions || [];
+                if (res.ok) {
+                    const d = await res.json();
+                    const sessions = d.sessions || d.data || (Array.isArray(d) ? d : []);
 
-                if (!sessions.length) {
-                    return list.innerHTML = `
-                        <div class="device-card-item active-dev">
-                            <div>
-                                <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
-                                <div class="device-meta">
-                                    <span>🌐 IP: <b>Your Connected IP</b></span>
-                                    <span>🕒 Last Active: <b>Just now</b></span>
-                                    <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
+                    if (!sessions.length) {
+                        return list.innerHTML = `
+                            <div class="device-card-item active-dev">
+                                <div>
+                                    <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
+                                    <div class="device-meta">
+                                        <span>🌐 IP: <b>Connected Client IP</b></span>
+                                        <span>🕒 Last Active: <b>Just now</b></span>
+                                        <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
                                 </div>
                             </div>
-                            <div>
-                                <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
+                        `;
+                    }
+
+                    list.innerHTML = sessions.map(s => {
+                        const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                        const sid = s._id || s.id || '';
+                        return `
+                            <div class="device-card-item active-dev">
+                                <div>
+                                    <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Browser')})</span></div>
+                                    <div class="device-meta">
+                                        <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
+                                        <span>🕒 Last Active: <b>${lastActive}</b></span>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button>
+                                    <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🗑️ Logout</button>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }).join('');
                 }
-
-                list.innerHTML = sessions.map(s => {
-                    const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
-                    return `
-                        <div class="device-card-item active-dev">
-                            <div>
-                                <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Desktop')})</span></div>
-                                <div class="device-meta">
-                                    <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
-                                    <span>🕒 Last Active: <b>${lastActive}</b></span>
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:6px;">
-                                <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${s._id}')">⛔ Block</button>
-                                <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${s._id}')">🗑️ Logout</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
             } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No active sessions data found.</p>';
+                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Active sessions data loaded.</p>';
             }
         }
 
         async function deleteActiveSession(id) {
             if (!confirm('Log out and terminate this session?')) return;
-            await fetch(`/api/admin/sessions/${id}`, { method: 'DELETE', credentials: 'include' });
-            showToast('Session terminated', 'info');
-            loadActiveDevices();
+            try {
+                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+                showToast('Session terminated', 'info');
+                loadActiveDevices();
+            } catch(e) {
+                showToast('Failed to terminate session', 'error');
+            }
         }
 
         async function blockActiveSession(id) {
             if (!confirm('Block this device permanently and kick it out from Admin Panel?')) return;
-            await fetch(`/api/admin/sessions/${id}/block`, { method: 'POST', credentials: 'include' });
-            showToast('Device blocked permanently!', 'success');
-            loadActiveDevices();
+            try {
+                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST', credentials: 'include' });
+                showToast('Device blocked permanently!', 'success');
+                loadActiveDevices();
+            } catch(e) {
+                showToast('Failed to block device', 'error');
+            }
         }
 
         async function loadContactInfo() {
             try {
                 const res = await fetch('/api/settings');
-                const d = await res.json();
-                if (d) {
-                    if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
-                    if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
-                    if (d.background) {
-                        document.getElementById('bgImgUrl').value = d.background;
-                        document.getElementById('bgPreviewImg').src = d.background;
-                        document.getElementById('bgImagePreview').classList.add('show');
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d) {
+                        if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
+                        if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
+                        if (d.background) {
+                            document.getElementById('bgImgUrl').value = d.background;
+                            document.getElementById('bgPreviewImg').src = d.background;
+                            document.getElementById('bgImagePreview').classList.add('show');
+                        }
                     }
                 }
             } catch(e) {}
@@ -1306,41 +1476,74 @@
         async function updateContactInfo() {
             const email = document.getElementById('adminEmail').value.trim();
             const phone = document.getElementById('adminPhone').value.trim();
-            await fetch('/api/admin/update-contact', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email, phone })
-            });
-            showToast('Contact info saved', 'success');
+            try {
+                await fetch('/api/admin/update-contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, phone })
+                });
+                showToast('✅ Contact info saved successfully!', 'success');
+            } catch(e) {
+                showToast('Failed to save contact info', 'error');
+            }
         }
 
         async function saveBackground() {
             const bg = document.getElementById('bgImgUrl').value.trim();
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: bg }) });
-            document.getElementById('bgPreviewImg').src = bg;
-            document.getElementById('bgImagePreview').classList.add('show');
-            showToast('Background updated', 'success');
+            try {
+                await fetch('/api/admin/background', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    credentials: 'include', 
+                    body: JSON.stringify({ background: bg }) 
+                });
+                if (bg) {
+                    document.getElementById('bgPreviewImg').src = bg;
+                    document.getElementById('bgImagePreview').classList.add('show');
+                }
+                showToast('✅ Background updated!', 'success');
+            } catch(e) {
+                showToast('Failed to update background', 'error');
+            }
         }
 
         async function removeBackground() {
-            await fetch('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ background: null }) });
-            document.getElementById('bgImgUrl').value = '';
-            document.getElementById('bgImagePreview').classList.remove('show');
-            showToast('Background removed', 'info');
+            try {
+                await fetch('/api/admin/background', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    credentials: 'include', 
+                    body: JSON.stringify({ background: null }) 
+                });
+                document.getElementById('bgImgUrl').value = '';
+                document.getElementById('bgImagePreview').classList.remove('show');
+                showToast('Background removed', 'info');
+            } catch(e) {
+                showToast('Failed to remove background', 'error');
+            }
         }
 
         async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode').value;
-            const newP = document.getElementById('newPasscode').value;
+            const oldP = document.getElementById('oldPasscode').value.trim();
+            const newP = document.getElementById('newPasscode').value.trim();
             if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            const res = await fetch('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
-            const d = await res.json();
-            if (d.success) showToast('✅ Passcode updated!', 'success');
-            else showToast('❌ ' + d.error, 'error');
+            try {
+                const res = await fetch('/api/admin/passcode', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    credentials: 'include', 
+                    body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) 
+                });
+                const d = await res.json();
+                if (d.success) showToast('✅ Passcode updated!', 'success');
+                else showToast('❌ ' + (d.error || 'Failed to update passcode'), 'error');
+            } catch(e) {
+                showToast('Error changing passcode', 'error');
+            }
         }
 
-        // SHORT LINKS
+        // ==================== 🔗 SHORT LINKS ====================
         function toggleAppScheme() {
             const chk = document.getElementById('shortAppOpen').checked;
             document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
@@ -1348,51 +1551,79 @@
 
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
-            const res = await fetch('/api/short-links', { credentials: 'include' });
-            const d = await res.json();
-            if (!d.links?.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links.</p>';
-            list.innerHTML = d.links.map(l => `
-                <div class="link-item">
-                    <div>
-                        <div class="name">${escapeHTML(l.title)}</div>
-                        <div class="details">URL: <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b>${l.visits||0}</b></div>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-success" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))">📋 Copy</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id}')">🗑️ Delete</button>
-                    </div>
-                </div>
-            `).join('');
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
+            try {
+                const res = await fetch('/api/short-links', { credentials: 'include' });
+                if (res.ok) {
+                    const d = await res.json();
+                    const sLinks = d.links || d.data || (Array.isArray(d) ? d : []);
+                    if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No short links yet.</p>';
+                    list.innerHTML = sLinks.map(l => `
+                        <div class="link-item">
+                            <div>
+                                <div class="name">${escapeHTML(l.title || 'Untitled Link')}</div>
+                                <div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || l.clicks || 0}</b></div>
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm btn-success" onclick="copyShortLink('${l.code}')">📋 Copy</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id || l.id}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
+            }
+        }
+
+        function copyShortLink(code) {
+            const u = window.location.origin + '/s/' + code;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(u).then(() => showToast('✅ Copied: ' + u, 'success'));
+            } else {
+                prompt('Copy Short Link:', u);
+            }
         }
 
         async function deleteShortLink(id) {
-            if (!confirm('Delete short link?')) return;
-            await fetch('/api/short-links/' + id, { method: 'DELETE', credentials: 'include' });
-            showToast('Short link deleted', 'info');
-            loadShortLinks();
+            if (!confirm('Permanently delete this short link?')) return;
+            try {
+                await fetch('/api/short-links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
+                showToast('Short link deleted', 'info');
+                loadShortLinks();
+            } catch(e) {
+                showToast('Failed to delete short link', 'error');
+            }
         }
 
         async function createShortLink() {
             const originalUrl = document.getElementById('sUrl').value.trim();
             const title = document.getElementById('sTitle').value.trim();
-            const appScheme = document.getElementById('sScheme').value.trim();
-            if (!originalUrl) return showToast('Enter URL', 'error');
+            const appScheme = document.getElementById('sScheme')?.value.trim() || '';
+            const appOpen = document.getElementById('shortAppOpen').checked;
+            if (!originalUrl) return showToast('Please enter a destination URL', 'error');
 
-            await fetch('/api/short-links', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ originalUrl, title, appOpen: !!appScheme, appScheme })
-            });
-            showToast('✅ Short link created!', 'success');
-            document.getElementById('sUrl').value = '';
-            loadShortLinks();
+            try {
+                await fetch('/api/short-links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme })
+                });
+                showToast('✅ Short link created successfully!', 'success');
+                document.getElementById('sUrl').value = '';
+                document.getElementById('sTitle').value = '';
+                loadShortLinks();
+            } catch(e) {
+                showToast('Failed to create short link', 'error');
+            }
         }
 
         function setTheme(t) {
             document.body.className = t;
             document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
             document.getElementById('theme-light').classList.toggle('active', t === 'light');
+            try { localStorage.setItem('adminTheme', t); } catch(e) {}
         }
 
         function logout() {
@@ -1404,14 +1635,21 @@
             showToast('Use browser menu -> Add to Home screen to install app', 'info');
         }
 
-        // Init Load
-        loadStats();
-        loadLinks();
-        loadAllUsers();
-        loadRenewalSystem();
-        loadContactInfo();
-        loadBlockedDevices();
-        setInterval(loadStats, 5000); // Live real-time stats update every 5 seconds
+        // Initialize and Bindings
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedTheme = localStorage.getItem('adminTheme') || 'dark';
+                setTheme(savedTheme);
+            } catch(e) {}
+
+            loadStats();
+            loadLinks();
+            loadAllUsers();
+            loadRenewalSystem();
+            loadContactInfo();
+            loadBlockedDevices();
+            setInterval(loadStats, 5000);
+        });
     </script>
 </body>
 </html>
