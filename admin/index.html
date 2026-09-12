@@ -44,7 +44,7 @@
         /* Top Header */
         .header {
             background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
             border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-wrap: wrap; gap: 12px;
         }
         .header-left { display: flex; align-items: center; gap: 14px; }
@@ -58,6 +58,22 @@
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
+
+        /* 🌟 TOP NAVIGATION BAR (DIRECT TABS VISIBLE ON DESKTOP & MOBILE) */
+        .top-navbar {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 8px 12px; margin-bottom: 20px; display: flex; gap: 8px; overflow-x: auto;
+            scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+        }
+        .top-navbar::-webkit-scrollbar { height: 4px; }
+        .top-navbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .nav-tab-btn {
+            padding: 9px 16px; border-radius: 10px; border: 1px solid transparent; background: transparent;
+            color: var(--text-light); font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex;
+            align-items: center; gap: 7px; white-space: nowrap; transition: 0.2s;
+        }
+        .nav-tab-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
+        .nav-tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(99,102,241,0.35); }
 
         /* ☰ Top-Left 3-Line Hamburger Button */
         .btn-hamburger {
@@ -236,25 +252,25 @@
             <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
         </div>
         <div class="sidebar-menu">
-            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
+            <button class="sidebar-btn active" id="btn-side-dashboard" onclick="showSection('dashboard')">
                 <span>📊</span> Dashboard
             </button>
-            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
+            <button class="sidebar-btn" id="btn-side-links" onclick="showSection('links')">
                 <span>🔗</span> Links Manager
             </button>
-            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
-                <span>👥</span> Manage Users
-            </button>
-            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
-                <span>🔄</span> Users & Renewal
-            </button>
-            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
+            <button class="sidebar-btn" id="btn-side-create" onclick="showSection('create')">
                 <span>➕</span> Create Link
             </button>
-            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
+            <button class="sidebar-btn" id="btn-side-users" onclick="showSection('users')">
+                <span>👥</span> Manage Users
+            </button>
+            <button class="sidebar-btn" id="btn-side-renewals" onclick="showSection('renewals')">
+                <span>🔄</span> Users & Renewal
+            </button>
+            <button class="sidebar-btn" id="btn-side-shortener" onclick="showSection('shortener')">
                 <span>🔗</span> Short Link
             </button>
-            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
+            <button class="sidebar-btn" id="btn-side-settings" onclick="showSection('settings')">
                 <span>⚙️</span> Settings
             </button>
         </div>
@@ -283,6 +299,31 @@
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
         </header>
+
+        <!-- 🌟 ALL FEATURES DIRECTLY VISIBLE TOP TABS BAR -->
+        <nav class="top-navbar" id="topNavbar">
+            <button class="nav-tab-btn active" id="btn-tab-dashboard" onclick="showSection('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-links" onclick="showSection('links')">
+                🔗 Links Manager
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-create" onclick="showSection('create')">
+                ➕ Create Link
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-users" onclick="showSection('users')">
+                👥 Manage Users
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-renewals" onclick="showSection('renewals')">
+                🔄 Users & Renewal
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-shortener" onclick="showSection('shortener')">
+                🔗 Short Link
+            </button>
+            <button class="nav-tab-btn" id="btn-tab-settings" onclick="showSection('settings')">
+                ⚙️ Settings
+            </button>
+        </nav>
 
         <!-- 1. DASHBOARD OVERVIEW -->
         <div class="section active" id="sec-dashboard">
@@ -322,8 +363,10 @@
                 <h3>⚡ Quick Shortcuts</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
-                    <button class="btn btn-sm btn-success" onclick="showSection('users')">👥 Manage Users</button>
-                    <button class="btn btn-sm btn-warning" onclick="showSection('renewals')">🔄 Check Renewal Requests</button>
+                    <button class="btn btn-sm btn-success" onclick="showSection('links')">🔗 All Tracking Links</button>
+                    <button class="btn btn-sm btn-warning" onclick="showSection('users')">👥 Manage Users</button>
+                    <button class="btn btn-sm btn-secondary" onclick="showSection('renewals')" style="background:var(--bg);border:1px solid var(--border);">🔄 Renewals</button>
+                    <button class="btn btn-sm btn-secondary" onclick="showSection('shortener')" style="background:var(--bg);border:1px solid var(--border);">🔗 Shortener</button>
                     <button class="btn btn-sm btn-secondary" onclick="showSection('settings')" style="background:var(--bg);border:1px solid var(--border);">🛡️ Devices</button>
                 </div>
             </div>
@@ -334,7 +377,10 @@
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                     <h3 style="margin:0;padding:0;border:none;">🔍 All Tracking Links</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadLinks()">🔄 Refresh Links</button>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm btn-success" onclick="showSection('create')">➕ Create New</button>
+                        <button class="btn btn-sm btn-primary" onclick="loadLinks()">🔄 Refresh Links</button>
+                    </div>
                 </div>
                 <div class="search-bar">
                     <input type="text" id="searchLinksInput" placeholder="Search by link name or ID..." oninput="filterLinks()">
@@ -419,20 +465,20 @@
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
                 
-                <!-- 👤 USER SELECTOR / MANUAL CAMPAIGN INPUT -->
+                <!-- 👤 CAMPAIGN OWNER / USER SELECTOR -->
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
                     <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
-                        👤 Campaign Owner / User Name:
+                        👤 Campaign Name / Client Owner:
                     </label>
                     
-                    <input type="text" id="userSearchInCreate" placeholder="🔍 Search registered user or type custom campaign name..." oninput="filterCreateUserList()" style="margin-bottom:8px;padding:9px 12px;font-size:13px;">
+                    <input type="text" id="userSearchInCreate" placeholder="Type Campaign Name (e.g. Giveaway) or search client..." oninput="onCampaignNameInput(this.value)" style="margin-bottom:8px;padding:10px 12px;font-size:13px;">
 
                     <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
-                        <option value="">-- Choose a Registered User (or type above) --</option>
+                        <option value="">-- Or Assign to a Registered User --</option>
                     </select>
 
                     <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;align-items:center;justify-content:space-between;">
-                        <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
+                        <span>Selected Client: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
                     </div>
 
@@ -460,7 +506,7 @@
                     </div>
                 </div>
 
-                <!-- 🛡️ ON UID CHECKING / OFF UID CHECKING BUTTON (CREATE SECTION) -->
+                <!-- 🛡️ ON UID CHECKING / OFF UID CHECKING BUTTON (CREATE) -->
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                     <div>
                         <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
@@ -526,8 +572,8 @@
         <div class="section" id="sec-shortener">
             <div class="card">
                 <h3>🔗 URL Shortener</h3>
-                <input type="text" id="sUrl" placeholder="Destination URL">
-                <input type="text" id="sTitle" placeholder="Title">
+                <input type="text" id="sUrl" placeholder="Destination URL (e.g. https://example.com)">
+                <input type="text" id="sTitle" placeholder="Link Title">
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
                     <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
                     <label class="switch">
@@ -631,25 +677,59 @@
         let selectedExpiry = null;
         let currentDeviceTab = 'blocked';
 
-        // 🛡️ Global state trackers for UID Checking
+        // 🛡️ Global state trackers for UID Checking button
         let createUidChecking = true;
         let editUidChecking = true;
 
+        // 🌟 Universal Safe Toast Notification
         function showToast(msg, type = 'info') {
-            const t = document.getElementById('toast');
-            if (!t) return;
+            let t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                t.className = 'toast';
+                document.body.appendChild(t);
+            }
             t.textContent = msg;
             t.className = `toast ${type} show`;
-            setTimeout(() => t.className = 'toast', 3500);
+            setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
+        }
+
+        // 🌟 Universal Safe Clipboard Copy (Works on HTTP, HTTPS, Mobile, Localhost)
+        function copyText(text, successMsg = 'Copied to clipboard!') {
+            if (!text) return;
+            if (navigator.clipboard && window.isSecureContext && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast('✅ ' + successMsg, 'success'))
+                    .catch(() => fallbackCopy(text, successMsg));
+            } else {
+                fallbackCopy(text, successMsg);
+            }
+        }
+
+        function fallbackCopy(text, successMsg) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.top = '0';
+            ta.style.left = '0';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) showToast('✅ ' + successMsg, 'success');
+                else prompt('Copy link manually:', text);
+            } catch (err) {
+                prompt('Copy link manually:', text);
+            }
+            document.body.removeChild(ta);
         }
 
         function copyPortalUrl() {
             const u = window.location.origin + '/user-dashboard';
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(u).then(() => showToast('✅ Copied Customer Portal URL!', 'success')).catch(() => prompt('Copy URL:', u));
-            } else {
-                prompt('Copy URL:', u);
-            }
+            copyText(u, 'Copied Customer Portal URL!');
         }
 
         function escapeHTML(str) {
@@ -672,24 +752,33 @@
             }
         }
 
+        // 🌟 Smooth Navigation: Switches section and highlights BOTH top tabs & sidebar
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
 
             const target = document.getElementById('sec-' + id);
             if (target) target.classList.add('active');
 
-            const btn = document.getElementById('btn-nav-' + id);
-            if (btn) btn.classList.add('active');
+            const sideBtn = document.getElementById('btn-side-' + id);
+            if (sideBtn) sideBtn.classList.add('active');
+
+            const topBtn = document.getElementById('btn-tab-' + id);
+            if (topBtn) topBtn.classList.add('active');
 
             toggleSidebar(false);
 
-            if (id === 'links') loadLinks();
-            if (id === 'users') loadAllUsers();
-            if (id === 'create') loadCreateUserDropdown();
-            if (id === 'renewals') loadRenewalSystem();
-            if (id === 'shortener') loadShortLinks();
-            if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
+            try {
+                if (id === 'links') loadLinks();
+                if (id === 'users') loadAllUsers();
+                if (id === 'create') loadCreateUserDropdown();
+                if (id === 'renewals') loadRenewalSystem();
+                if (id === 'shortener') loadShortLinks();
+                if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
+            } catch(e) {
+                console.warn('Section load error:', e);
+            }
         }
 
         function updateCreatePopupPreview(url) {
@@ -731,7 +820,7 @@
                     btn.innerHTML = '✅ ON UID CHECKING';
                 }
                 if (hiddenInp) hiddenInp.value = 'true';
-                showToast('UID Checking: ON (UID Entry Required)', 'success');
+                showToast('UID Checking: ON (UID Required)', 'success');
             } else {
                 if (badge) {
                     badge.className = 'status-badge status-disabled';
@@ -784,45 +873,37 @@
             }
         }
 
-        // ==================== 📊 REAL-TIME LIVELY STATS (REFRESH PER 5 SECONDS) ====================
+        // ==================== 📊 REAL-TIME LIVELY STATS ====================
         async function loadStats() {
             try {
                 const res = await fetch('/api/all-stats', { credentials: 'include' });
                 if (res.ok) {
                     const data = await res.json();
                     if (data && data.global) {
-                        document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
-                        document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
-                        document.getElementById('activeLive').textContent = data.global.activeNow || 0;
+                        const g = data.global;
+                        if (document.getElementById('totVisits')) document.getElementById('totVisits').textContent = g.totalVisitors || 0;
+                        if (document.getElementById('totClaims')) document.getElementById('totClaims').textContent = g.totalClaims || 0;
+                        if (document.getElementById('activeLive')) document.getElementById('activeLive').textContent = g.activeNow || 0;
                         
-                        document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
-                        document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
-                        document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
-                        document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
-                        document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
-                        document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
+                        if (document.getElementById('liveLifetimeVisits')) document.getElementById('liveLifetimeVisits').textContent = g.totalVisitors || 0;
+                        if (document.getElementById('liveLifetimeClaims')) document.getElementById('liveLifetimeClaims').textContent = g.totalClaims || 0;
+                        if (document.getElementById('liveTodayVisits')) document.getElementById('liveTodayVisits').textContent = g.todayVisitors || 0;
+                        if (document.getElementById('liveTodayClaims')) document.getElementById('liveTodayClaims').textContent = g.todayClaims || 0;
+                        if (document.getElementById('liveActiveVisits')) document.getElementById('liveActiveVisits').textContent = g.activeNow || 0;
+                        if (document.getElementById('liveActiveClaims')) document.getElementById('liveActiveClaims').textContent = g.activeClaims || 0;
 
                         const now = new Date();
-                        document.getElementById('lastRefreshTime').textContent = `Lively Updated: ${now.toLocaleTimeString()}`;
+                        if (document.getElementById('lastRefreshTime')) {
+                            document.getElementById('lastRefreshTime').textContent = `Lively Updated: ${now.toLocaleTimeString()}`;
+                        }
                     }
                     if (data && data.links) {
                         allLinks = Array.isArray(data.links) ? data.links : [];
-                        document.getElementById('totLinks').textContent = allLinks.length;
-                        document.getElementById('activeLinks').textContent = allLinks.filter(l => l.status === 'active').length;
+                        if (document.getElementById('totLinks')) document.getElementById('totLinks').textContent = allLinks.length;
+                        if (document.getElementById('activeLinks')) document.getElementById('activeLinks').textContent = allLinks.filter(l => (l?.status || 'active') === 'active').length;
                     }
                 }
-            } catch(e) {
-                try {
-                    const dashRes = await fetch('/api/user-dashboard').catch(() => null);
-                    if (dashRes && dashRes.ok) {
-                        const d = await dashRes.json();
-                        if (d && d.data) {
-                            document.getElementById('activeLive').textContent = d.data.activeUsers || 0;
-                            document.getElementById('liveActiveVisits').textContent = d.data.activeUsers || 0;
-                        }
-                    }
-                } catch(err) {}
-            }
+            } catch(e) {}
         }
 
         // ==================== 🔗 LINKS MANAGER ====================
@@ -835,8 +916,8 @@
                     const data = await res.json();
                     allLinks = Array.isArray(data) ? data : (data.links || data.data || []);
                     filterLinks();
-                    document.getElementById('totLinks').textContent = allLinks.length;
-                    document.getElementById('activeLinks').textContent = allLinks.filter(l => (l.status || 'active') === 'active').length;
+                    if (document.getElementById('totLinks')) document.getElementById('totLinks').textContent = allLinks.length;
+                    if (document.getElementById('activeLinks')) document.getElementById('activeLinks').textContent = allLinks.filter(l => (l?.status || 'active') === 'active').length;
                 } else {
                     filterLinks();
                 }
@@ -870,7 +951,7 @@
             const list = document.getElementById('linksList');
             const countEl = document.getElementById('searchResultsCount');
 
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
+            if (countEl) countEl.textContent = `Showing ${filtered.length} of${allLinks.length} links`;
 
             if (!list) return;
             if (!filtered.length) {
@@ -879,6 +960,7 @@
             }
 
             list.innerHTML = filtered.map(l => {
+                if (!l) return '';
                 const linkId = l.id || l._id || '1';
                 const visits = l.visits || l.clicks || 0;
                 const status = l.status || 'active';
@@ -911,17 +993,13 @@
 
         function copyLinkUrl(id) {
             const url = window.location.origin + '/uid?link=' + encodeURIComponent(id);
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(() => showToast('✅ Copied: ' + url, 'success')).catch(() => prompt('Copy Link URL:', url));
-            } else {
-                prompt('Copy Link URL:', url);
-            }
+            copyText(url, 'Copied Tracking Link URL: ' + url);
         }
 
         async function deleteLink(id) {
             if (!confirm(`Permanently delete link #${id}?`)) return;
             try {
-                await fetch('/api/links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
+                const res = await fetch('/api/links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
                 allLinks = allLinks.filter(l => String(l.id || l._id) !== String(id));
                 filterLinks();
                 showToast('Link deleted successfully', 'info');
@@ -932,857 +1010,15 @@
         }
 
         function openEditModal(id) {
-            const link = allLinks.find(l => String(l.id || l._id) === String(id));
-            if (!link) return;
+            const link = allLinks.find(l => String(l?.id || l?._id) === String(id));
+            if (!link) return showToast('Link details not found', 'error');
             editingLinkId = id;
             const popup = link.popupSettings || {};
             const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
 
-            // Set state from existing link data (defaults to true)
+            // Load existing link's UID checking status (defaults to true)
             editUidChecking = (link.uidChecking !== false);
 
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
-                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name || '')}"></div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="eStatus">
-                            <option value="active" ${link.status==='active'?'selected':''}>Active</option>
-                            <option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option>
-                            <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
-                </div>
-
-                <!-- 🛡️ UID CHECKING EDIT BUTTON (MODAL) -->
-                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                    <div>
-                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                            <span>🛡️ UID Checking Control:</span>
-                            <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">
-                                ${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}
-                            </span>
-                        </div>
-                        <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            ${editUidChecking 
-                                ? '🟢 <b>ON:</b> Link khulne par pehle user se UID enter karwayega, fir Entrance Popup & Video khulega.' 
-                                : '🔴 <b>OFF:</b> User direct Entrance Popup image dekhega, UID input skip ho jayega.'}
-                        </div>
-                    </div>
-                    <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
-                        ${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}
-                    </button>
-                </div>
-
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
-                    <div class="form-row-2">
-                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
-                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
-                    </div>
-                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
-                    <div class="preview-box-16-9" id="editPreviewBox">
-                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
-                    </div>
-                </div>
-            `;
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function updateEditPopupPreview(url) {
-            const box = document.getElementById('editPreviewBox');
-            if (!box) return;
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
-        }
-
-        function closeEditModal() {
-            const m = document.getElementById('editModal');
-            if (m) m.classList.remove('show');
-            editingLinkId = null;
-        }
-
-        async function saveLinkEdit() {
-            const name = document.getElementById('eName').value.trim();
-            const video = document.getElementById('eVideo').value.trim();
-            const claim = document.getElementById('eClaim').value.trim();
-            const buttonText = document.getElementById('eBtnText').value.trim();
-            const headline = document.getElementById('eHead').value.trim();
-            const status = document.getElementById('eStatus').value;
-            const expiryInput = document.getElementById('eExpiry').value;
-            const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
-            const uidChecking = editUidChecking; // Boolean from toggle button
-            const popupSettings = {
-                title: document.getElementById('ePopTitle').value.trim(),
-                subtitle: document.getElementById('ePopSub').value.trim(),
-                buttonText: document.getElementById('ePopBtn').value.trim(),
-                image: document.getElementById('ePopImg').value.trim() || null
-            };
-
-            try {
-                await fetch('/api/links/' + encodeURIComponent(editingLinkId), {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking })
-                });
-
-                const link = allLinks.find(l => String(l.id || l._id) === String(editingLinkId));
-                if (link) {
-                    Object.assign(link, { name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
-                }
-
-                showToast('✅ Link updated successfully! Changes are live.', 'success');
-                closeEditModal();
-                filterLinks();
-            } catch(e) {
-                showToast('Error saving changes', 'error');
-            }
-        }
-
-        function updateSchedulePreset() {
-            const p = document.getElementById('schedulePreset').value;
-            if (p) {
-                const days = parseInt(p, 10);
-                const d = new Date();
-                d.setDate(d.getDate() + days);
-                selectedExpiry = d.toISOString();
-            } else {
-                selectedExpiry = null;
-            }
-        }
-
-        // ==================== ➕ CREATE LINK ====================
-        async function loadCreateUserDropdown() {
-            if (!allUsers.length) {
-                try {
-                    const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                    if (res.ok) {
-                        const data = await res.json();
-                        allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
-                    }
-                } catch(e) {}
-            }
-            filterCreateUserList();
-        }
-
-        function filterCreateUserList() {
-            const searchKeyword = (document.getElementById('userSearchInCreate')?.value || '').toLowerCase().trim();
-            const selectEl = document.getElementById('cUserSelect');
-            const currentSelected = document.getElementById('cName').value.trim();
-
-            if (!selectEl) return;
-
-            const filtered = searchKeyword ? allUsers.filter(u => 
-                (u?.name || '').toLowerCase().includes(searchKeyword) ||
-                (u?.email || '').toLowerCase().includes(searchKeyword) ||
-                (u?.phone || '').toLowerCase().includes(searchKeyword)
-            ) : allUsers;
-
-            selectEl.innerHTML = '<option value="">-- Choose a Registered User (or type above) --</option>' + 
-                filtered.map(u => {
-                    const uName = u?.name || 'Unnamed';
-                    const isSel = (uName === currentSelected) ? 'selected' : '';
-                    return `<option value="${escapeHTML(uName)}" ${isSel}>👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`;
-                }).join('');
-        }
-
-        function onUserSelected(userName) {
-            const trimmed = (userName || '').trim();
-            document.getElementById('cName').value = trimmed;
-            const badge = document.getElementById('selectedUserBadge');
-            
-            if (trimmed) {
-                const userObj = allUsers.find(u => (u?.name || '').trim() === trimmed);
-                document.getElementById('selectedUserName').textContent = trimmed;
-                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone || 'Registered User') : 'User Selected';
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        function clearSelectedUser() {
-            document.getElementById('cName').value = '';
-            const sel = document.getElementById('cUserSelect');
-            if (sel) sel.value = '';
-            const inp = document.getElementById('userSearchInCreate');
-            if (inp) inp.value = '';
-            const badge = document.getElementById('selectedUserBadge');
-            if (badge) badge.style.display = 'none';
-        }
-
-        async function createLink() {
-            const manualName = document.getElementById('userSearchInCreate')?.value.trim();
-            const name = document.getElementById('cName').value.trim() || manualName;
-            const video = document.getElementById('cVideo').value.trim();
-            const claim = document.getElementById('cClaim').value.trim();
-            const headline = document.getElementById('cHeadline').value.trim();
-            const buttonText = document.getElementById('cButtonText').value.trim();
-            const uidChecking = createUidChecking; // Boolean from toggle button
-            const popupSettings = {
-                title: document.getElementById('cPopTitle').value.trim(),
-                subtitle: document.getElementById('cPopSub').value.trim(),
-                buttonText: document.getElementById('cPopBtn').value.trim(),
-                image: document.getElementById('cPopImg').value.trim() || null
-            };
-
-            if (!name) {
-                return showToast('Please select a registered user or enter a campaign name!', 'error');
-            }
-
-            try {
-                const res = await fetch('/api/links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ 
-                        name, 
-                        url: claim,
-                        claim, 
-                        video, 
-                        headline, 
-                        buttonText, 
-                        uidChecking, // Dynamic value from button
-                        expiryDate: selectedExpiry, 
-                        popupSettings 
-                    })
-                });
-
-                const d = await res.json();
-                const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
-
-                showToast('✅ Link Created Successfully for ' + name + '!', 'success');
-                const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
-                document.getElementById('generatedLinkUrl').value = fullUrl;
-                document.getElementById('generatedLinkBox').style.display = 'block';
-
-                clearSelectedUser();
-                loadLinks();
-                loadStats();
-            } catch(err) {
-                showToast('Failed to create link: ' + err.message, 'error');
-            }
-        }
-
-        function copyGeneratedLink() {
-            const inp = document.getElementById('generatedLinkUrl');
-            if (!inp) return;
-            inp.select();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(inp.value).then(() => showToast('✅ Copied to clipboard!', 'success'));
-            } else {
-                document.execCommand('copy');
-                showToast('✅ Copied to clipboard!', 'success');
-            }
-        }
-
-        // ==================== 👥 MANAGE USERS ====================
-        async function loadAllUsers() {
-            const container = document.getElementById('usersFullList');
-            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
-            
-            if (!allLinks.length) {
-                try {
-                    const lRes = await fetch('/api/links', { credentials: 'include' });
-                    if (lRes.ok) {
-                        const lData = await lRes.json();
-                        allLinks = Array.isArray(lData) ? lData : (lData.links || lData.data || []);
-                    }
-                } catch(e) {}
-            }
-
-            try {
-                const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
-                } else {
-                    const res2 = await fetch('/api/admin/renewal-users', { credentials: 'include' });
-                    const d2 = await res2.json();
-                    allUsers = d2.users || [];
-                }
-            } catch(e) {
-                allUsers = [];
-            }
-
-            document.getElementById('statTotUsers').textContent = allUsers.length;
-            document.getElementById('statAppUsers').textContent = allUsers.filter(u => u.status === 'approved').length;
-            document.getElementById('statPendUsers').textContent = allUsers.filter(u => u.status === 'pending').length;
-
-            filterUsersList();
-            loadCreateUserDropdown();
-        }
-
-        function filterUsersList() {
-            const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allUsers.filter(u => 
-                (u?.name || '').toLowerCase().includes(q) || 
-                (u?.email || '').toLowerCase().includes(q) || 
-                (u?.phone || '').toLowerCase().includes(q)
-            ) : allUsers;
-
-            const countEl = document.getElementById('usersSearchCount');
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
-
-            const container = document.getElementById('usersFullList');
-            if (!container) return;
-            if (!filtered.length) {
-                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
-                return;
-            }
-
-            container.innerHTML = filtered.map(u => {
-                const cleanName = (u?.name || '').toLowerCase().trim();
-                const userLinkCount = allLinks.filter(l => (l?.name || '').toLowerCase().trim() === cleanName).length;
-                const joinedDate = u?.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-                const statusBadge = u?.status === 'approved' 
-                    ? '<span class="status-badge status-active">APPROVED</span>' 
-                    : (u?.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
-                const uid = u?._id || u?.id || '';
-
-                return `
-                    <div class="link-item">
-                        <div>
-                            <div class="name" style="display:flex;align-items:center;gap:8px;">
-                                <span>👤 ${escapeHTML(u?.name || 'User')}</span>
-                                ${statusBadge}
-                            </div>
-                            <div class="details">
-                                <span>📧 <b>${escapeHTML(u?.email || 'N/A')}</b></span>
-                                <span>| 📞 <b>${escapeHTML(u?.phone || 'N/A')}</b></span>
-                                <span>| 🔗 Total Links: <b style="color:var(--primary);">${userLinkCount}</b></span>
-                                <span>| 📅 Joined: <b>${joinedDate}</b></span>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            ${u?.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${uid}', 'approved')">✅ Approve</button>` : ''}
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${uid}', '${escapeHTML(u?.name || '')}')">🗑️ Remove User</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function deleteUser(id, name) {
-            if (!confirm(`Are you sure you want to permanently remove user "${name}"?`)) return;
-            try {
-                await fetch(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
-                allUsers = allUsers.filter(u => String(u._id || u.id) !== String(id));
-                filterUsersList();
-                showToast('✅ User removed successfully!', 'success');
-                loadRenewalSystem();
-            } catch(e) {
-                showToast('Failed to remove user', 'error');
-            }
-        }
-
-        // ==================== 🔄 RENEWAL SYSTEM ====================
-        async function loadRenewalSystem() {
-            const portalUrl = window.location.origin + '/user-dashboard';
-            const dInput = document.getElementById('dashUserPortalUrl');
-            const rInput = document.getElementById('renewUserPortalUrl');
-            if (dInput) dInput.value = portalUrl;
-            if (rInput) rInput.value = portalUrl;
-
-            try {
-                const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
-                if (uRes.ok) {
-                    const uData = await uRes.json();
-                    const uList = document.getElementById('usersApprovalList');
-                    const pendingUsers = (uData.users || []).filter(u => u.status === 'pending');
-
-                    if (!pendingUsers.length) {
-                        uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
-                    } else {
-                        uList.innerHTML = pendingUsers.map(u => `
-                            <div class="link-item">
-                                <div>
-                                    <div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div>
-                                    <div class="details">📧 ${escapeHTML(u.email || 'N/A')} | 📞 ${escapeHTML(u.phone || 'N/A')}</div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id || u.id}', 'approved')">✅ Approve</button>
-                                    <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')">❌ Reject</button>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-            } catch(err) {}
-
-            try {
-                const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
-                if (sRes.ok) {
-                    const sData = await sRes.json();
-                    const rList = document.getElementById('renewalReqsList');
-                    const pendingReqs = (sData.requests || []).filter(r => r.status === 'pending');
-
-                    if (!pendingReqs.length) {
-                        rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
-                    } else {
-                        rList.innerHTML = pendingReqs.map(r => `
-                            <div class="link-item">
-                                <div>
-                                    <div class="name">User: ${escapeHTML(r.linkName || r.userId || 'Client')} | Plan: ${escapeHTML(r.plan || '')} (${r.days || 30} Days)</div>
-                                    <div class="details">Link ID: <b>${escapeHTML(r.linkId || 'N/A')}</b> | Amount: ₹${r.amount || 0} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id || r._id}')">✅ Approve Renewal</button>
-                                    <button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id || r._id}')">❌ Reject</button>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-
-                    if (sData.pricing) {
-                        const pr = sData.pricing.pricing || sData.pricing || {};
-                        if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
-                        if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
-                        if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
-                        if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
-                        if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
-                        if (document.getElementById('setUpiId')) {
-                            document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
-                        }
-                        if (document.getElementById('setWaNumber')) {
-                            document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
-                        }
-                    }
-                }
-            } catch(err) {}
-        }
-
-        async function setUserStatus(id, action) {
-            try {
-                await fetch(`/api/admin/renewal-users/${encodeURIComponent(id)}/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ action })
-                });
-                showToast(`User ${action}!`, 'success');
-                loadRenewalSystem();
-                loadAllUsers();
-            } catch(e) {
-                showToast('Failed to update status', 'error');
-            }
-        }
-
-        async function approveRenewal(id) {
-            try {
-                await fetch(`/api/admin/renewal-requests/${encodeURIComponent(id)}/approve`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                showToast('Renewal approved & Link extended!', 'success');
-                loadRenewalSystem();
-                loadStats();
-                loadLinks();
-            } catch(e) {
-                showToast('Error approving renewal', 'error');
-            }
-        }
-
-        async function rejectRenewal(id) {
-            if (!confirm('Are you sure you want to reject this renewal request?')) return;
-            try {
-                await fetch(`/api/renewal/reject/${encodeURIComponent(id)}`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                showToast('Renewal request rejected.', 'info');
-                loadRenewalSystem();
-            } catch(e) {
-                showToast('Error rejecting renewal', 'error');
-            }
-        }
-
-        async function saveRenewalSettings() {
-            const pricing = {
-                '7days': parseInt(document.getElementById('p7d').value, 10),
-                '15days': parseInt(document.getElementById('p15d').value, 10),
-                '30days': parseInt(document.getElementById('p30d').value, 10),
-                '90days': parseInt(document.getElementById('p90d').value, 10),
-                '1year': parseInt(document.getElementById('p1y').value, 10)
-            };
-            const upiId = document.getElementById('setUpiId').value.trim();
-            const whatsappNumber = document.getElementById('setWaNumber').value.trim();
-
-            try {
-                await fetch('/api/admin/renewal-settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
-                });
-                showToast('✅ Renewal settings saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save settings', 'error');
-            }
-        }
-
-        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
-        function toggleDeviceTab(tab) {
-            currentDeviceTab = tab;
-            const bBtn = document.getElementById('tabBtnBlocked');
-            const aBtn = document.getElementById('tabBtnActive');
-            const bView = document.getElementById('deviceViewBlocked');
-            const aView = document.getElementById('deviceViewActive');
-
-            if (tab === 'blocked') {
-                bBtn.style.background = 'var(--danger)';
-                bBtn.style.color = '#fff';
-                aBtn.style.background = 'var(--bg)';
-                aBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'block';
-                aView.style.display = 'none';
-                loadBlockedDevices();
-            } else {
-                aBtn.style.background = 'var(--success)';
-                aBtn.style.color = '#fff';
-                bBtn.style.background = 'var(--bg)';
-                bBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'none';
-                aView.style.display = 'block';
-                loadActiveDevices();
-            }
-        }
-
-        function refreshDeviceTabs() {
-            if (currentDeviceTab === 'blocked') loadBlockedDevices();
-            else loadActiveDevices();
-        }
-
-        async function loadBlockedDevices() {
-            const list = document.getElementById('deviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
-            try {
-                const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const devices = d.devices || d.data || (Array.isArray(d) ? d : []);
-                    if (!devices.length) {
-                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No blocked devices currently.</p>';
-                    }
-                    list.innerHTML = devices.map(dev => `
-                        <div class="device-card-item blocked">
-                            <div>
-                                <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
-                                <div class="device-meta">
-                                    <span>🌐 IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span>
-                                    <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span>
-                                    <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason || 'Passcode violations')}</span></span>
-                                </div>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock Device</button>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices recorded.</p>';
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load blocked devices.</p>';
-            }
-        }
-
-        async function unblockDev(id) {
-            if (!confirm('Unblock this device so it can access the login page again?')) return;
-            try {
-                await fetch('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST', credentials: 'include' });
-                showToast('✅ Device unblocked successfully!', 'success');
-                loadBlockedDevices();
-            } catch(e) {
-                showToast('Failed to unblock device', 'error');
-            }
-        }
-
-        async function loadActiveDevices() {
-            const list = document.getElementById('activeDeviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
-            try {
-                const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const sessions = d.sessions || d.data || (Array.isArray(d) ? d : []);
-
-                    if (!sessions.length) {
-                        return list.innerHTML = `
-                            <div class="device-card-item active-dev">
-                                <div>
-                                    <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
-                                    <div class="device-meta">
-                                        <span>🌐 IP: <b>Connected Client IP</b></span>
-                                        <span>🕒 Last Active: <b>Just now</b></span>
-                                        <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    list.innerHTML = sessions.map(s => {
-                        const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
-                        const sid = s._id || s.id || '';
-                        return `
-                            <div class="device-card-item active-dev">
-                                <div>
-                                    <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Browser')})</span></div>
-                                    <div class="device-meta">
-                                        <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
-                                        <span>🕒 Last Active: <b>${lastActive}</b></span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button>
-                                    <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🗑️ Logout</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Active sessions data loaded.</p>';
-            }
-        }
-
-        async function deleteActiveSession(id) {
-            if (!confirm('Log out and terminate this session?')) return;
-            try {
-                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
-                showToast('Session terminated', 'info');
-                loadActiveDevices();
-            } catch(e) {
-                showToast('Failed to terminate session', 'error');
-            }
-        }
-
-        async function blockActiveSession(id) {
-            if (!confirm('Block this device permanently and kick it out from Admin Panel?')) return;
-            try {
-                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST', credentials: 'include' });
-                showToast('Device blocked permanently!', 'success');
-                loadActiveDevices();
-            } catch(e) {
-                showToast('Failed to block device', 'error');
-            }
-        }
-
-        async function loadContactInfo() {
-            try {
-                const res = await fetch('/api/settings');
-                if (res.ok) {
-                    const d = await res.json();
-                    if (d) {
-                        if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
-                        if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
-                        if (d.background) {
-                            document.getElementById('bgImgUrl').value = d.background;
-                            document.getElementById('bgPreviewImg').src = d.background;
-                            document.getElementById('bgImagePreview').classList.add('show');
-                        }
-                    }
-                }
-            } catch(e) {}
-        }
-
-        async function updateContactInfo() {
-            const email = document.getElementById('adminEmail').value.trim();
-            const phone = document.getElementById('adminPhone').value.trim();
-            try {
-                await fetch('/api/admin/update-contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, phone })
-                });
-                showToast('✅ Contact info saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save contact info', 'error');
-            }
-        }
-
-        async function saveBackground() {
-            const bg = document.getElementById('bgImgUrl').value.trim();
-            try {
-                await fetch('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ background: bg }) 
-                });
-                if (bg) {
-                    document.getElementById('bgPreviewImg').src = bg;
-                    document.getElementById('bgImagePreview').classList.add('show');
-                }
-                showToast('✅ Background updated!', 'success');
-            } catch(e) {
-                showToast('Failed to update background', 'error');
-            }
-        }
-
-        async function removeBackground() {
-            try {
-                await fetch('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ background: null }) 
-                });
-                document.getElementById('bgImgUrl').value = '';
-                document.getElementById('bgImagePreview').classList.remove('show');
-                showToast('Background removed', 'info');
-            } catch(e) {
-                showToast('Failed to remove background', 'error');
-            }
-        }
-
-        async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode').value.trim();
-            const newP = document.getElementById('newPasscode').value.trim();
-            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            try {
-                const res = await fetch('/api/admin/passcode', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) 
-                });
-                const d = await res.json();
-                if (d.success) showToast('✅ Passcode updated!', 'success');
-                else showToast('❌ ' + (d.error || 'Failed to update passcode'), 'error');
-            } catch(e) {
-                showToast('Error changing passcode', 'error');
-            }
-        }
-
-        // ==================== 🔗 SHORT LINKS ====================
-        function toggleAppScheme() {
-            const chk = document.getElementById('shortAppOpen').checked;
-            document.getElementById('appSchemeContainer').style.display = chk ? 'block' : 'none';
-        }
-
-        async function loadShortLinks() {
-            const list = document.getElementById('shortLinksList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
-            try {
-                const res = await fetch('/api/short-links', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const sLinks = d.links || d.data || (Array.isArray(d) ? d : []);
-                    if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No short links yet.</p>';
-                    list.innerHTML = sLinks.map(l => `
-                        <div class="link-item">
-                            <div>
-                                <div class="name">${escapeHTML(l.title || 'Untitled Link')}</div>
-                                <div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || l.clicks || 0}</b></div>
-                            </div>
-                            <div style="display:flex;gap:6px;">
-                                <button class="btn btn-sm btn-success" onclick="copyShortLink('${l.code}')">📋 Copy</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${l._id || l.id}')">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
-            }
-        }
-
-        function copyShortLink(code) {
-            const u = window.location.origin + '/s/' + code;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(u).then(() => showToast('✅ Copied: ' + u, 'success'));
-            } else {
-                prompt('Copy Short Link:', u);
-            }
-        }
-
-        async function deleteShortLink(id) {
-            if (!confirm('Permanently delete this short link?')) return;
-            try {
-                await fetch('/api/short-links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
-                showToast('Short link deleted', 'info');
-                loadShortLinks();
-            } catch(e) {
-                showToast('Failed to delete short link', 'error');
-            }
-        }
-
-        async function createShortLink() {
-            const originalUrl = document.getElementById('sUrl').value.trim();
-            const title = document.getElementById('sTitle').value.trim();
-            const appScheme = document.getElementById('sScheme')?.value.trim() || '';
-            const appOpen = document.getElementById('shortAppOpen').checked;
-            if (!originalUrl) return showToast('Please enter a destination URL', 'error');
-
-            try {
-                await fetch('/api/short-links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme })
-                });
-                showToast('✅ Short link created successfully!', 'success');
-                document.getElementById('sUrl').value = '';
-                document.getElementById('sTitle').value = '';
-                loadShortLinks();
-            } catch(e) {
-                showToast('Failed to create short link', 'error');
-            }
-        }
-
-        function setTheme(t) {
-            document.body.className = t;
-            }
-        }
-
-        function setTheme(t) {
-            document.body.className = t;
-            document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
-            document.getElementById('theme-light').classList.toggle('active', t === 'light');
-            try { localStorage.setItem('adminTheme', t); } catch(e) {}
-        }
-
-        function logout() {
-            document.cookie = 'adminToken=; Max-Age=0; path=/;';
-            window.location.href = '/admin/login.html';
-        }
-
-        function installApp() {
-            showToast('Use browser menu -> Add to Home screen to install app', 'info');
-        }
-
-        // Initialize and Bindings
-        window.addEventListener('DOMContentLoaded', () => {
-            try {
-                const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-                setTheme(savedTheme);
-            } catch(e) {}
-
-            loadStats();
-            loadLinks();
-            loadAllUsers();
-            loadRenewalSystem();
-            loadContactInfo();
-            loadBlockedDevices();
-            setInterval(loadStats, 5000);
-        });
-    </script>
-</body>
-</html>
+                <div class="form-group"><label>Link Campaign Name</label><input type="text" id="e
