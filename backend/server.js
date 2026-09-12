@@ -117,13 +117,13 @@ function isUidCheckDisabled(val) {
 function extractCleanId(input) {
     if (!input) return '';
     let str = input.toString().trim();
-    if (str.includes('?link=')) str = str.split('?link=')[1].split('&')[0];
-    else if (str.includes('&link=')) str = str.split('&link=')[1].split('&')[0];
-    else if (str.includes('?id=')) str = str.split('?id=')[1].split('&')[0];
-    else if (str.includes('&id=')) str = str.split('&id=')[1].split('&')[0];
-    else if (str.includes('/user-dashboard/')) str = str.split('/user-dashboard/')[1].split('?')[0];
-    else if (str.includes('/v/')) str = str.split('/v/')[1].split('?')[0];
-    else if (str.includes('/uid/')) str = str.split('/uid/')[1].split('?')[0];
+    if (str.includes('?link=')) str = str.split('?link=').split('&')[0];
+    else if (str.includes('&link=')) str = str.split('&link=').split('&')[0];
+    else if (str.includes('?id=')) str = str.split('?id=').split('&')[0];
+    else if (str.includes('&id=')) str = str.split('&id=').split('&')[0];
+    else if (str.includes('/user-dashboard/')) str = str.split('/user-dashboard/').split('?')[0];
+    else if (str.includes('/v/')) str = str.split('/v/').split('?')[0];
+    else if (str.includes('/uid/')) str = str.split('/uid/').split('?')[0];
     try { str = decodeURIComponent(str); } catch(e) {}
     return str.split('#')[0].replace(/\/+$/, '').trim();
 }
@@ -370,7 +370,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const cleanId = extractCleanId(req.params.dashboardId);
         let link = await Link.findOne(getLinkQuery(cleanId));
-        if (link) return res.json({ linkId: link.id, name: link.name || link.title });
+        if (link) return res.json({ linkId: link.id, name: link.name || link.title, linkName: link.linkName || link.title || link.name });
         res.status(404).json({ error: 'No link found' });
     } catch (error) { res.status(500).json({ error: 'Failed to map dashboard' }); }
 });
@@ -383,13 +383,14 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const today = new Date().toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
-        const lName = link.name || link.title || link.linkName || 'Untitled Link';
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
         res.json({
             linkId: link.id,
             id: link.id,
             name: lName,
             title: lName,
             linkName: lName,
+            userName: link.userName || link.name || '',
             totalVisits: link.visits || 0,
             totalClaims: link.claims || 0,
             todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
@@ -412,7 +413,7 @@ app.get('/api/parent-link', async (req, res) => {
                 firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
                 await firstLink.save();
             }
-            const lName = firstLink.name || firstLink.title || firstLink.linkName || 'Untitled Link';
+            const lName = firstLink.linkName || firstLink.title || firstLink.name || 'Untitled Link';
             res.json({
                 url: '/user-dashboard/' + firstLink.dashboardId,
                 linkName: lName,
@@ -493,7 +494,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Unique Visit Count
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -522,7 +522,7 @@ app.get('/api/link/:id', async (req, res) => {
         const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
         const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
         const isUidOn = (!isUidCheckDisabled(link.uidChecking)) && (!isGlobalOff);
-        const lName = link.name || link.title || link.linkName || 'Untitled Link';
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
 
         res.json({
             id: link.id,
@@ -530,6 +530,7 @@ app.get('/api/link/:id', async (req, res) => {
             name: lName,
             title: lName,
             linkName: lName,
+            userName: link.userName || link.name || '',
             video: link.video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: link.claim || '#',
             buttonText: link.buttonText || 'Claim Now',
@@ -714,24 +715,28 @@ app.post('/api/user/link-details', async (req, res) => {
         let rawInput = linkInput || linkId || id || dashboardId || '';
         let searchId = extractCleanId(rawInput);
 
+        // Find links belonging to this user
         const allUserLinks = await Link.find({ 
             $or: [
                 { assignedUser: userRegex },
                 { userName: userRegex },
                 { creator: userRegex },
-                { name: userRegex },
-                { title: userRegex },
-                { linkName: userRegex }
+                { name: userRegex }
             ]
         }).sort({ created: -1 }).lean();
 
-        const formattedUserLinks = allUserLinks.map(l => ({
-            id: l.id,
-            name: l.name || l.title || l.linkName || 'Untitled Campaign',
-            title: l.name || l.title || l.linkName || 'Untitled Campaign',
-            status: l.status || 'active',
-            expiryDate: l.expiryDate || null
-        }));
+        // Format dropdown options with actual LINK NAME so user sees their campaign title
+        const formattedUserLinks = allUserLinks.map(l => {
+            const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
+            return {
+                id: l.id,
+                name: lTitle,
+                title: lTitle,
+                linkName: lTitle,
+                status: l.status || 'active',
+                expiryDate: l.expiryDate || null
+            };
+        });
 
         let link = null;
         if (searchId && searchId !== cleanUser) {
@@ -746,9 +751,7 @@ app.post('/api/user/link-details', async (req, res) => {
                     { assignedUser: userRegex },
                     { userName: userRegex },
                     { creator: userRegex },
-                    { name: userRegex },
-                    { title: userRegex },
-                    { linkName: userRegex }
+                    { name: userRegex }
                 ]
             }).sort({ created: -1 });
         }
@@ -804,7 +807,10 @@ app.post('/api/user/link-details', async (req, res) => {
             if (daysLeft <= 3) isEligibleForRenewal = true;
         }
 
-        const lName = link.name || link.title || link.linkName || 'Untitled Campaign';
+        // 🎯 EXACT CRITICAL FIX FOR user-dashboard.html line 621:
+        // user-dashboard.html does: const linkTitle = l.name || l.title || 'Untitled Campaign';
+        // We set l.name, l.title, and l.linkName to the actual LINK NAME!
+        const lName = link.linkName || link.title || link.name || 'Untitled Campaign';
         const pricingDoc = await Pricing.findOne().lean();
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
 
@@ -815,12 +821,14 @@ app.post('/api/user/link-details', async (req, res) => {
             name: lName,
             title: lName,
             linkName: lName,
+            userName: link.userName || link.assignedUser || cleanUser,
             link: {
                 id: link.id,
                 linkId: link.id,
                 name: lName,
                 title: lName,
                 linkName: lName,
+                userName: link.userName || link.assignedUser || cleanUser,
                 created: link.created,
                 expiryDate: link.expiryDate,
                 daysLeft,
@@ -899,7 +907,7 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
         const links = await Link.find().lean();
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
-            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName);
+            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName || (l.userName || '').toLowerCase().trim() === cleanName);
             return { ...u, totalLinks: userLinks.length };
         });
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
@@ -1192,7 +1200,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
 });
 
 // =========================================================================
-// 🎯 ADMIN LINKS CRUD & DIRECT MONGODB PERSISTENCE
+// 🎯 ADMIN LINKS CRUD (HANDLES: ( USER NAME ) ( LINK NAME ))
 // =========================================================================
 app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => {
     try {
@@ -1202,12 +1210,18 @@ app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => 
             const popup = l.popupSettings || {};
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
             const isUidOn = !isUidCheckDisabled(l.uidChecking);
-            const lName = l.name || l.title || l.linkName || 'Untitled Link';
+            
+            // In index.html: const userName = l.name || 'User'; const linkName = l.linkName || l.title || 'Link';
+            const userName = l.name || l.userName || l.assignedUser || 'User';
+            const linkName = l.linkName || l.title || 'Link';
+
             return {
                 ...l,
-                name: lName,
-                title: lName,
-                linkName: lName,
+                name: userName,
+                userName: userName,
+                assignedUser: userName,
+                linkName: linkName,
+                title: linkName,
                 uidChecking: isUidOn,
                 image: img,
                 popupImage: img,
@@ -1228,12 +1242,14 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
         const popup = l.popupSettings || {};
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
         const isUidOn = !isUidCheckDisabled(l.uidChecking);
-        const lName = l.name || l.title || l.linkName || 'Untitled Link';
+        const userName = l.name || l.userName || l.assignedUser || 'User';
+        const linkName = l.linkName || l.title || 'Link';
         res.json({
             ...l,
-            name: lName,
-            title: lName,
-            linkName: lName,
+            name: userName,
+            userName: userName,
+            linkName: linkName,
+            title: linkName,
             uidChecking: isUidOn,
             image: img,
             popupImage: img,
@@ -1244,9 +1260,11 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
     } catch (e) { res.status(500).json({ error: 'Failed to fetch link' }); }
 });
 
+// ➕ CREATE LINK (Stores userName in `name`, linkName in `linkName` & `title`)
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
-        const cleanName = (req.body.name || req.body.linkName || req.body.link_name || req.body.title || req.body.linkTitle || req.body.campaignName || 'Untitled Link').trim();
+        const cleanUserName = (req.body.name || req.body.userName || req.body.cCampaignName || 'User').trim();
+        const cleanLinkName = (req.body.linkName || req.body.title || req.body.cLinkName || 'Link').trim();
         const cleanVideo = (req.body.video || req.body.videoUrl || req.body.url || 'https://youtu.be/dQw4w9WgXcQ').trim();
         const cleanClaim = (req.body.claim || req.body.claimUrl || req.body.claimLink || '#').trim();
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
@@ -1270,9 +1288,12 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-            name: cleanName,
-            title: cleanName,
-            linkName: cleanName,
+            name: cleanUserName,
+            userName: cleanUserName,
+            assignedUser: cleanUserName,
+            creator: cleanUserName,
+            linkName: cleanLinkName,
+            title: cleanLinkName,
             video: cleanVideo,
             claim: cleanClaim,
             buttonText: cleanButtonText,
@@ -1280,8 +1301,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             expiryDate: cleanExpiry,
             uidChecking: cleanUidChecking,
             status: 'active',
-            assignedUser: (req.body.userName || req.body.user || '').trim(),
-            userName: (req.body.userName || req.body.user || '').trim(),
             image: finalBanner,
             popupImage: finalBanner,
             popupImageUrl: finalBanner,
@@ -1290,13 +1309,25 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         });
 
         await newLink.save();
-        await Link.collection.updateOne({ _id: newLink._id }, { $set: { name: cleanName, title: cleanName, linkName: cleanName, uidChecking: cleanUidChecking } });
+        await Link.collection.updateOne(
+            { _id: newLink._id },
+            { $set: { 
+                name: cleanUserName, 
+                userName: cleanUserName, 
+                assignedUser: cleanUserName, 
+                creator: cleanUserName, 
+                linkName: cleanLinkName, 
+                title: cleanLinkName, 
+                uidChecking: cleanUidChecking 
+            }}
+        );
 
         res.json({
             ...newLink.toObject(),
-            name: cleanName,
-            title: cleanName,
-            linkName: cleanName,
+            name: cleanUserName,
+            userName: cleanUserName,
+            linkName: cleanLinkName,
+            title: cleanLinkName,
             uidChecking: cleanUidChecking,
             image: finalBanner,
             popupSettings: finalPopup
@@ -1304,6 +1335,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
+// ✏️ UPDATE LINK (Correctly saves separate User Name & Link Name from Admin Panel)
 async function handleLinkUpdate(req, res) {
     try {
         let rawId = req.params.id;
@@ -1325,26 +1357,21 @@ async function handleLinkUpdate(req, res) {
 
         const updateData = {};
 
-        // Link Name Extraction (Supports all input field names from admin forms)
-        const nameCandidates = [
-            req.body.name, req.body.linkName, req.body.link_name,
-            req.body.title, req.body.linkTitle, req.body.campaignName
-        ];
-        for (const candidate of nameCandidates) {
-            if (candidate !== undefined && candidate !== null && candidate.toString().trim() !== '') {
-                const finalName = candidate.toString().trim();
-                updateData.name = finalName;
-                updateData.title = finalName;
-                updateData.linkName = finalName;
-                break;
-            }
+        // 1. User Name update (from #eName)
+        if (req.body.name !== undefined && req.body.name !== null && req.body.name.toString().trim() !== '') {
+            const uName = req.body.name.toString().trim();
+            updateData.name = uName;
+            updateData.userName = uName;
+            updateData.assignedUser = uName;
+            updateData.creator = uName;
         }
 
-        if (req.body.userName || req.body.user || req.body.assignedUser) {
-            const assigned = (req.body.userName || req.body.user || req.body.assignedUser).toString().trim();
-            updateData.userName = assigned;
-            updateData.assignedUser = assigned;
-            updateData.creator = assigned;
+        // 2. Link Name update (from #eLinkName or title)
+        const incomingLinkName = req.body.linkName ?? req.body.title ?? req.body.linkTitle ?? req.body.campaignName;
+        if (incomingLinkName !== undefined && incomingLinkName !== null && incomingLinkName.toString().trim() !== '') {
+            const lTitle = incomingLinkName.toString().trim();
+            updateData.linkName = lTitle;
+            updateData.title = lTitle;
         }
 
         const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
@@ -1399,21 +1426,23 @@ async function handleLinkUpdate(req, res) {
             await mongoose.connection.db.collection('links').updateMany(query, { $set: updateData });
         }
 
-        if (updateData.name) {
-            await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.name } }).catch(() => {});
+        if (updateData.linkName) {
+            await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.linkName } }).catch(() => {});
         }
 
         const updatedDoc = await Link.findOne(query).lean();
-        const effectiveName = updatedDoc.name || updatedDoc.title || updatedDoc.linkName || 'Untitled Link';
+        const effectiveUserName = updatedDoc.name || updatedDoc.userName || 'User';
+        const effectiveLinkName = updatedDoc.linkName || updatedDoc.title || 'Link';
         const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedDoc.uidChecking);
 
         const responseObj = {
             success: true,
             ...updatedDoc,
             id: updatedDoc.id,
-            name: effectiveName,
-            title: effectiveName,
-            linkName: effectiveName,
+            name: effectiveUserName,
+            userName: effectiveUserName,
+            linkName: effectiveLinkName,
+            title: effectiveLinkName,
             uidChecking: finalUidState,
             image: newPopup.image,
             popupImage: newPopup.image,
@@ -1423,9 +1452,10 @@ async function handleLinkUpdate(req, res) {
             link: {
                 ...updatedDoc,
                 id: updatedDoc.id,
-                name: effectiveName,
-                title: effectiveName,
-                linkName: effectiveName,
+                name: effectiveLinkName, // for user-dashboard.html line 621: l.name
+                userName: effectiveUserName,
+                title: effectiveLinkName,
+                linkName: effectiveLinkName,
                 uidChecking: finalUidState,
                 image: newPopup.image,
                 popupSettings: newPopup
@@ -1467,7 +1497,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
         if (!query) return res.json({ links: [] });
         const searchRegex = new RegExp(query, 'i');
         const links = await Link.find({
-            $or: [{ name: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
+            $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
         }).limit(20);
         res.json({ links });
     } catch (error) { res.status(500).json({ error: 'Failed to search links' }); }
@@ -1481,7 +1511,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
         const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
         link.dashboardId = dashboardId;
         await link.save();
-        const lName = link.name || link.title || link.linkName || 'Untitled Link';
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
         res.json({ 
             success: true, 
             dashboardId, 
@@ -1534,7 +1564,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             },
             links: links.map(l => ({
                 ...l,
-                name: l.name || l.title || l.linkName || 'Untitled Link',
+                name: l.name || l.userName || 'User',
+                userName: l.name || l.userName || 'User',
+                linkName: l.linkName || l.title || 'Link',
+                title: l.linkName || l.title || 'Link',
                 uidChecking: !isUidCheckDisabled(l.uidChecking)
             }))
         });
