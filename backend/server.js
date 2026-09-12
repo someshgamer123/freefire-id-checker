@@ -44,14 +44,15 @@ const Security = {
 
 connectDB();
 
-// 🔓 Disable strict schema mode & ensure uidChecking and linkName fields are registered
+// 🔓 Disable strict schema mode & ensure uidChecking, user & linkName fields are registered
 try {
     if (Link && Link.schema) {
         Link.schema.add({ 
             uidChecking: { type: Boolean, default: true },
             creator: { type: String, default: '' },
             assignedUser: { type: String, default: '' },
-            userName: { type: String, default: '' }
+            userName: { type: String, default: '' },
+            title: { type: String, default: '' }
         });
         Link.schema.set('strict', false);
     }
@@ -756,7 +757,7 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
         const renewalRequest = new RenewalRequest({
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
             linkId, 
-            linkName: linkName || 'Unknown', 
+            linkName: linkName || 'Unknown Link', 
             plan, 
             days: days || 0, 
             amount: amount || 0,
@@ -875,7 +876,7 @@ app.post('/api/user/link-details', async (req, res) => {
         const escapedUser = cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const userRegex = new RegExp('^' + escapedUser + '$', 'i');
 
-        // Fetch all links mapped to this user (name, creator, userName, or assignedUser)
+        // Fetch all links belonging to this user (name, creator, userName, or assignedUser)
         const allUserLinks = await Link.find({ 
             $or: [
                 { name: userRegex },
@@ -885,7 +886,7 @@ app.post('/api/user/link-details', async (req, res) => {
             ]
         }).sort({ created: -1 }).lean();
 
-        // Format user links with full name and ID for the dashboard dropdown
+        // Format user links array for dropdown selector
         const formattedUserLinks = allUserLinks.map(l => ({
             id: l.id,
             name: l.name || l.title || 'Untitled Campaign',
@@ -984,7 +985,7 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// POST /api/user/renew-payment (With Link Name saved in database)
+// POST /api/user/renew-payment (Saves actual Link Name in database)
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
@@ -995,7 +996,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
             linkId,
-            linkName: linkName || userName || 'Unknown',
+            linkName: linkName || userName || 'Unknown Link',
             plan,
             days: parseInt(days) || 30,
             amount: parseInt(amount) || 0,
@@ -2143,4 +2144,66 @@ try {
             }
         }
     }
-    res.status(404).send('File not
+    res.status(404).send('File not found: video-lock.html');
+}
+
+// ⛔ Persistent Ban Shield on Login Route
+app.get('/admin/login.html', async (req, res) => {
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        return res.send(`
+            <!DOCTYPE html><html><head><title>Access Blocked</title>
+            <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
+            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 0 50px rgba(239,68,68,0.2);}
+            h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
+            p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
+            <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
+            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Refreshing will not bypass this ban. Contact the administrator to unblock your device from the Admin Panel.</p></div></body></html>
+        `);
+    }
+    sendAppFile(res, 'login.html', 'admin/login.html');
+});
+
+app.get('/', async (req, res) => {
+    // If someone visits /?link=... check UID checking
+    let rawParam = (req.query.link || req.query.id || req.query.l || '').toString().trim();
+    if (rawParam) {
+        let cleanId = extractCleanId(rawParam);
+        if (cleanId) {
+            const link = await Link.findOne(getLinkQuery(cleanId)).lean();
+            if (link && isUidCheckDisabled(link.uidChecking)) {
+                return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
+            } else if (link) {
+                return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
+            }
+        }
+    }
+    res.redirect('/admin/secret-gateway');
+});
+
+app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
+app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
+    const token = req.cookies?.adminToken;
+    if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
+    sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
+});
+
+// =========================================================================
+// 🎯 SMART DYNAMIC UID & ENTRANCE POPUP ROUTE (USER CLICK HANDLER)
+// =========================================================================
+app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    let cleanId = '';
+    try {
+        let rawParam = (req.query.link || req.query.id || req.query.l || req.query.linkId || req.params.id || '').toString().trim();
+        cleanId = extractCleanId(rawParam);
+
+        let link = null;
+        if (cleanId) {
+            link = await Link.findOne(getLinkQuery(cleanId)).lean();
+        }
+        if (!link) {
