@@ -44,9 +44,12 @@ const Security = {
 
 connectDB();
 
-// 🔓 Disable strict schema mode on collections
+// 🔓 Disable strict schema mode & ensure uidChecking field is registered
 try {
-    Link.schema.set('strict', false);
+    if (Link && Link.schema) {
+        Link.schema.add({ uidChecking: { type: Boolean, default: false } });
+        Link.schema.set('strict', false);
+    }
     Pricing.schema.set('strict', false);
     User.schema.set('strict', false);
     if (Session && Session.schema) Session.schema.set('strict', false);
@@ -59,6 +62,7 @@ const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('Visit
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
     type: { type: String, enum: ['visit', 'claim'], required: true, index: true },
+    uid: { type: String, default: null },
     lastSeen: { type: Date, default: Date.now, index: true }
 }, { timestamps: true }));
 
@@ -231,7 +235,7 @@ app.get('/ping', (req, res) => {
     res.status(200).send('pong');
 });
 
-// ==================== Rate Limiting (Updated: 600 -> 50,000) ====================
+// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
@@ -409,7 +413,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status || 'active',
-            expiryDate: link.expiryDate || null
+            expiryDate: link.expiryDate || null,
+            uidChecking: link.uidChecking === true
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch stats' });
@@ -492,7 +497,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (STRICT 24-HOUR UNIQUE VISIT COUNT & LIVE ACTIVE WATCHING)
+// ✅ VISITOR LINK RESOLVER (RETURNS uidChecking STATUS)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -518,6 +523,7 @@ app.get('/api/link/:id', async (req, res) => {
                     buttonText: 'Claim Now',
                     headline: '🎬 Watch Video & Unlock Reward',
                     status: 'active',
+                    uidChecking: false,
                     popupSettings: {
                         image: null,
                         title: '🎁 Claim Your Reward',
@@ -587,6 +593,7 @@ app.get('/api/link/:id', async (req, res) => {
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
+            uidChecking: link.uidChecking === true,
             image: bannerImage,
             popupImage: bannerImage,
             popupImageUrl: bannerImage,
@@ -603,7 +610,34 @@ app.get('/api/link/:id', async (req, res) => {
     }
 });
 
-// ✅ TRACK CLAIM (STRICT 24-HOUR UNIQUE CLAIM & LIVE ACTIVE CLAIMING)
+// ✅ SUBMIT PLAYER UID ROUTE
+app.post('/api/submit-uid/:linkId', async (req, res) => {
+    try {
+        const { uid } = req.body;
+        const cleanUid = (uid || '').toString().trim();
+        if (!cleanUid || cleanUid.length < 5) {
+            return res.status(400).json({ error: 'Please enter a valid UID.' });
+        }
+
+        const link = await Link.findOne(getLinkQuery(req.params.linkId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
+            { $set: { lastSeen: new Date(), uid: cleanUid } },
+            { upsert: true, new: true }
+        ).catch(() => {});
+
+        res.json({ success: true, message: 'UID submitted successfully', uid: cleanUid });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to submit UID' });
+    }
+});
+
+// ✅ TRACK CLAIM
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
@@ -635,7 +669,6 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             ).catch(() => {});
         }
 
-        // Update lastSeen for Real-Time Active Claiming
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
             { $set: { lastSeen: new Date() } },
@@ -770,7 +803,7 @@ app.post('/api/user/signin', async (req, res) => {
     }
 });
 
-// ✅ POST /api/user/link-details
+// POST /api/user/link-details
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -862,7 +895,8 @@ app.post('/api/user/link-details', async (req, res) => {
                 isEligibleForRenewal,
                 todayVisits: vToday,
                 todayClaims: cToday,
-                v24h, c24h, v7d, c7d, v30d, c30d
+                v24h, c24h, v7d, c7d, v30d, c30d,
+                uidChecking: link.uidChecking === true
             },
             userLinks: allUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -950,7 +984,6 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
 // ================================================================
 // ==================== 👥 ADMIN: USER MANAGEMENT ====================
 // ================================================================
-
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
@@ -1035,7 +1068,6 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     }
 });
 
-// Approve Renewal
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
@@ -1088,7 +1120,6 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     }
 });
 
-// Reject Renewal Request
 app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
@@ -1190,7 +1221,6 @@ app.post('/api/admin/login', async (req, res) => {
             return res.json({ success: true, token: jwtToken });
         }
 
-        // WRONG PASSCODE HANDLING
         const blocked = await isDeviceBlocked(req);
         if (blocked) {
             return res.status(403).json({
@@ -1316,7 +1346,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== 🔗 ADMIN: LINKS CRUD ====================
+// ==================== 🔗 ADMIN: LINKS CRUD WITH UID CHECKING ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1327,6 +1357,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
             return {
                 ...l,
+                uidChecking: l.uidChecking === true,
                 image: img,
                 popupImage: img,
                 popupImageUrl: img,
@@ -1355,6 +1386,7 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
         res.json({
             ...l,
+            uidChecking: l.uidChecking === true,
             image: img,
             popupImage: img,
             popupImageUrl: img,
@@ -1371,6 +1403,7 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// ➕ CREATE REWARDED TRACKING LINK
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const cleanName = (req.body.name || req.body.title || 'Untitled Link').trim();
@@ -1378,6 +1411,15 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanClaim = (req.body.claim || req.body.claimUrl || req.body.claimLink || '#').trim();
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
+
+        // 🎯 UID CHECKING (ON / OFF)
+        const cleanUidChecking = (
+            req.body.uidChecking === true ||
+            req.body.uidChecking === 'true' ||
+            req.body.uidChecking === 1 ||
+            req.body.uidChecking === '1' ||
+            req.body.uidChecking === 'on'
+        );
 
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
         let cleanExpiry = null;
@@ -1421,6 +1463,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             buttonText: cleanButtonText,
             headline: cleanHeadline,
             expiryDate: cleanExpiry,
+            uidChecking: cleanUidChecking,
             status: 'active',
             image: finalBanner,
             popupImage: finalBanner,
@@ -1432,6 +1475,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         await newLink.save();
         res.json({
             ...newLink.toObject(),
+            uidChecking: cleanUidChecking,
             image: finalBanner,
             popupImage: finalBanner,
             popupImageUrl: finalBanner,
@@ -1444,6 +1488,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
+// ✏️ EDIT REWARDED LINK
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1475,6 +1520,17 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
 
         if (req.body.status !== undefined) updateData.status = req.body.status;
+
+        // 🎯 UID CHECKING (ON / OFF)
+        if (req.body.uidChecking !== undefined) {
+            updateData.uidChecking = (
+                req.body.uidChecking === true ||
+                req.body.uidChecking === 'true' ||
+                req.body.uidChecking === 1 ||
+                req.body.uidChecking === '1' ||
+                req.body.uidChecking === 'on'
+            );
+        }
 
         const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
                                (req.body.expiry !== undefined ? req.body.expiry :
@@ -1544,6 +1600,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             success: true,
             link: {
                 ...updatedLink,
+                uidChecking: updatedLink.uidChecking === true,
                 image: newPopup.image,
                 popupImage: newPopup.image,
                 popupImageUrl: newPopup.image,
@@ -1663,7 +1720,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 // ================================================================
 // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
 // ================================================================
-
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
     res.json({ success: true, devices });
