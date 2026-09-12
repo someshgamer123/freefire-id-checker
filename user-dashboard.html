@@ -333,33 +333,46 @@
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
-        /* 👤 Active Link Selector with Dropdown */
+        /* 👤 Active Link Details Card with Link Name */
         .link-selector-card {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
             border-radius: 14px;
-            padding: 14px 18px;
+            padding: 16px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 14px;
             margin-bottom: 16px;
         }
-        .link-badge {
+        .link-info-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .link-title-badge {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 13.5px;
+            font-size: 15px;
+            font-weight: 700;
             color: #fff;
         }
-        .link-badge strong {
+        .link-id-sub {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .link-id-sub strong {
             color: var(--accent-cyan);
             font-family: monospace;
-            font-size: 14px;
+            font-size: 12.5px;
         }
 
-        /* Progress Bar */
+        /* Validity Progress Card */
         .timeline-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
@@ -526,12 +539,12 @@
                 <span>📖</span> How to Use
             </div>
             <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
-                <span>💬</span>Support
+                <span>💬</span> Support
             </a>
             <div class="drawer-item" onclick="openTermsModal()">
                 <span>📜</span> Terms & Rules
             </div>
-            <!-- Logout Button Placed Directly Below Terms & Rules -->
+            <!-- Logout directly below Terms & Rules -->
             <div class="drawer-item danger" onclick="performLogout()" style="margin-top:10px; border-top:1px solid var(--border-subtle); padding-top:14px;">
                 <span>🚪</span> Logout
             </div>
@@ -566,7 +579,7 @@
         <!-- ==================== AUTH VIEW (SIGN IN / SIGN UP) ==================== -->
         <div id="authSection" style="max-width:420px; margin:40px auto 0;">
             <div class="pro-card">
-                <!-- Sign In Form (Default Screen) -->
+                <!-- Sign In Form (Default View) -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div style="text-align:center; margin-bottom:20px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
@@ -583,7 +596,7 @@
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
-                    <!-- Clean small Sign Up link at the bottom -->
+                    <!-- Clean small Sign Up link at bottom -->
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
                     </div>
@@ -618,7 +631,7 @@
                     <button type="submit" class="btn-action" id="btnSubmitRegister">
                         <span>Create Account</span>
                     </button>
-                    <!-- Clean small Sign In link at the bottom -->
+                    <!-- Clean small Sign In link at bottom -->
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
                     </div>
@@ -644,19 +657,22 @@
                 </div>
             </div>
 
-            <!-- 👤 ACTIVE LINK SELECTOR (DROPDOWN WITH ONLY THIS USER'S LINKS) -->
+            <!-- 👤 ACTIVE LINK CARD: DISPLAYING LINK NAME & DROPDOWN SELECTOR -->
             <div class="link-selector-card">
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <div class="link-badge">
-                        <span>Active Link:</span>
-                        <strong id="displayLinkId">Detecting link...</strong>
+                <div class="link-info-box">
+                    <div class="link-title-badge">
+                        <span>🔗</span>
+                        <span id="displayLinkName" style="color:#fff;">Loading link name...</span>
                     </div>
-                    <span style="font-size:11px; color:var(--text-muted);">Choose from your authorized campaign links</span>
+                    <div class="link-id-sub">
+                        <span>ID:</span>
+                        <strong id="displayLinkId">Detecting ID...</strong>
+                    </div>
                 </div>
                 
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <!-- User's Links Dropdown -->
-                    <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:210px; background:#080c14; cursor:pointer;">
+                    <!-- User's Links Dropdown showing Name + ID -->
+                    <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:220px; background:#080c14; cursor:pointer;">
                         <option value="">-- Choose Your Link --</option>
                     </select>
 
@@ -681,7 +697,7 @@
                 </div>
             </div>
 
-            <!-- 📊 UNIQUE 24-HOUR REAL ANALYTICS ROW -->
+            <!-- 📊 REAL UNIQUE 24-HOUR ANALYTICS ROW -->
             <div class="stats-row">
                 <div class="metric-card">
                     <div class="metric-value" id="metricToday">0</div>
@@ -745,7 +761,7 @@
                 <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
             </div>
 
-            <!-- Deep link / Open in App has been permanently removed -->
+            <!-- Deep link / Open in App options removed as per architecture -->
             <button class="btn-action" onclick="createUserShortLink()">
                 <span>Create Short Link ➜</span>
             </button>
@@ -1062,7 +1078,7 @@
             document.getElementById('lockModal').classList.remove('active');
         }
 
-        // Auth switch (Sign In / Sign Up)
+        // Auth switcher (Sign In / Sign Up)
         function switchAuth(mode) {
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
@@ -1102,7 +1118,7 @@
             }
         }
 
-        // Sign Up with Clear Duplicate English Error Handling
+        // Sign Up with Clear Duplicate Error Message
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1132,7 +1148,6 @@
                     switchAuth('login');
                 } else {
                     let errMsg = data.error || data.message || '';
-                    // If email or phone already registered, show clear English message
                     if (!errMsg || errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('registered') || res.status === 400 || res.status === 409) {
                         errMsg = 'This email or phone number is already registered. Please sign in.';
                     }
@@ -1163,7 +1178,9 @@
         // ==================== 👤 SAFE LINK QUERY & USER-SPECIFIC DROPDOWN ====================
         async function fetchUserLinkData(explicitLinkId) {
             const displayEl = document.getElementById('displayLinkId');
+            const displayNameEl = document.getElementById('displayLinkName');
             displayEl.textContent = 'Fetching link details...';
+            displayNameEl.textContent = 'Loading link name...';
 
             const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
 
@@ -1191,11 +1208,13 @@
                     fetchHistoryRecords(activeLinkRecord.id);
                 } else {
                     activeLinkRecord = null;
-                    displayEl.textContent = 'No active link assigned';
+                    displayEl.textContent = 'None';
+                    displayNameEl.textContent = 'No active link assigned';
                     displayEmptyState(data.error);
                 }
             } catch (err) {
                 displayEl.textContent = 'Offline';
+                displayNameEl.textContent = 'Connection error';
             }
         }
 
@@ -1208,7 +1227,8 @@
 
             selectEl.innerHTML = links.map(l => {
                 const isSelected = l.id === currentActiveId ? 'selected' : '';
-                return `<option value="${l.id}" ${isSelected}>🔗 ${l.name} (${l.id})</option>`;
+                const lName = l.name || l.title || 'Untitled Campaign';
+                return `<option value="${l.id}" ${isSelected}>🔗 ${lName} (${l.id})</option>`;
             }).join('');
         }
 
@@ -1257,10 +1277,15 @@
             document.getElementById('txtExpiryDate').textContent = 'None';
         }
 
-        // Populate Analytics & Progress Bar (Unique 24h Values)
+        // Populate Analytics & Progress Bar (Unique 24h Values & Link Name)
         function populateDashboardMetrics(data) {
             const l = data.link;
+            
+            // Set Link Name & Link ID
+            const linkTitle = l.name || l.title || 'Untitled Campaign';
+            document.getElementById('displayLinkName').textContent = linkTitle;
             document.getElementById('displayLinkId').textContent = l.id;
+
             document.getElementById('metricToday').textContent = l.todayVisits || 0;
             document.getElementById('metric24h').textContent = l.v24h || 0;
             document.getElementById('metric7d').textContent = l.v7d || 0;
@@ -1331,12 +1356,15 @@
                 return;
             }
 
+            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
+
             try {
                 fetch('/api/user/renew-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         linkId: currentId,
+                        linkName: currentLinkTitle,
                         userName: userProfile.name,
                         plan: activePlan.key,
                         days: activePlan.days,
@@ -1350,7 +1378,8 @@
             const message = 
 `Hello Admin, I want to renew my link:
 👤 User Name: ${userProfile.name}
-🔗 Link ID: ${currentId}
+🔗 Link Name: ${currentLinkTitle}
+🆔 Link ID: ${currentId}
 💎 Extension Plan: ${activePlan.days} Days (${activePlan.key.toUpperCase()})
 💰 Total Amount: ₹${activePlan.cost}
 📅 Date: ${today}
@@ -1475,14 +1504,14 @@ Please verify my payment and approve my extension. Thank you!`;
             } catch(e) {}
         }
 
-        // Logout
+        // Logout Action
         function performLogout() {
             localStorage.removeItem('activeUserSession');
             localStorage.removeItem('userActiveLinkId');
             window.location.reload();
         }
 
-        // Initialize on page load
+        // Initialize on DOM load
         initApp();
     </script>
 </body>
