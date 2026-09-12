@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
-// ==================== MongoDB Connection ====================
+// ==================== MongoDB Connection & Models ====================
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Link = require('./models/Link');
@@ -32,7 +32,7 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// 🛡️ Security 2FA Inlined (ZERO DEPENDENCY ON 'speakeasy')
+// Security 2FA Helper
 const Security = {
     generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
     generateBackupCodes: () => [
@@ -44,17 +44,23 @@ const Security = {
 
 connectDB();
 
-// 🔓 Disable strict schema mode & ensure uidChecking, user & linkName fields are registered
+// Register flexible schema fields for Link and Renewal
 try {
     if (Link && Link.schema) {
         Link.schema.add({ 
+            name: { type: String, default: '' },
+            title: { type: String, default: '' },
+            linkName: { type: String, default: '' },
             uidChecking: { type: Boolean, default: true },
             creator: { type: String, default: '' },
             assignedUser: { type: String, default: '' },
-            userName: { type: String, default: '' },
-            title: { type: String, default: '' }
+            userName: { type: String, default: '' }
         });
         Link.schema.set('strict', false);
+    }
+    if (RenewalRequest && RenewalRequest.schema) {
+        RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
+        RenewalRequest.schema.set('strict', false);
     }
     if (PopupSettings && PopupSettings.schema) {
         PopupSettings.schema.add({ uidChecking: { type: Boolean, default: true } });
@@ -65,13 +71,9 @@ try {
     if (Session && Session.schema) Session.schema.set('strict', false);
     if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
     if (ShortLink && ShortLink.schema) ShortLink.schema.set('strict', false);
-    if (RenewalRequest && RenewalRequest.schema) {
-        RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
-        RenewalRequest.schema.set('strict', false);
-    }
 } catch(e) {}
 
-// ==================== 🕒 24-HOUR UNIQUE VISITOR ACTIVITY MODEL ====================
+// Visitor Activity Model (24-Hour Unique Visitors)
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -80,7 +82,6 @@ const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('Visit
     lastSeen: { type: Date, default: Date.now, index: true }
 }, { timestamps: true }));
 
-// ==================== Environment Variables ====================
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
@@ -95,78 +96,48 @@ let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
     transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: {
-            user: EMAIL_USER,
-            pass: EMAIL_PASS
-        }
+        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
     });
 }
 
-// Helper: Strict single-passcode verification
 function verifyPasscode(inputPass, storedPass) {
     if (!inputPass || !storedPass) return false;
     const cleanInput = inputPass.toString().trim();
     const cleanStored = storedPass.toString().trim();
-
     if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
-        try {
-            return bcrypt.compareSync(cleanInput, cleanStored);
-        } catch(e) {
-            return false;
-        }
+        try { return bcrypt.compareSync(cleanInput, cleanStored); } catch(e) { return false; }
     }
     return cleanInput === cleanStored;
 }
 
-// Helper: Check if UID check is disabled (OFF)
 function isUidCheckDisabled(val) {
-    if (
-        val === false ||
-        val === 'false' ||
-        val === 0 ||
-        val === '0' ||
-        val === 'off' ||
-        val === 'OFF' ||
-        val === 'disabled' ||
-        val === 'inactive' ||
-        val === 'no' ||
-        val === 'NO'
-    ) {
-        return true;
-    }
-    return false;
+    return val === false || val === 'false' || val === 0 || val === '0' || val === 'off' || val === 'OFF' || val === 'disabled' || val === 'inactive' || val === 'no' || val === 'NO';
 }
 
-// Helper: Extract clean link ID from various URL patterns or query parameters
 function extractCleanId(input) {
     if (!input) return '';
     let str = input.toString().trim();
-    if (str.includes('?link=')) str = str.split('?link=').split('&')[0];
-    else if (str.includes('&link=')) str = str.split('&link=').split('&')[0];
-    else if (str.includes('?id=')) str = str.split('?id=').split('&')[0];
-    else if (str.includes('&id=')) str = str.split('&id=').split('&')[0];
-    else if (str.includes('/v/')) str = str.split('/v/').split('?')[0];
-    else if (str.includes('/uid/')) str = str.split('/uid/').split('?')[0];
-    try {
-        str = decodeURIComponent(str);
-    } catch(e) {}
-    return str.trim();
+    if (str.includes('?link=')) str = str.split('?link=')[1].split('&')[0];
+    else if (str.includes('&link=')) str = str.split('&link=')[1].split('&')[0];
+    else if (str.includes('?id=')) str = str.split('?id=')[1].split('&')[0];
+    else if (str.includes('&id=')) str = str.split('&id=')[1].split('&')[0];
+    else if (str.includes('/user-dashboard/')) str = str.split('/user-dashboard/')[1].split('?')[0];
+    else if (str.includes('/v/')) str = str.split('/v/')[1].split('?')[0];
+    else if (str.includes('/uid/')) str = str.split('/uid/')[1].split('?')[0];
+    try { str = decodeURIComponent(str); } catch(e) {}
+    return str.split('#')[0].replace(/\/+$/, '').trim();
 }
 
-// Helper: Safe Link Query (Works for both Mongoose and Native MongoDB Collection)
 function getLinkQuery(rawId) {
     const cleanId = (rawId || '').toString().trim();
     const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
     if (mongoose.Types.ObjectId.isValid(cleanId) && cleanId.length === 24) {
-        try {
-            orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) });
-        } catch(e) {}
+        try { orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) }); } catch(e) {}
         orConditions.push({ _id: cleanId });
     }
     return { $or: orConditions };
 }
 
-// Database Initialization & Strict Passcode Sync
 async function initializeDatabase() {
     try {
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
@@ -198,13 +169,11 @@ async function initializeDatabase() {
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
             admin.lastEnvPasscode = activeEnvPass;
             await admin.save();
-            console.log('🔄 Admin passcode updated from environment variable ADMIN_PASSCODE');
+            console.log('🔄 Admin passcode updated from environment');
         }
 
         const statsExists = await Stats.findOne();
-        if (!statsExists) {
-            await Stats.create({});
-        }
+        if (!statsExists) await Stats.create({});
 
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
@@ -220,17 +189,8 @@ async function initializeDatabase() {
         const pricingExists = await Pricing.findOne();
         if (!pricingExists) {
             await Pricing.create({
-                pricing: {
-                    '7days': 100,
-                    '15days': 200,
-                    '30days': 400,
-                    '90days': 1000,
-                    '1year': 3000
-                },
-                paymentSettings: {
-                    method: 'UPI',
-                    details: { upiId: 'admin@upi', qrCode: null, text: '' }
-                },
+                pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+                paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi', qrCode: null, text: '' } },
                 whatsappNumber: '916372923348',
                 autoPaymentEnabled: false
             });
@@ -244,12 +204,9 @@ async function initializeDatabase() {
         console.error('❌ Database initialization error:', error);
     }
 }
-
 initializeDatabase();
 
-// ==================== Middlewares & Reverse Proxy ====================
 app.set('trust proxy', 1);
-
 app.use(helmet({
     contentSecurityPolicy: false,
     frameguard: false,
@@ -274,7 +231,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// ==================== Health Check ====================
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
@@ -286,7 +242,6 @@ app.get('/health', (req, res) => {
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
-// ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
@@ -311,7 +266,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// JWT Helpers
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 const JWT_EXPIRY = '7d';
 
@@ -320,14 +274,9 @@ function generateToken(userId) {
 }
 
 function verifyToken(token) {
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (e) {
-        return null;
-    }
+    try { return jwt.verify(token, JWT_SECRET); } catch (e) { return null; }
 }
 
-// Safe device ID generator
 function getDeviceId(req) {
     let rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '127.0.0.1';
     if (Array.isArray(rawIp)) rawIp = rawIp[0];
@@ -343,33 +292,24 @@ function getDeviceDetails(req) {
     const userAgent = (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown';
     let deviceName = 'Browser';
     let deviceType = 'Desktop';
-
     if (userAgent.includes('Android')) { deviceName = 'Android Mobile'; deviceType = 'Mobile'; }
     else if (userAgent.includes('iPhone')) { deviceName = 'Apple iPhone'; deviceType = 'Mobile'; }
     else if (userAgent.includes('iPad')) { deviceName = 'Apple iPad'; deviceType = 'Tablet'; }
     else if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
     else if (userAgent.includes('Mac')) { deviceName = 'Mac Computer'; deviceType = 'Desktop'; }
     else if (userAgent.includes('Linux')) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
-
     return { deviceName, deviceType };
 }
 
-// Safe timeout-protected block check
 async function isDeviceBlocked(req) {
     try {
         if (mongoose.connection.readyState !== 1) return null;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         return await BlockedDevice.findOne({
-            $or: [
-                { deviceKey },
-                { ip },
-                { fingerprint }
-            ],
+            $or: [{ deviceKey }, { ip }, { fingerprint }],
             isPermanent: true
         }).maxTimeMS(2000);
-    } catch(e) {
-        return null;
-    }
+    } catch(e) { return null; }
 }
 
 async function authMiddleware(req, res, next) {
@@ -381,7 +321,6 @@ async function authMiddleware(req, res, next) {
             permanent: true
         });
     }
-    
     const token = req.cookies?.adminToken || 
                   req.headers['authorization']?.replace('Bearer ', '') ||
                   req.headers['x-admin-token'] ||
@@ -390,25 +329,18 @@ async function authMiddleware(req, res, next) {
                   req.query.token;
 
     if (!token) return res.status(401).json({ error: 'Authentication required' });
-    
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-    
     req.user = decoded;
     next();
 }
 
-// ================================================================
-// ==================== PUBLIC ROUTES (NO AUTH) ====================
-// ================================================================
-
+// ==================== Public Informational Routes ====================
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
         const pricing = await Pricing.findOne();
         res.json({ number: pricing?.whatsappNumber || '916372923348' });
-    } catch (error) {
-        res.json({ number: '916372923348' });
-    }
+    } catch (error) { res.json({ number: '916372923348' }); }
 });
 
 app.post('/api/whatsapp-number', async (req, res) => {
@@ -420,9 +352,7 @@ app.post('/api/whatsapp-number', async (req, res) => {
         pricing.whatsappNumber = number.toString().trim();
         await pricing.save();
         res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to save WhatsApp number' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
 });
 
 app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
@@ -433,38 +363,33 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
         pricing.whatsappNumber = (number || '916372923348').toString().trim();
         await pricing.save();
         res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to save WhatsApp number' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
 });
 
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
-        const { dashboardId } = req.params;
-        let link = await Link.findOne({ id: dashboardId });
-        if (link) return res.json({ linkId: link.id });
-        link = await Link.findOne({ dashboardId: dashboardId });
-        if (link) return res.json({ linkId: link.id });
+        const cleanId = extractCleanId(req.params.dashboardId);
+        let link = await Link.findOne(getLinkQuery(cleanId));
+        if (link) return res.json({ linkId: link.id, name: link.name || link.title });
         res.status(404).json({ error: 'No link found' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to map dashboard' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to map dashboard' }); }
 });
 
 app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        const { linkId } = req.params;
-        let link = await Link.findOne(getLinkQuery(linkId));
-        if (!link) {
-            return res.status(404).json({ error: 'Link not found' });
-        }
+        const cleanId = extractCleanId(req.params.linkId);
+        let link = await Link.findOne(getLinkQuery(cleanId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
         const today = new Date().toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
+        const lName = link.name || link.title || link.linkName || 'Untitled Link';
         res.json({
             linkId: link.id,
-            name: link.name || link.title || 'Untitled Link',
-            title: link.name || link.title || 'Untitled Link',
+            id: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
             totalVisits: link.visits || 0,
             totalClaims: link.claims || 0,
             todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
@@ -475,9 +400,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             expiryDate: link.expiryDate || null,
             uidChecking: isUidOn
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
 app.get('/api/parent-link', async (req, res) => {
@@ -489,18 +412,19 @@ app.get('/api/parent-link', async (req, res) => {
                 firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
                 await firstLink.save();
             }
+            const lName = firstLink.name || firstLink.title || firstLink.linkName || 'Untitled Link';
             res.json({
                 url: '/user-dashboard/' + firstLink.dashboardId,
-                linkName: firstLink.name || firstLink.title || 'Untitled Link',
+                linkName: lName,
+                name: lName,
+                title: lName,
                 linkId: firstLink.id
             });
         } else {
             const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, linkId: null });
+            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, name: null, title: null, linkId: null });
         }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
 });
 
 app.get('/api/pricing', async (req, res) => {
@@ -521,16 +445,13 @@ app.get('/api/pricing', async (req, res) => {
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
             autoPaymentEnabled: false
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch pricing' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch pricing' }); }
 });
 
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { pricing, paymentSettings, upiId, whatsappNumber } = req.body;
         const updateFields = { autoPaymentEnabled: false };
-
         if (pricing && typeof pricing === 'object') updateFields.pricing = pricing;
         if (paymentSettings) updateFields.paymentSettings = paymentSettings;
         if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
@@ -541,53 +462,25 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
             { $set: updateFields },
             { upsert: true, new: true, lean: true }
         );
-
         res.json({ success: true, pricing: updatedPricing });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update pricing' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to update pricing' }); }
 });
 
-// =========================================================================
-// 🎯 VISITOR LINK RESOLVER (RETURNS STRICT uidChecking: true / false)
-// =========================================================================
+// Visitor Link Resolver
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         let rawId = extractCleanId(req.params.id);
         let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
         if (!link && (rawId === 'default' || !rawId)) {
-            const activeFallback = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
-            if (activeFallback) {
-                link = activeFallback;
-            } else {
-                return res.json({
-                    id: 'default',
-                    name: 'Welcome Bonus Reward',
-                    video: 'https://youtu.be/dQw4w9WgXcQ',
-                    claim: '#',
-                    buttonText: 'Claim Now',
-                    headline: '🎬 Watch Video & Unlock Reward',
-                    status: 'active',
-                    uidChecking: true,
-                    popupSettings: {
-                        image: null,
-                        title: '🎁 Claim Your Reward',
-                        buttonText: 'Claim Now',
-                        subtitle: 'Tap below to unlock your reward'
-                    }
-                });
-            }
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
         }
 
-        if (!link) {
-            return res.status(404).json({ error: 'not_found', message: 'Link not found' });
-        }
+        if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
 
         if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
             return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
@@ -600,7 +493,7 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // 🛡️ 24-Hour Unique Visit Tracking
+        // Unique Visit Count
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -614,18 +507,10 @@ app.get('/api/link/:id', async (req, res) => {
 
         if (!recentVisit) {
             const today = new Date().toISOString().split('T')[0];
-            Link.updateOne(
-                { _id: link._id },
-                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
-            ).catch(() => {});
-
-            Stats.updateOne(
-                {},
-                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }
-            ).catch(() => {});
+            Link.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
+            Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }).catch(() => {});
         }
 
-        // Update lastSeen for Real-Time Active Watching
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -634,16 +519,17 @@ app.get('/api/link/:id', async (req, res) => {
 
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
-
-        // 🎯 STRICT BOOLEAN CHECK (BOTH PER-LINK AND GLOBAL)
         const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
         const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
         const isUidOn = (!isUidCheckDisabled(link.uidChecking)) && (!isGlobalOff);
+        const lName = link.name || link.title || link.linkName || 'Untitled Link';
 
         res.json({
             id: link.id,
-            name: link.name || link.title || 'Untitled Link',
-            title: link.name || link.title || 'Untitled Link',
+            linkId: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
             video: link.video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: link.claim || '#',
             buttonText: link.buttonText || 'Claim Now',
@@ -662,23 +548,16 @@ app.get('/api/link/:id', async (req, res) => {
                 subtitle: popup.subtitle || 'Tap below to unlock your reward'
             }
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
-// ✅ SUBMIT PLAYER UID ROUTE
 app.post('/api/submit-uid/:linkId', async (req, res) => {
     try {
         const { uid } = req.body;
         const cleanUid = (uid || '').toString().trim();
-        if (!cleanUid || cleanUid.length < 5) {
-            return res.status(400).json({ error: 'Please enter a valid UID.' });
-        }
-
+        if (!cleanUid || cleanUid.length < 5) return res.status(400).json({ error: 'Please enter a valid UID.' });
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
-
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
 
@@ -687,19 +566,14 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
             { $set: { lastSeen: new Date(), uid: cleanUid } },
             { upsert: true, new: true }
         ).catch(() => {});
-
         res.json({ success: true, message: 'UID submitted successfully', uid: cleanUid });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to submit UID' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to submit UID' }); }
 });
 
-// ✅ TRACK CLAIM
 app.post('/api/track-claim/:linkId', async (req, res) => {
     try {
         const link = await Link.findOne(getLinkQuery(req.params.linkId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
-
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -719,11 +593,7 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             if (link.dailyClaims.set) link.dailyClaims.set(today, currentDaily + 1);
             else link.dailyClaims[today] = currentDaily + 1;
             await link.save().catch(() => {});
-
-            await Stats.updateOne(
-                {},
-                { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }
-            ).catch(() => {});
+            await Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
         }
 
         await VisitorActivity.findOneAndUpdate(
@@ -731,23 +601,17 @@ app.post('/api/track-claim/:linkId', async (req, res) => {
             { $set: { lastSeen: new Date() } },
             { upsert: true, new: true }
         ).catch(() => {});
-
         res.json({ success: true, claims: link.claims || 0 });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to track claim' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to track claim' }); }
 });
 
-// History Route
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { linkId } = req.params;
         const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 }).limit(7).lean();
         res.json({ history, count: history.length });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch history' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch history' }); }
 });
 
 app.post('/api/renewal/request-from-dashboard', async (req, res) => {
@@ -766,9 +630,7 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
         });
         await renewalRequest.save();
         res.json({ success: true, requestId: renewalRequest.id });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create renewal request' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to create renewal request' }); }
 });
 
 app.get('/api/renewal/status/:linkId', async (req, res) => {
@@ -777,9 +639,7 @@ app.get('/api/renewal/status/:linkId', async (req, res) => {
         const { linkId } = req.params;
         const request = await RenewalRequest.findOne({ linkId }).sort({ createdAt: -1 }).lean();
         res.json({ hasRequest: !!request, request: request || null, status: request?.status || 'none' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch status' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch status' }); }
 });
 
 app.get('/api/settings', async (req, res) => {
@@ -799,29 +659,22 @@ app.get('/api/settings', async (req, res) => {
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch settings' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch settings' }); }
 });
 
-// ==================== 🔄 USER SIGNUP & SIGNIN ====================
+// User Auth Routes
 app.post('/api/user/signup', async (req, res) => {
     try {
         const { name, email, phone } = req.body;
         if (!name || !email || !phone) return res.status(400).json({ error: 'All fields are required' });
-
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
         const emailExists = await RenewalUser.findOne({ email: cleanEmail });
-        if (emailExists) {
-            return res.status(400).json({ error: 'This email or phone number is already registered. Please sign in.' });
-        }
+        if (emailExists) return res.status(400).json({ error: 'This email is already registered.' });
 
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
-        if (phoneExists) {
-            return res.status(400).json({ error: 'This email or phone number is already registered. Please sign in.' });
-        }
+        if (phoneExists) return res.status(400).json({ error: 'This phone number is already registered.' });
 
         await RenewalUser.create({
             name: name.trim(),
@@ -829,92 +682,89 @@ app.post('/api/user/signup', async (req, res) => {
             phone: cleanPhone,
             status: 'pending'
         });
-
         res.json({ success: true, message: 'Signup submitted! Admin approval is pending.' });
-    } catch (e) {
-        res.status(500).json({ error: 'Registration failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Registration failed' }); }
 });
 
 app.post('/api/user/signin', async (req, res) => {
     try {
         const { email, phone } = req.body;
         if (!email || !phone) return res.status(400).json({ error: 'Enter email and phone number' });
-
-        const cleanEmail = email.trim().toLowerCase();
-        const cleanPhone = phone.trim();
-
-        const user = await RenewalUser.findOne({ email: cleanEmail, phone: cleanPhone });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found. Please click Sign Up to register.' });
-        }
-
-        if (user.status === 'pending') {
-            return res.status(403).json({ error: 'Your account is pending approval from Administrator.' });
-        }
-        if (user.status === 'rejected') {
-            return res.status(403).json({ error: 'Your account registration was rejected by Administrator.' });
-        }
-
+        const user = await RenewalUser.findOne({ email: email.trim().toLowerCase(), phone: phone.trim() });
+        if (!user) return res.status(404).json({ error: 'User not found. Please click Sign Up.' });
+        if (user.status === 'pending') return res.status(403).json({ error: 'Account pending admin approval.' });
+        if (user.status === 'rejected') return res.status(403).json({ error: 'Account registration was rejected.' });
         res.json({
             success: true,
             user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
         });
-    } catch (e) {
-        res.status(500).json({ error: 'Login failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
 // =========================================================================
-// 👤 USER LINK DETAILS (WITH COMPLETE LINK NAME & USER SPECIFIC LINKS)
+// 👤 USER LINK DETAILS (SEAMLESS LINK NAME & CAMPAIGN SYNC)
 // =========================================================================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        const { userName, linkInput } = req.body;
+        const { userName, linkInput, linkId, id, dashboardId } = req.body;
         const cleanUser = (userName || '').trim();
-        const escapedUser = cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const userRegex = new RegExp('^' + escapedUser + '$', 'i');
+        const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
 
-        // Fetch all links belonging to this user
+        let rawInput = linkInput || linkId || id || dashboardId || '';
+        let searchId = extractCleanId(rawInput);
+
         const allUserLinks = await Link.find({ 
             $or: [
-                { name: userRegex },
-                { creator: userRegex },
+                { assignedUser: userRegex },
                 { userName: userRegex },
-                { assignedUser: userRegex }
+                { creator: userRegex },
+                { name: userRegex },
+                { title: userRegex },
+                { linkName: userRegex }
             ]
         }).sort({ created: -1 }).lean();
 
-        // Format user links array for dropdown selector
         const formattedUserLinks = allUserLinks.map(l => ({
             id: l.id,
-            name: l.name || l.title || 'Untitled Campaign',
-            title: l.name || l.title || 'Untitled Campaign',
+            name: l.name || l.title || l.linkName || 'Untitled Campaign',
+            title: l.name || l.title || l.linkName || 'Untitled Campaign',
             status: l.status || 'active',
             expiryDate: l.expiryDate || null
         }));
 
         let link = null;
-        let searchId = extractCleanId(linkInput);
-
         if (searchId && searchId !== cleanUser) {
             link = await Link.findOne(getLinkQuery(searchId));
         }
-
         if (!link && allUserLinks.length > 0) {
             link = allUserLinks[0];
         }
-
-        if (!link && searchId) {
-            link = await Link.findOne({ name: new RegExp('^' + searchId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).sort({ created: -1 });
+        if (!link && cleanUser) {
+            link = await Link.findOne({
+                $or: [
+                    { assignedUser: userRegex },
+                    { userName: userRegex },
+                    { creator: userRegex },
+                    { name: userRegex },
+                    { title: userRegex },
+                    { linkName: userRegex }
+                ]
+            }).sort({ created: -1 });
+        }
+        if (!link) {
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
         }
 
         if (!link) {
             return res.status(404).json({ 
-                error: `No active link found for user "${cleanUser}". Please connect your assigned Link ID.`,
+                error: `No active link found for user "${cleanUser}".`,
                 userLinks: formattedUserLinks
             });
+        }
+
+        if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
+            await Link.collection.updateOne({ _id: link._id }, { $set: { assignedUser: cleanUser, userName: cleanUser } });
         }
 
         const now = new Date();
@@ -946,25 +796,31 @@ app.post('/api/user/link-details', async (req, res) => {
             if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
-        let daysLeft = null;
+        let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
         if (link.expiryDate) {
             const diffTime = new Date(link.expiryDate) - now;
             daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (daysLeft <= 3) isEligibleForRenewal = true;
-        } else {
-            daysLeft = 'Lifetime Active';
         }
 
+        const lName = link.name || link.title || link.linkName || 'Untitled Campaign';
         const pricingDoc = await Pricing.findOne().lean();
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
 
         res.json({
             success: true,
+            id: link.id,
+            linkId: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
             link: {
                 id: link.id,
-                name: link.name || link.title || 'Untitled Campaign',
-                title: link.name || link.title || 'Untitled Campaign',
+                linkId: link.id,
+                name: lName,
+                title: lName,
+                linkName: lName,
                 created: link.created,
                 expiryDate: link.expiryDate,
                 daysLeft,
@@ -980,19 +836,13 @@ app.post('/api/user/link-details', async (req, res) => {
             autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch link data' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch link data' }); }
 });
 
-// POST /api/user/renew-payment (Saves actual Link Name in database)
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
-
-        const cleanRef = (refNo || 'Manual-WhatsApp').toString().trim();
-
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
             linkId,
@@ -1000,32 +850,21 @@ app.post('/api/user/renew-payment', async (req, res) => {
             plan,
             days: parseInt(days) || 30,
             amount: parseInt(amount) || 0,
-            transactionId: cleanRef,
+            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(),
             status: 'pending'
         });
-
-        res.json({
-            success: true,
-            manual: true,
-            message: 'Renewal request submitted. Administrator will review and approve.'
-        });
-    } catch (e) {
-        res.status(500).json({ error: 'Payment processing error' });
-    }
+        res.json({ success: true, message: 'Renewal request submitted. Admin will review and approve.' });
+    } catch (e) { res.status(500).json({ error: 'Payment processing error' }); }
 });
 
-// ================================================================
-// ==================== 🔗 USER DASHBOARD: SHORT LINKS ====================
-// ================================================================
+// Short links for user dashboard
 app.get('/api/user/short-links', async (req, res) => {
     try {
         const { userName } = req.query;
         const filter = userName ? { creator: userName } : {};
         const links = await ShortLink.find(filter).sort({ createdAt: -1 }).lean();
         res.json({ success: true, links });
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to fetch short links' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch short links' }); }
 });
 
 app.post('/api/user/short-links', async (req, res) => {
@@ -1042,9 +881,7 @@ app.post('/api/user/short-links', async (req, res) => {
         });
         await link.save();
         res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to create short link' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to create short link' }); }
 });
 
 app.delete('/api/user/short-links/:id', async (req, res) => {
@@ -1052,39 +889,28 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
         await ShortLink.findByIdAndDelete(req.params.id);
         await ShortLinkClick.deleteMany({ shortLinkId: req.params.id }).catch(() => {});
         res.json({ success: true });
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to delete short link' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to delete short link' }); }
 });
 
-// ================================================================
-// ==================== 👥 ADMIN: USER MANAGEMENT ====================
-// ================================================================
+// Admin User Management
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
         const links = await Link.find().lean();
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
-            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName);
-            return {
-                ...u,
-                totalLinks: userLinks.length
-            };
+            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName);
+            return { ...u, totalLinks: userLinks.length };
         });
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch users' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
 });
 
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         await RenewalUser.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'User deleted successfully' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to delete user' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to delete user' }); }
 });
 
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
@@ -1105,7 +931,7 @@ app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res)
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN: RENEWAL SETTINGS & REQUESTS ====================
+// Admin Renewal Settings & Requests
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const pricing = await Pricing.findOne().lean();
@@ -1118,29 +944,20 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
         const updateData = { autoPaymentEnabled: false };
-
         if (pricing && typeof pricing === 'object') updateData.pricing = pricing;
         if (paymentSettings) updateData.paymentSettings = paymentSettings;
         if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
         if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
 
-        const updatedDoc = await Pricing.findOneAndUpdate(
-            {},
-            { $set: updateData },
-            { upsert: true, new: true, lean: true }
-        );
-
+        const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
         res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to save renewal settings' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to save renewal settings' }); }
 });
 
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
         if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
-
         const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
         if (link) {
             const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
@@ -1149,11 +966,9 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
             link.status = 'active';
             await link.save();
         }
-
         reqDoc.status = 'approved';
         reqDoc.approvedAt = new Date();
         await reqDoc.save();
-
         res.json({ success: true, message: 'Renewal approved and link extended!' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1162,9 +977,7 @@ app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
     try {
         const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
         res.json(requests);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch renewal requests' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch renewal requests' }); }
 });
 
 app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
@@ -1173,9 +986,9 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         if (!request) return res.status(404).json({ error: 'Request not found' });
         const link = await Link.findOne(getLinkQuery(request.linkId));
         if (link) {
-            const currentExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-            currentExpiry.setDate(currentExpiry.getDate() + (request.days || 30));
-            link.expiryDate = currentExpiry;
+            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+            curExpiry.setDate(curExpiry.getDate() + (request.days || 30));
+            link.expiryDate = curExpiry;
             link.status = 'active';
             await link.save();
         }
@@ -1183,9 +996,7 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
         request.approvedAt = new Date();
         await request.save();
         res.json({ success: true, message: 'Renewal approved!' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to approve renewal' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to approve renewal' }); }
 });
 
 app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
@@ -1195,18 +1006,14 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
         request.status = 'rejected';
         await request.save();
         res.json({ success: true, message: 'Renewal rejected successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to reject renewal' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to reject renewal' }); }
 });
 
 app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
     try {
         await RenewalRequest.findOneAndDelete({ id: req.params.requestId });
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove request' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to remove request' }); }
 });
 
 app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, res) => {
@@ -1216,9 +1023,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ================================================================
-// 🔑 ADMIN AUTHENTICATION & STRICT PASSCODE SYSTEM
-// ================================================================
+// Admin Passcode & Auth
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const blocked = await isDeviceBlocked(req);
@@ -1237,7 +1042,6 @@ app.post('/api/admin/login', async (req, res) => {
     try {
         const { passcode } = req.body;
         const cleanPass = (passcode || '').toString().trim();
-
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
         let admin = await User.findOne();
@@ -1260,29 +1064,23 @@ app.post('/api/admin/login', async (req, res) => {
         }
 
         const isValid = verifyPasscode(cleanPass, admin.passcode);
-
         if (isValid) {
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
 
-            try {
-                if (Session) {
-                    await Session.create({
-                        userId: 'admin',
-                        deviceKey,
-                        fingerprint,
-                        ip,
-                        userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
-                        deviceName,
-                        deviceType,
-                        isActive: true,
-                        lastActivity: new Date(),
-                        createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
-                    }).catch(() => {});
-                }
-            } catch(e) {}
+            if (Session) {
+                await Session.create({
+                    userId: 'admin',
+                    deviceKey, fingerprint, ip,
+                    userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
+                    deviceName, deviceType,
+                    isActive: true,
+                    lastActivity: new Date(),
+                    createdAt: new Date(),
+                    expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+                }).catch(() => {});
+            }
 
             const jwtToken = generateToken('admin');
             res.cookie('adminToken', jwtToken, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
@@ -1299,7 +1097,6 @@ app.post('/api/admin/login', async (req, res) => {
 
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
-
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
         if (!record) {
             record = new BlockedDevice({
@@ -1311,8 +1108,6 @@ app.post('/api/admin/login', async (req, res) => {
         } else {
             record.attempts = (record.attempts || 0) + 1;
             record.lastAttempt = new Date();
-            record.deviceName = deviceName;
-            record.deviceType = deviceType;
         }
 
         if (record.attempts >= 3) {
@@ -1326,14 +1121,9 @@ app.post('/api/admin/login', async (req, res) => {
         } else {
             record.reason = `Failed passcode attempt (${record.attempts}/3)`;
             await record.save();
-            return res.status(401).json({
-                error: `Incorrect Passcode! Attempt ${record.attempts} of 3.`
-            });
+            return res.status(401).json({ error: `Incorrect Passcode! Attempt ${record.attempts} of 3.` });
         }
-    } catch (error) {
-        console.error('Safe login caught:', error);
-        res.status(500).json({ error: 'Server authentication error' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Server authentication error' }); }
 });
 
 app.post('/api/admin/logout', async (req, res) => {
@@ -1350,37 +1140,25 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
         const { oldPasscode, newPasscode } = req.body;
         const cleanOld = (oldPasscode || '').toString().trim();
         const cleanNew = (newPasscode || '').toString().trim();
-
-        if (!cleanNew || cleanNew.length !== 6) {
-            return res.status(400).json({ error: 'New passcode must be 6 digits' });
-        }
+        if (!cleanNew || cleanNew.length !== 6) return res.status(400).json({ error: 'New passcode must be 6 digits' });
 
         const admin = await User.findOne();
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
-
-        const isCurrentValid = verifyPasscode(cleanOld, admin.passcode);
-        if (!isCurrentValid) {
-            return res.status(401).json({ error: 'Current passcode is incorrect' });
-        }
+        if (!verifyPasscode(cleanOld, admin.passcode)) return res.status(401).json({ error: 'Current passcode is incorrect' });
 
         admin.passcode = bcrypt.hashSync(cleanNew, 10);
         admin.lastEnvPasscode = cleanNew;
         await admin.save();
-        res.json({ success: true, message: 'Passcode changed successfully! Old passcode is permanently disabled.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Passcode change failed' });
-    }
+        res.json({ success: true, message: 'Passcode changed successfully!' });
+    } catch (error) { res.status(500).json({ error: 'Passcode change failed' }); }
 });
 
 app.post('/api/admin/theme', authMiddleware, async (req, res) => {
     try {
-        const { theme } = req.body;
         const admin = await User.findOne();
-        if (admin) { admin.theme = theme; await admin.save(); }
+        if (admin) { admin.theme = req.body.theme; await admin.save(); }
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update theme' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to update theme' }); }
 });
 
 app.post('/api/admin/background', authMiddleware, async (req, res) => {
@@ -1393,18 +1171,14 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
         }
         await popup.save();
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update background' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to update background' }); }
 });
 
 app.get('/api/admin/logs', authMiddleware, async (req, res) => {
     try {
         const logs = await AdminLog.find().sort({ timestamp: -1 }).limit(50);
         res.json({ logs, count: logs.length });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch logs' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch logs' }); }
 });
 
 app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
@@ -1417,128 +1191,88 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== 🔗 ADMIN: LINKS CRUD WITH DIRECT MONGODB PERSISTENCE ====================
-app.get('/api/links', authMiddleware, async (req, res) => {
+// =========================================================================
+// 🎯 ADMIN LINKS CRUD & DIRECT MONGODB PERSISTENCE
+// =========================================================================
+app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const links = await Link.find().sort({ created: -1 }).lean();
-        
         const formatted = links.map(l => {
             const popup = l.popupSettings || {};
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
             const isUidOn = !isUidCheckDisabled(l.uidChecking);
+            const lName = l.name || l.title || l.linkName || 'Untitled Link';
             return {
                 ...l,
-                name: l.name || l.title || 'Untitled Link',
+                name: lName,
+                title: lName,
+                linkName: lName,
                 uidChecking: isUidOn,
                 image: img,
                 popupImage: img,
                 popupImageUrl: img,
                 banner: img,
-                popupSettings: {
-                    ...popup,
-                    image: img,
-                    popupImage: img,
-                    popupImageUrl: img
-                }
+                popupSettings: { ...popup, image: img }
             };
         });
         res.json(formatted);
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to fetch links' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch links' }); }
 });
 
-app.get('/api/links/:id', authMiddleware, async (req, res) => {
+app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
     try {
         const rawId = extractCleanId(req.params.id);
-        const query = getLinkQuery(rawId);
-        const l = await Link.findOne(query).lean();
+        const l = await Link.findOne(getLinkQuery(rawId)).lean();
         if (!l) return res.status(404).json({ error: 'Link not found' });
-        
         const popup = l.popupSettings || {};
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
         const isUidOn = !isUidCheckDisabled(l.uidChecking);
+        const lName = l.name || l.title || l.linkName || 'Untitled Link';
         res.json({
             ...l,
-            name: l.name || l.title || 'Untitled Link',
+            name: lName,
+            title: lName,
+            linkName: lName,
             uidChecking: isUidOn,
             image: img,
             popupImage: img,
             popupImageUrl: img,
             banner: img,
-            popupSettings: {
-                ...popup,
-                image: img,
-                popupImage: img,
-                popupImageUrl: img
-            }
+            popupSettings: { ...popup, image: img }
         });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch link' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch link' }); }
 });
 
-// ➕ CREATE REWARDED TRACKING LINK
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
-        const cleanName = (req.body.name || req.body.title || 'Untitled Link').trim();
-        const cleanVideo = (req.body.video || req.body.videoUrl || req.body.url || req.body.youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ').trim();
+        const cleanName = (req.body.name || req.body.linkName || req.body.link_name || req.body.title || req.body.linkTitle || req.body.campaignName || 'Untitled Link').trim();
+        const cleanVideo = (req.body.video || req.body.videoUrl || req.body.url || 'https://youtu.be/dQw4w9WgXcQ').trim();
         const cleanClaim = (req.body.claim || req.body.claimUrl || req.body.claimLink || '#').trim();
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        // Check UID Checking from all possible param aliases
-        let incomingUidVal = req.body.uidChecking !== undefined ? req.body.uidChecking :
-                             (req.body.uidCheck !== undefined ? req.body.uidCheck :
-                             (req.body.checkUid !== undefined ? req.body.checkUid :
-                             (req.body.isUidChecking !== undefined ? req.body.isUidChecking :
-                             (req.body.enableUid !== undefined ? req.body.enableUid :
-                             (req.body.uid !== undefined ? req.body.uid :
-                             (req.body.uid_checking !== undefined ? req.body.uid_checking : undefined))))));
+        let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
+        const cleanUidChecking = incomingUidVal !== undefined ? !isUidCheckDisabled(incomingUidVal) : true;
 
-        let cleanUidChecking = true;
-        if (incomingUidVal !== undefined) {
-            cleanUidChecking = !isUidCheckDisabled(incomingUidVal);
-        }
+        const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate;
+        const cleanExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime()) ? new Date(rawExpiry) : null;
 
-        const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
-        let cleanExpiry = null;
-        if (rawExpiry && !isNaN(new Date(rawExpiry).getTime())) {
-            cleanExpiry = new Date(rawExpiry);
-        }
-
-        let incomingImage = req.body.popupImage || 
-                            req.body.image || 
-                            req.body.popupImageUrl || 
-                            req.body.banner || 
-                            req.body.bannerImage || 
-                            req.body.bannerUrl || 
-                            req.body.popupImg || 
-                            req.body.img;
-
-        let parsedPopup = req.body.popupSettings;
-        if (typeof parsedPopup === 'string') {
-            try { parsedPopup = JSON.parse(parsedPopup); } catch(e) { parsedPopup = {}; }
-        }
-        parsedPopup = parsedPopup || {};
-
-        if (!incomingImage && parsedPopup.image) {
-            incomingImage = parsedPopup.image;
-        }
-
+        let incomingImage = req.body.popupImage || req.body.image || req.body.banner || req.body.popupSettings?.image;
         const finalBanner = incomingImage && incomingImage.trim().length > 4 ? incomingImage.trim() : null;
 
         const finalPopup = {
-            title: parsedPopup.title || req.body.popupTitle || '🎁 Claim Your Reward',
-            subtitle: parsedPopup.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
-            buttonText: parsedPopup.buttonText || req.body.popupButtonText || cleanButtonText,
+            title: req.body.popupSettings?.title || req.body.popupTitle || '🎁 Claim Your Reward',
+            subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
+            buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || cleanButtonText,
             image: finalBanner
         };
 
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
             name: cleanName,
+            title: cleanName,
+            linkName: cleanName,
             video: cleanVideo,
             claim: cleanClaim,
             buttonText: cleanButtonText,
@@ -1546,6 +1280,8 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             expiryDate: cleanExpiry,
             uidChecking: cleanUidChecking,
             status: 'active',
+            assignedUser: (req.body.userName || req.body.user || '').trim(),
+            userName: (req.body.userName || req.body.user || '').trim(),
             image: finalBanner,
             popupImage: finalBanner,
             popupImageUrl: finalBanner,
@@ -1553,41 +1289,34 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             popupSettings: finalPopup
         });
 
-        newLink.set('uidChecking', cleanUidChecking, { strict: false });
-        await newLink.save({ validateBeforeSave: false });
-
-        // 🛡️ Direct Raw MongoDB Write Guarantee:
-        try {
-            await Link.collection.updateOne({ _id: newLink._id }, { $set: { uidChecking: cleanUidChecking } });
-        } catch(err) {}
+        await newLink.save();
+        await Link.collection.updateOne({ _id: newLink._id }, { $set: { name: cleanName, title: cleanName, linkName: cleanName, uidChecking: cleanUidChecking } });
 
         res.json({
             ...newLink.toObject(),
+            name: cleanName,
+            title: cleanName,
+            linkName: cleanName,
             uidChecking: cleanUidChecking,
             image: finalBanner,
-            popupImage: finalBanner,
-            popupImageUrl: finalBanner,
-            banner: finalBanner,
             popupSettings: finalPopup
         });
-    } catch (e) {
-        console.error('❌ Error creating link:', e);
-        res.status(500).json({ error: 'Failed to create link' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
-// Helper: Handle Link Update logic across PUT / POST / PATCH
 async function handleLinkUpdate(req, res) {
     try {
-        const rawId = extractCleanId(req.params.id);
-        const query = getLinkQuery(rawId);
+        let rawId = req.params.id;
+        if (!rawId || ['undefined', 'null', 'update', 'edit', 'save'].includes(rawId)) {
+            rawId = req.body.id || req.body.linkId || req.body._id;
+        }
+        const cleanId = extractCleanId(rawId);
+        const query = getLinkQuery(cleanId);
         const link = await Link.findOne(query);
         if (!link) return res.status(404).json({ error: 'Link not found' });
 
-        // 🎯 Direct Toggle action support
         if (req.path.includes('toggle') || req.body.action === 'toggle' || req.body.toggle === true) {
-            const currentVal = !isUidCheckDisabled(link.uidChecking);
-            const newVal = !currentVal;
+            const newVal = !(!isUidCheckDisabled(link.uidChecking));
             link.uidChecking = newVal;
             await link.save();
             await Link.collection.updateMany(query, { $set: { uidChecking: newVal } });
@@ -1596,85 +1325,60 @@ async function handleLinkUpdate(req, res) {
 
         const updateData = {};
 
-        if (req.body.name !== undefined) updateData.name = req.body.name.trim();
-        else if (req.body.title !== undefined) updateData.name = req.body.title.trim();
+        // Link Name Extraction (Supports all input field names from admin forms)
+        const nameCandidates = [
+            req.body.name, req.body.linkName, req.body.link_name,
+            req.body.title, req.body.linkTitle, req.body.campaignName
+        ];
+        for (const candidate of nameCandidates) {
+            if (candidate !== undefined && candidate !== null && candidate.toString().trim() !== '') {
+                const finalName = candidate.toString().trim();
+                updateData.name = finalName;
+                updateData.title = finalName;
+                updateData.linkName = finalName;
+                break;
+            }
+        }
 
-        const incomingVideo = req.body.video !== undefined ? req.body.video :
-                              (req.body.videoUrl !== undefined ? req.body.videoUrl :
-                              (req.body.url !== undefined ? req.body.url : req.body.youtubeUrl));
+        if (req.body.userName || req.body.user || req.body.assignedUser) {
+            const assigned = (req.body.userName || req.body.user || req.body.assignedUser).toString().trim();
+            updateData.userName = assigned;
+            updateData.assignedUser = assigned;
+            updateData.creator = assigned;
+        }
+
+        const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
         if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
 
-        const incomingClaim = req.body.claim !== undefined ? req.body.claim :
-                              (req.body.claimUrl !== undefined ? req.body.claimUrl :
-                              (req.body.claimLink !== undefined ? req.body.claimLink :
-                              (req.body.rewardUrl !== undefined ? req.body.rewardUrl : req.body.targetUrl)));
+        const incomingClaim = req.body.claim ?? req.body.claimUrl ?? req.body.claimLink;
         if (incomingClaim !== undefined) updateData.claim = incomingClaim.trim();
 
-        const incomingBtn = req.body.buttonText !== undefined ? req.body.buttonText :
-                            (req.body.btnText !== undefined ? req.body.btnText : req.body.button_text);
+        const incomingBtn = req.body.buttonText ?? req.body.btnText;
         if (incomingBtn !== undefined) updateData.buttonText = incomingBtn.trim();
 
-        const incomingHeadline = req.body.headline !== undefined ? req.body.headline :
-                                 (req.body.heading !== undefined ? req.body.heading : req.body.headLine);
+        const incomingHeadline = req.body.headline ?? req.body.heading;
         if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
 
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
-        // 🎯 UID CHECKING (CAPTURE ALL POSSIBLE PARAMETER ALIASES)
-        let incomingUidVal = req.body.uidChecking !== undefined ? req.body.uidChecking :
-                             (req.body.uidCheck !== undefined ? req.body.uidCheck :
-                             (req.body.checkUid !== undefined ? req.body.checkUid :
-                             (req.body.isUidChecking !== undefined ? req.body.isUidChecking :
-                             (req.body.enableUid !== undefined ? req.body.enableUid :
-                             (req.body.uid !== undefined ? req.body.uid :
-                             (req.body.uid_checking !== undefined ? req.body.uid_checking :
-                             (req.body.uidStatus !== undefined ? req.body.uidStatus : undefined)))))));
-
-        let hasUidUpdate = false;
+        let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         if (incomingUidVal !== undefined) {
             updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
-            hasUidUpdate = true;
         } else if (req.body.isEditForm || (req.body.name && req.body.video)) {
-            // HTML Form Checkbox omission behavior: If unchecked, formData omits it entirely!
-            // If full link edit form is submitted without the checkbox, it means UNCHECKED (OFF).
             updateData.uidChecking = false;
-            hasUidUpdate = true;
         }
 
-        const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
-                               (req.body.expiry !== undefined ? req.body.expiry :
-                               (req.body.expDate !== undefined ? req.body.expDate :
-                               (req.body.expireDate !== undefined ? req.body.expireDate : req.body.expiry_date)));
-        
+        const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
         if (incomingExpiry !== undefined) {
-            if (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) {
-                updateData.expiryDate = new Date(incomingExpiry);
-            } else {
-                updateData.expiryDate = null;
-            }
+            updateData.expiryDate = (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) ? new Date(incomingExpiry) : null;
         }
 
-        let incomingImage = req.body.popupImage !== undefined ? req.body.popupImage :
-                            (req.body.image !== undefined ? req.body.image :
-                            (req.body.popupImageUrl !== undefined ? req.body.popupImageUrl :
-                            (req.body.banner !== undefined ? req.body.banner :
-                            (req.body.bannerImage !== undefined ? req.body.bannerImage :
-                            (req.body.bannerUrl !== undefined ? req.body.bannerUrl :
-                            (req.body.popupImg !== undefined ? req.body.popupImg : req.body.img))))));
-
-        let parsedPopup = req.body.popupSettings;
-        if (typeof parsedPopup === 'string') {
-            try { parsedPopup = JSON.parse(parsedPopup); } catch(e) { parsedPopup = {}; }
-        }
-        if (parsedPopup && typeof parsedPopup === 'object' && parsedPopup.image !== undefined && incomingImage === undefined) {
-            incomingImage = parsedPopup.image;
-        }
-
+        let incomingImage = req.body.popupImage ?? req.body.image ?? req.body.banner ?? req.body.popupSettings?.image;
         const currentPopup = link.popupSettings || {};
         const newPopup = {
-            title: currentPopup.title || '🎁 Claim Your Reward',
-            subtitle: currentPopup.subtitle || 'Tap below to unlock your reward',
-            buttonText: currentPopup.buttonText || link.buttonText || 'Claim Now',
+            title: req.body.popupSettings?.title || req.body.popupTitle || currentPopup.title || '🎁 Claim Your Reward',
+            subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || currentPopup.subtitle || 'Tap below to unlock your reward',
+            buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || currentPopup.buttonText || 'Claim Now',
             image: currentPopup.image || null
         };
 
@@ -1687,61 +1391,54 @@ async function handleLinkUpdate(req, res) {
             updateData.popupImageUrl = finalImg;
             updateData.banner = finalImg;
         }
-
-        if (parsedPopup && typeof parsedPopup === 'object') {
-            if (parsedPopup.title !== undefined) newPopup.title = parsedPopup.title.trim();
-            if (parsedPopup.subtitle !== undefined) newPopup.subtitle = parsedPopup.subtitle.trim();
-            if (parsedPopup.buttonText !== undefined) newPopup.buttonText = parsedPopup.buttonText.trim();
-        }
-        if (req.body.popupTitle !== undefined) newPopup.title = req.body.popupTitle.trim();
-        if (req.body.popupSubtitle !== undefined) newPopup.subtitle = req.body.popupSubtitle.trim();
-        if (req.body.popupButtonText !== undefined) newPopup.buttonText = req.body.popupButtonText.trim();
-
         updateData.popupSettings = newPopup;
 
-        const updatedLink = await Link.findOneAndUpdate(
-            query,
-            { $set: updateData },
-            { new: true, lean: true, strict: false }
-        );
-
-        // 🛡️ DIRECT MONGODB NATIVE DRIVER UPDATE GUARANTEE
-        if (hasUidUpdate) {
-            try {
-                await Link.collection.updateMany(query, { $set: { uidChecking: updateData.uidChecking } });
-            } catch(err) {}
-            try {
-                if (mongoose.connection && mongoose.connection.db) {
-                    await mongoose.connection.db.collection('links').updateMany(query, { $set: { uidChecking: updateData.uidChecking } });
-                }
-            } catch(err) {}
+        // Direct Native Update on MongoDB collections
+        await Link.collection.updateMany(query, { $set: updateData });
+        if (mongoose.connection?.db) {
+            await mongoose.connection.db.collection('links').updateMany(query, { $set: updateData });
         }
 
-        const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedLink.uidChecking);
+        if (updateData.name) {
+            await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.name } }).catch(() => {});
+        }
 
-        res.json({
+        const updatedDoc = await Link.findOne(query).lean();
+        const effectiveName = updatedDoc.name || updatedDoc.title || updatedDoc.linkName || 'Untitled Link';
+        const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedDoc.uidChecking);
+
+        const responseObj = {
             success: true,
+            ...updatedDoc,
+            id: updatedDoc.id,
+            name: effectiveName,
+            title: effectiveName,
+            linkName: effectiveName,
+            uidChecking: finalUidState,
+            image: newPopup.image,
+            popupImage: newPopup.image,
+            popupImageUrl: newPopup.image,
+            banner: newPopup.image,
+            popupSettings: newPopup,
             link: {
-                ...updatedLink,
-                name: updatedLink.name || updatedLink.title || 'Untitled Link',
+                ...updatedDoc,
+                id: updatedDoc.id,
+                name: effectiveName,
+                title: effectiveName,
+                linkName: effectiveName,
                 uidChecking: finalUidState,
                 image: newPopup.image,
-                popupImage: newPopup.image,
-                popupImageUrl: newPopup.image,
-                banner: newPopup.image,
                 popupSettings: newPopup
             }
-        });
-    } catch (e) {
-        console.error('❌ Error updating link:', e);
-        res.status(500).json({ error: 'Failed to update link', details: e.message });
-    }
+        };
+
+        res.json(responseObj);
+    } catch (e) { res.status(500).json({ error: 'Failed to update link' }); }
 }
 
-// ✏️ EDIT REWARDED LINK (Supports PUT, POST, PATCH and specific UID routes)
-app.put('/api/links/:id', authMiddleware, handleLinkUpdate);
-app.post('/api/links/:id', authMiddleware, handleLinkUpdate);
-app.patch('/api/links/:id', authMiddleware, handleLinkUpdate);
+app.put(['/api/links/:id', '/api/link/:id', '/api/links/update/:id', '/api/links/update'], authMiddleware, handleLinkUpdate);
+app.post(['/api/links/:id', '/api/link/:id', '/api/links/update/:id', '/api/links/update', '/api/link/update'], authMiddleware, handleLinkUpdate);
+app.patch(['/api/links/:id', '/api/link/:id'], authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/uid-checking', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/toggle-uid', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/uid', authMiddleware, handleLinkUpdate);
@@ -1749,29 +1446,19 @@ app.all('/api/links/:id/toggle', authMiddleware, handleLinkUpdate);
 
 app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
     try {
-        const { status } = req.body;
         const rawId = extractCleanId(req.params.id);
-        const query = getLinkQuery(rawId);
-        const link = await Link.findOneAndUpdate(query, { status }, { new: true });
+        const link = await Link.findOneAndUpdate(getLinkQuery(rawId), { status: req.body.status }, { new: true });
         if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update status' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to update status' }); }
 });
 
-app.delete('/api/links/:id', authMiddleware, async (req, res) => {
+app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
     try {
-        const rawId = extractCleanId(req.params.id);
-        const query = getLinkQuery(rawId);
-        await Link.findOneAndDelete(query);
-        try {
-            await Link.collection.deleteMany(query);
-        } catch(e) {}
+        const query = getLinkQuery(extractCleanId(req.params.id));
+        await Link.deleteMany(query);
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete link' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to delete link' }); }
 });
 
 app.get('/api/search-links', authMiddleware, async (req, res) => {
@@ -1783,48 +1470,39 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
             $or: [{ name: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
         }).limit(20);
         res.json({ links });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to search links' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to search links' }); }
 });
 
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
-        const { linkId } = req.body;
-        const rawId = extractCleanId(linkId);
-        const link = await Link.findOne(getLinkQuery(rawId));
+        const cleanId = extractCleanId(req.body.linkId);
+        const link = await Link.findOne(getLinkQuery(cleanId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
         link.dashboardId = dashboardId;
         await link.save();
+        const lName = link.name || link.title || link.linkName || 'Untitled Link';
         res.json({ 
             success: true, 
             dashboardId, 
             dashboardUrl: '/user-dashboard/' + dashboardId, 
             fullUrl: `${req.protocol}://${req.get('host')}/user-dashboard/${dashboardId}`, 
-            linkName: link.name || link.title || 'Untitled Link', 
+            linkName: lName, 
             linkId: link.id 
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to generate dashboard link' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
 });
 
-// ==================== 📊 STATS API ====================
+// Admin All Stats
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().lean();
         const today = new Date().toISOString().split('T')[0];
-
-        let totV = 0;
-        let totC = 0;
-        let todayV = 0;
-        let todayC = 0;
+        let totV = 0, totC = 0, todayV = 0, todayC = 0;
 
         links.forEach(l => {
             totV += (l.visits || 0);
             totC += (l.claims || 0);
-
             if (l.dailyVisits) {
                 const dv = l.dailyVisits instanceof Map ? l.dailyVisits.get(today) : l.dailyVisits[today];
                 todayV += parseInt(dv) || 0;
@@ -1835,16 +1513,14 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             }
         });
 
-        const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
         const activeWatching = await VisitorActivity.countDocuments({
             type: 'visit',
-            lastSeen: { $gte: threeMinutesAgo }
+            lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
         }).catch(() => 0);
 
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         const activeClaiming = await VisitorActivity.countDocuments({
             type: 'claim',
-            lastSeen: { $gte: fiveMinutesAgo }
+            lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
         }).catch(() => 0);
 
         res.json({
@@ -1858,18 +1534,14 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             },
             links: links.map(l => ({
                 ...l,
-                name: l.name || l.title || 'Untitled Link',
+                name: l.name || l.title || l.linkName || 'Untitled Link',
                 uidChecking: !isUidCheckDisabled(l.uidChecking)
             }))
         });
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
-// ================================================================
-// ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
-// ================================================================
+// Device Security Routes
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
     res.json({ success: true, devices });
@@ -1879,9 +1551,7 @@ app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, r
     try {
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Device unblocked' });
-    } catch(e) {
-        res.status(500).json({ error: 'Failed to unblock' });
-    }
+    } catch(e) { res.status(500).json({ error: 'Failed to unblock' }); }
 });
 
 app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
@@ -1893,36 +1563,28 @@ app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (
             await dev.save();
         }
         res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
     try {
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete device record' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to delete device record' }); }
 });
 
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
         const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
         res.json({ success: true, sessions });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch active sessions' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch active sessions' }); }
 });
 
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         await Session.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Session terminated' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to terminate session' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Failed to terminate session' }); }
 });
 
 app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
@@ -1937,18 +1599,16 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
                 deviceType: session.deviceType || 'Desktop',
                 attempts: 3,
                 isPermanent: true,
-                reason: 'Terminated & blocked by admin from Active Devices list',
+                reason: 'Terminated & blocked by admin',
                 lastAttempt: new Date()
             });
             await Session.findByIdAndDelete(req.params.id);
         }
-        res.json({ success: true, message: 'Device blocked permanently and session terminated' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to block device' });
-    }
+        res.json({ success: true, message: 'Device blocked permanently' });
+    } catch (e) { res.status(500).json({ error: 'Failed to block device' }); }
 });
 
-// ==================== 🔗 ADMIN SHORT LINKS ====================
+// Short Link Operations
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
@@ -1965,7 +1625,6 @@ app.get('/s/:code', async (req, res) => {
 
     if (link.appOpen && link.appScheme) return res.redirect(link.appScheme);
 
-    // 🎯 SMART REDIRECT CHECK: If short link points to /uid?link=... and UID checking is OFF:
     try {
         const orig = link.originalUrl || '';
         if (orig.includes('/uid') || orig.includes('link=')) {
@@ -1993,9 +1652,7 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const clicks = await ShortLinkClick.find({ shortLinkId: req.params.id }).sort({ timestamp: -1 }).limit(100);
         res.json({ success: true, link, clicks, totalClicks: link.visits || 0 });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch analytics' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch analytics' }); }
 });
 
 app.post('/api/short-links', authMiddleware, async (req, res) => {
@@ -2012,9 +1669,7 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json({ success: true, link });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update short link' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to update short link' }); }
 });
 
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
@@ -2036,12 +1691,10 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
                 totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0
             }
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
-// Universal File Resolver
+// File Serving Utilities
 function sendAppFile(res, ...fileNames) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     for (const name of fileNames) {
@@ -2050,10 +1703,9 @@ function sendAppFile(res, ...fileNames) {
             if (fs.existsSync(p)) return res.sendFile(p);
         }
     }
-    res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
+    res.status(404).send(`File not found`);
 }
 
-// 🛡️ Fail-Safe Resolver for uid-checker.html with Instant Client Redirect Script
 function sendUidCheckerFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     const fileNames = ['uid-checker.html', 'uid.html'];
@@ -2064,7 +1716,6 @@ function sendUidCheckerFile(res, targetLinkId) {
             if (fs.existsSync(p)) {
                 try {
                     let content = fs.readFileSync(p, 'utf8');
-                    // Injected script executes at the very first millisecond in the browser:
                     const guardScript = `
 <script>
 (function() {
@@ -2098,16 +1749,13 @@ function sendUidCheckerFile(res, targetLinkId) {
                     }
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     return res.send(content);
-                } catch(e) {
-                    return res.sendFile(p);
-                }
+                } catch(e) { return res.sendFile(p); }
             }
         }
     }
     res.status(404).send('File not found: uid-checker.html');
 }
 
-// 🛡️ Safe Resolver for video-lock.html with pre-verified session keys
 function sendVideoLockFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     const fileNames = ['video-lock.html'];
@@ -2138,16 +1786,13 @@ try {
                     }
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     return res.send(content);
-                } catch(e) {
-                    return res.sendFile(p);
-                }
+                } catch(e) { return res.sendFile(p); }
             }
         }
     }
     res.status(404).send('File not found: video-lock.html');
 }
 
-// ⛔ Persistent Ban Shield on Login Route
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -2158,14 +1803,13 @@ app.get('/admin/login.html', async (req, res) => {
             h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
             p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
             <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Refreshing will not bypass this ban. Contact the administrator to unblock your device from the Admin Panel.</p></div></body></html>
+            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Contact the administrator to unblock your device.</p></div></body></html>
         `);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
 app.get('/', async (req, res) => {
-    // If someone visits /?link=... check UID checking
     let rawParam = (req.query.link || req.query.id || req.query.l || '').toString().trim();
     if (rawParam) {
         let cleanId = extractCleanId(rawParam);
@@ -2188,69 +1832,46 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
 
-// =========================================================================
-// 🎯 SMART DYNAMIC UID & ENTRANCE POPUP ROUTE (USER CLICK HANDLER)
-// =========================================================================
 app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     let cleanId = '';
     try {
         let rawParam = (req.query.link || req.query.id || req.query.l || req.query.linkId || req.params.id || '').toString().trim();
         cleanId = extractCleanId(rawParam);
-
-        let link = null;
-        if (cleanId) {
-            link = await Link.findOne(getLinkQuery(cleanId)).lean();
-        }
-        if (!link) {
-            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
-        }
+        let link = cleanId ? await Link.findOne(getLinkQuery(cleanId)).lean() : null;
+        if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
 
         const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
         const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
         const isLinkOff = link && isUidCheckDisabled(link.uidChecking);
 
-        // 🔴 AGAR UID CHECKING BUTTON OFF HAI:
-        // Screen par "Enter Player UID" wala page 0.1 second ke liye bhi NAHI aayega!
-        // Seedha direct 16:9 entrance popup image aur video (/v/:id) par redirect ho jayega!
         if (isLinkOff || isGlobalOff) {
             const targetId = (link && link.id) ? link.id : (cleanId || 'default');
             return res.redirect('/v/' + encodeURIComponent(targetId));
         }
-    } catch(err) {
-        console.error('Error handling /uid route:', err);
-    }
+    } catch(err) {}
 
-    // 🟢 AGAR UID CHECKING ON HAI:
-    // Tabhi "Enter Player UID" wala page screen par aayega
     sendUidCheckerFile(res, cleanId);
 });
 
 app.get('/v/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     const cleanId = extractCleanId(req.params.id);
     sendVideoLockFile(res, cleanId);
 });
 
-app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
-app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
+app.get(['/user-dashboard', '/user-dashboard/:id?'], (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-// Session Cleanup Interval
 setInterval(async () => {
     try {
         await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
-    } catch (error) {
-        console.error('❌ Session cleanup error:', error);
-    }
+    } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
 
-// Start Server
 app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
