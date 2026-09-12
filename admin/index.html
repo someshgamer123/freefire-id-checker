@@ -459,6 +459,24 @@
                         <input type="text" id="cHeadline" placeholder="Headline" value="🎬 Watch Video & Unlock Reward">
                     </div>
                 </div>
+
+                <!-- 🛡️ ON UID CHECKING / OFF UID CHECKING BUTTON (CREATE SECTION) -->
+                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                            <span>🛡️ UID Checking Control:</span>
+                            <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
+                        </div>
+                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
+                            🟢 <b>ON:</b> Link khulne par pehle user se UID enter karwayega, fir Entrance Popup & Video khulega.
+                        </div>
+                    </div>
+                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
+                        ✅ ON UID CHECKING
+                    </button>
+                    <input type="hidden" id="cUidChecking" value="true">
+                </div>
+
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
@@ -613,6 +631,10 @@
         let selectedExpiry = null;
         let currentDeviceTab = 'blocked';
 
+        // 🛡️ Global state trackers for UID Checking
+        let createUidChecking = true;
+        let editUidChecking = true;
+
         function showToast(msg, type = 'info') {
             const t = document.getElementById('toast');
             if (!t) return;
@@ -685,6 +707,80 @@
                 previewBox.classList.add('show');
             } else {
                 previewBox.classList.remove('show');
+            }
+        }
+
+        // ==================== 🛡️ UID CHECKING TOGGLE FUNCTIONS ====================
+        function toggleCreateUidChecking() {
+            createUidChecking = !createUidChecking;
+            const badge = document.getElementById('createUidBadge');
+            const desc = document.getElementById('createUidDesc');
+            const btn = document.getElementById('btnToggleCreateUid');
+            const hiddenInp = document.getElementById('cUidChecking');
+
+            if (createUidChecking) {
+                if (badge) {
+                    badge.className = 'status-badge status-active';
+                    badge.textContent = 'ON UID CHECKING';
+                }
+                if (desc) {
+                    desc.innerHTML = '🟢 <b>ON:</b> Link khulne par pehle user se UID enter karwayega, fir Entrance Popup & Video khulega.';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-sm btn-success';
+                    btn.innerHTML = '✅ ON UID CHECKING';
+                }
+                if (hiddenInp) hiddenInp.value = 'true';
+                showToast('UID Checking: ON (UID Entry Required)', 'success');
+            } else {
+                if (badge) {
+                    badge.className = 'status-badge status-disabled';
+                    badge.textContent = 'OFF UID CHECKING';
+                }
+                if (desc) {
+                    desc.innerHTML = '🔴 <b>OFF:</b> User direct Entrance Popup image dekhega, UID input skip ho jayega.';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-sm btn-danger';
+                    btn.innerHTML = '⛔ OFF UID CHECKING';
+                }
+                if (hiddenInp) hiddenInp.value = 'false';
+                showToast('UID Checking: OFF (Direct Popup & Video)', 'info');
+            }
+        }
+
+        function toggleEditUidChecking() {
+            editUidChecking = !editUidChecking;
+            const badge = document.getElementById('editUidBadge');
+            const desc = document.getElementById('editUidDesc');
+            const btn = document.getElementById('btnToggleEditUid');
+
+            if (editUidChecking) {
+                if (badge) {
+                    badge.className = 'status-badge status-active';
+                    badge.textContent = 'ON UID CHECKING';
+                }
+                if (desc) {
+                    desc.innerHTML = '🟢 <b>ON:</b> Link khulne par pehle user se UID enter karwayega, fir Entrance Popup & Video khulega.';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-sm btn-success';
+                    btn.innerHTML = '✅ ON UID CHECKING';
+                }
+                showToast('UID Checking: ON for this link', 'success');
+            } else {
+                if (badge) {
+                    badge.className = 'status-badge status-disabled';
+                    badge.textContent = 'OFF UID CHECKING';
+                }
+                if (desc) {
+                    desc.innerHTML = '🔴 <b>OFF:</b> User direct Entrance Popup image dekhega, UID input skip ho jayega.';
+                }
+                if (btn) {
+                    btn.className = 'btn btn-sm btn-danger';
+                    btn.innerHTML = '⛔ OFF UID CHECKING';
+                }
+                showToast('UID Checking: OFF for this link', 'info');
             }
         }
 
@@ -786,6 +882,11 @@
                 const linkId = l.id || l._id || '1';
                 const visits = l.visits || l.clicks || 0;
                 const status = l.status || 'active';
+                const isUidOn = l.uidChecking !== false;
+                const uidBadge = isUidOn 
+                    ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
+                    : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
+
                 return `
                     <div class="link-item">
                         <div>
@@ -795,6 +896,7 @@
                                 <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
                                 <span>| Visits: <b>${visits}</b></span>
                                 <span>| Status: <span class="status-badge status-${status}">${status.toUpperCase()}</span></span>
+                                <span>| UID Check: ${uidBadge}</span>
                             </div>
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -836,6 +938,9 @@
             const popup = link.popupSettings || {};
             const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
 
+            // Set state from existing link data (defaults to true)
+            editUidChecking = (link.uidChecking !== false);
+
             const b = document.getElementById('editModalBody');
             b.innerHTML = `
                 <div class="form-group"><label>Link Campaign Name</label><input type="text" id="eName" value="${escapeHTML(link.name || '')}"></div>
@@ -858,6 +963,27 @@
                     </div>
                     <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
                 </div>
+
+                <!-- 🛡️ UID CHECKING EDIT BUTTON (MODAL) -->
+                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                            <span>🛡️ UID Checking Control:</span>
+                            <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">
+                                ${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}
+                            </span>
+                        </div>
+                        <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
+                            ${editUidChecking 
+                                ? '🟢 <b>ON:</b> Link khulne par pehle user se UID enter karwayega, fir Entrance Popup & Video khulega.' 
+                                : '🔴 <b>OFF:</b> User direct Entrance Popup image dekhega, UID input skip ho jayega.'}
+                        </div>
+                    </div>
+                    <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
+                        ${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}
+                    </button>
+                </div>
+
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
                     <div class="form-row-2">
@@ -895,6 +1021,7 @@
             const status = document.getElementById('eStatus').value;
             const expiryInput = document.getElementById('eExpiry').value;
             const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
+            const uidChecking = editUidChecking; // Boolean from toggle button
             const popupSettings = {
                 title: document.getElementById('ePopTitle').value.trim(),
                 subtitle: document.getElementById('ePopSub').value.trim(),
@@ -907,12 +1034,12 @@
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings })
+                    body: JSON.stringify({ name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking })
                 });
 
                 const link = allLinks.find(l => String(l.id || l._id) === String(editingLinkId));
                 if (link) {
-                    Object.assign(link, { name, video, claim, buttonText, headline, status, expiryDate, popupSettings });
+                    Object.assign(link, { name, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
                 }
 
                 showToast('✅ Link updated successfully! Changes are live.', 'success');
@@ -1002,6 +1129,7 @@
             const claim = document.getElementById('cClaim').value.trim();
             const headline = document.getElementById('cHeadline').value.trim();
             const buttonText = document.getElementById('cButtonText').value.trim();
+            const uidChecking = createUidChecking; // Boolean from toggle button
             const popupSettings = {
                 title: document.getElementById('cPopTitle').value.trim(),
                 subtitle: document.getElementById('cPopSub').value.trim(),
@@ -1025,7 +1153,7 @@
                         video, 
                         headline, 
                         buttonText, 
-                        uidChecking: true,
+                        uidChecking, // Dynamic value from button
                         expiryDate: selectedExpiry, 
                         popupSettings 
                     })
@@ -1616,6 +1744,11 @@
                 loadShortLinks();
             } catch(e) {
                 showToast('Failed to create short link', 'error');
+            }
+        }
+
+        function setTheme(t) {
+            document.body.className = t;
             }
         }
 
