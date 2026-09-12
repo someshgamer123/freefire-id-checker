@@ -424,7 +424,7 @@
                             <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
                         </div>
                         <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            🟢 <b>ON:</b> Link open hone par pehle user se UID enter karwayega, fir Entrance Popup image aayegi aur video khulega.
+                            🟢 <b>ON</b> 
                         </div>
                     </div>
                     <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
@@ -791,7 +791,7 @@
                     badge.textContent = 'ON UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🟢 <b>ON:</b>';
+                    desc.innerHTML = '🟢 <b>ON</b>';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-success';
@@ -805,7 +805,7 @@
                     badge.textContent = 'OFF UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🔴 <b>OFF:</b> ';
+                    desc.innerHTML = '🔴 <b>OFF</b> ';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-danger';
@@ -828,7 +828,7 @@
                     badge.textContent = 'ON UID CHECKING';
                 }
                 if (desc) {
-                    desc.innerHTML = '🟢 <b>ON:</b> ';
+                    desc.innerHTML = '🟢 <b>ON</b> ';
                 }
                 if (btn) {
                     btn.className = 'btn btn-sm btn-success';
@@ -1025,8 +1025,8 @@
                         </div>
                         <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
                             ${editUidChecking 
-                                ? '🟢 <b>ON:</b> Link opened' 
-                                : '🔴 <b>OFF:</b> Link closed'}
+                                ? '🟢 <b>ON</b>' 
+                                : '🔴 <b>OFF</b>'}
                         </div>
                     </div>
                     <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
