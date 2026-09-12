@@ -32,7 +32,7 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// 🛡️ Security 2FA Inlined (Zero external dependency)
+// 🛡️ Security 2FA Inlined (ZERO DEPENDENCY ON 'speakeasy')
 const Security = {
     generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
     generateBackupCodes: () => [
@@ -49,6 +49,10 @@ try {
     if (Link && Link.schema) {
         Link.schema.add({ uidChecking: { type: Boolean, default: true } });
         Link.schema.set('strict', false);
+    }
+    if (PopupSettings && PopupSettings.schema) {
+        PopupSettings.schema.add({ uidChecking: { type: Boolean, default: true } });
+        PopupSettings.schema.set('strict', false);
     }
     if (Pricing && Pricing.schema) Pricing.schema.set('strict', false);
     if (User && User.schema) User.schema.set('strict', false);
@@ -104,6 +108,54 @@ function verifyPasscode(inputPass, storedPass) {
     return cleanInput === cleanStored;
 }
 
+// Helper: Check if UID check is disabled (OFF)
+function isUidCheckDisabled(val) {
+    if (
+        val === false ||
+        val === 'false' ||
+        val === 0 ||
+        val === '0' ||
+        val === 'off' ||
+        val === 'OFF' ||
+        val === 'disabled' ||
+        val === 'inactive' ||
+        val === 'no' ||
+        val === 'NO'
+    ) {
+        return true;
+    }
+    return false;
+}
+
+// Helper: Extract clean link ID from various URL patterns or query parameters
+function extractCleanId(input) {
+    if (!input) return '';
+    let str = input.toString().trim();
+    if (str.includes('?link=')) str = str.split('?link=').split('&')[0];
+    else if (str.includes('&link=')) str = str.split('&link=').split('&')[0];
+    else if (str.includes('?id=')) str = str.split('?id=').split('&')[0];
+    else if (str.includes('&id=')) str = str.split('&id=').split('&')[0];
+    else if (str.includes('/v/')) str = str.split('/v/').split('?')[0];
+    else if (str.includes('/uid/')) str = str.split('/uid/').split('?')[0];
+    try {
+        str = decodeURIComponent(str);
+    } catch(e) {}
+    return str.trim();
+}
+
+// Helper: Safe Link Query (Works for both Mongoose and Native MongoDB Collection)
+function getLinkQuery(rawId) {
+    const cleanId = (rawId || '').toString().trim();
+    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
+    if (mongoose.Types.ObjectId.isValid(cleanId) && cleanId.length === 24) {
+        try {
+            orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) });
+        } catch(e) {}
+        orConditions.push({ _id: cleanId });
+    }
+    return { $or: orConditions };
+}
+
 // Database Initialization & Strict Passcode Sync
 async function initializeDatabase() {
     try {
@@ -150,7 +202,8 @@ async function initializeDatabase() {
                 image: null,
                 title: '🎁 Claim Your Reward',
                 buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
+                subtitle: 'Tap below to unlock your reward',
+                uidChecking: true
             });
         }
 
@@ -184,16 +237,6 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// Helper: Safe Link Query
-function getLinkQuery(rawId) {
-    const cleanId = (rawId || '').toString().trim();
-    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
-    if (mongoose.Types.ObjectId.isValid(cleanId)) {
-        orConditions.push({ _id: cleanId });
-    }
-    return { $or: orConditions };
-}
-
 // ==================== Middlewares & Reverse Proxy ====================
 app.set('trust proxy', 1);
 
@@ -206,8 +249,8 @@ app.use(helmet({
 app.use(cors({
     origin: true,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Admin-Token', 'token']
 }));
 
 app.use((req, res, next) => {
@@ -329,7 +372,13 @@ async function authMiddleware(req, res, next) {
         });
     }
     
-    const token = req.cookies?.adminToken || req.headers['authorization']?.replace('Bearer ', '');
+    const token = req.cookies?.adminToken || 
+                  req.headers['authorization']?.replace('Bearer ', '') ||
+                  req.headers['x-admin-token'] ||
+                  req.headers['x-token'] ||
+                  req.headers['token'] ||
+                  req.query.token;
+
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     
     const decoded = verifyToken(token);
@@ -401,7 +450,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
         const today = new Date().toISOString().split('T')[0];
-        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
+        const isUidOn = !isUidCheckDisabled(link.uidChecking);
         res.json({
             linkId: link.id,
             name: link.name,
@@ -488,7 +537,9 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (RETURNS STRICT uidChecking: true/false)
+// =========================================================================
+// 🎯 VISITOR LINK RESOLVER (RETURNS STRICT uidChecking: true / false)
+// =========================================================================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -496,9 +547,7 @@ app.get('/api/link/:id', async (req, res) => {
         res.setHeader('Expires', '0');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        let rawId = (req.params.id || '').trim();
-        if (rawId.includes('?')) rawId = rawId.split('?')[0];
-
+        let rawId = extractCleanId(req.params.id);
         let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
         if (!link && (rawId === 'default' || !rawId)) {
@@ -575,8 +624,10 @@ app.get('/api/link/:id', async (req, res) => {
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
 
-        // Strict Boolean Evaluation: true if ON or default, false only if explicitly false
-        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
+        // 🎯 STRICT BOOLEAN CHECK (BOTH PER-LINK AND GLOBAL)
+        const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
+        const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
+        const isUidOn = (!isUidCheckDisabled(link.uidChecking)) && (!isGlobalOff);
 
         res.json({
             id: link.id,
@@ -809,10 +860,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }).sort({ created: -1 }).lean();
 
         let link = null;
-        let searchId = (linkInput || '').trim();
-
-        if (searchId.includes('?link=')) searchId = searchId.split('?link=').split('&')[0];
-        else if (searchId.includes('/v/')) searchId = searchId.split('/v/').split('?')[0];
+        let searchId = extractCleanId(linkInput);
 
         if (searchId && searchId !== cleanUser) {
             link = await Link.findOne(getLinkQuery(searchId));
@@ -877,7 +925,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         const pricingDoc = await Pricing.findOne().lean();
-        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
+        const isUidOn = !isUidCheckDisabled(link.uidChecking);
 
         res.json({
             success: true,
@@ -1306,7 +1354,10 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     try {
         let popup = await PopupSettings.findOne();
         if (!popup) popup = new PopupSettings();
-        popup.image = req.body.background || null;
+        if (req.body.background !== undefined) popup.image = req.body.background || null;
+        if (req.body.uidChecking !== undefined) {
+            popup.uidChecking = !isUidCheckDisabled(req.body.uidChecking);
+        }
         await popup.save();
         res.json({ success: true });
     } catch (error) {
@@ -1333,7 +1384,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== 🔗 ADMIN: LINKS CRUD WITH GUARANTEED DB STORAGE ====================
+// ==================== 🔗 ADMIN: LINKS CRUD WITH DIRECT MONGODB PERSISTENCE ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1342,7 +1393,7 @@ app.get('/api/links', authMiddleware, async (req, res) => {
         const formatted = links.map(l => {
             const popup = l.popupSettings || {};
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
-            const isUidOn = l.uidChecking !== false && l.uidChecking !== 'false';
+            const isUidOn = !isUidCheckDisabled(l.uidChecking);
             return {
                 ...l,
                 uidChecking: isUidOn,
@@ -1366,13 +1417,14 @@ app.get('/api/links', authMiddleware, async (req, res) => {
 
 app.get('/api/links/:id', authMiddleware, async (req, res) => {
     try {
-        const query = getLinkQuery(req.params.id);
+        const rawId = extractCleanId(req.params.id);
+        const query = getLinkQuery(rawId);
         const l = await Link.findOne(query).lean();
         if (!l) return res.status(404).json({ error: 'Link not found' });
         
         const popup = l.popupSettings || {};
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
-        const isUidOn = l.uidChecking !== false && l.uidChecking !== 'false';
+        const isUidOn = !isUidCheckDisabled(l.uidChecking);
         res.json({
             ...l,
             uidChecking: isUidOn,
@@ -1392,7 +1444,7 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ➕ CREATE REWARDED TRACKING LINK (RAW MONGODB GUARANTEE)
+// ➕ CREATE REWARDED TRACKING LINK
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const cleanName = (req.body.name || req.body.title || 'Untitled Link').trim();
@@ -1401,16 +1453,18 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        // 🎯 Parse strict boolean for uidChecking (default: true)
+        // Check UID Checking from all possible param aliases
+        let incomingUidVal = req.body.uidChecking !== undefined ? req.body.uidChecking :
+                             (req.body.uidCheck !== undefined ? req.body.uidCheck :
+                             (req.body.checkUid !== undefined ? req.body.checkUid :
+                             (req.body.isUidChecking !== undefined ? req.body.isUidChecking :
+                             (req.body.enableUid !== undefined ? req.body.enableUid :
+                             (req.body.uid !== undefined ? req.body.uid :
+                             (req.body.uid_checking !== undefined ? req.body.uid_checking : undefined))))));
+
         let cleanUidChecking = true;
-        if (req.body.uidChecking !== undefined) {
-            cleanUidChecking = (
-                req.body.uidChecking === true ||
-                req.body.uidChecking === 'true' ||
-                req.body.uidChecking === 1 ||
-                req.body.uidChecking === '1' ||
-                req.body.uidChecking === 'on'
-            );
+        if (incomingUidVal !== undefined) {
+            cleanUidChecking = !isUidCheckDisabled(incomingUidVal);
         }
 
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate || req.body.expireDate;
@@ -1467,7 +1521,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         newLink.set('uidChecking', cleanUidChecking, { strict: false });
         await newLink.save({ validateBeforeSave: false });
 
-        // 🛡️ Guaranteed Direct MongoDB Write (Bypasses any Mongoose Schema filtering)
+        // 🛡️ Direct Raw MongoDB Write Guarantee:
         try {
             await Link.collection.updateOne({ _id: newLink._id }, { $set: { uidChecking: cleanUidChecking } });
         } catch(err) {}
@@ -1487,12 +1541,23 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✏️ EDIT REWARDED LINK (RAW MONGODB GUARANTEE)
-app.put('/api/links/:id', authMiddleware, async (req, res) => {
+// Helper: Handle Link Update logic across PUT / POST / PATCH
+async function handleLinkUpdate(req, res) {
     try {
-        const query = getLinkQuery(req.params.id);
+        const rawId = extractCleanId(req.params.id);
+        const query = getLinkQuery(rawId);
         const link = await Link.findOne(query);
         if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        // 🎯 Direct Toggle action support
+        if (req.path.includes('toggle') || req.body.action === 'toggle' || req.body.toggle === true) {
+            const currentVal = !isUidCheckDisabled(link.uidChecking);
+            const newVal = !currentVal;
+            link.uidChecking = newVal;
+            await link.save();
+            await Link.collection.updateMany(query, { $set: { uidChecking: newVal } });
+            return res.json({ success: true, uidChecking: newVal, message: `UID checking set to ${newVal ? 'ON' : 'OFF'}` });
+        }
 
         const updateData = {};
 
@@ -1520,16 +1585,24 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
 
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
-        // 🎯 UID CHECKING (ON / OFF)
+        // 🎯 UID CHECKING (CAPTURE ALL POSSIBLE PARAMETER ALIASES)
+        let incomingUidVal = req.body.uidChecking !== undefined ? req.body.uidChecking :
+                             (req.body.uidCheck !== undefined ? req.body.uidCheck :
+                             (req.body.checkUid !== undefined ? req.body.checkUid :
+                             (req.body.isUidChecking !== undefined ? req.body.isUidChecking :
+                             (req.body.enableUid !== undefined ? req.body.enableUid :
+                             (req.body.uid !== undefined ? req.body.uid :
+                             (req.body.uid_checking !== undefined ? req.body.uid_checking :
+                             (req.body.uidStatus !== undefined ? req.body.uidStatus : undefined)))))));
+
         let hasUidUpdate = false;
-        if (req.body.uidChecking !== undefined) {
-            updateData.uidChecking = (
-                req.body.uidChecking === true ||
-                req.body.uidChecking === 'true' ||
-                req.body.uidChecking === 1 ||
-                req.body.uidChecking === '1' ||
-                req.body.uidChecking === 'on'
-            );
+        if (incomingUidVal !== undefined) {
+            updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
+            hasUidUpdate = true;
+        } else if (req.body.isEditForm || (req.body.name && req.body.video)) {
+            // HTML Form Checkbox omission behavior: If unchecked, formData omits it entirely!
+            // If full link edit form is submitted without the checkbox, it means UNCHECKED (OFF).
+            updateData.uidChecking = false;
             hasUidUpdate = true;
         }
 
@@ -1597,18 +1670,25 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             { new: true, lean: true, strict: false }
         );
 
-        // 🛡️ Guaranteed Direct MongoDB Write
+        // 🛡️ DIRECT MONGODB NATIVE DRIVER UPDATE GUARANTEE
         if (hasUidUpdate) {
             try {
-                await Link.collection.updateOne(query, { $set: { uidChecking: updateData.uidChecking } });
+                await Link.collection.updateMany(query, { $set: { uidChecking: updateData.uidChecking } });
+            } catch(err) {}
+            try {
+                if (mongoose.connection && mongoose.connection.db) {
+                    await mongoose.connection.db.collection('links').updateMany(query, { $set: { uidChecking: updateData.uidChecking } });
+                }
             } catch(err) {}
         }
+
+        const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedLink.uidChecking);
 
         res.json({
             success: true,
             link: {
                 ...updatedLink,
-                uidChecking: updateData.uidChecking !== undefined ? updateData.uidChecking : (updatedLink.uidChecking !== false),
+                uidChecking: finalUidState,
                 image: newPopup.image,
                 popupImage: newPopup.image,
                 popupImageUrl: newPopup.image,
@@ -1620,12 +1700,22 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         console.error('❌ Error updating link:', e);
         res.status(500).json({ error: 'Failed to update link', details: e.message });
     }
-});
+}
+
+// ✏️ EDIT REWARDED LINK (Supports PUT, POST, PATCH and specific UID routes)
+app.put('/api/links/:id', authMiddleware, handleLinkUpdate);
+app.post('/api/links/:id', authMiddleware, handleLinkUpdate);
+app.patch('/api/links/:id', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/uid-checking', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/toggle-uid', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/uid', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/toggle', authMiddleware, handleLinkUpdate);
 
 app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
-        const query = getLinkQuery(req.params.id);
+        const rawId = extractCleanId(req.params.id);
+        const query = getLinkQuery(rawId);
         const link = await Link.findOneAndUpdate(query, { status }, { new: true });
         if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
@@ -1636,8 +1726,12 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
 
 app.delete('/api/links/:id', authMiddleware, async (req, res) => {
     try {
-        const query = getLinkQuery(req.params.id);
+        const rawId = extractCleanId(req.params.id);
+        const query = getLinkQuery(rawId);
         await Link.findOneAndDelete(query);
+        try {
+            await Link.collection.deleteMany(query);
+        } catch(e) {}
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete link' });
@@ -1661,7 +1755,8 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     try {
         const { linkId } = req.body;
-        const link = await Link.findOne(getLinkQuery(linkId));
+        const rawId = extractCleanId(linkId);
+        const link = await Link.findOne(getLinkQuery(rawId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
         link.dashboardId = dashboardId;
@@ -1720,7 +1815,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             },
             links: links.map(l => ({
                 ...l,
-                uidChecking: l.uidChecking !== false && l.uidChecking !== 'false'
+                uidChecking: !isUidCheckDisabled(l.uidChecking)
             }))
         });
     } catch(e) {
@@ -1825,6 +1920,21 @@ app.get('/s/:code', async (req, res) => {
     });
 
     if (link.appOpen && link.appScheme) return res.redirect(link.appScheme);
+
+    // 🎯 SMART REDIRECT CHECK: If short link points to /uid?link=... and UID checking is OFF:
+    try {
+        const orig = link.originalUrl || '';
+        if (orig.includes('/uid') || orig.includes('link=')) {
+            const cleanId = extractCleanId(orig);
+            if (cleanId) {
+                const targetLink = await Link.findOne(getLinkQuery(cleanId)).lean();
+                if (targetLink && isUidCheckDisabled(targetLink.uidChecking)) {
+                    return res.redirect('/v/' + encodeURIComponent(targetLink.id || cleanId));
+                }
+            }
+        }
+    } catch(err) {}
+
     res.redirect(link.originalUrl);
 });
 
@@ -1887,22 +1997,110 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// Universal File Path Resolver
-function getAppFilePath(...fileNames) {
+// Universal File Resolver
+function sendAppFile(res, ...fileNames) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     for (const name of fileNames) {
         for (const dir of searchDirs) {
             const p = path.join(dir, name);
-            if (fs.existsSync(p)) return p;
+            if (fs.existsSync(p)) return res.sendFile(p);
         }
     }
-    return null;
+    res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
-function sendAppFile(res, ...fileNames) {
-    const p = getAppFilePath(...fileNames);
-    if (p) return res.sendFile(p);
-    res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
+// 🛡️ Fail-Safe Resolver for uid-checker.html with Instant Client Redirect Script
+function sendUidCheckerFile(res, targetLinkId) {
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
+    const fileNames = ['uid-checker.html', 'uid.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    // Injected script executes at the very first millisecond in the browser:
+                    const guardScript = `
+<script>
+(function() {
+    try {
+        var p = new URLSearchParams(window.location.search);
+        var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
+        if (!lid) {
+            var parts = window.location.pathname.split('/');
+            var last = parts[parts.length - 1];
+            if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last;
+        }
+        if (lid) {
+            fetch('/api/link/' + encodeURIComponent(lid))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) {
+                    window.location.replace('/v/' + encodeURIComponent(d.id || lid));
+                }
+            }).catch(function(){});
+        }
+    } catch(e) {}
+})();
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + guardScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + guardScript);
+                    } else {
+                        content = guardScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) {
+                    return res.sendFile(p);
+                }
+            }
+        }
+    }
+    res.status(404).send('File not found: uid-checker.html');
+}
+
+// 🛡️ Safe Resolver for video-lock.html with pre-verified session keys
+function sendVideoLockFile(res, targetLinkId) {
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
+    const fileNames = ['video-lock.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    const preVerifyScript = `
+<script>
+window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
+try {
+    sessionStorage.setItem('player_uid', 'verified');
+    sessionStorage.setItem('uid_verified', 'true');
+    localStorage.setItem('player_uid', 'verified');
+    localStorage.setItem('uid_verified', 'true');
+} catch(e) {}
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + preVerifyScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + preVerifyScript);
+                    } else {
+                        content = preVerifyScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) {
+                    return res.sendFile(p);
+                }
+            }
+        }
+    }
+    res.status(404).send('File not found: video-lock.html');
 }
 
 // ⛔ Persistent Ban Shield on Login Route
@@ -1922,7 +2120,23 @@ app.get('/admin/login.html', async (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-app.get('/', (req, res) => res.redirect('/admin/secret-gateway'));
+app.get('/', async (req, res) => {
+    // If someone visits /?link=... check UID checking
+    let rawParam = (req.query.link || req.query.id || req.query.l || '').toString().trim();
+    if (rawParam) {
+        let cleanId = extractCleanId(rawParam);
+        if (cleanId) {
+            const link = await Link.findOne(getLinkQuery(cleanId)).lean();
+            if (link && isUidCheckDisabled(link.uidChecking)) {
+                return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
+            } else if (link) {
+                return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
+            }
+        }
+    }
+    res.redirect('/admin/secret-gateway');
+});
+
 app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
 app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     const token = req.cookies?.adminToken;
@@ -1933,217 +2147,50 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 // =========================================================================
 // 🎯 SMART DYNAMIC UID & ENTRANCE POPUP ROUTE (USER CLICK HANDLER)
 // =========================================================================
-app.get(['/uid', '/uid.html'], async (req, res) => {
+app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-    let linkParam = (req.query.link || req.query.id || 'default').toString().trim();
-    let link = null;
+    let cleanId = '';
     try {
-        link = await Link.findOne(getLinkQuery(linkParam)).lean();
-    } catch(e) {}
+        let rawParam = (req.query.link || req.query.id || req.query.l || req.query.linkId || req.params.id || '').toString().trim();
+        cleanId = extractCleanId(rawParam);
 
-    // Check if UID checking is enabled: true by default, false only if turned off in admin
-    const isUidCheckingOn = link ? (link.uidChecking !== false && link.uidChecking !== 'false') : true;
-
-    // Check if an existing uid-checker.html file is present on the server
-    const existingFilePath = getAppFilePath('uid-checker.html', 'uid.html');
-
-    if (existingFilePath) {
-        try {
-            let htmlContent = fs.readFileSync(existingFilePath, 'utf8');
-
-            // 💉 Inject Dynamic Real-Time Bypass Controller
-            const injectedScript = `
-            <script>
-            (function() {
-                const uidStatusOn = ${isUidCheckingOn ? 'true' : 'false'};
-
-                function handleUidCheckingMode() {
-                    if (!uidStatusOn) {
-                        // 🔴 OFF UID CHECKING: Hide UID input forms/cards
-                        const selectorsToHide = [
-                            '#uidInputBox', '#uidCard', '#uidBox', '#uidContainer', 
-                            '.uid-container', '.uid-box', '.uid-card', '.uid-input-card',
-                            '#step1', '.step-1', '#mainCard', '.auth-box'
-                        ];
-                        selectorsToHide.forEach(sel => {
-                            const el = document.querySelector(sel);
-                            if (el) el.style.display = 'none';
-                        });
-
-                        // Hide any generic input that asks for UID
-                        document.querySelectorAll('input').forEach(inp => {
-                            const ph = (inp.placeholder || '').toLowerCase();
-                            const id = (inp.id || '').toLowerCase();
-                            if (ph.includes('uid') || id.includes('uid')) {
-                                const parent = inp.closest('.card') || inp.closest('.box') || inp.parentElement;
-                                if (parent && !parent.id.includes('popup') && !parent.className.includes('popup')) {
-                                    parent.style.display = 'none';
-                                }
-                            }
-                        });
-
-                        // Immediately trigger Entrance Popup image modal
-                        if (typeof showEntrancePopup === 'function') showEntrancePopup();
-                        else if (typeof openEntrancePopup === 'function') openEntrancePopup();
-                        else if (typeof openPopup === 'function') openPopup();
-                        else if (typeof showPopup === 'function') showPopup();
-                        else {
-                            const popupModal = document.querySelector('#popupModal, #entrancePopup, .popup-modal, .entrance-popup, #popup, .popup, .modal');
-                            if (popupModal) {
-                                popupModal.style.display = 'flex';
-                                popupModal.classList.add('show');
-                            }
-                        }
-                    }
-                }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', handleUidCheckingMode);
-                } else {
-                    handleUidCheckingMode();
-                }
-                setTimeout(handleUidCheckingMode, 100);
-                setTimeout(handleUidCheckingMode, 400);
-            })();
-            </script>
-            `;
-
-            if (htmlContent.includes('</body>')) {
-                htmlContent = htmlContent.replace('</body>', injectedScript + '</body>');
-            } else {
-                htmlContent += injectedScript;
-            }
-
-            return res.send(htmlContent);
-        } catch(err) {
-            console.error('Error injecting script into uid-checker.html:', err);
+        let link = null;
+        if (cleanId) {
+            link = await Link.findOne(getLinkQuery(cleanId)).lean();
         }
+        if (!link) {
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+        }
+
+        const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
+        const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
+        const isLinkOff = link && isUidCheckDisabled(link.uidChecking);
+
+        // 🔴 AGAR UID CHECKING BUTTON OFF HAI:
+        // Screen par "Enter Player UID" wala page 0.1 second ke liye bhi NAHI aayega!
+        // Seedha direct 16:9 entrance popup image aur video (/v/:id) par redirect ho jayega!
+        if (isLinkOff || isGlobalOff) {
+            const targetId = (link && link.id) ? link.id : (cleanId || 'default');
+            return res.redirect('/v/' + encodeURIComponent(targetId));
+        }
+    } catch(err) {
+        console.error('Error handling /uid route:', err);
     }
 
-    // 🚀 FULL BUILT-IN FALLBACK IF uid-checker.html IS MISSING
-    let bgSetting = null;
-    try {
-        const pSetting = await PopupSettings.findOne().lean();
-        bgSetting = pSetting?.image || null;
-    } catch(e) {}
-
-    const popup = link?.popupSettings || {};
-    const popupImage = popup.image || link?.image || link?.popupImage || 'https://placehold.co/600x338/1e1b4b/white?text=Claim+Your+Reward';
-    const popupTitle = popup.title || '🎁 Claim Your Reward';
-    const popupSub = popup.subtitle || 'Tap below to unlock your reward';
-    const popupBtn = popup.buttonText || 'Claim Now';
-    const targetLink = link ? (link.id || linkParam) : linkParam;
-
-    return res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>${escapeHTML(link?.name || 'Claim Reward')}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
-        body {
-            min-height: 100vh; background: #090a10 ${bgSetting ? `url('${escapeHTML(bgSetting)}') no-repeat center center / cover` : ''};
-            color: #fff; display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .container { max-width: 440px; width: 100%; text-align: center; }
-        .card {
-            background: rgba(19, 23, 34, 0.92); backdrop-filter: blur(16px); border-radius: 20px;
-            padding: 28px 24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-        }
-        h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #fff; }
-        p { font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
-        input {
-            width: 100%; padding: 13px 16px; background: #090a0f; border: 1px solid #232838;
-            border-radius: 12px; font-size: 15px; color: #fff; outline: none; margin-bottom: 16px; text-align: center; font-weight: 700;
-        }
-        input:focus { border-color: #6366f1; }
-        .btn {
-            width: 100%; padding: 13px; border: none; border-radius: 12px; font-weight: 800;
-            font-size: 14px; cursor: pointer; color: #fff; background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn:active { transform: scale(0.98); }
-        .popup-overlay {
-            display: ${isUidCheckingOn ? 'none' : 'flex'}; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); z-index: 99999;
-            align-items: center; justify-content: center; padding: 20px;
-        }
-        .popup-card {
-            background: #131722; border-radius: 20px; padding: 20px; max-width: 440px; width: 100%;
-            border: 1px solid #232838; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-        .banner-16-9 {
-            width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
-            margin-bottom: 16px; background: #090a0f; border: 1px solid #232838;
-        }
-        .banner-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- 🎮 UID Input Card (Displayed ONLY when uidChecking is ON) -->
-        <div class="card" id="uidInputBox" style="display: ${isUidCheckingOn ? 'block' : 'none'};">
-            <h2>🎮 Verify Game UID</h2>
-            <p>Enter your player UID below to verify account and unlock reward.</p>
-            <input type="text" id="playerUid" placeholder="Enter Your UID (e.g. 12345678)" maxlength="16">
-            <button class="btn" onclick="submitPlayerUid()">Continue ➜</button>
-        </div>
-    </div>
-
-    <!-- 🖼️ 16:9 Entrance Popup Modal (Shown directly if uidChecking is OFF, or after UID if ON) -->
-    <div class="popup-overlay" id="entrancePopupModal">
-        <div class="popup-card">
-            <div class="banner-16-9">
-                <img src="${escapeHTML(popupImage)}" alt="Reward Banner">
-            </div>
-            <h2>${escapeHTML(popupTitle)}</h2>
-            <p>${escapeHTML(popupSub)}</p>
-            <button class="btn" onclick="proceedToVideo()">${escapeHTML(popupBtn)} 🎬</button>
-        </div>
-    </div>
-
-    <script>
-        const linkId = "${escapeHTML(targetLink)}";
-        const uidCheckingMode = ${isUidCheckingOn ? 'true' : 'false'};
-
-        async function submitPlayerUid() {
-            const uidVal = document.getElementById('playerUid').value.trim();
-            if (!uidVal || uidVal.length < 5) {
-                return alert('Please enter a valid player UID (minimum 5 digits)');
-            }
-            try {
-                await fetch('/api/submit-uid/' + encodeURIComponent(linkId), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: uidVal })
-                });
-            } catch(e) {}
-
-            document.getElementById('uidInputBox').style.display = 'none';
-            document.getElementById('entrancePopupModal').style.display = 'flex';
-        }
-
-        async function proceedToVideo() {
-            try {
-                await fetch('/api/track-claim/' + encodeURIComponent(linkId), { method: 'POST' });
-            } catch(e) {}
-            window.location.href = '/v/' + encodeURIComponent(linkId);
-        }
-    </script>
-</body>
-</html>`);
+    // 🟢 AGAR UID CHECKING ON HAI:
+    // Tabhi "Enter Player UID" wala page screen par aayega
+    sendUidCheckerFile(res, cleanId);
 });
 
-app.get('/v/:id', (req, res) => {
+app.get('/v/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    sendAppFile(res, 'video-lock.html');
+    const cleanId = extractCleanId(req.params.id);
+    sendVideoLockFile(res, cleanId);
 });
 
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
