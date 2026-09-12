@@ -1,1905 +1,1913 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Panel - Control Center</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- 🛡️ F12 & DEVTOOLS INSTANT BLOCK SCRIPT (HEAD SECTION) -->
-    <script>
-        (function() {
-            // Disable Right Click
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, true);
-
-            // Block F12 and DevTools Shortcuts
-            window.addEventListener('keydown', function(e) {
-                // F12 key
-                if (e.key === 'F12' || e.keyCode === 123) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-
-                // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (Inspect / Console)
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73 || e.key === 'J' || e.key === 'j' || e.keyCode === 74 || e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-
-                // Ctrl+U (View Source)
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.keyCode === 85)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-
-                // Ctrl+S (Save Page)
-                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.keyCode === 83)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }, true);
-
-            // Anti-debugger protection
-            setInterval(function() {
-                try {
-                    (function() { return false; }['constructor']('debugger')());
-                } catch (err) {}
-            }, 1000);
-        })();
-    </script>
-
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        :root {
-            --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #8b5cf6;
-            --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
-            --bg: #090a10; --card-bg: #131722; --text: #f8fafc;
-            --text-light: #94a3b8; --border: #232838; --radius: 14px;
-        }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; overflow-x: hidden; -webkit-user-select: none; user-select: none; }
-        body.dark { --bg: #090a10; --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838; }
-        body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
-
-        input, textarea, select { -webkit-user-select: text; user-select: text; }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        .admin-container { max-width: 1400px; margin: 0 auto; position: relative; }
-
-        /* Top Header */
-        .header {
-            background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
-            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.4); flex-wrap: wrap; gap: 12px;
-        }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header h1 { font-size: 19px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
-        .header-actions button:hover { transform: translateY(-2px); }
-        .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
-        .btn-install { background: var(--success); color: white; border: none !important; display: none; }
-        .btn-install.show { display: inline-block; }
-        .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
-        .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
-        .theme-toggle button.active { background: var(--primary); color: white; }
-
-        /* ☰ Top-Left 3-Line Hamburger Button */
-        .btn-hamburger {
-            width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border);
-            border-radius: 10px; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; gap: 5px; cursor: pointer; transition: 0.2s; flex-shrink: 0;
-        }
-        .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
-        .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text); border-radius: 3px; }
-
-        /* 🚀 TOP HORIZONTAL NAVIGATION BAR (Always visible directly) */
-        .top-nav-bar {
-            display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px;
-            background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
-            margin-bottom: 20px; scrollbar-width: none;
-        }
-        .top-nav-bar::-webkit-scrollbar { display: none; }
-        .top-nav-btn {
-            display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 10px;
-            background: transparent; color: var(--text-light); font-size: 13px; font-weight: 700;
-            border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.2s;
-        }
-        .top-nav-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
-        .top-nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
-
-        /* Slide-out Sidebar Drawer */
-        .sidebar-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
-            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-        }
-        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
-        .sidebar {
-            position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg);
-            border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column;
-            padding: 24px 18px; box-shadow: 10px 0 40px rgba(0,0,0,0.8);
-        }
-        .sidebar.show { transform: translateX(0); }
-        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: #fff; }
-        .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-light); cursor: pointer; }
-        .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
-        .sidebar-btn {
-            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
-            background: transparent; color: var(--text-light); font-size: 14px; font-weight: 700;
-            border: 1px solid transparent; cursor: pointer; transition: 0.2s; text-align: left; width: 100%;
-        }
-        .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #fff; }
-        .sidebar-btn.active { background: var(--primary); color: #fff; }
-
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.2s; }
-        .stat-card:hover { transform: translateY(-2px); }
-        .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
-        .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; font-weight: 600; }
-
-        .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
-            margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
-        }
-        .live-visitors .lv-title {
-            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .live-visitors .lv-title .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
-        .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-        .live-visitors .lv-item { background: #090a0f; border-radius: 10px; padding: 12px 14px; text-align: center; border: 1px solid var(--border); }
-        .live-visitors .lv-item .lv-number { font-size: 24px; font-weight: 800; }
-        .live-visitors .lv-item .lv-number.visits-color { color: var(--primary); }
-        .live-visitors .lv-item .lv-number.claims-color { color: var(--warning); }
-        .live-visitors .lv-item .lv-label { font-size: 10px; color: var(--text-light); text-transform: uppercase; margin-top: 2px; }
-
-        .section { display: none; animation: fadeInUp 0.25s ease; }
-        .section.active { display: block; }
-
-        .card { background: var(--card-bg); padding: 22px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border); }
-        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-        .card input, .card select, .card textarea {
-            width: 100%; padding: 11px 14px; margin: 6px 0; border: 1px solid var(--border);
-            border-radius: 10px; font-size: 13px; background: #090a0f; color: var(--text); outline: none; transition: 0.2s;
-        }
-        .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
-
-        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; color: white; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
-        .btn:hover { transform: translateY(-2px); }
-        .btn:active { transform: scale(0.98); }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 100%; }
-        .btn-success { background: var(--success); }
-        .btn-danger { background: var(--danger); }
-        .btn-warning { background: var(--warning); color: white; }
-        .btn-sm { padding: 7px 14px; font-size: 11.5px; border-radius: 8px; width: auto; }
-
-        .link-item {
-            background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
-            border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s;
-        }
-        .link-item .name { font-weight: 700; font-size: 14px; }
-        .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; }
-        .status-active { background: rgba(34,197,94,0.18); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
-        .status-suspended { background: rgba(245,158,11,0.18); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
-        .status-disabled { background: rgba(239,68,68,0.18); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
-        .status-pending { background: rgba(245,158,11,0.22); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-
-        .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
-
-        .share-box {
-            background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--primary);
-            border-radius: 12px; padding: 14px; margin-bottom: 20px;
-        }
-        .share-box .share-title { font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px; }
-        .share-box .box-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .share-box input { flex: 1; min-width: 200px; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; }
-
-        .image-preview { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid var(--border); overflow: hidden; display: none; }
-        .image-preview.show { display: block; }
-        .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
-
-        .device-card-item {
-            background: #090a0f; border: 1px solid var(--border); border-radius: 12px;
-            padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 10px;
-        }
-        .device-card-item.blocked { border-color: rgba(239, 68, 68, 0.35); border-left: 4px solid var(--danger); }
-        .device-card-item.active-dev { border-color: rgba(34, 197, 94, 0.35); border-left: 4px solid var(--success); }
-        .device-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-        .device-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
-
-        /* Clean Edit Modal */
-        .edit-modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;
-        }
-        .edit-modal.show { display: flex; }
-        .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 20px; padding: 26px; max-width: 680px; width: 100%;
-            border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease;
-        }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; width: 100%; }
-        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
-        .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
-        @media (max-width: 650px) { .form-row-2 { grid-template-columns: 1fr; } }
-
-        .preview-box-16-9 {
-            width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
-            border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 8px auto 0;
-        }
-        .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .switch span { position: absolute; cursor: pointer; inset: 0; background: #2d3138; transition: .4s; border-radius: 22px; }
-        .switch span:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
-        .switch input:checked + span { background: var(--primary); }
-        .switch input:checked + span:before { transform: translateX(20px); }
-
-        .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { background: #16a34a; }
-        .toast.error { background: #dc2626; }
-        .toast.info { background: #4f46e5; }
-
-        @media (max-width: 768px) {
-            body { padding: 12px; }
-            .header { flex-direction: column; align-items: stretch; text-align: center; }
-            .header-left { justify-content: space-between; }
-            .header-actions { justify-content: center; }
-            .link-item { flex-direction: column; align-items: stretch; }
-            .edit-modal .modal-content { padding: 16px; }
-        }
-    </style>
-</head>
-<body>
-    <!-- Slide-out Sidebar Overlay & Drawer (☰) -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2>⚡ Control Menu</h2>
-            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
-        </div>
-        <div class="sidebar-menu">
-            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
-                <span>📊</span> Dashboard
-            </button>
-            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
-                <span>🔗</span> Links Manager
-            </button>
-            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
-                <span>➕</span> Create Link
-            </button>
-            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
-                <span>👥</span> Manage Users
-            </button>
-            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
-                <span>🔄</span> Users & Renewal
-            </button>
-            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
-                <span>🔗</span> Short Link
-            </button>
-            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
-                <span>⚙️</span> Settings
-            </button>
-        </div>
-        <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:auto;">
-            <button class="btn btn-danger btn-sm" style="width:100%;" onclick="logout()">🚪 Logout</button>
-        </div>
-    </aside>
-
-    <div class="admin-container">
-        <!-- Header with 3-Line Menu Button on Left -->
-        <header class="header">
-            <div class="header-left">
-                <button class="btn-hamburger" id="hamburgerBtn" onclick="toggleSidebar(true)" title="Open Menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <h1>⚡ Admin Control Center</h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
-                <div class="theme-toggle">
-                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
-                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
-                </div>
-                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
-            </div>
-        </header>
-
-        <!-- 🚀 TOP HORIZONTAL NAVIGATION (Direct 1-Click Access To All Features) -->
-        <nav class="top-nav-bar" id="topNavBar">
-            <button class="top-nav-btn active" id="topnav-dashboard" onclick="showSection('dashboard')">
-                <span>📊</span> Dashboard
-            </button>
-            <button class="top-nav-btn" id="topnav-links" onclick="showSection('links')">
-                <span>🔗</span> Links Manager
-            </button>
-            <button class="top-nav-btn" id="topnav-create" onclick="showSection('create')">
-                <span>➕</span> Create Link
-            </button>
-            <button class="top-nav-btn" id="topnav-users" onclick="showSection('users')">
-                <span>👥</span> Manage Users
-            </button>
-            <button class="top-nav-btn" id="topnav-renewals" onclick="showSection('renewals')">
-                <span>🔄</span> Users & Renewal
-            </button>
-            <button class="top-nav-btn" id="topnav-shortener" onclick="showSection('shortener')">
-                <span>🔗</span> Short Link
-            </button>
-            <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')">
-                <span>⚙️</span> Settings
-            </button>
-        </nav>
-
-        <!-- 1. DASHBOARD OVERVIEW -->
-        <div class="section active" id="sec-dashboard">
-            <div class="share-box">
-                <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
-                <div class="box-row">
-                    <input type="text" id="dashUserPortalUrl" readonly>
-                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
-                </div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this URL with clients to allow them to register, view link analytics, and pay renewals.</div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Active Links</div></div>
-                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label">Total Visits</div></div>
-                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label">Total Claims</div></div>
-                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">Active Live</div></div>
-            </div>
-
-            <div class="live-visitors">
-                <div class="lv-title">
-                    <span class="dot"></span> 🟢 Real-Time Visitor & Claim Stream (Unique 24h)
-                    <span style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:400;" id="lastRefreshTime">Updated: Just now</span>
-                </div>
-                <div class="lv-grid">
-                    <div class="lv-item"><div class="lv-number visits-color" id="liveLifetimeVisits">0</div><div class="lv-label">Lifetime Visits</div></div>
-                    <div class="lv-item"><div class="lv-number claims-color" id="liveLifetimeClaims">0</div><div class="lv-label">Lifetime Claims</div></div>
-                    <div class="lv-item"><div class="lv-number visits-color" id="liveTodayVisits">0</div><div class="lv-label">Today's Visits</div></div>
-                    <div class="lv-item"><div class="lv-number claims-color" id="liveTodayClaims">0</div><div class="lv-label">Today's Claims</div></div>
-                    <div class="lv-item"><div class="lv-number visits-color" id="liveActiveVisits">0</div><div class="lv-label">Active Watching</div></div>
-                    <div class="lv-item"><div class="lv-number claims-color" id="liveActiveClaims">0</div><div class="lv-label">Active Claiming</div></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>⚡ Quick Shortcuts</h3>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
-                    <button class="btn btn-sm btn-success" onclick="showSection('links')">🔗 All Tracking Links</button>
-                    <button class="btn btn-sm btn-warning" onclick="showSection('users')">👥 Manage Users</button>
-                    <button class="btn btn-sm btn-secondary" onclick="showSection('renewals')" style="background:var(--bg);border:1px solid var(--border);">🔄 Renewal Requests</button>
-                    <button class="btn btn-sm btn-secondary" onclick="showSection('settings')" style="background:var(--bg);border:1px solid var(--border);">🛡️ Devices & Settings</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. LINKS MANAGER (SHOWS: ( USER NAME ) ( LINK NAME )) -->
-        <div class="section" id="sec-links">
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">🔍 All Tracking Links</h3>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create Link</button>
-                        <button class="btn btn-sm btn-secondary" onclick="loadLinks()" style="background:var(--bg);border:1px solid var(--border);">🔄 Refresh</button>
-                    </div>
-                </div>
-                <div class="search-bar">
-                    <input type="text" id="searchLinksInput" placeholder="Search by user name, link name, or ID..." oninput="filterLinks()">
-                    <span id="searchResultsCount" style="font-size:12px;color:var(--text-light);">Showing all links</span>
-                </div>
-                <div id="linksList">Loading links...</div>
-            </div>
-        </div>
-
-        <!-- 3. CREATE LINK (WITH USER SELECTION & ENTER LINK NAME) -->
-        <div class="section" id="sec-create">
-            <div class="card">
-                <h3>➕ Create Rewarded Tracking Link</h3>
-                
-                <!-- Campaign Name / User Selector & New Link Name -->
-                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
-                        👤 Client Name / User Name:
-                    </label>
-                    <input type="text" id="cCampaignName" placeholder="Enter user name (e.g. Rahul Sharma, John Doe...)" style="margin-bottom:8px;">
-
-                    <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:4px;">
-                        Or Assign to Registered User (Optional):
-                    </label>
-                    <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
-                        <option value="">-- Standalone Link (No User Assigned) --</option>
-                    </select>
-
-                    <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;align-items:center;justify-content:space-between;">
-                        <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
-                        <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
-                    </div>
-
-                    <!-- 🌟 LINK NAME -->
-                    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
-                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">
-                            🏷️ Enter Link Name (Custom Label):
-                        </label>
-                        <input type="text" id="cLinkName" placeholder="Enter link name..." style="margin-bottom:4px;">
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Video URL:</label>
-                        <input type="text" id="cVideo" placeholder="Video URL" value="">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Claim Destination URL:</label>
-                        <input type="text" id="cClaim" placeholder="Claim Destination URL" value="">
-                    </div>
-                </div>
-                <div class="grid-2">
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Button Text:</label>
-                        <input type="text" id="cButtonText" placeholder="Button Text" value="">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Headline:</label>
-                        <input type="text" id="cHeadline" placeholder="Headline" value="">
-                    </div>
-                </div>
-
-                <!-- 🛡️ ON UID CHECKING / OFF UID CHECKING BUTTON (CREATE SECTION) -->
-                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-                    <div>
-                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                            <span>🛡️ UID Checking Status:</span>
-                            <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
-                        </div>
-                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            🟢 <b>ON</b> (UID screen pehle aayegi)
-                        </div>
-                    </div>
-                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
-                        ✅ ON UID CHECKING
-                    </button>
-                    <input type="hidden" id="cUidChecking" value="true">
-                </div>
-
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
-                    <div class="grid-2">
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Popup Title:</label>
-                            <input type="text" id="cPopTitle" placeholder="Popup Title" value="">
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Popup Button Text:</label>
-                            <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="">
-                        </div>
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Subtitle:</label>
-                        <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9):</label>
-                        <input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)">
-                    </div>
-                    <div class="preview-box-16-9" id="createImgPreviewBox">
-                        <span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>
-                    </div>
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
-                    <select id="schedulePreset" onchange="updateSchedulePreset()">
-                        <option value="">No Expiry (Lifetime Active)</option>
-                        <option value="3">3 Days</option>
-                        <option value="7">7 Days</option>
-                        <option value="15">15 Days</option>
-                        <option value="30">30 Days</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
-                <div id="generatedLinkBox" style="display:none;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:12px;padding:14px;margin-top:14px;">
-                    <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created! Copy below:</div>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" id="generatedLinkUrl" readonly>
-                        <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">📋 Copy</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. 👥 MANAGE USERS -->
-        <div class="section" id="sec-users">
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-                    <h3 style="margin:0;padding:0;border:none;">👥 Registered Users Management</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadAllUsers()">🔄 Refresh Users</button>
-                </div>
-
-                <div class="stats-grid" style="margin-bottom:16px;">
-                    <div class="stat-card"><div class="number" id="statTotUsers">0</div><div class="label">Total Users</div></div>
-                    <div class="stat-card"><div class="number" id="statAppUsers" style="color:var(--success);">0</div><div class="label">Approved Users</div></div>
-                    <div class="stat-card"><div class="number" id="statPendUsers" style="color:var(--warning);">0</div><div class="label">Pending Approval</div></div>
-                </div>
-
-                <div class="search-bar">
-                    <input type="text" id="searchUsersInput" placeholder="Search user by name, email, or phone..." oninput="filterUsersList()">
-                    <span id="usersSearchCount" style="font-size:12px;color:var(--text-light);">Loading users...</span>
-                </div>
-
-                <div id="usersFullList">Loading users...</div>
-            </div>
-        </div>
-
-        <!-- 5. USERS & RENEWAL -->
-        <div class="section" id="sec-renewals">
-            <div class="share-box">
-                <div class="share-title">🔗 Customer Portal & Signup Link:</div>
-                <div class="box-row">
-                    <input type="text" id="renewUserPortalUrl" readonly>
-                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
-                </div>
-            </div>
-
-            <!-- User Registrations Pending Approval -->
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
-                </div>
-                <div id="usersApprovalList">Loading user requests...</div>
-            </div>
-
-            <!-- Renewal Payment Requests -->
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">💳 Pending Renewal & Payment Requests</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
-                </div>
-                <div id="renewalReqsList">Loading renewal requests...</div>
-            </div>
-
-            <!-- Pricing Settings -->
-            <div class="card">
-                <h3>⚙️ Renewal & Payment Settings</h3>
-                <div class="grid-2">
-                    <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
-                    <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number (for Screenshots):</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
-                </div>
-                <h4 style="font-size:13px;color:var(--primary);margin:14px 0 6px;">💰 Renewal Plan Prices (₹):</h4>
-                <div class="grid-2">
-                    <div><label style="font-size:11px;color:var(--text-light);">7 Days (₹):</label><input type="number" id="p7d" value="100"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">15 Days (₹):</label><input type="number" id="p15d" value="200"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">30 Days (₹):</label><input type="number" id="p30d" value="400"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">90 Days (₹):</label><input type="number" id="p90d" value="1000"></div>
-                </div>
-                <div style="margin-top:6px;"><label style="font-size:11px;color:var(--text-light);">1 Year (₹):</label><input type="number" id="p1y" value="3000"></div>
-                <button class="btn btn-primary btn-sm" style="margin-top:14px;width:auto;" onclick="saveRenewalSettings()">💾 Save Renewal Settings</button>
-            </div>
-        </div>
-
-        <!-- 6. URL SHORTENER -->
-        <div class="section" id="sec-shortener">
-            <div class="card">
-                <h3>🔗 URL Shortener</h3>
-                <input type="text" id="sUrl" placeholder="Destination URL">
-                <input type="text" id="sTitle" placeholder="Title">
-                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="shortAppOpen" onchange="toggleAppScheme()">
-                        <span></span>
-                    </label>
-                    <span style="font-size:11px;color:var(--text-light);">(Enable deep link app open)</span>
-                </div>
-                <div id="appSchemeContainer" style="display:none;margin-top:8px;">
-                    <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
-                </div>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
-            </div>
-            <div class="card">
-                <h3>Active Short Links</h3>
-                <div id="shortLinksList">Loading...</div>
-            </div>
-        </div>
-
-        <!-- 7. SETTINGS & BLOCKED & ACTIVE DEVICES -->
-        <div class="section" id="sec-settings">
-            <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">⛔ Blocked</button>
-                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">🟢 Active</button>
-                        <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">🔄 Refresh</button>
-                    </div>
-                </div>
-
-                <!-- Blocked Devices View -->
-                <div id="deviceViewBlocked">
-                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered wrong passcodes multiple times are blocked here. Click Unblock to restore access.</p>
-                    <div id="deviceList">Loading blocked devices...</div>
-                </div>
-
-                <!-- Active Logged-in Devices View -->
-                <div id="deviceViewActive" style="display:none;">
-                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices currently authenticated in this Admin Control Center. You can terminate their session or block them permanently.</p>
-                    <div id="activeDeviceList">Loading active sessions...</div>
-                </div>
-            </div>
-
-            <!-- Passcode Update -->
-            <div class="card">
-                <h3>🔐 Change Admin Passcode</h3>
-                <div class="grid-2">
-                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">Update Passcode</button>
-            </div>
-
-            <!-- Contact Settings -->
-            <div class="card">
-                <h3>📱 Contact & OTP Settings</h3>
-                <div class="grid-2">
-                    <input type="email" id="adminEmail" placeholder="admin@example.com">
-                    <input type="text" id="adminPhone" placeholder="+919876543210">
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">💾 Save Contact</button>
-            </div>
-
-            <!-- Background Setting -->
-            <div class="card">
-                <h3>🖼️ UID Background Image (9:16)</h3>
-                <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Preview">
-                </div>
-                <div style="display:flex;gap:8px;margin-top:8px;">
-                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
-                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ✏️ EDIT MODAL -->
-    <div class="edit-modal" id="editModal">
-        <div class="modal-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <h3 style="margin:0;font-size:18px;">✏️ Edit Rewarded Link</h3>
-                <button onclick="closeEditModal()" style="background:none;border:none;color:var(--text-light);font-size:22px;cursor:pointer;">✕</button>
-            </div>
-            <div id="editModalBody"></div>
-            <div style="margin-top:18px;display:flex;gap:10px;">
-                <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
-                <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <script>
-        let allLinks = [];
-        let allUsers = [];
-        let editingLinkId = null;
-        let selectedExpiry = null;
-        let currentDeviceTab = 'blocked';
-
-        let createUidChecking = true;
-        let editUidChecking = true;
-
-        function showToast(msg, type = 'info') {
-            let t = document.getElementById('toast');
-            if (!t) {
-                t = document.createElement('div');
-                t.id = 'toast';
-                document.body.appendChild(t);
-            }
-            t.textContent = msg;
-            t.className = `toast ${type} show`;
-            setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
-        }
-
-        function copyText(text, successMsg = 'Copied to clipboard!') {
-            if (!text) return;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text)
-                    .then(() => showToast('✅ ' + successMsg, 'success'))
-                    .catch(() => fallbackCopy(text, successMsg));
-            } else {
-                fallbackCopy(text, successMsg);
-            }
-        }
-
-        function fallbackCopy(text, successMsg) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.top = '0';
-            ta.style.left = '0';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.focus();
-            ta.select();
-            try {
-                const ok = document.execCommand('copy');
-                if (ok) showToast('✅ ' + successMsg, 'success');
-                else prompt('Copy text manually:', text);
-            } catch(e) {
-                prompt('Copy text manually:', text);
-            }
-            document.body.removeChild(ta);
-        }
-
-        function copyPortalUrl() {
-            const u = window.location.origin + '/user-dashboard';
-            copyText(u, 'Copied Customer Portal URL!');
-        }
-
-        function escapeHTML(str) {
-            if (!str && str !== 0) return '';
-            const div = document.createElement('div');
-            div.textContent = String(str);
-            return div.innerHTML;
-        }
-
-        function toggleSidebar(open) {
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            if (!sb || !ov) return;
-            if (open) {
-                sb.classList.add('show');
-                ov.classList.add('show');
-            } else {
-                sb.classList.remove('show');
-                ov.classList.remove('show');
-            }
-        }
-
-        function showSection(id) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active'));
-
-            const target = document.getElementById('sec-' + id);
-            if (target) target.classList.add('active');
-
-            const sBtn = document.getElementById('btn-nav-' + id);
-            if (sBtn) sBtn.classList.add('active');
-
-            const tBtn = document.getElementById('topnav-' + id);
-            if (tBtn) tBtn.classList.add('active');
-
-            toggleSidebar(false);
-
-            try {
-                if (id === 'links') loadLinks();
-                if (id === 'users') loadAllUsers();
-                if (id === 'create') loadCreateUserDropdown();
-                if (id === 'renewals') loadRenewalSystem();
-                if (id === 'shortener') loadShortLinks();
-                if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
-            } catch(e) {
-                console.error('Section loader error:', e);
-            }
-        }
-
-        function updateCreatePopupPreview(url) {
-            const box = document.getElementById('createImgPreviewBox');
-            if (!box) return;
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
-        }
-
-        function previewBackgroundInput(url) {
-            const previewBox = document.getElementById('bgImagePreview');
-            const img = document.getElementById('bgPreviewImg');
-            if (!previewBox || !img) return;
-            if (url && url.startsWith('http')) {
-                img.src = url;
-                previewBox.classList.add('show');
-            } else {
-                previewBox.classList.remove('show');
-            }
-        }
-
-        // ==================== 🛡️ UID CHECKING TOGGLE CONTROLLERS ====================
-        function toggleCreateUidChecking() {
-            createUidChecking = !createUidChecking;
-            const badge = document.getElementById('createUidBadge');
-            const desc = document.getElementById('createUidDesc');
-            const btn = document.getElementById('btnToggleCreateUid');
-            const hiddenInp = document.getElementById('cUidChecking');
-
-            if (createUidChecking) {
-                if (badge) {
-                    badge.className = 'status-badge status-active';
-                    badge.textContent = 'ON UID CHECKING';
-                }
-                if (desc) {
-                    desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
-                }
-                if (btn) {
-                    btn.className = 'btn btn-sm btn-success';
-                    btn.innerHTML = '✅ ON UID CHECKING';
-                }
-                if (hiddenInp) hiddenInp.value = 'true';
-                showToast('UID Checking: ON (UID Entry Required)', 'success');
-            } else {
-                if (badge) {
-                    badge.className = 'status-badge status-disabled';
-                    badge.textContent = 'OFF UID CHECKING';
-                }
-                if (desc) {
-                    desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video chalegi)';
-                }
-                if (btn) {
-                    btn.className = 'btn btn-sm btn-danger';
-                    btn.innerHTML = '⛔ OFF UID CHECKING';
-                }
-                if (hiddenInp) hiddenInp.value = 'false';
-                showToast('UID Checking: OFF (Direct Popup & Video)', 'info');
-            }
-        }
-
-        function toggleEditUidChecking() {
-            editUidChecking = !editUidChecking;
-            const badge = document.getElementById('editUidBadge');
-            const desc = document.getElementById('editUidDesc');
-            const btn = document.getElementById('btnToggleEditUid');
-
-            if (editUidChecking) {
-                if (badge) {
-                    badge.className = 'status-badge status-active';
-                    badge.textContent = 'ON UID CHECKING';
-                }
-                if (desc) {
-                    desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
-                }
-                if (btn) {
-                    btn.className = 'btn btn-sm btn-success';
-                    btn.innerHTML = '✅ ON UID CHECKING';
-                }
-                showToast('UID Checking: ON for this link', 'success');
-            } else {
-                if (badge) {
-                    badge.className = 'status-badge status-disabled';
-                    badge.textContent = 'OFF UID CHECKING';
-                }
-                if (desc) {
-                    desc.innerHTML = '🔴 <b>OFF:</b> (Direct 16:9 Popup & Video)';
-                }
-                if (btn) {
-                    btn.className = 'btn btn-sm btn-danger';
-                    btn.innerHTML = '⛔ OFF UID CHECKING';
-                }
-                showToast('UID Checking: OFF for this link', 'info');
-            }
-        }
-
-        // ==================== 📊 REAL-TIME LIVELY STATS ====================
-        async function loadStats() {
-            try {
-                const res = await fetch('/api/all-stats', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.global) {
-                        document.getElementById('totVisits').textContent = data.global.totalVisitors || 0;
-                        document.getElementById('totClaims').textContent = data.global.totalClaims || 0;
-                        document.getElementById('activeLive').textContent = data.global.activeNow || 0;
-                        
-                        document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
-                        document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
-                        document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
-                        document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
-                        document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
-                        document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
-
-                        const now = new Date();
-                        document.getElementById('lastRefreshTime').textContent = `Lively: ${now.toLocaleTimeString()}`;
-                    }
-                    if (data && data.links) {
-                        allLinks = Array.isArray(data.links) ? data.links : [];
-                        document.getElementById('totLinks').textContent = allLinks.length;
-                        document.getElementById('activeLinks').textContent = allLinks.filter(l => l && l.status === 'active').length;
-                    }
-                }
-            } catch(e) {}
-        }
-
-        async function loadLinks() {
-            const list = document.getElementById('linksList');
-            if (list) list.innerHTML = '<p style="color:var(--text-light);font-size:12px;">Loading links...</p>';
-            try {
-                const res = await fetch('/api/links', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    allLinks = Array.isArray(data) ? data : (data.links || data.data || []);
-                    filterLinks();
-                    document.getElementById('totLinks').textContent = allLinks.length;
-                    document.getElementById('activeLinks').textContent = allLinks.filter(l => l && (l.status || 'active') === 'active').length;
-                } else {
-                    filterLinks();
-                }
-            } catch (err) {
-                filterLinks();
-            }
-        }
-
-        function getExpiryBadge(expDate) {
-            if (!expDate) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
-            const exp = new Date(expDate);
-            if (isNaN(exp.getTime())) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
-            const diffTime = exp.getTime() - Date.now();
-            if (diffTime <= 0) return '<span style="color:var(--danger);font-weight:700;">Expired</span>';
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const formattedDate = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const color = daysLeft <= 3 ? 'var(--warning)' : '#38bdf8';
-            return `<span style="color:${color};font-weight:700;">${daysLeft} Days Left (${formattedDate})</span>`;
-        }
-
-        function filterLinks() {
-            const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allLinks.filter(l => l && (
-                (l.name || '').toLowerCase().includes(q) || 
-                (l.linkName || '').toLowerCase().includes(q) || 
-                (l.title || '').toLowerCase().includes(q) || 
-                String(l.id || l._id || '').toLowerCase().includes(q)
-            )) : allLinks;
-
-            const list = document.getElementById('linksList');
-            const countEl = document.getElementById('searchResultsCount');
-
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
-            if (!list) return;
-
-            if (!filtered.length) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No tracking links found.</p>';
-                return;
-            }
-
-            list.innerHTML = filtered.map(l => {
-                if (!l) return '';
-                const linkId = l.id || l._id || '1';
-                const visits = l.visits || l.clicks || 0;
-                const status = l.status || 'active';
-                const isUidOn = l.uidChecking !== false;
-                const uidBadge = isUidOn 
-                    ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
-                    : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
-
-                const userName = l.name || 'User';
-                const linkName = l.linkName || l.title || 'Link';
-
-                return `
-                    <div class="link-item">
-                        <div>
-                            <div class="name" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-                                <span style="color:#a5b4fc;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(userName)} )</span>
-                                <span style="color:#38bdf8;background:rgba(6,182,212,0.14);border:1px solid rgba(6,182,212,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(linkName)} )</span>
-                            </div>
-
-                            <div class="details">
-                                <span>ID: <b>#${escapeHTML(linkId)}</b></span>
-                                <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
-                                <span>| Visits: <b>${visits}</b></span>
-                                <span>| Status: <span class="status-badge status-${status}">${status.toUpperCase()}</span></span>
-                                <span>| UID Check: ${uidBadge}</span>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${escapeHTML(linkId)}')">📋 Copy</button>
-                            <button class="btn btn-sm btn-warning" onclick="openEditModal('${escapeHTML(linkId)}')">✏️ Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteLink('${escapeHTML(linkId)}')">🗑️ Delete</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function copyLinkUrl(id) {
-            const url = window.location.origin + '/uid?link=' + encodeURIComponent(id);
-            copyText(url, 'Link URL Copied!');
-        }
-
-        async function deleteLink(id) {
-            if (!confirm(`Permanently delete tracking link #${id}?`)) return;
-            try {
-                const res = await fetch('/api/links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
-                if (res.ok) {
-                    allLinks = allLinks.filter(l => l && String(l.id || l._id) !== String(id));
-                    filterLinks();
-                    showToast('Link deleted successfully', 'info');
-                    loadStats();
-                } else {
-                    showToast('Failed to delete link', 'error');
-                }
-            } catch(e) {
-                showToast('Failed to delete link', 'error');
-            }
-        }
-
-        function openEditModal(id) {
-            const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
-            if (!link) return showToast('Link not found', 'error');
-            editingLinkId = id;
-            const popup = link.popupSettings || {};
-            const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-
-            editUidChecking = (link.uidChecking !== false);
-
-            const b = document.getElementById('editModalBody');
-            b.innerHTML = `
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>👤 User Name (Client)</label>
-                        <input type="text" id="eName" value="${escapeHTML(link.name || '')}" placeholder="User Name">
-                    </div>
-                    <div class="form-group">
-                        <label style="color:#38bdf8;">🏷️ Link Name</label>
-                        <input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name">
-                    </div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="eStatus">
-                            <option value="active" ${link.status==='active'?'selected':''}>Active</option>
-                            <option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option>
-                            <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
-                </div>
-
-                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                    <div>
-                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                            <span>🛡️ UID Checking Control:</span>
-                            <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">
-                                ${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}
-                            </span>
-                        </div>
-                        <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            ${editUidChecking 
-                                ? '🟢 <b>ON</b> (UID screen aayegi)' 
-                                : '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)'}
-                        </div>
-                    </div>
-                    <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
-                        ${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}
-                    </button>
-                </div>
-
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
-                    <div class="form-row-2">
-                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
-                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
-                    </div>
-                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
-                    <div class="preview-box-16-9" id="editPreviewBox">
-                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
-                    </div>
-                </div>
-            `;
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function updateEditPopupPreview(url) {
-            const box = document.getElementById('editPreviewBox');
-            if (!box) return;
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
-        }
-
-        function closeEditModal() {
-            const m = document.getElementById('editModal');
-            if (m) m.classList.remove('show');
-            editingLinkId = null;
-        }
-
-        async function saveLinkEdit() {
-            const name = document.getElementById('eName')?.value.trim();
-            const linkName = document.getElementById('eLinkName')?.value.trim() || 'Link';
-            const video = document.getElementById('eVideo')?.value.trim();
-            const claim = document.getElementById('eClaim')?.value.trim();
-            const buttonText = document.getElementById('eBtnText')?.value.trim();
-            const headline = document.getElementById('eHead')?.value.trim();
-            const status = document.getElementById('eStatus')?.value;
-            const expiryInput = document.getElementById('eExpiry')?.value;
-            const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
-            const uidChecking = editUidChecking;
-            const popupSettings = {
-                title: document.getElementById('ePopTitle')?.value.trim() || '🎁 Claim Your Reward',
-                subtitle: document.getElementById('ePopSub')?.value.trim() || 'Tap below to unlock your reward',
-                buttonText: document.getElementById('ePopBtn')?.value.trim() || 'Claim Now',
-                image: document.getElementById('ePopImg')?.value.trim() || null
-            };
-
-            try {
-                const res = await fetch('/api/links/' + encodeURIComponent(editingLinkId), {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ 
-                        name, 
-                        linkName,
-                        title: linkName,
-                        video, 
-                        claim, 
-                        buttonText, 
-                        headline, 
-                        status, 
-                        expiryDate, 
-                        popupSettings, 
-                        uidChecking,
-                        isEditForm: true
-                    })
-                });
-
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    return showToast('❌ ' + (errData.error || 'Failed to update link'), 'error');
-                }
-
-                const link = allLinks.find(l => l && String(l.id || l._id) === String(editingLinkId));
-                if (link) {
-                    Object.assign(link, { name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
-                }
-
-                showToast(`✅ Link updated: ( ${name} ) ( ${linkName} )`, 'success');
-                closeEditModal();
-                filterLinks();
-            } catch(e) {
-                showToast('Error saving changes: ' + e.message, 'error');
-            }
-        }
-
-        function updateSchedulePreset() {
-            const p = document.getElementById('schedulePreset')?.value;
-            if (p) {
-                const days = parseInt(p, 10);
-                const d = new Date();
-                d.setDate(d.getDate() + days);
-                selectedExpiry = d.toISOString();
-            } else {
-                selectedExpiry = null;
-            }
-        }
-
-        // ==================== ➕ CREATE LINK ====================
-        async function loadCreateUserDropdown() {
-            if (!allUsers.length) {
-                try {
-                    const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                    if (res.ok) {
-                        const data = await res.json();
-                        allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
-                    }
-                } catch(e) {}
-            }
-            filterCreateUserList();
-        }
-
-        function filterCreateUserList() {
-            const selectEl = document.getElementById('cUserSelect');
-            if (!selectEl) return;
-
-            selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' + 
-                allUsers.map(u => {
-                    const uName = u?.name || 'Unnamed';
-                    return `<option value="${escapeHTML(uName)}">👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`;
-                }).join('');
-        }
-
-        function onUserSelected(userName) {
-            const trimmed = (userName || '').trim();
-            const badge = document.getElementById('selectedUserBadge');
-            const nameInp = document.getElementById('cCampaignName');
-            
-            if (trimmed) {
-                const userObj = allUsers.find(u => (u?.name || '').trim() === trimmed);
-                document.getElementById('selectedUserName').textContent = trimmed;
-                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone || 'Registered User') : 'User Selected';
-                badge.style.display = 'flex';
-                if (nameInp && !nameInp.value) nameInp.value = trimmed;
-            } else {
-                if (badge) badge.style.display = 'none';
-            }
-        }
-
-        function clearSelectedUser() {
-            const sel = document.getElementById('cUserSelect');
-            if (sel) sel.value = '';
-            const badge = document.getElementById('selectedUserBadge');
-            if (badge) badge.style.display = 'none';
-        }
-
-        async function createLink() {
-            const campaignInput = document.getElementById('cCampaignName')?.value.trim();
-            const selectedUser = document.getElementById('cUserSelect')?.value.trim();
-            const userName = selectedUser || campaignInput;
-            const linkName = document.getElementById('cLinkName')?.value.trim() || 'Link';
-            const video = document.getElementById('cVideo')?.value.trim();
-            const claim = document.getElementById('cClaim')?.value.trim();
-            const headline = document.getElementById('cHeadline')?.value.trim();
-            const buttonText = document.getElementById('cButtonText')?.value.trim();
-            const uidChecking = createUidChecking;
-            const popupSettings = {
-                title: document.getElementById('cPopTitle')?.value.trim() || '🎁 Claim Your Reward',
-                subtitle: document.getElementById('cPopSub')?.value.trim() || 'Tap below to unlock your reward',
-                buttonText: document.getElementById('cPopBtn')?.value.trim() || 'Claim Now',
-                image: document.getElementById('cPopImg')?.value.trim() || null
-            };
-
-            if (!userName) {
-                return showToast('Please enter a Client/User Name or choose a registered user!', 'error');
-            }
-
-            try {
-                const res = await fetch('/api/links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ 
-                        name: userName, 
-                        linkName: linkName,
-                        title: linkName,
-                        url: claim,
-                        claim, 
-                        video, 
-                        headline, 
-                        buttonText, 
-                        uidChecking,
-                        expiryDate: selectedExpiry, 
-                        popupSettings 
-                    })
-                });
-
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    return showToast('❌ ' + (errData.error || 'Failed to create link'), 'error');
-                }
-
-                const d = await res.json();
-                const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
-
-                showToast(`✅ Link Created: ( ${userName} ) ( ${linkName} )`, 'success');
-                const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
-                const genBox = document.getElementById('generatedLinkBox');
-                const genInp = document.getElementById('generatedLinkUrl');
-                if (genInp) genInp.value = fullUrl;
-                if (genBox) genBox.style.display = 'block';
-
-                loadLinks();
-                loadStats();
-            } catch(err) {
-                showToast('Failed to create link: ' + err.message, 'error');
-            }
-        }
-
-        function copyGeneratedLink() {
-            const inp = document.getElementById('generatedLinkUrl');
-            if (inp) copyText(inp.value, 'Generated Link Copied!');
-        }
-
-        // ==================== 👥 MANAGE USERS ====================
-        async function loadAllUsers() {
-            const container = document.getElementById('usersFullList');
-            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
-
-            try {
-                const res = await fetch('/api/admin/all-users', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
-                } else {
-                    const res2 = await fetch('/api/admin/renewal-users', { credentials: 'include' });
-                    const d2 = await res2.json();
-                    allUsers = d2.users || [];
-                }
-            } catch(e) {
-                allUsers = [];
-            }
-
-            document.getElementById('statTotUsers').textContent = allUsers.length;
-            document.getElementById('statAppUsers').textContent = allUsers.filter(u => u && u.status === 'approved').length;
-            document.getElementById('statPendUsers').textContent = allUsers.filter(u => u && u.status === 'pending').length;
-
-            filterUsersList();
-            loadCreateUserDropdown();
-        }
-
-        function filterUsersList() {
-            const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allUsers.filter(u => u && (
-                (u.name || '').toLowerCase().includes(q) || 
-                (u.email || '').toLowerCase().includes(q) || 
-                (u.phone || '').toLowerCase().includes(q)
-            )) : allUsers;
-
-            const countEl = document.getElementById('usersSearchCount');
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
-
-            const container = document.getElementById('usersFullList');
-            if (!container) return;
-            if (!filtered.length) {
-                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
-                return;
-            }
-
-            container.innerHTML = filtered.map(u => {
-                if (!u) return '';
-                const cleanName = (u.name || '').toLowerCase().trim();
-                const userLinkCount = allLinks.filter(l => l && (l.name || '').toLowerCase().trim() === cleanName).length;
-                const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-                const statusBadge = u.status === 'approved' 
-                    ? '<span class="status-badge status-active">APPROVED</span>' 
-                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
-                const uid = u._id || u.id || '';
-
-                return `
-                    <div class="link-item">
-                        <div>
-                            <div class="name" style="display:flex;align-items:center;gap:8px;">
-                                <span>👤 ${escapeHTML(u.name || 'User')}</span>
-                                ${statusBadge}
-                            </div>
-                            <div class="details">
-                                <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
-                                <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
-                                <span>| 🔗 Total Links: <b style="color:var(--primary);">${userLinkCount}</b></span>
-                                <span>| 📅 Joined: <b>${joinedDate}</b></span>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            ${u.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${escapeHTML(uid)}', 'approved')">✅ Approve</button>` : ''}
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove User</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function deleteUser(id, name) {
-            if (!confirm(`Are you sure you want to permanently remove user "${name}"?`)) return;
-            try {
-                await fetch(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
-                allUsers = allUsers.filter(u => u && String(u._id || u.id) !== String(id));
-                filterUsersList();
-                showToast('✅ User removed successfully!', 'success');
-                loadRenewalSystem();
-            } catch(e) {
-                showToast('Failed to remove user', 'error');
-            }
-        }
-
-        // ==================== 🔄 RENEWAL SYSTEM ====================
-        async function loadRenewalSystem() {
-            const portalUrl = window.location.origin + '/user-dashboard';
-            const dInput = document.getElementById('dashUserPortalUrl');
-            const rInput = document.getElementById('renewUserPortalUrl');
-            if (dInput) dInput.value = portalUrl;
-            if (rInput) rInput.value = portalUrl;
-
-            try {
-                const uRes = await fetch('/api/admin/renewal-users', { credentials: 'include' });
-                if (uRes.ok) {
-                    const uData = await uRes.json();
-                    const uList = document.getElementById('usersApprovalList');
-                    const pendingUsers = (uData.users || []).filter(u => u && u.status === 'pending');
-
-                    if (!pendingUsers.length) {
-                        uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
-                    } else {
-                        uList.innerHTML = pendingUsers.map(u => `
-                            <div class="link-item">
-                                <div>
-                                    <div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div>
-                                    <div class="details">📧 ${escapeHTML(u.email || 'N/A')} | 📞 ${escapeHTML(u.phone || 'N/A')}</div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id || u.id}', 'approved')">✅ Approve</button>
-                                    <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')">❌ Reject</button>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-            } catch(err) {}
-
-            try {
-                const sRes = await fetch('/api/admin/renewal-settings', { credentials: 'include' });
-                if (sRes.ok) {
-                    const sData = await sRes.json();
-                    const rList = document.getElementById('renewalReqsList');
-                    const pendingReqs = (sData.requests || []).filter(r => r && r.status === 'pending');
-
-                    if (!pendingReqs.length) {
-                        rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
-                    } else {
-                        rList.innerHTML = pendingReqs.map(r => `
-                            <div class="link-item">
-                                <div>
-                                    <div class="name">User: ${escapeHTML(r.linkName || r.userId || 'Client')} | Plan: ${escapeHTML(r.plan || '')} (${r.days || 30} Days)</div>
-                                    <div class="details">Link ID: <b>${escapeHTML(r.linkId || 'N/A')}</b> | Amount: ₹${r.amount || 0} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id || r._id}')">✅ Approve</button>
-                                    <button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id || r._id}')">❌ Reject</button>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-
-                    if (sData.pricing) {
-                        const pr = sData.pricing.pricing || sData.pricing || {};
-                        if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
-                        if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
-                        if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
-                        if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
-                        if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
-                        if (document.getElementById('setUpiId')) {
-                            document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
-                        }
-                        if (document.getElementById('setWaNumber')) {
-                            document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
-                        }
-                    }
-                }
-            } catch(err) {}
-        }
-
-        async function setUserStatus(id, action) {
-            try {
-                await fetch(`/api/admin/renewal-users/${encodeURIComponent(id)}/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ action })
-                });
-                showToast(`User ${action}!`, 'success');
-                loadRenewalSystem();
-                loadAllUsers();
-            } catch(e) {
-                showToast('Failed to update status', 'error');
-            }
-        }
-
-        async function approveRenewal(id) {
-            try {
-                await fetch(`/api/admin/renewal-requests/${encodeURIComponent(id)}/approve`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                showToast('Renewal approved & Link extended!', 'success');
-                loadRenewalSystem();
-                loadStats();
-                loadLinks();
-            } catch(e) {
-                showToast('Error approving renewal', 'error');
-            }
-        }
-
-        async function rejectRenewal(id) {
-            if (!confirm('Are you sure you want to reject this renewal request?')) return;
-            try {
-                await fetch(`/api/renewal/reject/${encodeURIComponent(id)}`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                showToast('Renewal request rejected.', 'info');
-                loadRenewalSystem();
-            } catch(e) {
-                showToast('Error rejecting renewal', 'error');
-            }
-        }
-
-        async function saveRenewalSettings() {
-            const pricing = {
-                '7days': parseInt(document.getElementById('p7d')?.value || 100, 10),
-                '15days': parseInt(document.getElementById('p15d')?.value || 200, 10),
-                '30days': parseInt(document.getElementById('p30d')?.value || 400, 10),
-                '90days': parseInt(document.getElementById('p90d')?.value || 1000, 10),
-                '1year': parseInt(document.getElementById('p1y')?.value || 3000, 10)
-            };
-            const upiId = document.getElementById('setUpiId')?.value.trim();
-            const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
-
-            try {
-                await fetch('/api/admin/renewal-settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
-                });
-                showToast('✅ Renewal settings saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save settings', 'error');
-            }
-        }
-
-        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
-        function toggleDeviceTab(tab) {
-            currentDeviceTab = tab;
-            const bBtn = document.getElementById('tabBtnBlocked');
-            const aBtn = document.getElementById('tabBtnActive');
-            const bView = document.getElementById('deviceViewBlocked');
-            const aView = document.getElementById('deviceViewActive');
-
-            if (tab === 'blocked') {
-                bBtn.style.background = 'var(--danger)';
-                bBtn.style.color = '#fff';
-                aBtn.style.background = 'var(--bg)';
-                aBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'block';
-                aView.style.display = 'none';
-                loadBlockedDevices();
-            } else {
-                aBtn.style.background = 'var(--success)';
-                aBtn.style.color = '#fff';
-                bBtn.style.background = 'var(--bg)';
-                bBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'none';
-                aView.style.display = 'block';
-                loadActiveDevices();
-            }
-        }
-
-        function refreshDeviceTabs() {
-            if (currentDeviceTab === 'blocked') loadBlockedDevices();
-            else loadActiveDevices();
-        }
-
-        async function loadBlockedDevices() {
-            const list = document.getElementById('deviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
-            try {
-                const res = await fetch('/api/admin/blocked-devices', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const devices = d.devices || d.data || (Array.isArray(d) ? d : []);
-                    if (!devices.length) {
-                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No blocked devices currently.</p>';
-                    }
-                    list.innerHTML = devices.map(dev => `
-                        <div class="device-card-item blocked">
-                            <div>
-                                <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
-                                <div class="device-meta">
-                                    <span>🌐 IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span>
-                                    <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span>
-                                    <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason || 'Passcode violations')}</span></span>
-                                </div>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock</button>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices recorded.</p>';
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load blocked devices.</p>';
-            }
-        }
-
-        async function unblockDev(id) {
-            if (!confirm('Unblock this device so it can access again?')) return;
-            try {
-                await fetch('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST', credentials: 'include' });
-                showToast('✅ Device unblocked successfully!', 'success');
-                loadBlockedDevices();
-            } catch(e) {
-                showToast('Failed to unblock device', 'error');
-            }
-        }
-
-        async function loadActiveDevices() {
-            const list = document.getElementById('activeDeviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
-            try {
-                const res = await fetch('/api/admin/active-sessions', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const sessions = d.sessions || d.data || (Array.isArray(d) ? d : []);
-
-                    if (!sessions.length) {
-                        return list.innerHTML = `
-                            <div class="device-card-item active-dev">
-                                <div>
-                                    <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
-                                    <div class="device-meta">
-                                        <span>🌐 IP: <b>Connected Client IP</b></span>
-                                        <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    list.innerHTML = sessions.map(s => {
-                        const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
-                        const sid = s._id || s.id || '';
-                        return `
-                            <div class="device-card-item active-dev">
-                                <div>
-                                    <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Browser')})</span></div>
-                                    <div class="device-meta">
-                                        <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
-                                        <span>🕒 Last Active: <b>${lastActive}</b></span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button>
-                                    <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🗑️ Logout</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Active sessions data loaded.</p>';
-            }
-        }
-
-        async function deleteActiveSession(id) {
-            if (!confirm('Log out and terminate this session?')) return;
-            try {
-                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
-                showToast('Session terminated', 'info');
-                loadActiveDevices();
-            } catch(e) {
-                showToast('Failed to terminate session', 'error');
-            }
-        }
-
-        async function blockActiveSession(id) {
-            if (!confirm('Block this device permanently?')) return;
-            try {
-                await fetch(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST', credentials: 'include' });
-                showToast('Device blocked permanently!', 'success');
-                loadActiveDevices();
-            } catch(e) {
-                showToast('Failed to block device', 'error');
-            }
-        }
-
-        async function loadContactInfo() {
-            try {
-                const res = await fetch('/api/settings');
-                if (res.ok) {
-                    const d = await res.json();
-                    if (d) {
-                        if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
-                        if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
-                        if (d.background) {
-                            document.getElementById('bgImgUrl').value = d.background;
-                            document.getElementById('bgPreviewImg').src = d.background;
-                            document.getElementById('bgImagePreview').classList.add('show');
-                        }
-                    }
-                }
-            } catch(e) {}
-        }
-
-        async function updateContactInfo() {
-            const email = document.getElementById('adminEmail')?.value.trim();
-            const phone = document.getElementById('adminPhone')?.value.trim();
-            try {
-                await fetch('/api/admin/update-contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, phone })
-                });
-                showToast('✅ Contact info saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save contact info', 'error');
-            }
-        }
-
-        async function saveBackground() {
-            const bg = document.getElementById('bgImgUrl')?.value.trim();
-            try {
-                await fetch('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ background: bg }) 
-                });
-                if (bg) {
-                    document.getElementById('bgPreviewImg').src = bg;
-                    document.getElementById('bgImagePreview').classList.add('show');
-                }
-                showToast('✅ Background updated!', 'success');
-            } catch(e) {
-                showToast('Failed to update background', 'error');
-            }
-        }
-
-        async function removeBackground() {
-            try {
-                await fetch('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ background: null }) 
-                });
-                document.getElementById('bgImgUrl').value = '';
-                document.getElementById('bgImagePreview').classList.remove('show');
-                showToast('Background removed', 'info');
-            } catch(e) {
-                showToast('Failed to remove background', 'error');
-            }
-        }
-
-        async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode')?.value.trim();
-            const newP = document.getElementById('newPasscode')?.value.trim();
-            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            try {
-                const res = await fetch('/api/admin/passcode', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    credentials: 'include', 
-                    body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) 
-                });
-                const d = await res.json();
-                if (d.success) showToast('✅ Passcode updated!', 'success');
-                else showToast('❌ ' + (d.error || 'Failed to update passcode'), 'error');
-            } catch(e) {
-                showToast('Error changing passcode', 'error');
-            }
-        }
-
-        // ==================== 🔗 SHORT LINKS ====================
-        function toggleAppScheme() {
-            const chk = document.getElementById('shortAppOpen')?.checked;
-            const container = document.getElementById('appSchemeContainer');
-            if (container) container.style.display = chk ? 'block' : 'none';
-        }
-
-        async function loadShortLinks() {
-            const list = document.getElementById('shortLinksList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
-            try {
-                const res = await fetch('/api/short-links', { credentials: 'include' });
-                if (res.ok) {
-                    const d = await res.json();
-                    const sLinks = d.links || d.data || (Array.isArray(d) ? d : []);
-                    if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No short links yet.</p>';
-                    list.innerHTML = sLinks.map(l => `
-                        <div class="link-item">
-                            <div>
-                                <div class="name">${escapeHTML(l.title || 'Untitled Link')}</div>
-                                <div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || l.clicks || 0}</b></div>
-                            </div>
-                            <div style="display:flex;gap:6px;">
-                                <button class="btn btn-sm btn-success" onclick="copyShortLink('${escapeHTML(l.code)}')">📋 Copy</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${escapeHTML(l._id || l.id)}')">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
-            }
-        }
-
-        function copyShortLink(code) {
-            const u = window.location.origin + '/s/' + code;
-            copyText(u, 'Short Link Copied!');
-        }
-
-        async function deleteShortLink(id) {
-            if (!confirm('Permanently delete this short link?')) return;
-            try {
-                await fetch('/api/short-links/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
-                showToast('Short link deleted', 'info');
-                loadShortLinks();
-            } catch(e) {
-                showToast('Failed to delete short link', 'error');
-            }
-        }
-
-        async function createShortLink() {
-            const originalUrl = document.getElementById('sUrl')?.value.trim();
-            const title = document.getElementById('sTitle')?.value.trim();
-            const appScheme = document.getElementById('sScheme')?.value.trim() || '';
-            const appOpen = document.getElementById('shortAppOpen')?.checked;
-            if (!originalUrl) return showToast('Please enter a destination URL', 'error');
-
-            try {
-                await fetch('/api/short-links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme })
-                });
-                showToast('✅ Short link created successfully!', 'success');
-                document.getElementById('sUrl').value = '';
-                document.getElementById('sTitle').value = '';
-                loadShortLinks();
-Url').value = '';
-                document.getElementById('sTitle').value = '';
-                loadShortLinks();
-            } catch(e) {
-                showToast('Failed to create short link', 'error');
-            }
-        }
-
-        function setTheme(t) {
-            document.body.className = t;
-            document.getElementById('theme-dark')?.classList.toggle('active', t === 'dark');
-            document.getElementById('theme-light')?.classList.toggle('active', t === 'light');
-            try { localStorage.setItem('adminTheme', t); } catch(e) {}
-        }
-
-        function logout() {
-            document.cookie = 'adminToken=; Max-Age=0; path=/;';
-            window.location.href = '/admin/login.html';
-        }
-
-        function installApp() {
-            showToast('Use browser menu -> Add to Home screen to install app', 'info');
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            try {
-                const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-                setTheme(savedTheme);
-            } catch(e) {}
-
-            loadStats();
-            loadLinks();
-            loadAllUsers();
-            loadRenewalSystem();
-            loadContactInfo();
-            loadBlockedDevices();
-            setInterval(loadStats, 5000);
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3001;
+const path = require('path');
+const fs = require('fs');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
+
+// ==================== MongoDB Connection & Models ====================
+let connectDB;
+try {
+    connectDB = require('./config/db');
+} catch(e) {
+    connectDB = async () => {
+        const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/free_redeemcode';
+        try {
+            await mongoose.connect(uri);
+            console.log('✅ MongoDB connected successfully');
+        } catch(err) {
+            console.error('❌ MongoDB connection error:', err.message);
+        }
+    };
+}
+
+const User = require('./models/User');
+const Link = require('./models/Link');
+const Stats = require('./models/Stats');
+const PopupSettings = require('./models/PopupSettings');
+const RenewalRequest = require('./models/RenewalRequest');
+const RenewalUser = require('./models/RenewalUser');
+const Pricing = require('./models/Pricing');
+const Session = require('./models/Session');
+const AdminLog = require('./models/AdminLog');
+const LoginAttempt = require('./models/LoginAttempt');
+const TwoFactorAuth = require('./models/TwoFactorAuth');
+const BlockedDevice = require('./models/BlockedDevice');
+const OTPVerification = require('./models/OTPVerification');
+const ShortLink = require('./models/ShortLink');
+const ShortLinkClick = require('./models/ShortLinkClick');
+
+// Security 2FA Helper
+const Security = {
+    generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
+    generateBackupCodes: () => [
+        crypto.randomBytes(4).toString('hex'),
+        crypto.randomBytes(4).toString('hex'),
+        crypto.randomBytes(4).toString('hex')
+    ]
+};
+
+connectDB();
+
+// Register flexible schema fields for Link and Renewal
+try {
+    if (Link && Link.schema) {
+        Link.schema.add({ 
+            name: { type: String, default: '' },
+            title: { type: String, default: '' },
+            linkName: { type: String, default: '' },
+            uidChecking: { type: Boolean, default: true },
+            creator: { type: String, default: '' },
+            assignedUser: { type: String, default: '' },
+            userName: { type: String, default: '' }
         });
+        Link.schema.set('strict', false);
+    }
+    if (RenewalRequest && RenewalRequest.schema) {
+        RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
+        RenewalRequest.schema.set('strict', false);
+    }
+    if (PopupSettings && PopupSettings.schema) {
+        PopupSettings.schema.add({ uidChecking: { type: Boolean, default: true } });
+        PopupSettings.schema.set('strict', false);
+    }
+    if (Pricing && Pricing.schema) Pricing.schema.set('strict', false);
+    if (User && User.schema) User.schema.set('strict', false);
+    if (Session && Session.schema) Session.schema.set('strict', false);
+    if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
+    if (ShortLink && ShortLink.schema) ShortLink.schema.set('strict', false);
+} catch(e) {}
+
+// Visitor Activity Model (24-Hour Unique Visitors)
+const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
+    linkId: { type: String, required: true, index: true },
+    visitorKey: { type: String, required: true, index: true },
+    type: { type: String, enum: ['visit', 'claim'], required: true, index: true },
+    uid: { type: String, default: null },
+    lastSeen: { type: Date, default: Date.now, index: true }
+}, { timestamps: true }));
+
+const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
+const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
+const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
+const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
+const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
+
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASS = process.env.EMAIL_PASS || '';
+
+let transporter = null;
+if (EMAIL_USER && EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+    });
+}
+
+function verifyPasscode(inputPass, storedPass) {
+    if (!inputPass || !storedPass) return false;
+    const cleanInput = inputPass.toString().trim();
+    const cleanStored = storedPass.toString().trim();
+    if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
+        try { return bcrypt.compareSync(cleanInput, cleanStored); } catch(e) { return false; }
+    }
+    return cleanInput === cleanStored;
+}
+
+function isUidCheckDisabled(val) {
+    return val === false || val === 'false' || val === 0 || val === '0' || val === 'off' || val === 'OFF' || val === 'disabled' || val === 'inactive' || val === 'no' || val === 'NO';
+}
+
+function extractCleanId(input) {
+    if (!input) return '';
+    let str = input.toString().trim();
+    if (str.includes('?link=')) str = (str.split('?link=')[1] || '').split('&')[0];
+    else if (str.includes('&link=')) str = (str.split('&link=')[1] || '').split('&')[0];
+    else if (str.includes('?id=')) str = (str.split('?id=')[1] || '').split('&')[0];
+    else if (str.includes('&id=')) str = (str.split('&id=')[1] || '').split('&')[0];
+    else if (str.includes('/user-dashboard/')) str = (str.split('/user-dashboard/')[1] || '').split('?')[0];
+    else if (str.includes('/v/')) str = (str.split('/v/')[1] || '').split('?')[0];
+    else if (str.includes('/uid/')) str = (str.split('/uid/')[1] || '').split('?')[0];
+    try { str = decodeURIComponent(str); } catch(e) {}
+    return str.split('#')[0].replace(/\/+$/, '').trim();
+}
+
+function getLinkQuery(rawId) {
+    const cleanId = (rawId || '').toString().trim();
+    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
+    if (mongoose.Types.ObjectId.isValid(cleanId) && cleanId.length === 24) {
+        try { orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) }); } catch(e) {}
+        orConditions.push({ _id: cleanId });
+    }
+    return { $or: orConditions };
+}
+
+async function initializeDatabase() {
+    try {
+        const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
+        let admin = await User.findOne();
+
+        if (!admin) {
+            const hashedPasscode = bcrypt.hashSync(activeEnvPass, 10);
+            await User.create({
+                passcode: hashedPasscode,
+                lastEnvPasscode: activeEnvPass,
+                theme: 'dark',
+                email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || '',
+                secretKey: 'admin@2024'
+            });
+            console.log('✅ Admin initialized with active passcode');
+
+            if (ENABLE_2FA) {
+                const secret = Security.generate2FASecret();
+                await TwoFactorAuth.create({
+                    userId: 'admin',
+                    secret: secret.base32,
+                    backupCodes: Security.generateBackupCodes(),
+                    isEnabled: true,
+                    verifiedAt: new Date()
+                });
+            }
+        } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
+            admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
+            admin.lastEnvPasscode = activeEnvPass;
+            await admin.save();
+            console.log('🔄 Admin passcode updated from environment');
+        }
+
+        const statsExists = await Stats.findOne();
+        if (!statsExists) await Stats.create({});
+
+        const popupExists = await PopupSettings.findOne();
+        if (!popupExists) {
+            await PopupSettings.create({
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward',
+                uidChecking: true
+            });
+        }
+
+        const pricingExists = await Pricing.findOne();
+        if (!pricingExists) {
+            await Pricing.create({
+                pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+                paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi', qrCode: null, text: '' } },
+                whatsappNumber: '916372923348',
+                autoPaymentEnabled: false
+            });
+        } else if (pricingExists.autoPaymentEnabled !== false) {
+            pricingExists.autoPaymentEnabled = false;
+            await pricingExists.save();
+        }
+
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
+    } catch (error) {
+        console.error('❌ Database initialization error:', error);
+    }
+}
+initializeDatabase();
+
+app.set('trust proxy', 1);
+app.use(helmet({
+    contentSecurityPolicy: false,
+    frameguard: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Admin-Token', 'token']
+}));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+app.use((req, res, next) => {
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    const blocked = ['.env', '.log', '.json', '.md'];
+    const p = req.path.toLowerCase();
+    if (p === '/manifest.json') return next();
+    for (let ext of blocked) {
+        if (p.endsWith(ext)) return res.status(403).send('Forbidden');
+    }
+    next();
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        uptime: Math.floor(process.uptime()),
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/ping', (req, res) => res.status(200).send('pong'));
+
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        return (
+            req.path === '/health' ||
+            req.path === '/ping' ||
+            req.path.endsWith('.css') ||
+            req.path.endsWith('.js') ||
+            req.path.endsWith('.png') ||
+            req.path.endsWith('.jpg') ||
+            req.path.endsWith('.ico')
+        );
+    },
+    message: { error: 'Too many requests, please try again later.' }
+});
+app.use('/api', globalLimiter);
+
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const JWT_EXPIRY = '7d';
+
+function generateToken(userId) {
+    return jwt.sign({ id: userId, role: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+}
+
+function verifyToken(token) {
+    try { return jwt.verify(token, JWT_SECRET); } catch (e) { return null; }
+}
+
+function getDeviceId(req) {
+    let rawIp = req.headers['x-forwarded-for'] || req.ip || req.connection?.remoteAddress || '127.0.0.1';
+    if (Array.isArray(rawIp)) rawIp = rawIp[0];
+    const ip = typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : '127.0.0.1';
+    const userAgent = (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'unknown';
+    const clientCookie = req.cookies?.devId || '';
+    const fingerprint = crypto.createHash('sha256').update(ip + userAgent + clientCookie).digest('hex');
+    const deviceKey = crypto.createHash('sha256').update(fingerprint + '|' + ip).digest('hex');
+    return { ip, userAgent, fingerprint, deviceKey };
+}
+
+function getDeviceDetails(req) {
+    const userAgent = (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown';
+    let deviceName = 'Browser';
+    let deviceType = 'Desktop';
+    if (userAgent.includes('Android')) { deviceName = 'Android Mobile'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('iPhone')) { deviceName = 'Apple iPhone'; deviceType = 'Mobile'; }
+    else if (userAgent.includes('iPad')) { deviceName = 'Apple iPad'; deviceType = 'Tablet'; }
+    else if (userAgent.includes('Windows')) { deviceName = 'Windows PC'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('Mac')) { deviceName = 'Mac Computer'; deviceType = 'Desktop'; }
+    else if (userAgent.includes('Linux')) { deviceName = 'Linux PC'; deviceType = 'Desktop'; }
+    return { deviceName, deviceType };
+}
+
+async function isDeviceBlocked(req) {
+    try {
+        if (mongoose.connection.readyState !== 1) return null;
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        return await BlockedDevice.findOne({
+            $or: [{ deviceKey }, { ip }, { fingerprint }],
+            isPermanent: true
+        }).maxTimeMS(2000);
+    } catch(e) { return null; }
+}
+
+async function authMiddleware(req, res, next) {
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        return res.status(403).json({
+            error: 'permanently_blocked',
+            message: 'Your device is permanently blocked. Contact administrator.',
+            permanent: true
+        });
+    }
+    const token = req.cookies?.adminToken || 
+                  req.headers['authorization']?.replace('Bearer ', '') ||
+                  req.headers['x-admin-token'] ||
+                  req.headers['x-token'] ||
+                  req.headers['token'] ||
+                  req.query.token;
+
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    const decoded = verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
+    req.user = decoded;
+    next();
+}
+
+// ==================== Public Informational Routes ====================
+app.get('/api/whatsapp-number', async (req, res) => {
+    try {
+        const pricing = await Pricing.findOne();
+        res.json({ number: pricing?.whatsappNumber || '916372923348' });
+    } catch (error) { res.json({ number: '916372923348' }); }
+});
+
+app.post('/api/whatsapp-number', async (req, res) => {
+    try {
+        const { number } = req.body;
+        if (!number) return res.status(400).json({ error: 'Number required' });
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.whatsappNumber = number.toString().trim();
+        await pricing.save();
+        res.json({ success: true, number: pricing.whatsappNumber });
+    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
+});
+
+app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
+    try {
+        const { number } = req.body;
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.whatsappNumber = (number || '916372923348').toString().trim();
+        await pricing.save();
+        res.json({ success: true, number: pricing.whatsappNumber });
+    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
+});
+
+app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
+    try {
+        const cleanId = extractCleanId(req.params.dashboardId);
+        let link = await Link.findOne(getLinkQuery(cleanId));
+        if (link) return res.json({ linkId: link.id, name: link.name || link.title, linkName: link.linkName || link.title || link.name });
+        res.status(404).json({ error: 'No link found' });
+    } catch (error) { res.status(500).json({ error: 'Failed to map dashboard' }); }
+});
+
+app.get('/api/visit-stats/:linkId', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const cleanId = extractCleanId(req.params.linkId);
+        let link = await Link.findOne(getLinkQuery(cleanId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        const today = new Date().toISOString().split('T')[0];
+        const isUidOn = !isUidCheckDisabled(link.uidChecking);
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
+        res.json({
+            linkId: link.id,
+            id: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
+            userName: link.userName || link.name || '',
+            totalVisits: link.visits || 0,
+            totalClaims: link.claims || 0,
+            todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
+            todayClaims: link.dailyClaims?.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims?.[today] || 0),
+            dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
+            dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
+            status: link.status || 'active',
+            expiryDate: link.expiryDate || null,
+            uidChecking: isUidOn
+        });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+});
+
+app.get('/api/parent-link', async (req, res) => {
+    try {
+        const links = await Link.find({});
+        if (links.length > 0) {
+            const firstLink = links[0];
+            if (!firstLink.dashboardId) {
+                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+                await firstLink.save();
+            }
+            const lName = firstLink.linkName || firstLink.title || firstLink.name || 'Untitled Link';
+            res.json({
+                url: '/user-dashboard/' + firstLink.dashboardId,
+                linkName: lName,
+                name: lName,
+                title: lName,
+                linkId: firstLink.id
+            });
+        } else {
+            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, name: null, title: null, linkId: null });
+        }
+    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
+});
+
+app.get('/api/pricing', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        let pricingDoc = await Pricing.findOne().lean();
+        if (!pricingDoc) {
+            pricingDoc = {
+                pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+                paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi' } },
+                whatsappNumber: '916372923348',
+                autoPaymentEnabled: false
+            };
+        }
+        res.json({
+            pricing: pricingDoc.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+            paymentSettings: pricingDoc.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
+            whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
+            autoPaymentEnabled: false
+        });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch pricing' }); }
+});
+
+app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, paymentSettings, upiId, whatsappNumber } = req.body;
+        const updateFields = { autoPaymentEnabled: false };
+        if (pricing && typeof pricing === 'object') updateFields.pricing = pricing;
+        if (paymentSettings) updateFields.paymentSettings = paymentSettings;
+        if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
+        if (whatsappNumber) updateFields.whatsappNumber = whatsappNumber.toString().trim();
+
+        const updatedPricing = await Pricing.findOneAndUpdate(
+            {},
+            { $set: updateFields },
+            { upsert: true, new: true, lean: true }
+        );
+        res.json({ success: true, pricing: updatedPricing });
+    } catch (error) { res.status(500).json({ error: 'Failed to update pricing' }); }
+});
+
+// Visitor Link Resolver
+app.get('/api/link/:id', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
+        let rawId = extractCleanId(req.params.id);
+        let link = await Link.findOne(getLinkQuery(rawId)).lean();
+
+        if (!link && (rawId === 'default' || !rawId)) {
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+        }
+
+        if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
+
+        if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
+            return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
+        }
+
+        if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
+            const expTime = new Date(link.expiryDate).getTime();
+            if (expTime > 1000000000000 && Date.now() > expTime) {
+                return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
+            }
+        }
+
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const recentVisit = await VisitorActivity.findOne({
+            linkId: link.id,
+            visitorKey: visitorKey,
+            type: 'visit',
+            lastSeen: { $gte: twentyFourHoursAgo }
+        }).catch(() => null);
+
+        if (!recentVisit) {
+            const today = new Date().toISOString().split('T')[0];
+            Link.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
+            Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }).catch(() => {});
+        }
+
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
+            { $set: { lastSeen: new Date() } },
+            { upsert: true, new: true }
+        ).catch(() => {});
+
+        const popup = link.popupSettings || {};
+        const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
+        const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
+        const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
+        const isUidOn = (!isUidCheckDisabled(link.uidChecking)) && (!isGlobalOff);
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
+
+        res.json({
+            id: link.id,
+            linkId: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
+            userName: link.userName || link.name || '',
+            video: link.video || 'https://youtu.be/dQw4w9WgXcQ',
+            claim: link.claim || '#',
+            buttonText: link.buttonText || 'Claim Now',
+            headline: link.headline || '🎬 Watch Video & Unlock Reward',
+            status: link.status || 'active',
+            expiryDate: link.expiryDate || null,
+            uidChecking: isUidOn,
+            image: bannerImage,
+            popupImage: bannerImage,
+            popupImageUrl: bannerImage,
+            banner: bannerImage,
+            popupSettings: {
+                image: bannerImage,
+                title: popup.title || '🎁 Claim Your Reward',
+                buttonText: popup.buttonText || link.buttonText || 'Claim Now',
+                subtitle: popup.subtitle || 'Tap below to unlock your reward'
+            }
+        });
+    } catch (error) { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/submit-uid/:linkId', async (req, res) => {
+    try {
+        const { uid } = req.body;
+        const cleanUid = (uid || '').toString().trim();
+        if (!cleanUid || cleanUid.length < 5) return res.status(400).json({ error: 'Please enter a valid UID.' });
+        const link = await Link.findOne(getLinkQuery(req.params.linkId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
+            { $set: { lastSeen: new Date(), uid: cleanUid } },
+            { upsert: true, new: true }
+        ).catch(() => {});
+        res.json({ success: true, message: 'UID submitted successfully', uid: cleanUid });
+    } catch (error) { res.status(500).json({ error: 'Failed to submit UID' }); }
+});
+
+app.post('/api/track-claim/:linkId', async (req, res) => {
+    try {
+        const link = await Link.findOne(getLinkQuery(req.params.linkId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        const { ip, deviceKey } = getDeviceId(req);
+        const visitorKey = deviceKey || ip;
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const recentClaim = await VisitorActivity.findOne({
+            linkId: link.id,
+            visitorKey: visitorKey,
+            type: 'claim',
+            lastSeen: { $gte: twentyFourHoursAgo }
+        }).catch(() => null);
+
+        if (!recentClaim) {
+            const today = new Date().toISOString().split('T')[0];
+            link.claims = (link.claims || 0) + 1;
+            if (!link.dailyClaims) link.dailyClaims = new Map();
+            const currentDaily = link.dailyClaims.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims[today] || 0);
+            if (link.dailyClaims.set) link.dailyClaims.set(today, currentDaily + 1);
+            else link.dailyClaims[today] = currentDaily + 1;
+            await link.save().catch(() => {});
+            await Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
+        }
+
+        await VisitorActivity.findOneAndUpdate(
+            { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
+            { $set: { lastSeen: new Date() } },
+            { upsert: true, new: true }
+        ).catch(() => {});
+        res.json({ success: true, claims: link.claims || 0 });
+    } catch (error) { res.status(500).json({ error: 'Failed to track claim' }); }
+});
+
+app.get('/api/renewal/history/:linkId', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        const { linkId } = req.params;
+        const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 }).limit(7).lean();
+        res.json({ history, count: history.length });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch history' }); }
+});
+
+app.post('/api/renewal/request-from-dashboard', async (req, res) => {
+    try {
+        const { linkId, linkName, plan, days, amount } = req.body;
+        if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
+        const renewalRequest = new RenewalRequest({
+            id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+            linkId, 
+            linkName: linkName || 'Unknown Link', 
+            plan, 
+            days: days || 0, 
+            amount: amount || 0,
+            status: 'pending', 
+            createdAt: new Date()
+        });
+        await renewalRequest.save();
+        res.json({ success: true, requestId: renewalRequest.id });
+    } catch (error) { res.status(500).json({ error: 'Failed to create renewal request' }); }
+});
+
+app.get('/api/renewal/status/:linkId', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const { linkId } = req.params;
+        const request = await RenewalRequest.findOne({ linkId }).sort({ createdAt: -1 }).lean();
+        res.json({ hasRequest: !!request, request: request || null, status: request?.status || 'none' });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch status' }); }
+});
+
+app.get('/api/settings', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const admin = await User.findOne().lean();
+        const popupSettings = await PopupSettings.findOne().lean();
+        res.json({
+            theme: admin?.theme || 'dark',
+            background: popupSettings?.image || null,
+            popupSettings: popupSettings || {
+                image: null,
+                title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward'
+            },
+            adminEmail: admin?.email || '',
+            adminPhone: admin?.phone || ''
+        });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch settings' }); }
+});
+
+// User Auth Routes
+app.post('/api/user/signup', async (req, res) => {
+    try {
+        const { name, email, phone } = req.body;
+        if (!name || !email || !phone) return res.status(400).json({ error: 'All fields are required' });
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim();
+
+        const emailExists = await RenewalUser.findOne({ email: cleanEmail });
+        if (emailExists) return res.status(400).json({ error: 'This email is already registered.' });
+
+        const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
+        if (phoneExists) return res.status(400).json({ error: 'This phone number is already registered.' });
+
+        await RenewalUser.create({
+            name: name.trim(),
+            email: cleanEmail,
+            phone: cleanPhone,
+            status: 'pending'
+        });
+        res.json({ success: true, message: 'Signup submitted! Admin approval is pending.' });
+    } catch (e) { res.status(500).json({ error: 'Registration failed' }); }
+});
+
+app.post('/api/user/signin', async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        if (!email || !phone) return res.status(400).json({ error: 'Enter email and phone number' });
+        const user = await RenewalUser.findOne({ email: email.trim().toLowerCase(), phone: phone.trim() });
+        if (!user) return res.status(404).json({ error: 'User not found. Please click Sign Up.' });
+        if (user.status === 'pending') return res.status(403).json({ error: 'Account pending admin approval.' });
+        if (user.status === 'rejected') return res.status(403).json({ error: 'Account registration was rejected.' });
+        res.json({
+            success: true,
+            user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
+        });
+    } catch (e) { res.status(500).json({ error: 'Login failed' }); }
+});
+
+// =========================================================================
+// 👤 USER LINK DETAILS
+// =========================================================================
+app.post('/api/user/link-details', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        const { userName, linkInput, linkId, id, dashboardId } = req.body;
+        const cleanUser = (userName || '').trim();
+        const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+
+        let rawInput = linkInput || linkId || id || dashboardId || '';
+        let searchId = extractCleanId(rawInput);
+
+        const allUserLinks = await Link.find({ 
+            $or: [
+                { assignedUser: userRegex },
+                { userName: userRegex },
+                { creator: userRegex },
+                { name: userRegex }
+            ]
+        }).sort({ created: -1 }).lean();
+
+        const formattedUserLinks = allUserLinks.map(l => {
+            const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
+            return {
+                id: l.id,
+                name: lTitle,
+                title: lTitle,
+                linkName: lTitle,
+                status: l.status || 'active',
+                expiryDate: l.expiryDate || null
+            };
+        });
+
+        let link = null;
+        if (searchId && searchId !== cleanUser) {
+            link = await Link.findOne(getLinkQuery(searchId));
+        }
+        if (!link && allUserLinks.length > 0) {
+            link = allUserLinks[0];
+        }
+        if (!link && cleanUser) {
+            link = await Link.findOne({
+                $or: [
+                    { assignedUser: userRegex },
+                    { userName: userRegex },
+                    { creator: userRegex },
+                    { name: userRegex }
+                ]
+            }).sort({ created: -1 });
+        }
+        if (!link) {
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
+        }
+
+        if (!link) {
+            return res.status(404).json({ 
+                error: `No active link found for user "${cleanUser}".`,
+                userLinks: formattedUserLinks
+            });
+        }
+
+        if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
+            await Link.collection.updateOne({ _id: link._id }, { $set: { assignedUser: cleanUser, userName: cleanUser } });
+        }
+
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const entriesV = link.dailyVisits ? (link.dailyVisits instanceof Map ? Array.from(link.dailyVisits.entries()) : Object.entries(link.dailyVisits)) : [];
+        const entriesC = link.dailyClaims ? (link.dailyClaims instanceof Map ? Array.from(link.dailyClaims.entries()) : Object.entries(link.dailyClaims)) : [];
+
+        let vToday = 0, cToday = 0, v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
+
+        for (const [date, count] of entriesV) {
+            const d = new Date(date);
+            const cnt = parseInt(count) || 0;
+            if (date === today) vToday += cnt;
+            if (d >= oneDayAgo) v24h += cnt;
+            if (d >= sevenDaysAgo) v7d += cnt;
+            if (d >= thirtyDaysAgo) v30d += cnt;
+        }
+
+        for (const [date, count] of entriesC) {
+            const d = new Date(date);
+            const cnt = parseInt(count) || 0;
+            if (date === today) cToday += cnt;
+            if (d >= oneDayAgo) c24h += cnt;
+            if (d >= sevenDaysAgo) c7d += cnt;
+            if (d >= thirtyDaysAgo) c30d += cnt;
+        }
+
+        let daysLeft = 'Lifetime Active';
+        let isEligibleForRenewal = false;
+        if (link.expiryDate) {
+            const diffTime = new Date(link.expiryDate) - now;
+            daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 3) isEligibleForRenewal = true;
+        }
+
+        const lName = link.linkName || link.title || link.name || 'Untitled Campaign';
+        const pricingDoc = await Pricing.findOne().lean();
+        const isUidOn = !isUidCheckDisabled(link.uidChecking);
+
+        res.json({
+            success: true,
+            id: link.id,
+            linkId: link.id,
+            name: lName,
+            title: lName,
+            linkName: lName,
+            userName: link.userName || link.assignedUser || cleanUser,
+            link: {
+                id: link.id,
+                linkId: link.id,
+                name: lName,
+                title: lName,
+                linkName: lName,
+                userName: link.userName || link.assignedUser || cleanUser,
+                created: link.created,
+                expiryDate: link.expiryDate,
+                daysLeft,
+                isEligibleForRenewal,
+                todayVisits: vToday,
+                todayClaims: cToday,
+                v24h, c24h, v7d, c7d, v30d, c30d,
+                uidChecking: isUidOn
+            },
+            userLinks: formattedUserLinks,
+            pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+            paymentSettings: pricingDoc?.paymentSettings || { details: { upiId: 'admin@upi' } },
+            autoPaymentEnabled: false,
+            whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
+        });
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch link data' }); }
+});
+
+app.post('/api/user/renew-payment', async (req, res) => {
+    try {
+        const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
+        if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
+        await RenewalRequest.create({
+            id: 'req_' + Date.now(),
+            linkId,
+            linkName: linkName || userName || 'Unknown Link',
+            plan,
+            days: parseInt(days) || 30,
+            amount: parseInt(amount) || 0,
+            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(),
+            status: 'pending'
+        });
+        res.json({ success: true, message: 'Renewal request submitted. Admin will review and approve.' });
+    } catch (e) { res.status(500).json({ error: 'Payment processing error' }); }
+});
+
+// Short links for user dashboard
+app.get('/api/user/short-links', async (req, res) => {
+    try {
+        const { userName } = req.query;
+        const filter = userName ? { creator: userName } : {};
+        const links = await ShortLink.find(filter).sort({ createdAt: -1 }).lean();
+        res.json({ success: true, links });
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch short links' }); }
+});
+
+app.post('/api/user/short-links', async (req, res) => {
+    try {
+        const { originalUrl, title, userName, appOpen, appScheme } = req.body;
+        if (!originalUrl) return res.status(400).json({ error: 'URL required' });
+        const link = new ShortLink({
+            code: Math.random().toString(36).substring(2, 8),
+            originalUrl,
+            title: title || 'Untitled',
+            creator: userName || 'User',
+            appOpen: !!appScheme,
+            appScheme: appScheme || ''
+        });
+        await link.save();
+        res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
+    } catch(e) { res.status(500).json({ error: 'Failed to create short link' }); }
+});
+
+app.delete('/api/user/short-links/:id', async (req, res) => {
+    try {
+        await ShortLink.findByIdAndDelete(req.params.id);
+        await ShortLinkClick.deleteMany({ shortLinkId: req.params.id }).catch(() => {});
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: 'Failed to delete short link' }); }
+});
+
+// Admin User Management
+app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
+    try {
+        const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
+        const links = await Link.find().lean();
+        const usersWithStats = users.map(u => {
+            const cleanName = (u.name || '').toLowerCase().trim();
+            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName || (l.userName || '').toLowerCase().trim() === cleanName);
+            return { ...u, totalLinks: userLinks.length };
+        });
+        res.json({ success: true, users: usersWithStats, totalUsers: users.length });
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
+});
+
+app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
+    try {
+        await RenewalUser.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (e) { res.status(500).json({ error: 'Failed to delete user' }); }
+});
+
+app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
+    try {
+        const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
+        res.json({ success: true, users });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res) => {
+    try {
+        const { action } = req.body;
+        const user = await RenewalUser.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        user.status = action;
+        await user.save();
+        res.json({ success: true, message: `User ${action}!` });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Admin Renewal Settings & Requests
+app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
+    try {
+        const pricing = await Pricing.findOne().lean();
+        const requests = await RenewalRequest.find({ status: 'pending' }).sort({ createdAt: -1 }).lean();
+        res.json({ success: true, pricing, requests });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
+    try {
+        const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
+        const updateData = { autoPaymentEnabled: false };
+        if (pricing && typeof pricing === 'object') updateData.pricing = pricing;
+        if (paymentSettings) updateData.paymentSettings = paymentSettings;
+        if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
+        if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
+
+        const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
+        res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
+    } catch (e) { res.status(500).json({ error: 'Failed to save renewal settings' }); }
+});
+
+app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
+    try {
+        const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
+        if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
+        const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
+        if (link) {
+            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+            curExpiry.setDate(curExpiry.getDate() + (reqDoc.days || 30));
+            link.expiryDate = curExpiry;
+            link.status = 'active';
+            await link.save();
+        }
+        reqDoc.status = 'approved';
+        reqDoc.approvedAt = new Date();
+        await reqDoc.save();
+        res.json({ success: true, message: 'Renewal approved and link extended!' });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
+    try {
+        const requests = await RenewalRequest.find({ status: { $in: ['pending', 'paid'] } }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch renewal requests' }); }
+});
+
+app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const request = await RenewalRequest.findOne({ id: req.params.requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        const link = await Link.findOne(getLinkQuery(request.linkId));
+        if (link) {
+            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+            curExpiry.setDate(curExpiry.getDate() + (request.days || 30));
+            link.expiryDate = curExpiry;
+            link.status = 'active';
+            await link.save();
+        }
+        request.status = 'approved';
+        request.approvedAt = new Date();
+        await request.save();
+        res.json({ success: true, message: 'Renewal approved!' });
+    } catch (error) { res.status(500).json({ error: 'Failed to approve renewal' }); }
+});
+
+app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
+    try {
+        const request = await RenewalRequest.findOne({ id: req.params.requestId });
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        request.status = 'rejected';
+        await request.save();
+        res.json({ success: true, message: 'Renewal rejected successfully' });
+    } catch (error) { res.status(500).json({ error: 'Failed to reject renewal' }); }
+});
+
+app.delete('/api/renewal/request/:requestId', authMiddleware, async (req, res) => {
+    try {
+        await RenewalRequest.findOneAndDelete({ id: req.params.requestId });
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed to remove request' }); }
+});
+
+app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, res) => {
+    try {
+        await RenewalRequest.deleteMany({ status: { $ne: 'pending' } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Admin Passcode & Auth
+app.get('/api/admin/block-status', async (req, res) => {
+    try {
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            return res.json({
+                blocked: true,
+                isPermanent: true,
+                reason: blocked.reason || 'Permanent ban: 3 failed passcode attempts'
+            });
+        }
+        res.json({ blocked: false });
+    } catch (e) { res.json({ blocked: false }); }
+});
+
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { passcode } = req.body;
+        const cleanPass = (passcode || '').toString().trim();
+        if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
+
+        let admin = await User.findOne();
+        const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
+
+        if (!admin || !admin.passcode) {
+            const hashed = bcrypt.hashSync(activeEnvPass, 10);
+            admin = await User.create({
+                passcode: hashed,
+                lastEnvPasscode: activeEnvPass,
+                theme: 'dark',
+                email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || '',
+                secretKey: 'admin@2024'
+            });
+        } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
+            admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
+            admin.lastEnvPasscode = activeEnvPass;
+            await admin.save();
+        }
+
+        const isValid = verifyPasscode(cleanPass, admin.passcode);
+        if (isValid) {
+            const { deviceKey, fingerprint, ip } = getDeviceId(req);
+            const { deviceName, deviceType } = getDeviceDetails(req);
+            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+
+            if (Session) {
+                await Session.create({
+                    userId: 'admin',
+                    deviceKey, fingerprint, ip,
+                    userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
+                    deviceName, deviceType,
+                    isActive: true,
+                    lastActivity: new Date(),
+                    createdAt: new Date(),
+                    expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+                }).catch(() => {});
+            }
+
+            const jwtToken = generateToken('admin');
+            res.cookie('adminToken', jwtToken, { httpOnly: false, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
+            return res.json({ success: true, token: jwtToken });
+        }
+
+        const blocked = await isDeviceBlocked(req);
+        if (blocked) {
+            return res.status(403).json({
+                error: 'permanently_blocked',
+                message: '⛔ This device is permanently banned from accessing the admin portal.'
+            });
+        }
+
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
+        let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
+        if (!record) {
+            record = new BlockedDevice({
+                deviceKey, fingerprint, ip, deviceName, deviceType,
+                attempts: 1,
+                reason: 'Failed login attempt (1/3)',
+                lastAttempt: new Date()
+            });
+        } else {
+            record.attempts = (record.attempts || 0) + 1;
+            record.lastAttempt = new Date();
+        }
+
+        if (record.attempts >= 3) {
+            record.isPermanent = true;
+            record.reason = 'Permanent ban: 3 failed passcode attempts';
+            await record.save();
+            return res.status(403).json({
+                error: 'permanently_blocked',
+                message: '⛔ Your device has been permanently blocked due to 3 failed login attempts.'
+            });
+        } else {
+            record.reason = `Failed passcode attempt (${record.attempts}/3)`;
+            await record.save();
+            return res.status(401).json({ error: `Incorrect Passcode! Attempt ${record.attempts} of 3.` });
+        }
+    } catch (error) { res.status(500).json({ error: 'Server authentication error' }); }
+});
+
+app.post('/api/admin/logout', async (req, res) => {
+    try {
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+    } catch(e) {}
+    res.clearCookie('adminToken');
+    res.json({ success: true });
+});
+
+app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
+    try {
+        const { oldPasscode, newPasscode } = req.body;
+        const cleanOld = (oldPasscode || '').toString().trim();
+        const cleanNew = (newPasscode || '').toString().trim();
+        if (!cleanNew || cleanNew.length !== 6) return res.status(400).json({ error: 'New passcode must be 6 digits' });
+
+        const admin = await User.findOne();
+        if (!admin) return res.status(404).json({ error: 'Admin not found' });
+        if (!verifyPasscode(cleanOld, admin.passcode)) return res.status(401).json({ error: 'Current passcode is incorrect' });
+
+        admin.passcode = bcrypt.hashSync(cleanNew, 10);
+        admin.lastEnvPasscode = cleanNew;
+        await admin.save();
+        res.json({ success: true, message: 'Passcode changed successfully!' });
+    } catch (error) { res.status(500).json({ error: 'Passcode change failed' }); }
+});
+
+app.post('/api/admin/theme', authMiddleware, async (req, res) => {
+    try {
+        const admin = await User.findOne();
+        if (admin) { admin.theme = req.body.theme; await admin.save(); }
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed to update theme' }); }
+});
+
+app.post('/api/admin/background', authMiddleware, async (req, res) => {
+    try {
+        let popup = await PopupSettings.findOne();
+        if (!popup) popup = new PopupSettings();
+        if (req.body.background !== undefined) popup.image = req.body.background || null;
+        if (req.body.uidChecking !== undefined) {
+            popup.uidChecking = !isUidCheckDisabled(req.body.uidChecking);
+        }
+        await popup.save();
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed to update background' }); }
+});
+
+app.get('/api/admin/logs', authMiddleware, async (req, res) => {
+    try {
+        const logs = await AdminLog.find().sort({ timestamp: -1 }).limit(50);
+        res.json({ logs, count: logs.length });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch logs' }); }
+});
+
+app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
+    const admin = await User.findOne();
+    if (admin) {
+        if (req.body.email) admin.email = req.body.email;
+        if (req.body.phone) admin.phone = req.body.phone;
+        await admin.save();
+    }
+    res.json({ success: true });
+});
+
+// =========================================================================
+// 🎯 ADMIN LINKS CRUD
+// =========================================================================
+app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const links = await Link.find().sort({ created: -1 }).lean();
+        const formatted = links.map(l => {
+            const popup = l.popupSettings || {};
+            const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
+            const isUidOn = !isUidCheckDisabled(l.uidChecking);
+            
+            const userName = l.name || l.userName || l.assignedUser || 'User';
+            const linkName = l.linkName || l.title || 'Link';
+
+            return {
+                ...l,
+                name: userName,
+                userName: userName,
+                assignedUser: userName,
+                linkName: linkName,
+                title: linkName,
+                uidChecking: isUidOn,
+                image: img,
+                popupImage: img,
+                popupImageUrl: img,
+                banner: img,
+                popupSettings: { ...popup, image: img }
+            };
+        });
+        res.json(formatted);
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch links' }); }
+});
+
+app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
+    try {
+        const rawId = extractCleanId(req.params.id);
+        const l = await Link.findOne(getLinkQuery(rawId)).lean();
+        if (!l) return res.status(404).json({ error: 'Link not found' });
+        const popup = l.popupSettings || {};
+        const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
+        const isUidOn = !isUidCheckDisabled(l.uidChecking);
+        const userName = l.name || l.userName || l.assignedUser || 'User';
+        const linkName = l.linkName || l.title || 'Link';
+        res.json({
+            ...l,
+            name: userName,
+            userName: userName,
+            linkName: linkName,
+            title: linkName,
+            uidChecking: isUidOn,
+            image: img,
+            popupImage: img,
+            popupImageUrl: img,
+            banner: img,
+            popupSettings: { ...popup, image: img }
+        });
+    } catch (e) { res.status(500).json({ error: 'Failed to fetch link' }); }
+});
+
+app.post('/api/links', authMiddleware, async (req, res) => {
+    try {
+        const cleanUserName = (req.body.name || req.body.userName || req.body.cCampaignName || 'User').trim();
+        const cleanLinkName = (req.body.linkName || req.body.title || req.body.cLinkName || 'Link').trim();
+        const cleanVideo = (req.body.video || req.body.videoUrl || req.body.url || 'https://youtu.be/dQw4w9WgXcQ').trim();
+        const cleanClaim = (req.body.claim || req.body.claimUrl || req.body.claimLink || '#').trim();
+        const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
+        const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
+
+        let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
+        const cleanUidChecking = incomingUidVal !== undefined ? !isUidCheckDisabled(incomingUidVal) : true;
+
+        const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate;
+        const cleanExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime()) ? new Date(rawExpiry) : null;
+
+        let incomingImage = req.body.popupImage || req.body.image || req.body.banner || req.body.popupSettings?.image;
+        const finalBanner = incomingImage && incomingImage.trim().length > 4 ? incomingImage.trim() : null;
+
+        const finalPopup = {
+            title: req.body.popupSettings?.title || req.body.popupTitle || '🎁 Claim Your Reward',
+            subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
+            buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || cleanButtonText,
+            image: finalBanner
+        };
+
+        const newLink = new Link({
+            id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
+            name: cleanUserName,
+            userName: cleanUserName,
+            assignedUser: cleanUserName,
+            creator: cleanUserName,
+            linkName: cleanLinkName,
+            title: cleanLinkName,
+            video: cleanVideo,
+            claim: cleanClaim,
+            buttonText: cleanButtonText,
+            headline: cleanHeadline,
+            expiryDate: cleanExpiry,
+            uidChecking: cleanUidChecking,
+            status: 'active',
+            image: finalBanner,
+            popupImage: finalBanner,
+            popupImageUrl: finalBanner,
+            banner: finalBanner,
+            popupSettings: finalPopup
+        });
+
+        await newLink.save();
+        await Link.collection.updateOne(
+            { _id: newLink._id },
+            { $set: { 
+                name: cleanUserName, 
+                userName: cleanUserName, 
+                assignedUser: cleanUserName, 
+                creator: cleanUserName, 
+                linkName: cleanLinkName, 
+                title: cleanLinkName, 
+                uidChecking: cleanUidChecking 
+            }}
+        );
+
+        res.json({
+            ...newLink.toObject(),
+            name: cleanUserName,
+            userName: cleanUserName,
+            linkName: cleanLinkName,
+            title: cleanLinkName,
+            uidChecking: cleanUidChecking,
+            image: finalBanner,
+            popupSettings: finalPopup
+        });
+    } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
+});
+
+async function handleLinkUpdate(req, res) {
+    try {
+        let rawId = req.params.id;
+        if (!rawId || ['undefined', 'null', 'update', 'edit', 'save'].includes(rawId)) {
+            rawId = req.body.id || req.body.linkId || req.body._id;
+        }
+        const cleanId = extractCleanId(rawId);
+        const query = getLinkQuery(cleanId);
+        const link = await Link.findOne(query);
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+
+        if (req.path.includes('toggle') || req.body.action === 'toggle' || req.body.toggle === true) {
+            const newVal = !(!isUidCheckDisabled(link.uidChecking));
+            link.uidChecking = newVal;
+            await link.save();
+            await Link.collection.updateMany(query, { $set: { uidChecking: newVal } });
+            return res.json({ success: true, uidChecking: newVal, message: `UID checking set to ${newVal ? 'ON' : 'OFF'}` });
+        }
+
+        const updateData = {};
+
+        if (req.body.name !== undefined && req.body.name !== null && req.body.name.toString().trim() !== '') {
+            const uName = req.body.name.toString().trim();
+            updateData.name = uName;
+            updateData.userName = uName;
+            updateData.assignedUser = uName;
+            updateData.creator = uName;
+        }
+
+        const incomingLinkName = req.body.linkName ?? req.body.title ?? req.body.linkTitle ?? req.body.campaignName;
+        if (incomingLinkName !== undefined && incomingLinkName !== null && incomingLinkName.toString().trim() !== '') {
+            const lTitle = incomingLinkName.toString().trim();
+            updateData.linkName = lTitle;
+            updateData.title = lTitle;
+        }
+
+        const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
+        if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
+
+        const incomingClaim = req.body.claim ?? req.body.claimUrl ?? req.body.claimLink;
+        if (incomingClaim !== undefined) updateData.claim = incomingClaim.trim();
+
+        const incomingBtn = req.body.buttonText ?? req.body.btnText;
+        if (incomingBtn !== undefined) updateData.buttonText = incomingBtn.trim();
+
+        const incomingHeadline = req.body.headline ?? req.body.heading;
+        if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
+
+        if (req.body.status !== undefined) updateData.status = req.body.status;
+
+        let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
+        if (incomingUidVal !== undefined) {
+            updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
+        } else if (req.body.isEditForm || (req.body.name && req.body.video)) {
+            updateData.uidChecking = false;
+        }
+
+        const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
+        if (incomingExpiry !== undefined) {
+            updateData.expiryDate = (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) ? new Date(incomingExpiry) : null;
+        }
+
+        let incomingImage = req.body.popupImage ?? req.body.image ?? req.body.banner ?? req.body.popupSettings?.image;
+        const currentPopup = link.popupSettings || {};
+        const newPopup = {
+            title: req.body.popupSettings?.title || req.body.popupTitle || currentPopup.title || '🎁 Claim Your Reward',
+            subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || currentPopup.subtitle || 'Tap below to unlock your reward',
+            buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || currentPopup.buttonText || 'Claim Now',
+            image: currentPopup.image || null
+        };
+
+        if (incomingImage !== undefined) {
+            const cleanImg = (incomingImage || '').trim();
+            const finalImg = cleanImg.length > 4 ? cleanImg : null;
+            newPopup.image = finalImg;
+            updateData.image = finalImg;
+            updateData.popupImage = finalImg;
+            updateData.popupImageUrl = finalImg;
+            updateData.banner = finalImg;
+        }
+        updateData.popupSettings = newPopup;
+
+        await Link.collection.updateMany(query, { $set: updateData });
+        if (mongoose.connection?.db) {
+            await mongoose.connection.db.collection('links').updateMany(query, { $set: updateData });
+        }
+
+        if (updateData.linkName) {
+            await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.linkName } }).catch(() => {});
+        }
+
+        const updatedDoc = await Link.findOne(query).lean();
+        const effectiveUserName = updatedDoc.name || updatedDoc.userName || 'User';
+        const effectiveLinkName = updatedDoc.linkName || updatedDoc.title || 'Link';
+        const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedDoc.uidChecking);
+
+        const responseObj = {
+            success: true,
+            ...updatedDoc,
+            id: updatedDoc.id,
+            name: effectiveUserName,
+            userName: effectiveUserName,
+            linkName: effectiveLinkName,
+            title: effectiveLinkName,
+            uidChecking: finalUidState,
+            image: newPopup.image,
+            popupImage: newPopup.image,
+            popupImageUrl: newPopup.image,
+            banner: newPopup.image,
+            popupSettings: newPopup,
+            link: {
+                ...updatedDoc,
+                id: updatedDoc.id,
+                name: effectiveLinkName,
+                userName: effectiveUserName,
+                title: effectiveLinkName,
+                linkName: effectiveLinkName,
+                uidChecking: finalUidState,
+                image: newPopup.image,
+                popupSettings: newPopup
+            }
+        };
+
+        res.json(responseObj);
+    } catch (e) { res.status(500).json({ error: 'Failed to update link' }); }
+}
+
+app.put(['/api/links/:id', '/api/link/:id', '/api/links/update/:id', '/api/links/update'], authMiddleware, handleLinkUpdate);
+app.post(['/api/links/:id', '/api/link/:id', '/api/links/update/:id', '/api/links/update', '/api/link/update'], authMiddleware, handleLinkUpdate);
+app.patch(['/api/links/:id', '/api/link/:id'], authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/uid-checking', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/toggle-uid', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/uid', authMiddleware, handleLinkUpdate);
+app.all('/api/links/:id/toggle', authMiddleware, handleLinkUpdate);
+
+app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const rawId = extractCleanId(req.params.id);
+        const link = await Link.findOneAndUpdate(getLinkQuery(rawId), { status: req.body.status }, { new: true });
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        res.json(link);
+    } catch (error) { res.status(500).json({ error: 'Failed to update status' }); }
+});
+
+app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
+    try {
+        const query = getLinkQuery(extractCleanId(req.params.id));
+        await Link.deleteMany(query);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed to delete link' }); }
+});
+
+app.get('/api/search-links', authMiddleware, async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) return res.json({ links: [] });
+        const searchRegex = new RegExp(query, 'i');
+        const links = await Link.find({
+            $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
+        }).limit(20);
+        res.json({ links });
+    } catch (error) { res.status(500).json({ error: 'Failed to search links' }); }
+});
+
+app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
+    try {
+        const cleanId = extractCleanId(req.body.linkId);
+        const link = await Link.findOne(getLinkQuery(cleanId));
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
+        link.dashboardId = dashboardId;
+        await link.save();
+        const lName = link.linkName || link.title || link.name || 'Untitled Link';
+        res.json({ 
+            success: true, 
+            dashboardId, 
+            dashboardUrl: '/user-dashboard/' + dashboardId, 
+            fullUrl: `${req.protocol}://${req.get('host')}/user-dashboard/${dashboardId}`, 
+            linkName: lName, 
+            linkId: link.id 
+        });
+    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
+});
+
+// Admin All Stats
+app.get('/api/all-stats', authMiddleware, async (req, res) => {
+    try {
+        const links = await Link.find().lean();
+        const today = new Date().toISOString().split('T')[0];
+        let totV = 0, totC = 0, todayV = 0, todayC = 0;
+
+        links.forEach(l => {
+            totV += (l.visits || 0);
+            totC += (l.claims || 0);
+            if (l.dailyVisits) {
+                const dv = l.dailyVisits instanceof Map ? l.dailyVisits.get(today) : l.dailyVisits[today];
+                todayV += parseInt(dv) || 0;
+            }
+            if (l.dailyClaims) {
+                const dc = l.dailyClaims instanceof Map ? l.dailyClaims.get(today) : l.dailyClaims[today];
+                todayC += parseInt(dc) || 0;
+            }
+        });
+
+        const activeWatching = await VisitorActivity.countDocuments({
+            type: 'visit',
+            lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
+        }).catch(() => 0);
+
+        const activeClaiming = await VisitorActivity.countDocuments({
+            type: 'claim',
+            lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+        }).catch(() => 0);
+
+        res.json({
+            global: {
+                totalVisitors: totV,
+                totalClaims: totC,
+                todayVisitors: todayV,
+                todayClaims: todayC,
+                activeNow: activeWatching,
+                activeClaims: activeClaiming
+            },
+            links: links.map(l => ({
+                ...l,
+                name: l.name || l.userName || 'User',
+                userName: l.name || l.userName || 'User',
+                linkName: l.linkName || l.title || 'Link',
+                title: l.linkName || l.title || 'Link',
+                uidChecking: !isUidCheckDisabled(l.uidChecking)
+            }))
+        });
+    } catch(e) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+});
+
+// Device Security Routes
+app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
+    const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
+    res.json({ success: true, devices });
+});
+
+app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
+    try {
+        await BlockedDevice.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Device unblocked' });
+    } catch(e) { res.status(500).json({ error: 'Failed to unblock' }); }
+});
+
+app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
+    try {
+        const dev = await BlockedDevice.findById(req.params.id);
+        if (dev) {
+            dev.isPermanent = true;
+            dev.reason = req.body.reason || 'Permanent ban by admin';
+            await dev.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
+    try {
+        await BlockedDevice.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed to delete device record' }); }
+});
+
+app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
+    try {
+        const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
+        res.json({ success: true, sessions });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch active sessions' }); }
+});
+
+app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
+    try {
+        await Session.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: 'Session terminated' });
+    } catch (e) { res.status(500).json({ error: 'Failed to terminate session' }); }
+});
+
+app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
+    try {
+        const session = await Session.findById(req.params.id);
+        if (session) {
+            await BlockedDevice.create({
+                ip: session.ip || '127.0.0.1',
+                deviceKey: session.deviceKey || crypto.randomBytes(16).toString('hex'),
+                fingerprint: session.fingerprint || crypto.randomBytes(16).toString('hex'),
+                deviceName: session.deviceName || 'Admin Device',
+                deviceType: session.deviceType || 'Desktop',
+                attempts: 3,
+                isPermanent: true,
+                reason: 'Terminated & blocked by admin',
+                lastAttempt: new Date()
+            });
+            await Session.findByIdAndDelete(req.params.id);
+        }
+        res.json({ success: true, message: 'Device blocked permanently' });
+    } catch (e) { res.status(500).json({ error: 'Failed to block device' }); }
+});
+
+// Short Link Operations
+app.get('/s/:code', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const link = await ShortLink.findOne({ code: req.params.code });
+    if (!link) return res.status(404).send('Not found');
+    link.visits = (link.visits || 0) + 1;
+    await link.save();
+
+    const { ip, userAgent } = getDeviceId(req);
+    const { deviceName, deviceType } = getDeviceDetails(req);
+    await ShortLinkClick.create({
+        shortLinkId: link._id, ip, userAgent, deviceName, deviceType,
+        referer: req.headers.referer || null
+    });
+
+    if (link.appOpen && link.appScheme) return res.redirect(link.appScheme);
+
+    try {
+        const orig = link.originalUrl || '';
+        if (orig.includes('/uid') || orig.includes('link=')) {
+            const cleanId = extractCleanId(orig);
+            if (cleanId) {
+                const targetLink = await Link.findOne(getLinkQuery(cleanId)).lean();
+                if (targetLink && isUidCheckDisabled(targetLink.uidChecking)) {
+                    return res.redirect('/v/' + encodeURIComponent(targetLink.id || cleanId));
+                }
+            }
+        }
+    } catch(err) {}
+
+    res.redirect(link.originalUrl);
+});
+
+app.get('/api/short-links', authMiddleware, async (req, res) => {
+    const links = await ShortLink.find().sort({ createdAt: -1 });
+    res.json({ success: true, links });
+});
+
+app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
+    try {
+        const link = await ShortLink.findById(req.params.id);
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        const clicks = await ShortLinkClick.find({ shortLinkId: req.params.id }).sort({ timestamp: -1 }).limit(100);
+        res.json({ success: true, link, clicks, totalClicks: link.visits || 0 });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch analytics' }); }
+});
+
+app.post('/api/short-links', authMiddleware, async (req, res) => {
+    const { originalUrl, title, appOpen, appScheme } = req.body;
+    const link = new ShortLink({
+        code: Math.random().toString(36).substring(2, 8),
+        originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || ''
+    });
+    await link.save();
+    res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
+});
+
+app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
+    try {
+        const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json({ success: true, link });
+    } catch (error) { res.status(500).json({ error: 'Failed to update short link' }); }
+});
+
+app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
+    await ShortLink.findByIdAndDelete(req.params.id);
+    await ShortLinkClick.deleteMany({ shortLinkId: req.params.id });
+    res.json({ success: true });
+});
+
+app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
+    try {
+        const totalLinks = await ShortLink.countDocuments();
+        const activeLinks = await ShortLink.countDocuments({ status: 'active' });
+        const totalClicks = await ShortLink.aggregate([{ $group: { _id: null, total: { $sum: '$visits' } } }]);
+        res.json({
+            success: true,
+            stats: {
+                totalLinks,
+                activeLinks,
+                totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0
+            }
+        });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+});
+
+// File Serving Utilities
+function sendAppFile(res, ...fileNames) {
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) return res.sendFile(p);
+        }
+    }
+    res.status(404).send(`File not found`);
+}
+
+function sendUidCheckerFile(res, targetLinkId) {
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    const fileNames = ['uid-checker.html', 'uid.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    const guardScript = `
+<script>
+(function() {
+    try {
+        var p = new URLSearchParams(window.location.search);
+        var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
+        if (!lid) {
+            var parts = window.location.pathname.split('/');
+            var last = parts[parts.length - 1];
+            if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last;
+        }
+        if (lid) {
+            fetch('/api/link/' + encodeURIComponent(lid))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) {
+                    window.location.replace('/v/' + encodeURIComponent(d.id || lid));
+                }
+            }).catch(function(){});
+        }
+    } catch(e) {}
+})();
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + guardScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + guardScript);
+                    } else {
+                        content = guardScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) { return res.sendFile(p); }
+            }
+        }
+    }
+    res.status(404).send('File not found: uid-checker.html');
+}
+
+function sendVideoLockFile(res, targetLinkId) {
+    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    const fileNames = ['video-lock.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    const preVerifyScript = `
+<script>
+window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
+try {
+    sessionStorage.setItem('player_uid', 'verified');
+    sessionStorage.setItem('uid_verified', 'true');
+    localStorage.setItem('player_uid', 'verified');
+    localStorage.setItem('uid_verified', 'true');
+} catch(e) {}
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + preVerifyScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + preVerifyScript);
+                    } else {
+                        content = preVerifyScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) { return res.sendFile(p); }
+            }
+        }
+    }
+    res.status(404).send('File not found: video-lock.html');
+}
+
+app.get('/admin/login.html', async (req, res) => {
+    const blocked = await isDeviceBlocked(req);
+    if (blocked) {
+        return res.send(`
+            <!DOCTYPE html><html><head><title>Access Blocked</title>
+            <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
+            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 0 50px rgba(239,68,68,0.2);}
+            h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
+            p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
+            <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
+            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Contact the administrator to unblock your device.</p></div></body></html>
+        `);
+    }
+    sendAppFile(res, 'login.html', 'admin/login.html');
+});
+
+app.get('/', async (req, res) => {
+    let rawParam = (req.query.link || req.query.id || req.query.l || '').toString().trim();
+    if (rawParam) {
+        let cleanId = extractCleanId(rawParam);
+        if (cleanId) {
+            const link = await Link.findOne(getLinkQuery(cleanId)).lean();
+            if (link && isUidCheckDisabled(link.uidChecking)) {
+                return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
+            } else if (link) {
+                return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
+            }
+        }
+    }
+    res.redirect('/admin/secret-gateway');
+});
+
+app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
+app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
+    const token = req.cookies?.adminToken;
+    if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
+    sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
+});
+
+app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    let cleanId = '';
+    try {
+        let rawParam = (req.query.link || req.query.id || req.query.l || req.query.linkId || req.params.id || '').toString().trim();
+        cleanId = extractCleanId(rawParam);
+        let link = cleanId ? await Link.findOne(getLinkQuery(cleanId)).lean() : null;
+        if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+
+        const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
+        const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
+        const isLinkOff = link && isUidCheckDisabled(link.uidChecking);
+
+        if (isLinkOff || isGlobalOff) {
+            const targetId = (link && link.id) ? link.id : (cleanId || 'default');
+            return res.redirect('/v/' + encodeURIComponent(targetId));
+        }
+    } catch(err) {}
+
+    sendUidCheckerFile(res, cleanId);
+});
+
+app.get('/v/:id', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const cleanId = extractCleanId(req.params.id);
+    sendVideoLockFile(res, cleanId);
+});
+
+app.get(['/user-dashboard', '/user-dashboard/:id?'], (req, res) => sendAppFile(res, 'user-dashboard.html'));
+app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
+app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
+
+setInterval(async () => {
+    try {
+        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+    } catch (error) { console.error('Cleanup error:', error); }
+}, 60 * 60 * 1000);
+
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
