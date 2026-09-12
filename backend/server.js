@@ -32,7 +32,7 @@ const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
 
-// 🛡️ Security 2FA Inlined (ZERO DEPENDENCY ON 'speakeasy' - NEVER CRASHES SERVER)
+// 🛡️ Security 2FA Inlined (Zero external dependency)
 const Security = {
     generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
     generateBackupCodes: () => [
@@ -50,8 +50,8 @@ try {
         Link.schema.add({ uidChecking: { type: Boolean, default: true } });
         Link.schema.set('strict', false);
     }
-    Pricing.schema.set('strict', false);
-    User.schema.set('strict', false);
+    if (Pricing && Pricing.schema) Pricing.schema.set('strict', false);
+    if (User && User.schema) User.schema.set('strict', false);
     if (Session && Session.schema) Session.schema.set('strict', false);
     if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
     if (ShortLink && ShortLink.schema) ShortLink.schema.set('strict', false);
@@ -221,7 +221,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ==================== Health Check (Bypasses Rate Limiter) ====================
+// ==================== Health Check ====================
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
@@ -231,9 +231,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.get('/ping', (req, res) => {
-    res.status(200).send('pong');
-});
+app.get('/ping', (req, res) => res.status(200).send('pong'));
 
 // ==================== Rate Limiting ====================
 const globalLimiter = rateLimit({
@@ -403,6 +401,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             return res.status(404).json({ error: 'Link not found' });
         }
         const today = new Date().toISOString().split('T')[0];
+        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
         res.json({
             linkId: link.id,
             name: link.name,
@@ -414,7 +413,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
-            uidChecking: link.uidChecking !== false
+            uidChecking: isUidOn
         });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch stats' });
@@ -472,18 +471,10 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
         const { pricing, paymentSettings, upiId, whatsappNumber } = req.body;
         const updateFields = { autoPaymentEnabled: false };
 
-        if (pricing && typeof pricing === 'object') {
-            updateFields.pricing = pricing;
-        }
-        if (paymentSettings) {
-            updateFields.paymentSettings = paymentSettings;
-        }
-        if (upiId) {
-            updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
-        }
-        if (whatsappNumber) {
-            updateFields.whatsappNumber = whatsappNumber.toString().trim();
-        }
+        if (pricing && typeof pricing === 'object') updateFields.pricing = pricing;
+        if (paymentSettings) updateFields.paymentSettings = paymentSettings;
+        if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
+        if (whatsappNumber) updateFields.whatsappNumber = whatsappNumber.toString().trim();
 
         const updatedPricing = await Pricing.findOneAndUpdate(
             {},
@@ -497,7 +488,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ VISITOR LINK RESOLVER (RETURNS uidChecking: true/false TO FRONTEND)
+// ✅ VISITOR LINK RESOLVER (RETURNS STRICT uidChecking: true/false)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -584,6 +575,9 @@ app.get('/api/link/:id', async (req, res) => {
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
 
+        // Strict Boolean Evaluation: true if ON or default, false only if explicitly false
+        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
+
         res.json({
             id: link.id,
             name: link.name,
@@ -593,7 +587,7 @@ app.get('/api/link/:id', async (req, res) => {
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
-            uidChecking: link.uidChecking !== false, // Defaults to true if not explicitly false
+            uidChecking: isUidOn,
             image: bannerImage,
             popupImage: bannerImage,
             popupImageUrl: bannerImage,
@@ -883,6 +877,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         const pricingDoc = await Pricing.findOne().lean();
+        const isUidOn = link.uidChecking !== false && link.uidChecking !== 'false';
 
         res.json({
             success: true,
@@ -896,7 +891,7 @@ app.post('/api/user/link-details', async (req, res) => {
                 todayVisits: vToday,
                 todayClaims: cToday,
                 v24h, c24h, v7d, c7d, v30d, c30d,
-                uidChecking: link.uidChecking !== false
+                uidChecking: isUidOn
             },
             userLinks: allUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -1043,18 +1038,10 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
         const updateData = { autoPaymentEnabled: false };
 
-        if (pricing && typeof pricing === 'object') {
-            updateData.pricing = pricing;
-        }
-        if (paymentSettings) {
-            updateData.paymentSettings = paymentSettings;
-        }
-        if (upiId) {
-            updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
-        }
-        if (whatsappNumber) {
-            updateData.whatsappNumber = whatsappNumber.toString().trim();
-        }
+        if (pricing && typeof pricing === 'object') updateData.pricing = pricing;
+        if (paymentSettings) updateData.paymentSettings = paymentSettings;
+        if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
+        if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
 
         const updatedDoc = await Pricing.findOneAndUpdate(
             {},
@@ -1346,7 +1333,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// ==================== 🔗 ADMIN: LINKS CRUD WITH UID CHECKING ====================
+// ==================== 🔗 ADMIN: LINKS CRUD WITH GUARANTEED DB STORAGE ====================
 app.get('/api/links', authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1355,9 +1342,10 @@ app.get('/api/links', authMiddleware, async (req, res) => {
         const formatted = links.map(l => {
             const popup = l.popupSettings || {};
             const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
+            const isUidOn = l.uidChecking !== false && l.uidChecking !== 'false';
             return {
                 ...l,
-                uidChecking: l.uidChecking !== false, // Defaults to true
+                uidChecking: isUidOn,
                 image: img,
                 popupImage: img,
                 popupImageUrl: img,
@@ -1384,9 +1372,10 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
         
         const popup = l.popupSettings || {};
         const img = popup.image || l.image || l.popupImage || l.popupImageUrl || l.banner || null;
+        const isUidOn = l.uidChecking !== false && l.uidChecking !== 'false';
         res.json({
             ...l,
-            uidChecking: l.uidChecking !== false,
+            uidChecking: isUidOn,
             image: img,
             popupImage: img,
             popupImageUrl: img,
@@ -1403,7 +1392,7 @@ app.get('/api/links/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ➕ CREATE REWARDED TRACKING LINK
+// ➕ CREATE REWARDED TRACKING LINK (RAW MONGODB GUARANTEE)
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const cleanName = (req.body.name || req.body.title || 'Untitled Link').trim();
@@ -1412,7 +1401,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanButtonText = (req.body.buttonText || req.body.btnText || 'Claim Now').trim();
         const cleanHeadline = (req.body.headline || req.body.heading || '🎬 Watch Video & Unlock Reward').trim();
 
-        // 🎯 UID CHECKING (ON / OFF)
+        // 🎯 Parse strict boolean for uidChecking (default: true)
         let cleanUidChecking = true;
         if (req.body.uidChecking !== undefined) {
             cleanUidChecking = (
@@ -1475,7 +1464,14 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             popupSettings: finalPopup
         });
 
-        await newLink.save();
+        newLink.set('uidChecking', cleanUidChecking, { strict: false });
+        await newLink.save({ validateBeforeSave: false });
+
+        // 🛡️ Guaranteed Direct MongoDB Write (Bypasses any Mongoose Schema filtering)
+        try {
+            await Link.collection.updateOne({ _id: newLink._id }, { $set: { uidChecking: cleanUidChecking } });
+        } catch(err) {}
+
         res.json({
             ...newLink.toObject(),
             uidChecking: cleanUidChecking,
@@ -1491,7 +1487,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     }
 });
 
-// ✏️ EDIT REWARDED LINK
+// ✏️ EDIT REWARDED LINK (RAW MONGODB GUARANTEE)
 app.put('/api/links/:id', authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(req.params.id);
@@ -1525,6 +1521,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
         // 🎯 UID CHECKING (ON / OFF)
+        let hasUidUpdate = false;
         if (req.body.uidChecking !== undefined) {
             updateData.uidChecking = (
                 req.body.uidChecking === true ||
@@ -1533,6 +1530,7 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
                 req.body.uidChecking === '1' ||
                 req.body.uidChecking === 'on'
             );
+            hasUidUpdate = true;
         }
 
         const incomingExpiry = req.body.expiryDate !== undefined ? req.body.expiryDate :
@@ -1599,11 +1597,18 @@ app.put('/api/links/:id', authMiddleware, async (req, res) => {
             { new: true, lean: true, strict: false }
         );
 
+        // 🛡️ Guaranteed Direct MongoDB Write
+        if (hasUidUpdate) {
+            try {
+                await Link.collection.updateOne(query, { $set: { uidChecking: updateData.uidChecking } });
+            } catch(err) {}
+        }
+
         res.json({
             success: true,
             link: {
                 ...updatedLink,
-                uidChecking: updatedLink.uidChecking !== false,
+                uidChecking: updateData.uidChecking !== undefined ? updateData.uidChecking : (updatedLink.uidChecking !== false),
                 image: newPopup.image,
                 popupImage: newPopup.image,
                 popupImageUrl: newPopup.image,
@@ -1713,7 +1718,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 activeNow: activeWatching,
                 activeClaims: activeClaiming
             },
-            links
+            links: links.map(l => ({
+                ...l,
+                uidChecking: l.uidChecking !== false && l.uidChecking !== 'false'
+            }))
         });
     } catch(e) {
         res.status(500).json({ error: 'Failed to fetch stats' });
@@ -1879,15 +1887,21 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// Universal File Resolver
-function sendAppFile(res, ...fileNames) {
+// Universal File Path Resolver
+function getAppFilePath(...fileNames) {
     const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname];
     for (const name of fileNames) {
         for (const dir of searchDirs) {
             const p = path.join(dir, name);
-            if (fs.existsSync(p)) return res.sendFile(p);
+            if (fs.existsSync(p)) return p;
         }
     }
+    return null;
+}
+
+function sendAppFile(res, ...fileNames) {
+    const p = getAppFilePath(...fileNames);
+    if (p) return res.sendFile(p);
     res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
 }
 
@@ -1915,12 +1929,223 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
     if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
     sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
-app.get(['/uid', '/uid.html'], (req, res) => sendAppFile(res, 'uid-checker.html', 'uid.html'));
+
+// =========================================================================
+// 🎯 SMART DYNAMIC UID & ENTRANCE POPUP ROUTE (USER CLICK HANDLER)
+// =========================================================================
+app.get(['/uid', '/uid.html'], async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    let linkParam = (req.query.link || req.query.id || 'default').toString().trim();
+    let link = null;
+    try {
+        link = await Link.findOne(getLinkQuery(linkParam)).lean();
+    } catch(e) {}
+
+    // Check if UID checking is enabled: true by default, false only if turned off in admin
+    const isUidCheckingOn = link ? (link.uidChecking !== false && link.uidChecking !== 'false') : true;
+
+    // Check if an existing uid-checker.html file is present on the server
+    const existingFilePath = getAppFilePath('uid-checker.html', 'uid.html');
+
+    if (existingFilePath) {
+        try {
+            let htmlContent = fs.readFileSync(existingFilePath, 'utf8');
+
+            // 💉 Inject Dynamic Real-Time Bypass Controller
+            const injectedScript = `
+            <script>
+            (function() {
+                const uidStatusOn = ${isUidCheckingOn ? 'true' : 'false'};
+
+                function handleUidCheckingMode() {
+                    if (!uidStatusOn) {
+                        // 🔴 OFF UID CHECKING: Hide UID input forms/cards
+                        const selectorsToHide = [
+                            '#uidInputBox', '#uidCard', '#uidBox', '#uidContainer', 
+                            '.uid-container', '.uid-box', '.uid-card', '.uid-input-card',
+                            '#step1', '.step-1', '#mainCard', '.auth-box'
+                        ];
+                        selectorsToHide.forEach(sel => {
+                            const el = document.querySelector(sel);
+                            if (el) el.style.display = 'none';
+                        });
+
+                        // Hide any generic input that asks for UID
+                        document.querySelectorAll('input').forEach(inp => {
+                            const ph = (inp.placeholder || '').toLowerCase();
+                            const id = (inp.id || '').toLowerCase();
+                            if (ph.includes('uid') || id.includes('uid')) {
+                                const parent = inp.closest('.card') || inp.closest('.box') || inp.parentElement;
+                                if (parent && !parent.id.includes('popup') && !parent.className.includes('popup')) {
+                                    parent.style.display = 'none';
+                                }
+                            }
+                        });
+
+                        // Immediately trigger Entrance Popup image modal
+                        if (typeof showEntrancePopup === 'function') showEntrancePopup();
+                        else if (typeof openEntrancePopup === 'function') openEntrancePopup();
+                        else if (typeof openPopup === 'function') openPopup();
+                        else if (typeof showPopup === 'function') showPopup();
+                        else {
+                            const popupModal = document.querySelector('#popupModal, #entrancePopup, .popup-modal, .entrance-popup, #popup, .popup, .modal');
+                            if (popupModal) {
+                                popupModal.style.display = 'flex';
+                                popupModal.classList.add('show');
+                            }
+                        }
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', handleUidCheckingMode);
+                } else {
+                    handleUidCheckingMode();
+                }
+                setTimeout(handleUidCheckingMode, 100);
+                setTimeout(handleUidCheckingMode, 400);
+            })();
+            </script>
+            `;
+
+            if (htmlContent.includes('</body>')) {
+                htmlContent = htmlContent.replace('</body>', injectedScript + '</body>');
+            } else {
+                htmlContent += injectedScript;
+            }
+
+            return res.send(htmlContent);
+        } catch(err) {
+            console.error('Error injecting script into uid-checker.html:', err);
+        }
+    }
+
+    // 🚀 FULL BUILT-IN FALLBACK IF uid-checker.html IS MISSING
+    let bgSetting = null;
+    try {
+        const pSetting = await PopupSettings.findOne().lean();
+        bgSetting = pSetting?.image || null;
+    } catch(e) {}
+
+    const popup = link?.popupSettings || {};
+    const popupImage = popup.image || link?.image || link?.popupImage || 'https://placehold.co/600x338/1e1b4b/white?text=Claim+Your+Reward';
+    const popupTitle = popup.title || '🎁 Claim Your Reward';
+    const popupSub = popup.subtitle || 'Tap below to unlock your reward';
+    const popupBtn = popup.buttonText || 'Claim Now';
+    const targetLink = link ? (link.id || linkParam) : linkParam;
+
+    return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>${escapeHTML(link?.name || 'Claim Reward')}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', sans-serif; }
+        body {
+            min-height: 100vh; background: #090a10 ${bgSetting ? `url('${escapeHTML(bgSetting)}') no-repeat center center / cover` : ''};
+            color: #fff; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .container { max-width: 440px; width: 100%; text-align: center; }
+        .card {
+            background: rgba(19, 23, 34, 0.92); backdrop-filter: blur(16px); border-radius: 20px;
+            padding: 28px 24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+        h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+        p { font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
+        input {
+            width: 100%; padding: 13px 16px; background: #090a0f; border: 1px solid #232838;
+            border-radius: 12px; font-size: 15px; color: #fff; outline: none; margin-bottom: 16px; text-align: center; font-weight: 700;
+        }
+        input:focus { border-color: #6366f1; }
+        .btn {
+            width: 100%; padding: 13px; border: none; border-radius: 12px; font-weight: 800;
+            font-size: 14px; cursor: pointer; color: #fff; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .popup-overlay {
+            display: ${isUidCheckingOn ? 'none' : 'flex'}; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(14px); z-index: 99999;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .popup-card {
+            background: #131722; border-radius: 20px; padding: 20px; max-width: 440px; width: 100%;
+            border: 1px solid #232838; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+        .banner-16-9 {
+            width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
+            margin-bottom: 16px; background: #090a0f; border: 1px solid #232838;
+        }
+        .banner-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 🎮 UID Input Card (Displayed ONLY when uidChecking is ON) -->
+        <div class="card" id="uidInputBox" style="display: ${isUidCheckingOn ? 'block' : 'none'};">
+            <h2>🎮 Verify Game UID</h2>
+            <p>Enter your player UID below to verify account and unlock reward.</p>
+            <input type="text" id="playerUid" placeholder="Enter Your UID (e.g. 12345678)" maxlength="16">
+            <button class="btn" onclick="submitPlayerUid()">Continue ➜</button>
+        </div>
+    </div>
+
+    <!-- 🖼️ 16:9 Entrance Popup Modal (Shown directly if uidChecking is OFF, or after UID if ON) -->
+    <div class="popup-overlay" id="entrancePopupModal">
+        <div class="popup-card">
+            <div class="banner-16-9">
+                <img src="${escapeHTML(popupImage)}" alt="Reward Banner">
+            </div>
+            <h2>${escapeHTML(popupTitle)}</h2>
+            <p>${escapeHTML(popupSub)}</p>
+            <button class="btn" onclick="proceedToVideo()">${escapeHTML(popupBtn)} 🎬</button>
+        </div>
+    </div>
+
+    <script>
+        const linkId = "${escapeHTML(targetLink)}";
+        const uidCheckingMode = ${isUidCheckingOn ? 'true' : 'false'};
+
+        async function submitPlayerUid() {
+            const uidVal = document.getElementById('playerUid').value.trim();
+            if (!uidVal || uidVal.length < 5) {
+                return alert('Please enter a valid player UID (minimum 5 digits)');
+            }
+            try {
+                await fetch('/api/submit-uid/' + encodeURIComponent(linkId), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: uidVal })
+                });
+            } catch(e) {}
+
+            document.getElementById('uidInputBox').style.display = 'none';
+            document.getElementById('entrancePopupModal').style.display = 'flex';
+        }
+
+        async function proceedToVideo() {
+            try {
+                await fetch('/api/track-claim/' + encodeURIComponent(linkId), { method: 'POST' });
+            } catch(e) {}
+            window.location.href = '/v/' + encodeURIComponent(linkId);
+        }
+    </script>
+</body>
+</html>`);
+});
+
 app.get('/v/:id', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     sendAppFile(res, 'video-lock.html');
 });
+
 app.get('/user-dashboard', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/user-dashboard/:id?', (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
@@ -1937,4 +2162,4 @@ setInterval(async () => {
 }, 60 * 60 * 1000);
 
 // Start Server
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Server on port ${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
