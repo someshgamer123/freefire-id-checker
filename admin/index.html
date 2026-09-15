@@ -8,6 +8,56 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- 🛡️ F12 & DEVTOOLS INSTANT BLOCK SCRIPT (HEAD SECTION) -->
+    <script>
+        (function() {
+            // Disable Right Click
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }, true);
+
+            // Block F12 and DevTools Shortcuts
+            window.addEventListener('keydown', function(e) {
+                // F12 key
+                if (e.key === 'F12' || e.keyCode === 123) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+
+                // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (Inspect / Console)
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73 || e.key === 'J' || e.key === 'j' || e.keyCode === 74 || e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+
+                // Ctrl+U (View Source)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.keyCode === 85)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+
+                // Ctrl+S (Save Page)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.keyCode === 83)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+
+            // Anti-debugger protection
+            setInterval(function() {
+                try {
+                    (function() { return false; }['constructor']('debugger')());
+                } catch (err) {}
+            }, 1000);
+        })();
+    </script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         :root {
@@ -16,9 +66,11 @@
             --bg: #090a10; --card-bg: #131722; --text: #f8fafc;
             --text-light: #94a3b8; --border: #232838; --radius: 14px;
         }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; overflow-x: hidden; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; overflow-x: hidden; -webkit-user-select: none; user-select: none; }
         body.dark { --bg: #090a10; --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838; }
         body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
+
+        input, textarea, select { -webkit-user-select: text; user-select: text; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -269,7 +321,7 @@
                     <span></span>
                     <span></span>
                 </button>
-                <h1>⚡ Admin Control Center</h1>
+                <h1>⚡ SOMU ADMIN </h1>
             </div>
             <div class="header-actions">
                 <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
@@ -394,15 +446,12 @@
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
                     </div>
 
-                    <!-- 🌟 NEW FEATURE: ENTER LINK NAME -->
-                    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var--border;">
+                    <!-- 🌟 LINK NAME -->
+                    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
                         <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">
                             🏷️ Enter Link Name (Custom Label):
                         </label>
                         <input type="text" id="cLinkName" placeholder="Enter link name..." style="margin-bottom:4px;">
-                        <div style="font-size:11px;color:var--text-light;line-height:1.4;">
-                         
-                        </div>
                     </div>
                 </div>
 
@@ -644,7 +693,7 @@
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL (WITH USER NAME & LINK NAME FIELDS) -->
+    <!-- ✏️ EDIT MODAL -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -668,7 +717,6 @@
         let selectedExpiry = null;
         let currentDeviceTab = 'blocked';
 
-        // 🛡️ Global state trackers for UID Checking button
         let createUidChecking = true;
         let editUidChecking = true;
 
@@ -684,7 +732,6 @@
             setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
         }
 
-        // 📋 100% Reliable Clipboard Copy (Works on HTTP & HTTPS)
         function copyText(text, successMsg = 'Copied to clipboard!') {
             if (!text) return;
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -741,7 +788,6 @@
             }
         }
 
-        // Main Navigation Controller (Syncs Top Bar & Sidebar)
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
@@ -892,9 +938,6 @@
             } catch(e) {}
         }
 
-        // ==============================================================
-        // 🔗 LINKS MANAGER (SHOWS: ( USER NAME ) ( LINK NAME ))
-        // ==============================================================
         async function loadLinks() {
             const list = document.getElementById('linksList');
             if (list) list.innerHTML = '<p style="color:var(--text-light);font-size:12px;">Loading links...</p>';
@@ -956,14 +999,12 @@
                     ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
                     : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
 
-                // 🌟 USER NAME & LINK NAME: ( USER NAME ) ( LINK NAME )
                 const userName = l.name || 'User';
                 const linkName = l.linkName || l.title || 'Link';
 
                 return `
                     <div class="link-item">
                         <div>
-                            <!-- 🌟 EXACT REQUIRED FORMAT: ( user name ) ( link name ) -->
                             <div class="name" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
                                 <span style="color:#a5b4fc;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(userName)} )</span>
                                 <span style="color:#38bdf8;background:rgba(6,182,212,0.14);border:1px solid rgba(6,182,212,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(linkName)} )</span>
@@ -1009,9 +1050,6 @@
             }
         }
 
-        // ==============================================================
-        // ✏️ EDIT LINK MODAL (CHANGE USER NAME & LINK NAME)
-        // ==============================================================
         function openEditModal(id) {
             const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
             if (!link) return showToast('Link not found', 'error');
@@ -1019,7 +1057,6 @@
             const popup = link.popupSettings || {};
             const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
 
-            // Load saved UID checking status
             editUidChecking = (link.uidChecking !== false);
 
             const b = document.getElementById('editModalBody');
@@ -1029,7 +1066,6 @@
                         <label>👤 User Name (Client)</label>
                         <input type="text" id="eName" value="${escapeHTML(link.name || '')}" placeholder="User Name">
                     </div>
-                    <!-- 🌟 EDIT LINK NAME FIELD -->
                     <div class="form-group">
                         <label style="color:#38bdf8;">🏷️ Link Name</label>
                         <input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name">
@@ -1055,7 +1091,6 @@
                     <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
                 </div>
 
-                <!-- 🛡️ UID CHECKING EDIT BUTTON -->
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                     <div>
                         <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
@@ -1113,7 +1148,7 @@
             const status = document.getElementById('eStatus')?.value;
             const expiryInput = document.getElementById('eExpiry')?.value;
             const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
-            const uidChecking = editUidChecking; // Boolean from toggle button
+            const uidChecking = editUidChecking;
             const popupSettings = {
                 title: document.getElementById('ePopTitle')?.value.trim() || '🎁 Claim Your Reward',
                 subtitle: document.getElementById('ePopSub')?.value.trim() || 'Tap below to unlock your reward',
@@ -1172,7 +1207,7 @@
             }
         }
 
-        // ==================== ➕ CREATE LINK (WITH REGISTERED USER & LINK NAME) ====================
+        // ==================== ➕ CREATE LINK ====================
         async function loadCreateUserDropdown() {
             if (!allUsers.length) {
                 try {
@@ -1229,7 +1264,7 @@
             const claim = document.getElementById('cClaim')?.value.trim();
             const headline = document.getElementById('cHeadline')?.value.trim();
             const buttonText = document.getElementById('cButtonText')?.value.trim();
-            const uidChecking = createUidChecking; // Boolean state from toggle button
+            const uidChecking = createUidChecking;
             const popupSettings = {
                 title: document.getElementById('cPopTitle')?.value.trim() || '🎁 Claim Your Reward',
                 subtitle: document.getElementById('cPopSub')?.value.trim() || 'Tap below to unlock your reward',
@@ -1830,6 +1865,9 @@
                 document.getElementById('sUrl').value = '';
                 document.getElementById('sTitle').value = '';
                 loadShortLinks();
+Url').value = '';
+                document.getElementById('sTitle').value = '';
+                loadShortLinks();
             } catch(e) {
                 showToast('Failed to create short link', 'error');
             }
@@ -1851,7 +1889,6 @@
             showToast('Use browser menu -> Add to Home screen to install app', 'info');
         }
 
-        // Initialize and Bindings
         window.addEventListener('DOMContentLoaded', () => {
             try {
                 const savedTheme = localStorage.getItem('adminTheme') || 'dark';
@@ -1866,6 +1903,3 @@
             loadBlockedDevices();
             setInterval(loadStats, 5000);
         });
-    </script>
-</body>
-</html>
