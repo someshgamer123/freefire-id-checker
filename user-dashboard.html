@@ -671,7 +671,7 @@
                 </div>
                 
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <!-- User's Links Dropdown showing Name + ID -->
+                    <!-- User's Links Dropdown showing Name + ID + Claims -->
                     <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:220px; background:#080c14; cursor:pointer;">
                         <option value="">-- Choose Your Link --</option>
                     </select>
@@ -761,7 +761,6 @@
                 <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
             </div>
 
-            <!-- Deep link / Open in App options removed as per architecture -->
             <button class="btn-action" onclick="createUserShortLink()">
                 <span>Create Short Link ➜</span>
             </button>
@@ -1227,8 +1226,9 @@
 
             selectEl.innerHTML = links.map(l => {
                 const isSelected = l.id === currentActiveId ? 'selected' : '';
-                const lName = l.name || l.title || 'Untitled Campaign';
-                return `<option value="${l.id}" ${isSelected}>🔗 ${lName} (${l.id})</option>`;
+                const lName = l.name || l.title || l.linkName || 'Untitled Campaign';
+                const cCount = (l.claims !== undefined) ? ` • ${l.claims} Claims` : '';
+                return `<option value="${l.id}" ${isSelected}>🔗 ${lName} (${l.id}${cCount})</option>`;
             }).join('');
         }
 
@@ -1279,17 +1279,24 @@
 
         // Populate Analytics & Progress Bar (Unique 24h Values & Link Name)
         function populateDashboardMetrics(data) {
-            const l = data.link;
+            const l = data.link || data;
             
             // Set Link Name & Link ID
-            const linkTitle = l.name || l.title || 'Untitled Campaign';
+            const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
             document.getElementById('displayLinkName').textContent = linkTitle;
-            document.getElementById('displayLinkId').textContent = l.id;
+            document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
 
-            document.getElementById('metricToday').textContent = l.todayVisits || 0;
-            document.getElementById('metric24h').textContent = l.v24h || 0;
-            document.getElementById('metric7d').textContent = l.v7d || 0;
-            document.getElementById('metricClaims').textContent = l.todayClaims || 0;
+            // Metrics display matching Admin Dashboard
+            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
+            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
+            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
+            
+            // 🎯 UNIQUE TOTAL CLAIMS DISPLAY (EXACTLY MATCHING ADMIN DASHBOARD)
+            const totalClaimsValue = (l.totalClaims !== undefined) ? l.totalClaims : 
+                                    ((l.claims !== undefined) ? l.claims : 
+                                    ((data.totalClaims !== undefined) ? data.totalClaims : 
+                                    ((data.claims !== undefined) ? data.claims : (l.todayClaims || 0))));
+            document.getElementById('metricClaims').textContent = totalClaimsValue;
 
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
@@ -1510,6 +1517,28 @@ Please verify my payment and approve my extension. Thank you!`;
             localStorage.removeItem('userActiveLinkId');
             window.location.reload();
         }
+
+        // Live Auto-Refresh (every 10s)
+        setInterval(() => {
+            if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
+                const selectEl = document.getElementById('userLinkSelect');
+                const targetId = selectEl?.value || localStorage.getItem('userActiveLinkId');
+                if (targetId) {
+                    fetch('/api/user/link-details', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userName: userProfile.name, linkInput: targetId })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            populateDashboardMetrics(data);
+                        }
+                    })
+                    .catch(() => {});
+                }
+            }
+        }, 10000);
 
         // Initialize on DOM load
         initApp();
