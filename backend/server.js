@@ -58,7 +58,7 @@ const Security = {
 
 connectDB();
 
-// Register flexible schema fields for Link and Renewal
+// Register flexible schema fields for Link, Renewal, and Credit System
 try {
     if (Link && Link.schema) {
         Link.schema.add({ 
@@ -71,20 +71,40 @@ try {
             userName: { type: String, default: '' },
             claims: { type: Number, default: 0 },
             visits: { type: Number, default: 0 },
+            credits: { type: Number, default: 0 },
             dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} },
             dailyVisits: { type: mongoose.Schema.Types.Mixed, default: {} }
         });
         Link.schema.set('strict', false);
     }
+    if (RenewalUser && RenewalUser.schema) {
+        RenewalUser.schema.add({
+            credits: { type: Number, default: 100 },
+            totalVisits: { type: Number, default: 0 }
+        });
+        RenewalUser.schema.set('strict', false);
+    }
     if (RenewalRequest && RenewalRequest.schema) {
-        RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
+        RenewalRequest.schema.add({ 
+            linkName: { type: String, default: '' },
+            type: { type: String, default: 'plan' },
+            credits: { type: Number, default: 0 },
+            packageId: { type: String, default: '' },
+            utrNumber: { type: String, default: '' }
+        });
         RenewalRequest.schema.set('strict', false);
+    }
+    if (Pricing && Pricing.schema) {
+        Pricing.schema.add({
+            creditPackages: { type: Array, default: [] },
+            creditsPerVisit: { type: Number, default: 1 }
+        });
+        Pricing.schema.set('strict', false);
     }
     if (PopupSettings && PopupSettings.schema) {
         PopupSettings.schema.add({ uidChecking: { type: Boolean, default: true } });
         PopupSettings.schema.set('strict', false);
     }
-    if (Pricing && Pricing.schema) Pricing.schema.set('strict', false);
     if (User && User.schema) User.schema.set('strict', false);
     if (Session && Session.schema) Session.schema.set('strict', false);
     if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
@@ -156,6 +176,12 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
+const defaultCreditPackages = [
+    { id: 'pkg_100', name: 'Starter Pack', price: 100, credits: 1000, description: '1,000 Traffic Visits' },
+    { id: 'pkg_250', name: 'Standard Pack', price: 250, credits: 3000, description: '3,000 Traffic Visits' },
+    { id: 'pkg_500', name: 'Pro Pack', price: 500, credits: 7000, description: '7,000 Traffic Visits' }
+];
+
 async function initializeDatabase() {
     try {
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
@@ -208,13 +234,27 @@ async function initializeDatabase() {
         if (!pricingExists) {
             await Pricing.create({
                 pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+                creditPackages: defaultCreditPackages,
+                creditsPerVisit: 1,
                 paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi', qrCode: null, text: '' } },
                 whatsappNumber: '916372923348',
                 autoPaymentEnabled: false
             });
-        } else if (pricingExists.autoPaymentEnabled !== false) {
-            pricingExists.autoPaymentEnabled = false;
-            await pricingExists.save();
+        } else {
+            let needsSave = false;
+            if (!pricingExists.creditPackages || pricingExists.creditPackages.length === 0) {
+                pricingExists.creditPackages = defaultCreditPackages;
+                needsSave = true;
+            }
+            if (!pricingExists.creditsPerVisit) {
+                pricingExists.creditsPerVisit = 1;
+                needsSave = true;
+            }
+            if (pricingExists.autoPaymentEnabled !== false) {
+                pricingExists.autoPaymentEnabled = false;
+                needsSave = true;
+            }
+            if (needsSave) await pricingExists.save();
         }
 
         await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
@@ -241,6 +281,11 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Robust Static Serving for Local, Render, and Hostinger Deployments
+app.use(express.static(path.join(__dirname, 'admin')));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -273,6 +318,7 @@ const globalLimiter = rateLimit({
         return (
             req.path === '/health' ||
             req.path === '/ping' ||
+            req.path.startsWith('/admin') ||
             req.path.endsWith('.css') ||
             req.path.endsWith('.js') ||
             req.path.endsWith('.png') ||
@@ -351,6 +397,161 @@ async function authMiddleware(req, res, next) {
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
     req.user = decoded;
     next();
+}
+
+// ==================== Fixed File Serving Utilities ====================
+function sendAppFile(res, ...fileNames) {
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        path.join(__dirname, 'views'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) return res.sendFile(p);
+        }
+    }
+    res.status(404).send(`File not found: ${fileNames.join(' or ')}`);
+}
+
+function sendUidCheckerFile(res, targetLinkId) {
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
+    const fileNames = ['uid-checker.html', 'uid.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    const guardScript = `
+<script>
+(function() {
+    try {
+        var p = new URLSearchParams(window.location.search);
+        var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
+        if (!lid) {
+            var parts = window.location.pathname.split('/');
+            var last = parts[parts.length - 1];
+            if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last;
+        }
+        if (lid) {
+            fetch('/api/link/' + encodeURIComponent(lid))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) {
+                    window.location.replace('/v/' + encodeURIComponent(d.id || lid));
+                }
+            }).catch(function(){});
+        }
+    } catch(e) {}
+})();
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + guardScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + guardScript);
+                    } else {
+                        content = guardScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) { return res.sendFile(p); }
+            }
+        }
+    }
+    res.status(404).send('File not found: uid-checker.html');
+}
+
+function sendVideoLockFile(res, targetLinkId) {
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
+    const fileNames = ['video-lock.html'];
+
+    for (const name of fileNames) {
+        for (const dir of searchDirs) {
+            const p = path.join(dir, name);
+            if (fs.existsSync(p)) {
+                try {
+                    let content = fs.readFileSync(p, 'utf8');
+                    const preVerifyScript = `
+<script>
+window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
+try {
+    sessionStorage.setItem('player_uid', 'verified');
+    sessionStorage.setItem('uid_verified', 'true');
+    localStorage.setItem('player_uid', 'verified');
+    localStorage.setItem('uid_verified', 'true');
+} catch(e) {}
+
+// 🎯 AUTO-ATTACH CLAIM TRACKER TO ANY CLAIM BUTTON OR LINK
+document.addEventListener('DOMContentLoaded', function() {
+    function fireClaim() {
+        var lid = window.__LINK_ID__ || (new URLSearchParams(window.location.search)).get('link') || (new URLSearchParams(window.location.search)).get('id');
+        if (!lid) {
+            var parts = window.location.pathname.split('/');
+            lid = parts[parts.length - 1];
+        }
+        if (lid) {
+            try {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/track-claim/' + encodeURIComponent(lid));
+                } else {
+                    fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
+                }
+            } catch(e) {
+                fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
+            }
+        }
+    }
+    document.addEventListener('click', function(e) {
+        var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn');
+        if (target) {
+            var href = (target.getAttribute('href') || '').toLowerCase();
+            var text = (target.textContent || '').toLowerCase();
+            var id = (target.id || '').toLowerCase();
+            var cls = (target.className || '').toLowerCase();
+            if (id.includes('claim') || cls.includes('claim') || text.includes('claim') || text.includes('reward') || href.includes('garena') || href.includes('reward') || href.includes('claim')) {
+                fireClaim();
+            }
+        }
+    }, true);
+});
+</script>
+`;
+                    if (content.includes('<head>')) {
+                        content = content.replace('<head>', '<head>' + preVerifyScript);
+                    } else if (content.includes('<body>')) {
+                        content = content.replace('<body>', '<body>' + preVerifyScript);
+                    } else {
+                        content = preVerifyScript + content;
+                    }
+                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    return res.send(content);
+                } catch(e) { return res.sendFile(p); }
+            }
+        }
+    }
+    res.status(404).send('File not found: video-lock.html');
 }
 
 // ==================== Public Informational Routes ====================
@@ -462,6 +663,8 @@ app.get('/api/pricing', async (req, res) => {
         if (!pricingDoc) {
             pricingDoc = {
                 pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+                creditPackages: defaultCreditPackages,
+                creditsPerVisit: 1,
                 paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi' } },
                 whatsappNumber: '916372923348',
                 autoPaymentEnabled: false
@@ -469,6 +672,8 @@ app.get('/api/pricing', async (req, res) => {
         }
         res.json({
             pricing: pricingDoc.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
+            creditPackages: pricingDoc.creditPackages || defaultCreditPackages,
+            creditsPerVisit: pricingDoc.creditsPerVisit || 1,
             paymentSettings: pricingDoc.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
             autoPaymentEnabled: false
@@ -494,7 +699,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to update pricing' }); }
 });
 
-// Visitor Link Resolver
+// Visitor Link Resolver (With Credit Check & Auto-Deduction)
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -502,16 +707,16 @@ app.get('/api/link/:id', async (req, res) => {
         res.setHeader('Expires', '0');
 
         let rawId = extractCleanId(req.params.id);
-        let link = await Link.findOne(getLinkQuery(rawId)).lean();
+        let link = await Link.findOne(getLinkQuery(rawId));
 
         if (!link && (rawId === 'default' || !rawId)) {
-            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+            link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
         }
 
         if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
 
-        if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
-            return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
+        if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive' || link.status === 'paused') {
+            return res.status(403).json({ error: link.status, message: `Link is ${link.status}`, status: link.status });
         }
 
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
@@ -519,6 +724,24 @@ app.get('/api/link/:id', async (req, res) => {
             if (expTime > 1000000000000 && Date.now() > expTime) {
                 return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
             }
+        }
+
+        // Credit Verification on Traffic Visit
+        const pricingDoc = await Pricing.findOne().lean();
+        const costPerVisit = pricingDoc?.creditsPerVisit || 1;
+        let owner = null;
+
+        if (link.assignedUser || link.userName || link.creator) {
+            const ownerName = (link.assignedUser || link.userName || link.creator).trim();
+            owner = await RenewalUser.findOne({
+                $or: [{ name: new RegExp(`^${ownerName}$`, 'i') }, { email: new RegExp(`^${ownerName}$`, 'i') }]
+            });
+        }
+
+        if (owner && (owner.credits === undefined || owner.credits < costPerVisit)) {
+            link.status = 'paused';
+            await link.save();
+            return res.status(402).json({ error: 'paused', message: 'Traffic credits exhausted. Link is paused.', status: 'paused' });
         }
 
         const { ip, deviceKey } = getDeviceId(req);
@@ -537,6 +760,18 @@ app.get('/api/link/:id', async (req, res) => {
             Link.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
             Link.collection.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
             Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }).catch(() => {});
+
+            // Deduct Credits from Owner
+            if (owner) {
+                owner.credits = Math.max(0, (owner.credits || 0) - costPerVisit);
+                owner.totalVisits = (owner.totalVisits || 0) + 1;
+                await owner.save();
+
+                if (owner.credits < costPerVisit) {
+                    link.status = 'paused';
+                    await link.save();
+                }
+            }
         }
 
         await VisitorActivity.findOneAndUpdate(
@@ -622,7 +857,6 @@ async function executeClaimTracking(rawLinkId, req) {
     }).catch(() => null);
 
     if (!recentClaim) {
-        // Atomic increment directly on MongoDB collection and mongoose model
         await Link.collection.updateOne(
             { _id: link._id },
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
@@ -634,7 +868,6 @@ async function executeClaimTracking(rawLinkId, req) {
         ).catch(() => {});
 
         link.claims = (link.claims || 0) + 1;
-
         await Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
     }
 
@@ -647,7 +880,6 @@ async function executeClaimTracking(rawLinkId, req) {
     return { success: true, claims: link.claims || 0, linkId: link.id };
 }
 
-// Handler for all claim endpoint variations
 const handleClaimTrackingRequest = async (req, res) => {
     try {
         let rawId = req.params.linkId || req.params.id || req.query.linkId || req.query.link || req.query.id || req.body?.linkId || req.body?.id || req.body?.link;
@@ -677,6 +909,7 @@ app.all('/api/track/:linkId', handleClaimTrackingRequest);
 app.all('/api/links/:linkId/claim', handleClaimTrackingRequest);
 app.all('/api/claim-reward/:linkId', handleClaimTrackingRequest);
 
+// ==================== Renewal & Credit Purchases ====================
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -712,6 +945,94 @@ app.get('/api/renewal/status/:linkId', async (req, res) => {
         const request = await RenewalRequest.findOne({ linkId }).sort({ createdAt: -1 }).lean();
         res.json({ hasRequest: !!request, request: request || null, status: request?.status || 'none' });
     } catch (error) { res.status(500).json({ error: 'Failed to fetch status' }); }
+});
+
+// Credit System: User Buy Credits Request
+app.post('/api/user/buy-credits', async (req, res) => {
+    try {
+        const { packageId, utrNumber, note, userName, userEmail } = req.body;
+        const pricing = await Pricing.findOne().lean();
+        const pkgs = pricing?.creditPackages || defaultCreditPackages;
+        const selected = pkgs.find(p => p.id === packageId);
+
+        if (!selected) {
+            return res.status(400).json({ error: 'Invalid credit package selected' });
+        }
+
+        const newReq = new RenewalRequest({
+            id: 'req_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex'),
+            linkId: userName || userEmail || 'General User',
+            linkName: userName || userEmail || 'Credit Purchase',
+            type: 'credit',
+            packageId: selected.id,
+            plan: selected.name,
+            amount: selected.price,
+            credits: selected.credits,
+            utrNumber: (utrNumber || 'N/A').toString().trim(),
+            status: 'pending',
+            createdAt: new Date()
+        });
+
+        await newReq.save();
+        res.json({ success: true, message: 'Recharge request submitted! Admin will verify and credit your account shortly.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to submit credit purchase request' });
+    }
+});
+
+app.get('/api/packages', async (req, res) => {
+    try {
+        const pricing = await Pricing.findOne().lean();
+        res.json({
+            success: true,
+            data: pricing?.creditPackages || defaultCreditPackages,
+            creditsPerVisit: pricing?.creditsPerVisit || 1
+        });
+    } catch (e) {
+        res.json({ success: true, data: defaultCreditPackages, creditsPerVisit: 1 });
+    }
+});
+
+app.get('/api/user-dashboard', async (req, res) => {
+    try {
+        const links = await Link.find().lean();
+        const pricing = await Pricing.findOne().lean();
+        let totalVisits = 0;
+        links.forEach(l => totalVisits += (l.visits || 0));
+
+        res.json({
+            status: 'success',
+            data: {
+                activeUsers: await RenewalUser.countDocuments().catch(() => 1),
+                conversionRate: '3.2%',
+                metrics: 'active',
+                version: '3.0.0 (Credit Edition)',
+                serverUptime: Math.floor(process.uptime()),
+                totalVisits,
+                totalLinks: links.length,
+                creditsPerVisit: pricing?.creditsPerVisit || 1,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/api/stats', async (req, res) => {
+    const memory = process.memoryUsage();
+    res.json({
+        status: 'success',
+        data: {
+            uptimeSeconds: Math.floor(process.uptime()),
+            memoryUsageMB: {
+                rss: Math.round(memory.rss / 1024 / 1024),
+                heapTotal: Math.round(memory.heapTotal / 1024 / 1024),
+                heapUsed: Math.round(memory.heapUsed / 1024 / 1024)
+            },
+            nodeVersion: process.version
+        }
+    });
 });
 
 app.get('/api/settings', async (req, res) => {
@@ -752,6 +1073,7 @@ app.post('/api/user/signup', async (req, res) => {
             name: name.trim(),
             email: cleanEmail,
             phone: cleanPhone,
+            credits: 100, // Free Starter Credits
             status: 'pending'
         });
         res.json({ success: true, message: 'Signup submitted! Admin approval is pending.' });
@@ -768,13 +1090,13 @@ app.post('/api/user/signin', async (req, res) => {
         if (user.status === 'rejected') return res.status(403).json({ error: 'Account registration was rejected.' });
         res.json({
             success: true,
-            user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
+            user: { id: user._id, name: user.name, email: user.email, phone: user.phone, credits: user.credits || 0 }
         });
     } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
 // =========================================================================
-// 👤 USER LINK DETAILS (UNIQUE COUNTS SYNCHRONIZED WITH ADMIN DASHBOARD)
+// 👤 USER LINK DETAILS (WITH CREDIT SYSTEM SYNCHRONIZATION)
 // =========================================================================
 app.post('/api/user/link-details', async (req, res) => {
     try {
@@ -794,6 +1116,10 @@ app.post('/api/user/link-details', async (req, res) => {
                 { name: userRegex }
             ]
         }).sort({ created: -1 }).lean();
+
+        let registeredUser = await RenewalUser.findOne({ 
+            $or: [{ name: userRegex }, { email: userRegex }] 
+        });
 
         const formattedUserLinks = allUserLinks.map(l => {
             const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
@@ -849,7 +1175,6 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const targetIds = [link.id, String(link._id), searchId].filter(Boolean);
 
-        // Fetch true unique counts from VisitorActivity (identically to Admin Dashboard unique counting)
         const [uniqueClaimsTotal, uniqueClaimsToday, uniqueClaims24h, uniqueVisitsToday, uniqueVisits24h, uniqueVisits7d] = await Promise.all([
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim' }).catch(() => 0),
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
@@ -882,12 +1207,10 @@ app.post('/api/user/link-details', async (req, res) => {
             if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
-        // Synchronize with Admin Dashboard:
         const finalTodayVisits = Math.max(vToday, uniqueVisitsToday);
         const final24hVisits = Math.max(v24h, uniqueVisits24h);
         const final7dVisits = Math.max(v7d, uniqueVisits7d);
 
-        // 🎯 TOTAL CLAIMS (UNIQUE): exact match with admin dashboard
         const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
         const finalTodayClaims = Math.max(cToday, uniqueClaimsToday);
         const final24hClaims = Math.max(c24h, uniqueClaims24h);
@@ -921,6 +1244,9 @@ app.post('/api/user/link-details', async (req, res) => {
             v24h: final24hVisits,
             c24h: final24hClaims,
             v7d: final7dVisits,
+            credits: registeredUser ? registeredUser.credits : 500,
+            creditsPerVisit: pricingDoc?.creditsPerVisit || 1,
+            creditPackages: pricingDoc?.creditPackages || defaultCreditPackages,
             link: {
                 id: link.id,
                 linkId: link.id,
@@ -1006,7 +1332,7 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Failed to delete short link' }); }
 });
 
-// Admin User Management
+// ==================== Admin User & Credit Management ====================
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
@@ -1014,7 +1340,11 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
             const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName || (l.userName || '').toLowerCase().trim() === cleanName);
-            return { ...u, totalLinks: userLinks.length };
+            return { 
+                ...u, 
+                credits: u.credits || 0,
+                totalLinks: userLinks.length 
+            };
         });
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
@@ -1045,6 +1375,122 @@ app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res)
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// 🎯 NEW FEATURE: Direct Credit Allocation for Any User ID
+app.post('/api/admin/users/:userId/credits', authMiddleware, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { amount, action } = req.body; // action: 'add' or 'deduct'
+        const numAmount = parseInt(amount, 10);
+
+        if (isNaN(numAmount) || numAmount <= 0) {
+            return res.status(400).json({ error: 'Valid positive amount required' });
+        }
+
+        let user = null;
+        if (mongoose.Types.ObjectId.isValid(userId)) {
+            user = await RenewalUser.findById(userId);
+        }
+        if (!user) {
+            user = await RenewalUser.findOne({
+                $or: [{ name: new RegExp(`^${userId}$`, 'i') }, { email: new RegExp(`^${userId}$`, 'i') }]
+            });
+        }
+
+        if (!user) {
+            user = new RenewalUser({
+                name: userId,
+                email: `${userId.toLowerCase()}@local.com`,
+                phone: '0000000000',
+                credits: 0,
+                status: 'approved'
+            });
+        }
+
+        if (action === 'deduct') {
+            user.credits = Math.max(0, (user.credits || 0) - numAmount);
+        } else {
+            user.credits = (user.credits || 0) + numAmount;
+        }
+
+        await user.save();
+
+        // Reactivate paused links if credits are now available
+        const pricing = await Pricing.findOne().lean();
+        const cost = pricing?.creditsPerVisit || 1;
+        if (user.credits >= cost) {
+            await Link.updateMany(
+                { $or: [{ assignedUser: user.name }, { userName: user.name }], status: 'paused' },
+                { $set: { status: 'active' } }
+            );
+        }
+
+        res.json({
+            success: true,
+            message: `Successfully ${action === 'deduct' ? 'deducted' : 'added'} ${numAmount} credits for ${user.name}!`,
+            currentCredits: user.credits
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update credits' });
+    }
+});
+
+// 🎯 NEW FEATURE: Credit Packages Management (e.g. ₹100 = 1000 Credits)
+app.post('/api/admin/credit-packages', authMiddleware, async (req, res) => {
+    try {
+        const { name, price, credits, description } = req.body;
+        if (!name || !price || !credits) {
+            return res.status(400).json({ error: 'Package Name, Price, and Credits are required' });
+        }
+
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+
+        const newPkg = {
+            id: 'pkg_' + Date.now(),
+            name: name.toString().trim(),
+            price: Number(price),
+            credits: Number(credits),
+            description: (description || '').toString().trim()
+        };
+
+        const existing = pricing.creditPackages || [];
+        existing.push(newPkg);
+        pricing.creditPackages = existing;
+        await pricing.save();
+
+        res.json({ success: true, message: 'Credit package added successfully!', package: newPkg });
+    } catch (err) { res.status(500).json({ error: 'Failed to add package' }); }
+});
+
+app.delete('/api/admin/credit-packages/:id', authMiddleware, async (req, res) => {
+    try {
+        let pricing = await Pricing.findOne();
+        if (pricing && pricing.creditPackages) {
+            pricing.creditPackages = pricing.creditPackages.filter(p => p.id !== req.params.id);
+            await pricing.save();
+        }
+        res.json({ success: true, message: 'Package removed successfully' });
+    } catch (err) { res.status(500).json({ error: 'Failed to delete package' }); }
+});
+
+// 🎯 NEW FEATURE: Configure Per-Visit Credit Deduction Rate
+app.post('/api/admin/credit-settings', authMiddleware, async (req, res) => {
+    try {
+        const { creditsPerVisit } = req.body;
+        const val = parseFloat(creditsPerVisit);
+        if (isNaN(val) || val <= 0) {
+            return res.status(400).json({ error: 'Invalid credits per visit value' });
+        }
+
+        let pricing = await Pricing.findOne();
+        if (!pricing) pricing = new Pricing();
+        pricing.creditsPerVisit = val;
+        await pricing.save();
+
+        res.json({ success: true, message: `1 visit will now consume ${val} credits!`, creditsPerVisit: val });
+    } catch (err) { res.status(500).json({ error: 'Failed to update settings' }); }
+});
+
 // Admin Renewal Settings & Requests
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
@@ -1056,12 +1502,13 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
 
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
-        const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
+        const { pricing, upiId, whatsappNumber, paymentSettings, creditsPerVisit } = req.body;
         const updateData = { autoPaymentEnabled: false };
         if (pricing && typeof pricing === 'object') updateData.pricing = pricing;
         if (paymentSettings) updateData.paymentSettings = paymentSettings;
         if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
         if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
+        if (creditsPerVisit) updateData.creditsPerVisit = parseFloat(creditsPerVisit) || 1;
 
         const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
         res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
@@ -1072,18 +1519,34 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
         if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
-        const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
-        if (link) {
-            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-            curExpiry.setDate(curExpiry.getDate() + (reqDoc.days || 30));
-            link.expiryDate = curExpiry;
-            link.status = 'active';
-            await link.save();
+        
+        if (reqDoc.type === 'credit' && reqDoc.credits > 0) {
+            let user = await RenewalUser.findOne({
+                $or: [{ name: reqDoc.linkName }, { email: reqDoc.linkName }, { name: reqDoc.linkId }]
+            });
+            if (user) {
+                user.credits = (user.credits || 0) + reqDoc.credits;
+                await user.save();
+                await Link.updateMany(
+                    { $or: [{ assignedUser: user.name }, { userName: user.name }], status: 'paused' },
+                    { $set: { status: 'active' } }
+                );
+            }
+        } else {
+            const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
+            if (link) {
+                const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+                curExpiry.setDate(curExpiry.getDate() + (reqDoc.days || 30));
+                link.expiryDate = curExpiry;
+                link.status = 'active';
+                await link.save();
+            }
         }
+
         reqDoc.status = 'approved';
         reqDoc.approvedAt = new Date();
         await reqDoc.save();
-        res.json({ success: true, message: 'Renewal approved and link extended!' });
+        res.json({ success: true, message: 'Request approved and processed!' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -1098,18 +1561,30 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
     try {
         const request = await RenewalRequest.findOne({ id: req.params.requestId });
         if (!request) return res.status(404).json({ error: 'Request not found' });
-        const link = await Link.findOne(getLinkQuery(request.linkId));
-        if (link) {
-            const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
-            curExpiry.setDate(curExpiry.getDate() + (request.days || 30));
-            link.expiryDate = curExpiry;
-            link.status = 'active';
-            await link.save();
+        
+        if (request.type === 'credit' && request.credits > 0) {
+            let user = await RenewalUser.findOne({
+                $or: [{ name: request.linkName }, { email: request.linkName }, { name: request.linkId }]
+            });
+            if (user) {
+                user.credits = (user.credits || 0) + request.credits;
+                await user.save();
+                await Link.updateMany({ assignedUser: user.name, status: 'paused' }, { $set: { status: 'active' } });
+            }
+        } else {
+            const link = await Link.findOne(getLinkQuery(request.linkId));
+            if (link) {
+                const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
+                curExpiry.setDate(curExpiry.getDate() + (request.days || 30));
+                link.expiryDate = curExpiry;
+                link.status = 'active';
+                await link.save();
+            }
         }
         request.status = 'approved';
         request.approvedAt = new Date();
         await request.save();
-        res.json({ success: true, message: 'Renewal approved!' });
+        res.json({ success: true, message: 'Approved successfully!' });
     } catch (error) { res.status(500).json({ error: 'Failed to approve renewal' }); }
 });
 
@@ -1119,7 +1594,7 @@ app.post('/api/renewal/reject/:requestId', authMiddleware, async (req, res) => {
         if (!request) return res.status(404).json({ error: 'Request not found' });
         request.status = 'rejected';
         await request.save();
-        res.json({ success: true, message: 'Renewal rejected successfully' });
+        res.json({ success: true, message: 'Rejected successfully' });
     } catch (error) { res.status(500).json({ error: 'Failed to reject renewal' }); }
 });
 
@@ -1641,6 +2116,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const links = await Link.find().lean();
+        const pricing = await Pricing.findOne().lean();
         const today = new Date().toISOString().split('T')[0];
         let totV = 0, totC = 0, todayV = 0, todayC = 0;
 
@@ -1674,7 +2150,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 todayVisitors: todayV,
                 todayClaims: todayC,
                 activeNow: activeWatching,
-                activeClaims: activeClaiming
+                activeClaims: activeClaiming,
+                creditsPerVisit: pricing?.creditsPerVisit || 1
             },
             links: links.map(l => ({
                 ...l,
@@ -1843,139 +2320,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
-// File Serving Utilities
-function sendAppFile(res, ...fileNames) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
-    for (const name of fileNames) {
-        for (const dir of searchDirs) {
-            const p = path.join(dir, name);
-            if (fs.existsSync(p)) return res.sendFile(p);
-        }
-    }
-    res.status(404).send(`File not found`);
-}
-
-function sendUidCheckerFile(res, targetLinkId) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
-    const fileNames = ['uid-checker.html', 'uid.html'];
-
-    for (const name of fileNames) {
-        for (const dir of searchDirs) {
-            const p = path.join(dir, name);
-            if (fs.existsSync(p)) {
-                try {
-                    let content = fs.readFileSync(p, 'utf8');
-                    const guardScript = `
-<script>
-(function() {
-    try {
-        var p = new URLSearchParams(window.location.search);
-        var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
-        if (!lid) {
-            var parts = window.location.pathname.split('/');
-            var last = parts[parts.length - 1];
-            if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last;
-        }
-        if (lid) {
-            fetch('/api/link/' + encodeURIComponent(lid))
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) {
-                    window.location.replace('/v/' + encodeURIComponent(d.id || lid));
-                }
-            }).catch(function(){});
-        }
-    } catch(e) {}
-})();
-</script>
-`;
-                    if (content.includes('<head>')) {
-                        content = content.replace('<head>', '<head>' + guardScript);
-                    } else if (content.includes('<body>')) {
-                        content = content.replace('<body>', '<body>' + guardScript);
-                    } else {
-                        content = guardScript + content;
-                    }
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    return res.send(content);
-                } catch(e) { return res.sendFile(p); }
-            }
-        }
-    }
-    res.status(404).send('File not found: uid-checker.html');
-}
-
-function sendVideoLockFile(res, targetLinkId) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
-    const fileNames = ['video-lock.html'];
-
-    for (const name of fileNames) {
-        for (const dir of searchDirs) {
-            const p = path.join(dir, name);
-            if (fs.existsSync(p)) {
-                try {
-                    let content = fs.readFileSync(p, 'utf8');
-                    const preVerifyScript = `
-<script>
-window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
-try {
-    sessionStorage.setItem('player_uid', 'verified');
-    sessionStorage.setItem('uid_verified', 'true');
-    localStorage.setItem('player_uid', 'verified');
-    localStorage.setItem('uid_verified', 'true');
-} catch(e) {}
-
-// 🎯 AUTO-ATTACH CLAIM TRACKER TO ANY CLAIM BUTTON OR LINK
-document.addEventListener('DOMContentLoaded', function() {
-    function fireClaim() {
-        var lid = window.__LINK_ID__ || (new URLSearchParams(window.location.search)).get('link') || (new URLSearchParams(window.location.search)).get('id');
-        if (!lid) {
-            var parts = window.location.pathname.split('/');
-            lid = parts[parts.length - 1];
-        }
-        if (lid) {
-            try {
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon('/api/track-claim/' + encodeURIComponent(lid));
-                } else {
-                    fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
-                }
-            } catch(e) {
-                fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
-            }
-        }
-    }
-    document.addEventListener('click', function(e) {
-        var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn');
-        if (target) {
-            var href = (target.getAttribute('href') || '').toLowerCase();
-            var text = (target.textContent || '').toLowerCase();
-            var id = (target.id || '').toLowerCase();
-            var cls = (target.className || '').toLowerCase();
-            if (id.includes('claim') || cls.includes('claim') || text.includes('claim') || text.includes('reward') || href.includes('garena') || href.includes('reward') || href.includes('claim')) {
-                fireClaim();
-            }
-        }
-    }, true);
-});
-</script>
-`;
-                    if (content.includes('<head>')) {
-                        content = content.replace('<head>', '<head>' + preVerifyScript);
-                    } else if (content.includes('<body>')) {
-                        content = content.replace('<body>', '<body>' + preVerifyScript);
-                    } else {
-                        content = preVerifyScript + content;
-                    }
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    return res.send(content);
-                } catch(e) { return res.sendFile(p); }
-            }
-        }
-    }
-    res.status(404).send('File not found: video-lock.html');
-}
-
+// ==================== Page Delivery Routes ====================
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
@@ -2009,10 +2354,12 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/admin/secret-gateway', (req, res) => sendAppFile(res, 'secret-gateway.html', 'admin/secret-gateway.html'));
-app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
-    const token = req.cookies?.adminToken;
+
+// 🎯 FIX: Supports admin.html, index.html, sub-folder resolution, and token bypass
+app.get(['/admin/index.html', '/admin', '/admin/', '/admin/668379d1.html', '/admin-panel'], (req, res) => {
+    const token = req.cookies?.adminToken || req.query.token;
     if (!token || !verifyToken(token)) return res.redirect('/admin/login.html');
-    sendAppFile(res, 'admin/index.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
+    sendAppFile(res, 'admin/index.html', 'admin.html', '668379d1.html', 'admin/668379d1.html', 'index.html');
 });
 
 app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
