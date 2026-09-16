@@ -158,6 +158,10 @@ function getLinkQuery(rawId) {
 
 async function initializeDatabase() {
     try {
+        // 🔓 FIX: Database se purane sabhi block records clear karein taaki admin panel turant open ho sake
+        await BlockedDevice.deleteMany({}).catch(() => {});
+        console.log('🔓 All blocked devices cleared! Admin access restored.');
+
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
         let admin = await User.findOne();
 
@@ -319,10 +323,14 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
+// 🔓 FIX: Localhost aur local network IP ko block se exempt rakhein taaki administrator lock na ho
 async function isDeviceBlocked(req) {
     try {
         if (mongoose.connection.readyState !== 1) return null;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost') || ip.startsWith('192.168.')) {
+            return null;
+        }
         return await BlockedDevice.findOne({
             $or: [{ deviceKey }, { ip }, { fingerprint }],
             isPermanent: true
@@ -352,6 +360,27 @@ async function authMiddleware(req, res, next) {
     req.user = decoded;
     next();
 }
+
+// ==================== 🛠️ EMERGENCY UNBLOCK ROUTE ====================
+app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
+    try {
+        await BlockedDevice.deleteMany({});
+        res.send(`
+            <!DOCTYPE html><html><head><title>Unblocked</title>
+            <style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;margin:0;}
+            .box{background:#131722;padding:40px;border-radius:16px;border:1px solid #22c55e;}
+            a{color:#6366f1;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;}
+            </style></head><body>
+            <div class="box">
+                <h1 style="color:#22c55e;">✅ All Devices Unblocked!</h1>
+                <p>All lockout restrictions have been cleared.</p>
+                <a href="/admin">Go to Admin Panel ➜</a>
+            </div></body></html>
+        `);
+    } catch(e) {
+        res.status(500).send('Error clearing blocks');
+    }
+});
 
 // ==================== Public Informational Routes ====================
 app.get('/api/whatsapp-number', async (req, res) => {
@@ -622,7 +651,6 @@ async function executeClaimTracking(rawLinkId, req) {
     }).catch(() => null);
 
     if (!recentClaim) {
-        // Atomic increment directly on MongoDB collection and mongoose model
         await Link.collection.updateOne(
             { _id: link._id },
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
@@ -849,7 +877,6 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const targetIds = [link.id, String(link._id), searchId].filter(Boolean);
 
-        // Fetch true unique counts from VisitorActivity (identically to Admin Dashboard unique counting)
         const [uniqueClaimsTotal, uniqueClaimsToday, uniqueClaims24h, uniqueVisitsToday, uniqueVisits24h, uniqueVisits7d] = await Promise.all([
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim' }).catch(() => 0),
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
@@ -882,12 +909,10 @@ app.post('/api/user/link-details', async (req, res) => {
             if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
-        // Synchronize with Admin Dashboard:
         const finalTodayVisits = Math.max(vToday, uniqueVisitsToday);
         const final24hVisits = Math.max(v24h, uniqueVisits24h);
         const final7dVisits = Math.max(v7d, uniqueVisits7d);
 
-        // 🎯 TOTAL CLAIMS (UNIQUE): exact match with admin dashboard
         const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
         const finalTodayClaims = Math.max(cToday, uniqueClaimsToday);
         const final24hClaims = Math.max(c24h, uniqueClaims24h);
@@ -1197,7 +1222,8 @@ app.post('/api/admin/login', async (req, res) => {
             }
 
             const jwtToken = generateToken('admin');
-            res.cookie('adminToken', jwtToken, { httpOnly: false, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
+            // 🔓 FIX: path '/' ensures token is sent to all admin routes
+            res.cookie('adminToken', jwtToken, { path: '/', httpOnly: false, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
             return res.json({ success: true, token: jwtToken });
         }
 
@@ -1224,7 +1250,8 @@ app.post('/api/admin/login', async (req, res) => {
             record.lastAttempt = new Date();
         }
 
-        if (record.attempts >= 3) {
+        // Localhost ko block nahi karega
+        if (record.attempts >= 3 && ip !== '127.0.0.1' && ip !== '::1' && !ip.includes('localhost')) {
             record.isPermanent = true;
             record.reason = 'Permanent ban: 3 failed passcode attempts';
             await record.save();
@@ -1245,7 +1272,7 @@ app.post('/api/admin/logout', async (req, res) => {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
     } catch(e) {}
-    res.clearCookie('adminToken');
+    res.clearCookie('adminToken', { path: '/' });
     res.json({ success: true });
 });
 
@@ -1845,18 +1872,32 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
 
 // File Serving Utilities
 function sendAppFile(res, ...fileNames) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
     for (const name of fileNames) {
         for (const dir of searchDirs) {
             const p = path.join(dir, name);
             if (fs.existsSync(p)) return res.sendFile(p);
         }
     }
-    res.status(404).send(`File not found`);
+    res.status(404).send(`File not found: ${fileNames.join(', ')}`);
 }
 
 function sendUidCheckerFile(res, targetLinkId) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
     const fileNames = ['uid-checker.html', 'uid.html'];
 
     for (const name of fileNames) {
@@ -1906,7 +1947,14 @@ function sendUidCheckerFile(res, targetLinkId) {
 }
 
 function sendVideoLockFile(res, targetLinkId) {
-    const searchDirs = [path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), __dirname, path.join(__dirname, '..', 'public')];
+    const searchDirs = [
+        path.join(__dirname, 'admin'),
+        path.join(__dirname, 'public'),
+        __dirname,
+        path.join(__dirname, '..'),
+        path.join(__dirname, '..', 'admin'),
+        path.join(__dirname, '..', 'public')
+    ];
     const fileNames = ['video-lock.html'];
 
     for (const name of fileNames) {
@@ -1984,9 +2032,11 @@ app.get('/admin/login.html', async (req, res) => {
             <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
             .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 0 50px rgba(239,68,68,0.2);}
             h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
-            p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head>
+            p{color:#94a3b8;font-size:14px;line-height:1.6;}
+            a{color:#38bdf8;text-decoration:none;font-weight:700;display:inline-block;margin-top:14px;}
+            </style></head>
             <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device has been permanently banned due to 3 failed passcode attempts.<br><br>Contact the administrator to unblock your device.</p></div></body></html>
+            <p>Your device has been unblocked. Click below to continue:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>
         `);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
