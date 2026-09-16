@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Dashboard - Link Management & Credit Control</title>
+    <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <!-- 🛡️ SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
@@ -25,6 +25,7 @@
         })();
     </script>
 
+    <!-- Clean Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -75,6 +76,7 @@
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
+        /* Top Navbar */
         .top-navbar {
             position: sticky;
             top: 0;
@@ -88,6 +90,7 @@
             justify-content: space-between;
         }
 
+        /* ☰ Top-Left Hamburger Button */
         .btn-hamburger {
             width: 40px; height: 40px;
             background: var(--surface-1);
@@ -164,6 +167,7 @@
             background: #34d399;
         }
 
+        /* Slide-out Sidebar Drawer */
         .sidebar-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.75);
@@ -211,6 +215,7 @@
         .drawer-item.danger { color: #f87171; }
         .drawer-item.danger:hover { background: rgba(239, 68, 68, 0.12); }
 
+        /* Container */
         .content-wrap {
             max-width: 960px;
             margin: 24px auto 0;
@@ -228,6 +233,7 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
+        /* Forms */
         .form-group { margin-bottom: 14px; }
         .form-label {
             display: block;
@@ -270,12 +276,14 @@
             gap: 8px;
         }
         .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-action:active { transform: scale(0.99); }
 
         .btn-secondary {
             background: var(--surface-2);
             color: var(--text-primary);
             border: 1px solid var(--border-subtle);
         }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
 
         .btn-whatsapp {
             background: linear-gradient(135deg, #10b981, #059669);
@@ -283,6 +291,7 @@
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
         }
 
+        /* Terms Checkbox */
         .checkbox-container {
             display: flex;
             align-items: flex-start;
@@ -304,7 +313,13 @@
             color: var(--text-secondary);
             line-height: 1.4;
         }
+        .checkbox-label a {
+            color: var(--primary-light);
+            text-decoration: underline;
+            font-weight: 600;
+        }
 
+        /* Dashboard Section */
         #dashboardSection { display: none; }
 
         .welcome-header {
@@ -318,6 +333,7 @@
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
+        /* 👤 Active Link Details Card with Link Name */
         .link-selector-card {
             background: var(--surface-2);
             border: 1px solid var(--border-subtle);
@@ -356,51 +372,33 @@
             font-size: 12.5px;
         }
 
-        /* 💎 LIVE CREDIT BALANCE CARD */
+        /* Validity Progress Card */
         .timeline-card {
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             border-radius: 14px;
-            padding: 18px 20px;
+            padding: 16px 20px;
             margin-bottom: 16px;
         }
         .timeline-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-        }
-        .timeline-label { font-size: 14px; font-weight: 700; color: #fff; display:flex; align-items:center; gap:8px; }
-        .badge-status {
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .badge-status.active { background: rgba(16, 185, 129, 0.15); color: var(--success); border:1px solid rgba(16,185,129,0.3); }
-        .badge-status.warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); border:1px solid rgba(245,158,11,0.3); }
-        .badge-status.expired { background: rgba(239, 68, 68, 0.15); color: var(--danger); border:1px solid rgba(239,68,68,0.3); }
-
-        .credit-display-box {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
             margin-bottom: 10px;
         }
-        .credit-number {
-            font-size: 32px;
-            font-weight: 800;
-            color: #38bdf8;
-            letter-spacing: -0.5px;
+        .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
+        .badge-status {
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 11.5px;
+            font-weight: 700;
         }
-        .credit-unit {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
+        .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+        .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+        .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
         .progress-bar-bg {
-            width: 100%; height: 8px;
+            width: 100%; height: 7px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
@@ -410,10 +408,11 @@
             border-radius: 10px;
             transition: width 0.4s ease;
         }
-        .progress-bar-fill.active { background: linear-gradient(90deg, #10b981, #06b6d4); }
+        .progress-bar-fill.active { background: var(--success); }
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
 
+        /* Stats Row */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -431,7 +430,8 @@
         .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
 
-        .plan-list-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; max-height: 260px; overflow-y: auto; }
+        /* Plan List */
+        .plan-list-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
         .plan-row-item {
             background: var(--surface-2); border: 1.5px solid var(--border-subtle);
             border-radius: 12px; padding: 12px 16px; display: flex; align-items: center;
@@ -442,14 +442,19 @@
         .plan-row-left { display: flex; align-items: center; gap: 12px; }
         .plan-radio-circle {
             width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-subtle);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;
         }
         .plan-row-item.selected .plan-radio-circle { border-color: var(--primary-light); background: var(--primary); }
         .plan-row-item.selected .plan-radio-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-        .plan-meta h4 { font-size: 14px; font-weight: 700; color: #fff; }
-        .plan-meta p { font-size: 11.5px; color: var(--text-muted); }
+        .plan-meta h4 { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .plan-meta p { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
         .plan-price-tag { font-size: 17px; font-weight: 800; color: var(--accent-cyan); }
+        .plan-badge-pill { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; }
+        .plan-badge-pill.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .plan-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
 
+        /* Payment Panel */
         .payment-panel {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
             border-radius: 14px; padding: 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;
@@ -463,11 +468,13 @@
             font-size: 12.5px; font-weight: 600; color: var(--accent-cyan); margin-bottom: 12px; cursor: pointer;
         }
 
+        /* Table */
         .table-container { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid var(--border-subtle); }
         .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .data-table th { background: #080c14; padding: 11px 14px; color: var(--text-muted); font-weight: 700; text-align: left; font-size: 11.5px; }
         .data-table td { padding: 11px 14px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); }
 
+        /* Modals */
         .app-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(12px); z-index: 10000;
@@ -495,6 +502,7 @@
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
+        /* Custom Dialog Alert */
         .custom-dialog-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(10px); z-index: 20000;
@@ -513,36 +521,40 @@
 <body>
     <div class="ambient-layer"></div>
 
+    <!-- ☰ Slide-out Sidebar Drawer & Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <aside class="sidebar-drawer" id="sidebarDrawer">
         <div class="sidebar-head">
             <h2>⚡ Quick Menu</h2>
-            <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
+            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
         </div>
         <div class="sidebar-links-list">
             <div class="drawer-item" onclick="openShortenerModal()">
                 <span>🔗</span> URL Shortener
             </div>
             <div class="drawer-item" onclick="openPlansModal()">
-                <span>💎</span> Buy Traffic Credits
+                <span>💎</span> Renewal Plans
             </div>
             <div class="drawer-item" onclick="openGuideModal()">
-                <span>📖</span> How Credits Work
+                <span>📖</span> How to Use
             </div>
             <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
-                <span>💬</span> Admin Support
+                <span>💬</span> Support
             </a>
             <div class="drawer-item" onclick="openTermsModal()">
                 <span>📜</span> Terms & Rules
             </div>
+            <!-- Logout directly below Terms & Rules -->
             <div class="drawer-item danger" onclick="performLogout()" style="margin-top:10px; border-top:1px solid var(--border-subtle); padding-top:14px;">
                 <span>🚪</span> Logout
             </div>
         </div>
     </aside>
 
+    <!-- Top Navigation Bar -->
     <header class="top-navbar">
         <div style="display:flex; align-items:center; gap:12px;">
+            <!-- ☰ 3-Line Hamburger Button on Top-Left -->
             <button class="btn-hamburger" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
                 <span></span>
                 <span></span>
@@ -558,19 +570,20 @@
         <div class="navbar-right">
             <div class="user-pill" id="navUserBadge" style="display:none;">
                 <span class="live-indicator"></span>
-                <span id="navUserName">User</span>
+                <span id="navUserName">Gamer</span>
             </div>
         </div>
     </header>
 
     <main class="content-wrap">
-        <!-- AUTH VIEW -->
+        <!-- ==================== AUTH VIEW (SIGN IN / SIGN UP) ==================== -->
         <div id="authSection" style="max-width:420px; margin:40px auto 0;">
             <div class="pro-card">
+                <!-- Sign In Form (Default View) -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div style="text-align:center; margin-bottom:20px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
-                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Enter your credentials to access your link & credit dashboard</p>
+                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Enter your credentials to access your link dashboard</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
@@ -583,15 +596,17 @@
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
+                    <!-- Clean small Sign Up link at bottom -->
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
                     </div>
                 </form>
 
+                <!-- Sign Up Form (Toggled via Small Link) -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
                     <div style="text-align:center; margin-bottom:20px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
-                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to get starter credits and manage tracking links</p>
+                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to start managing your active tracking links</p>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
@@ -609,13 +624,14 @@
                     <label class="checkbox-container">
                         <input type="checkbox" id="upTermsCheck" required>
                         <span class="checkbox-label">
-                            I accept the Terms & Conditions and authorize link management.
+                            I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize link management.
                         </span>
                     </label>
 
                     <button type="submit" class="btn-action" id="btnSubmitRegister">
                         <span>Create Account</span>
                     </button>
+                    <!-- Clean small Sign In link at bottom -->
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
                     </div>
@@ -623,24 +639,25 @@
             </div>
         </div>
 
-        <!-- DASHBOARD VIEW -->
+        <!-- ==================== AUTHENTICATED DASHBOARD VIEW ==================== -->
         <div id="dashboardSection">
+            <!-- Welcome Header -->
             <div class="welcome-header">
                 <div class="welcome-title">
                     <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
-                    <p>Protected Account • Credit-based traffic routing & active links</p>
+                    <p>Protected Account • Only links registered to your identity are displayed</p>
                 </div>
                 <div style="display:flex; gap:8px;">
                     <button class="btn-action btn-secondary" onclick="openShortenerModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
                         <span>🔗 Short Link</span>
                     </button>
-                    <button class="btn-action" onclick="openPlansModal()" style="width:auto; padding:8px 14px; font-size:12.5px; background:linear-gradient(135deg, #10b981, #059669);">
-                        <span>💎 Buy Credits</span>
+                    <button class="btn-action" onclick="openPlansModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
+                        <span>💎 Renewal</span>
                     </button>
                 </div>
             </div>
 
-            <!-- LINK SELECTOR -->
+            <!-- 👤 ACTIVE LINK CARD: DISPLAYING LINK NAME & DROPDOWN SELECTOR -->
             <div class="link-selector-card">
                 <div class="link-info-box">
                     <div class="link-title-badge">
@@ -654,6 +671,7 @@
                 </div>
                 
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <!-- User's Links Dropdown showing Name + ID + Claims -->
                     <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:220px; background:#080c14; cursor:pointer;">
                         <option value="">-- Choose Your Link --</option>
                     </select>
@@ -664,32 +682,22 @@
                 </div>
             </div>
 
-            <!-- CREDIT BALANCE CARD -->
+            <!-- Expiry Progress Bar -->
             <div class="timeline-card">
                 <div class="timeline-header">
-                    <span class="timeline-label">⚡ Available Traffic Credits</span>
-                    <span class="badge-status active" id="badgeCreditStatus">Active</span>
+                    <span class="timeline-label">Validity Status</span>
+                    <span class="badge-status active" id="badgeExpiry">Active</span>
                 </div>
-
-                <div class="credit-display-box">
-                    <div class="credit-number" id="txtUserCredits">--</div>
-                    <div class="credit-unit">Credits Remaining</div>
-                </div>
-
                 <div class="progress-bar-bg">
-                    <div class="progress-bar-fill active" id="barCreditProgress" style="width:100%;"></div>
+                    <div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div>
                 </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-muted); flex-wrap:wrap; gap:8px;">
-                    <span>Consumption: <strong id="txtCostPerVisit" style="color:#38bdf8;">1 Credit / Visit</strong></span>
-                    <span>Link Status: <strong id="txtLinkActiveState" style="color:#34d399;">Active</strong></span>
-                    <span style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;" onclick="openPlansModal()">
-                        + Recharge Credits Now
-                    </span>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
+                    <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
+                    <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">Lifetime</strong></span>
                 </div>
             </div>
 
-            <!-- ANALYTICS ROW -->
+            <!-- 📊 REAL UNIQUE 24-HOUR ANALYTICS ROW -->
             <div class="stats-row">
                 <div class="metric-card">
                     <div class="metric-value" id="metricToday">0</div>
@@ -709,25 +717,24 @@
                 </div>
             </div>
 
-            <!-- RECENT TRANSACTIONS -->
+            <!-- Recent 7 Renewal History Records -->
             <div class="pro-card">
-                <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Credit Recharges (Past 7 Records)</h3>
+                <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Renewal History (Past 7 Records)</h3>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Package / Type</th>
-                                <th>Credits Added</th>
+                                <th>Plan</th>
                                 <th>Amount</th>
-                                <th>Reference / UTR</th>
+                                <th>Reference ID</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableRows">
                             <tr>
-                                <td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">
-                                    No recharge records found
+                                <td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">
+                                    No transaction records found
                                 </td>
                             </tr>
                         </tbody>
@@ -737,7 +744,7 @@
         </div>
     </main>
 
-    <!-- URL SHORTENER MODAL -->
+    <!-- ==================== 🔗 URL SHORTENER MODAL ==================== -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -765,7 +772,7 @@
         </div>
     </div>
 
-    <!-- FEATURE LOCKED MODAL -->
+    <!-- ==================== 🔒 FEATURE LOCKED MODAL (< 3 ACTIVE LINKS) ==================== -->
     <div class="app-modal" id="lockModal">
         <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
             <div style="font-size:48px; margin-bottom:12px;">🔒</div>
@@ -791,26 +798,86 @@
         </div>
     </div>
 
-    <!-- BUY CREDITS MODAL -->
+    <!-- ==================== 💎 RENEWAL PLANS MODAL ==================== -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>💎 Buy Traffic Credits</h3>
+                <h3>💎 Extension Plans</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
 
-            <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:12px;">
-                Select a credit recharge package below. Credits will be automatically deducted per incoming traffic visit.
-            </p>
+            <div class="plan-list-container">
+                <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>7 Days Extension</h4>
+                            <p>₹14.2 / day • Starter Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹100</div>
+                    </div>
+                </div>
 
-            <div class="plan-list-container" id="creditPackagesContainer">
-                <div style="text-align:center; padding:15px; color:var(--text-muted);">Loading packages...</div>
+                <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>15 Days Extension</h4>
+                            <p>₹13.3 / day • Standard Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹200</div>
+                    </div>
+                </div>
+
+                <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>30 Days Extension <span class="plan-badge-pill popular">POPULAR</span></h4>
+                            <p>₹13.3 / day • Most Recommended</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹400</div>
+                    </div>
+                </div>
+
+                <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>90 Days Extension <span class="plan-badge-pill save">SAVE 15%</span></h4>
+                            <p>₹11.1 / day • Quarterly Pack</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹1000</div>
+                    </div>
+                </div>
+
+                <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
+                    <div class="plan-row-left">
+                        <div class="plan-radio-circle"></div>
+                        <div class="plan-meta">
+                            <h4>1 Year Extension <span class="plan-badge-pill best">BEST VALUE</span></h4>
+                            <p>₹8.2 / day • Maximum Savings</p>
+                        </div>
+                    </div>
+                    <div class="plan-row-right">
+                        <div class="plan-price-tag">₹3000</div>
+                    </div>
+                </div>
             </div>
 
+            <!-- Payment Details (QR & UPI ID) -->
             <div class="payment-panel">
                 <div class="qr-wrapper">
                     <img id="qrImageElement" src="" alt="Payment QR">
-                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan & Pay UPI</span>
+                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan to Pay</span>
                 </div>
                 <div class="payment-info">
                     <div class="upi-copy-chip" onclick="copyUpiText()">
@@ -818,56 +885,51 @@
                         <span>📋</span>
                     </div>
 
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px; line-height:1.4;">
-                        Selected: <strong id="txtSelectedPlanSummary" style="color:#38bdf8;">1,000 Credits (₹100)</strong><br>
-                        Scan QR or pay to UPI, then enter your UTR number below.
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+                        Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
+                        Scan QR or pay to UPI ID, then submit your request below.
                     </div>
 
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <input type="text" id="inUtrNumber" class="form-input" placeholder="Enter 12-digit UPI Ref / UTR No." style="padding:9px 12px; font-size:13px;">
-                    </div>
-
-                    <div style="display:flex; gap:8px; flex-direction:column;">
-                        <button class="btn-action" onclick="submitCreditRecharge()" style="padding:10px; font-size:13px;">
-                            <span>⚡ Submit UTR for Direct Approval</span>
-                        </button>
-                        <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="padding:10px; font-size:13px;">
-                            <span>💬 Send Proof to Admin on WhatsApp</span>
-                        </button>
-                    </div>
+                    <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
+                        <span>📩 Request Admin Renewal via WhatsApp</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- GUIDE MODAL -->
+    <!-- ==================== 📖 HOW TO USE MODAL ==================== -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>📖 How Credit System Works</h3>
+                <h3>📖 How to Use Your Dashboard</h3>
                 <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
             </div>
             
             <div class="guide-item">
-                <h4>1. Pay-Per-Traffic Credits</h4>
-                <p>Instead of fixed day limits, your links are active as long as you have credits. Each real visit to your link consumes credit based on the admin setting (e.g. 1 visit = 1 credit).</p>
+                <h4>1. Account Access & Ownership</h4>
+                <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
             </div>
             <div class="guide-item">
-                <h4>2. Never Lose Your Unused Days</h4>
-                <p>Credits don't expire after a few days. They only reduce when actual users visit and claim your reward campaign.</p>
+                <h4>2. Traffic & Claim Analytics</h4>
+                <p>Track 24-hour unique visitors, 7-day performance, and reward claims without duplicate count distortions.</p>
             </div>
             <div class="guide-item">
-                <h4>3. Auto-Pause Protection</h4>
-                <p>If your credit balance reaches 0, your links automatically pause safely without getting deleted. Recharging instantly restores them to active.</p>
+                <h4>3. Selecting an Extension Plan</h4>
+                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
+            </div>
+            <div class="guide-item">
+                <h4>4. URL Shortener</h4>
+                <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns.</p>
             </div>
 
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
-                <span>Understood, Close</span>
+                <span>Understood, Close Guide</span>
             </button>
         </div>
     </div>
 
-    <!-- TERMS MODAL -->
+    <!-- ==================== 📜 TERMS & RULES MODAL ==================== -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -876,21 +938,25 @@
             </div>
             
             <div class="guide-item">
-                <h4>1. Fair Usage Policy</h4>
-                <p>Credits are strictly calculated on unique incoming visits. Bot spam or spoofed headers are filtered to save your quota.</p>
+                <h4>1. Account Integrity</h4>
+                <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
             </div>
             <div class="guide-item">
-                <h4>2. Non-Refundable Recharges</h4>
-                <p>Credits credited to your balance are non-transferable and must be utilized on your registered links.</p>
+                <h4>2. Extension Policy</h4>
+                <p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p>
+            </div>
+            <div class="guide-item">
+                <h4>3. Support Desk</h4>
+                <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
             </div>
 
             <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;">
-                <span>I Agree</span>
+                <span>I Understand & Agree</span>
             </button>
         </div>
     </div>
 
-    <!-- DIALOG ALERT -->
+    <!-- ==================== 🔔 CUSTOM MODAL DIALOG ==================== -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="dialog-icon" id="dialogIcon">🔔</div>
@@ -901,17 +967,11 @@
     </div>
 
     <script>
+        // ==================== APPLICATION STATE ====================
         let userProfile = null;
         let activeLinkRecord = null;
         let myLinksList = [];
-        let activePackages = [
-            { id: 'pkg_100', name: 'Starter Pack', price: 100, credits: 1000, description: '1,000 Traffic Visits' },
-            { id: 'pkg_250', name: 'Standard Pack', price: 250, credits: 3000, description: '3,000 Traffic Visits' },
-            { id: 'pkg_500', name: 'Pro Pack', price: 500, credits: 7000, description: '7,000 Traffic Visits' }
-        ];
-        let selectedPackage = activePackages[0];
-        let creditsPerVisit = 1;
-        let userCreditBalance = 0;
+        let activePlan = { key: '30days', days: 30, cost: 400 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
 
@@ -925,6 +985,7 @@
             document.getElementById('customDialog').classList.remove('active');
         }
 
+        // Initialize Session on Load
         function initApp() {
             const cached = localStorage.getItem('activeUserSession');
             if (cached) {
@@ -949,6 +1010,7 @@
             document.getElementById('btnHamburger').style.display = 'flex';
         }
 
+        // Toggle Sidebar Drawer
         function toggleSidebar(open) {
             const sb = document.getElementById('sidebarDrawer');
             const ov = document.getElementById('sidebarOverlay');
@@ -961,10 +1023,11 @@
             }
         }
 
+        // Modals Management
         function openPlansModal() {
             toggleSidebar(false);
             document.getElementById('plansModal').classList.add('active');
-            fetchCreditPackages();
+            updateQrCode(activePlan.cost);
         }
         function closePlansModal() {
             document.getElementById('plansModal').classList.remove('active');
@@ -987,6 +1050,7 @@
             document.getElementById('termsModal').classList.remove('active');
         }
 
+        // 🔗 URL Shortener with Minimum 3 Active Links Eligibility Check
         function openShortenerModal() {
             toggleSidebar(false);
             const activeCount = (myLinksList && myLinksList.length) ? myLinksList.length : 0;
@@ -1013,12 +1077,14 @@
             document.getElementById('lockModal').classList.remove('active');
         }
 
+        // Auth switcher (Sign In / Sign Up)
         function switchAuth(mode) {
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
         }
 
+        // Sign In
         async function submitSignIn(e) {
             e.preventDefault();
             const email = document.getElementById('inEmail').value.trim();
@@ -1051,6 +1117,7 @@
             }
         }
 
+        // Sign Up with Clear Duplicate Error Message
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1079,17 +1146,21 @@
                     notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
                     switchAuth('login');
                 } else {
-                    let errMsg = data.error || data.message || 'Registration failed';
+                    let errMsg = data.error || data.message || '';
+                    if (!errMsg || errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('registered') || res.status === 400 || res.status === 409) {
+                        errMsg = 'This email or phone number is already registered. Please sign in.';
+                    }
                     notify(errMsg, 'Error', '⚠️');
                 }
             } catch (err) {
-                notify('Server connection error. Please try again later.', 'Error', '⚠️');
+                notify('This email or phone number is already registered. Please sign in.', 'Error', '⚠️');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Create Account</span>';
             }
         }
 
+        // View Dashboard
         function showDashboardView() {
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
@@ -1103,6 +1174,7 @@
             fetchUserLinkData();
         }
 
+        // ==================== 👤 SAFE LINK QUERY & USER-SPECIFIC DROPDOWN ====================
         async function fetchUserLinkData(explicitLinkId) {
             const displayEl = document.getElementById('displayLinkId');
             const displayNameEl = document.getElementById('displayLinkName');
@@ -1124,13 +1196,8 @@
                     activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
                     adminPhone = data.whatsappNumber || '916372923348';
                     myLinksList = data.userLinks || [];
-                    creditsPerVisit = data.creditsPerVisit || 1;
-                    userCreditBalance = data.credits !== undefined ? data.credits : 0;
 
-                    if (data.creditPackages) {
-                        activePackages = data.creditPackages;
-                        selectedPackage = activePackages[0] || selectedPackage;
-                    }
+                    if (data.pricing) applyLivePricing(data.pricing);
 
                     document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
                     localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
@@ -1177,119 +1244,107 @@
             fetchUserLinkData(targetId);
         }
 
+        function applyLivePricing(p) {
+            if (p['7days']) updatePlanRowText('7days', p['7days'], 7);
+            if (p['15days']) updatePlanRowText('15days', p['15days'], 15);
+            if (p['30days']) updatePlanRowText('30days', p['30days'], 30);
+            if (p['90days']) updatePlanRowText('90days', p['90days'], 90);
+            if (p['1year']) updatePlanRowText('1year', p['1year'], 365);
+        }
+
+        function updatePlanRowText(key, cost, days) {
+            const rows = document.querySelectorAll('.plan-row-item');
+            rows.forEach(r => {
+                const onclickStr = r.getAttribute('onclick') || '';
+                if (onclickStr.includes(`'${key}'`)) {
+                    r.setAttribute('onclick', `pickPlan('${key}', ${days}, ${cost}, this)`);
+                    const tag = r.querySelector('.plan-price-tag');
+                    if (tag) tag.textContent = `₹${cost}`;
+                    const sub = r.querySelector('.plan-meta p');
+                    if (sub) sub.textContent = `₹${(cost / days).toFixed(1)} / day`;
+                }
+            });
+        }
+
         function displayEmptyState(errMsg) {
             document.getElementById('metricToday').textContent = '0';
             document.getElementById('metric24h').textContent = '0';
             document.getElementById('metric7d').textContent = '0';
             document.getElementById('metricClaims').textContent = '0';
-            document.getElementById('txtUserCredits').textContent = '0';
-            document.getElementById('badgeCreditStatus').className = 'badge-status expired';
-            document.getElementById('badgeCreditStatus').textContent = 'Paused (No Credits)';
-            document.getElementById('barCreditProgress').style.width = '0%';
+            document.getElementById('badgeExpiry').className = 'badge-status expired';
+            document.getElementById('badgeExpiry').textContent = 'Unassigned';
+            document.getElementById('barExpiryProgress').style.width = '0%';
+            document.getElementById('txtExpiryDate').textContent = 'None';
         }
 
+        // Populate Analytics & Progress Bar (Unique 24h Values & Link Name)
         function populateDashboardMetrics(data) {
             const l = data.link || data;
             
+            // Set Link Name & Link ID
             const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
             document.getElementById('displayLinkName').textContent = linkTitle;
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
 
+            // Metrics display matching Admin Dashboard
             document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
             document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
             document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
             
+            // 🎯 UNIQUE TOTAL CLAIMS DISPLAY (EXACTLY MATCHING ADMIN DASHBOARD)
             const totalClaimsValue = (l.totalClaims !== undefined) ? l.totalClaims : 
                                     ((l.claims !== undefined) ? l.claims : 
                                     ((data.totalClaims !== undefined) ? data.totalClaims : 
                                     ((data.claims !== undefined) ? data.claims : (l.todayClaims || 0))));
             document.getElementById('metricClaims').textContent = totalClaimsValue;
 
-            const credits = data.credits !== undefined ? data.credits : userCreditBalance;
-            document.getElementById('txtUserCredits').textContent = Number(credits).toLocaleString();
-            document.getElementById('txtCostPerVisit').textContent = `${data.creditsPerVisit || creditsPerVisit} Credit / Visit`;
+            document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
-            const badge = document.getElementById('badgeCreditStatus');
-            const progress = document.getElementById('barCreditProgress');
-            const linkStateTxt = document.getElementById('txtLinkActiveState');
+            const badge = document.getElementById('badgeExpiry');
+            const progress = document.getElementById('barExpiryProgress');
+            const expText = document.getElementById('txtExpiryDate');
 
-            if (credits <= 0) {
-                badge.className = 'badge-status expired';
-                badge.textContent = 'Paused (0 Credits)';
-                progress.className = 'progress-bar-fill expired';
-                progress.style.width = '0%';
-                linkStateTxt.textContent = 'Paused (Recharge to activate)';
-                linkStateTxt.style.color = 'var(--danger)';
-            } else if (credits <= 50) {
-                badge.className = 'badge-status warning';
-                badge.textContent = `Low Balance (${credits})`;
-                progress.className = 'progress-bar-fill warning';
-                progress.style.width = `${Math.min(100, (credits / 200) * 100)}%`;
-                linkStateTxt.textContent = 'Active (Running Low)';
-                linkStateTxt.style.color = 'var(--warning)';
+            if (l.expiryDate) {
+                const d = new Date(l.expiryDate);
+                expText.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const left = typeof l.daysLeft === 'number' ? l.daysLeft : 0;
+
+                if (left <= 0) {
+                    badge.className = 'badge-status expired';
+                    badge.textContent = 'Expired';
+                    progress.className = 'progress-bar-fill expired';
+                    progress.style.width = '100%';
+                } else if (left <= 3) {
+                    badge.className = 'badge-status warning';
+                    badge.textContent = `Expiring (${left} Days Left)`;
+                    progress.className = 'progress-bar-fill warning';
+                    progress.style.width = `${Math.min(100, left * 33)}%`;
+                } else {
+                    badge.className = 'badge-status active';
+                    badge.textContent = `Active (${left} Days Left)`;
+                    progress.className = 'progress-bar-fill active';
+                    progress.style.width = '100%';
+                }
             } else {
                 badge.className = 'badge-status active';
-                badge.textContent = 'Active';
+                badge.textContent = 'Lifetime Active';
                 progress.className = 'progress-bar-fill active';
-                progress.style.width = `${Math.min(100, Math.max(15, (credits / 1000) * 100))}%`;
-                linkStateTxt.textContent = 'Active & Routing Traffic';
-                linkStateTxt.style.color = 'var(--success)';
+                progress.style.width = '100%';
+                expText.textContent = 'Lifetime Active';
             }
         }
 
-        async function fetchCreditPackages() {
-            const container = document.getElementById('creditPackagesContainer');
-            try {
-                const res = await fetch('/api/packages');
-                const json = await res.json();
-                if (json && json.data && json.data.length > 0) {
-                    activePackages = json.data;
-                    creditsPerVisit = json.creditsPerVisit || creditsPerVisit;
-                }
-            } catch(e) {}
-
-            renderPackagesList();
-            if (activePackages.length > 0) {
-                pickPackage(activePackages[0]);
-            }
-        }
-
-        function renderPackagesList() {
-            const container = document.getElementById('creditPackagesContainer');
-            container.innerHTML = activePackages.map((pkg, idx) => {
-                const isSelected = selectedPackage && selectedPackage.id === pkg.id;
-                return `
-                    <div class="plan-row-item ${isSelected ? 'selected' : ''}" onclick="pickPackageById('${pkg.id}')">
-                        <div class="plan-row-left">
-                            <div class="plan-radio-circle"></div>
-                            <div class="plan-meta">
-                                <h4>${pkg.name}</h4>
-                                <p>⚡ ${pkg.credits.toLocaleString()} Traffic Visits • ₹${(pkg.price / pkg.credits).toFixed(2)} / visit</p>
-                            </div>
-                        </div>
-                        <div class="plan-row-right">
-                            <div class="plan-price-tag">₹${pkg.price}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function pickPackageById(pkgId) {
-            const pkg = activePackages.find(p => p.id === pkgId);
-            if (pkg) pickPackage(pkg);
-        }
-
-        function pickPackage(pkg) {
-            selectedPackage = pkg;
-            renderPackagesList();
-            document.getElementById('txtSelectedPlanSummary').textContent = `${pkg.credits.toLocaleString()} Credits (₹${pkg.price})`;
-            updateQrCode(pkg.price);
+        function pickPlan(key, days, cost, elem) {
+            document.querySelectorAll('.plan-row-item').forEach(b => b.classList.remove('selected'));
+            elem.classList.add('selected');
+            activePlan = { key, days, cost };
+            document.getElementById('txtSelectedPlanSummary').textContent = `${days} Days (₹${cost})`;
+            updateQrCode(cost);
         }
 
         function updateQrCode(cost) {
             document.getElementById('upiIdDisplay').textContent = activeAdminUpi;
-            const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Credit_Recharge&am=${cost}&cu=INR`;
+            const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${cost}&cu=INR`;
             document.getElementById('qrImageElement').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
         }
 
@@ -1299,73 +1354,50 @@
             });
         }
 
-        async function submitCreditRecharge() {
-            const utr = document.getElementById('inUtrNumber').value.trim();
-            if (!utr || utr.length < 6) {
-                notify('Please enter a valid 12-digit UPI UTR / Transaction reference number.', 'UTR Required', '⚠️');
+        // WhatsApp Admin Request Action
+        async function requestAdminRenewal() {
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
+
+            if (!currentId) {
+                notify('Please select your Link ID before requesting renewal.', 'Link Required', '⚠️');
                 return;
             }
 
+            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
+
             try {
-                const res = await fetch('/api/user/buy-credits', {
+                fetch('/api/user/renew-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        packageId: selectedPackage.id,
-                        utrNumber: utr,
+                        linkId: currentId,
+                        linkName: currentLinkTitle,
                         userName: userProfile.name,
-                        userEmail: userProfile.email
-                    })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    notify('Recharge request submitted successfully! Admin will verify your UTR and assign credits shortly.', 'Submitted', '🎉');
-                    document.getElementById('inUtrNumber').value = '';
-                    closePlansModal();
-                    const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-                    if (currentId) fetchHistoryRecords(currentId);
-                } else {
-                    notify(data.error || 'Submission failed. Please try again or WhatsApp admin.', 'Failed', '❌');
-                }
-            } catch(e) {
-                notify('Server connection error. Please contact WhatsApp support.', 'Error', '⚠️');
-            }
-        }
-
-        async function requestAdminRenewal() {
-            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-            const utr = document.getElementById('inUtrNumber').value.trim() || 'Manual Screenshot Attached';
-
-            try {
-                fetch('/api/user/buy-credits', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        packageId: selectedPackage.id,
-                        utrNumber: utr,
-                        userName: userProfile.name,
-                        userEmail: userProfile.email
+                        plan: activePlan.key,
+                        days: activePlan.days,
+                        amount: activePlan.cost,
+                        refNo: 'Manual-WhatsApp'
                     })
                 }).catch(() => {});
             } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const message = 
-`Hello Admin, I have paid for traffic credits:
+`Hello Admin, I want to renew my link:
 👤 User Name: ${userProfile.name}
-📦 Package: ${selectedPackage.name}
-⚡ Credits: ${selectedPackage.credits.toLocaleString()} Credits
-💰 Total Paid: ₹${selectedPackage.price}
-🧾 UTR / Ref: ${utr}
+🔗 Link Name: ${currentLinkTitle}
+🆔 Link ID: ${currentId}
+💎 Extension Plan: ${activePlan.days} Days (${activePlan.key.toUpperCase()})
+💰 Total Amount: ₹${activePlan.cost}
 📅 Date: ${today}
 
-Please verify my payment and credit my account. Thank you!`;
+Please verify my payment and approve my extension. Thank you!`;
 
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
             window.open(waUrl, '_blank');
 
             closePlansModal();
-            setTimeout(() => { if (currentId) fetchHistoryRecords(currentId); }, 1500);
+            setTimeout(() => { fetchHistoryRecords(currentId); }, 1500);
         }
 
         async function fetchHistoryRecords(linkId) {
@@ -1378,22 +1410,20 @@ Please verify my payment and credit my account. Thank you!`;
                     const pastSeven = list.slice(0, 7);
 
                     if (pastSeven.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">No recharge records found</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>';
                         return;
                     }
 
                     tbody.innerHTML = pastSeven.map(record => {
                         const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
-                        const creditsDisplay = record.credits ? `+${Number(record.credits).toLocaleString()}` : `${record.days || 30} Days`;
-
+                        
                         return `
                             <tr>
                                 <td>${dateStr}</td>
-                                <td><strong style="color:#fff;">${record.plan || 'CREDIT PACK'}</strong></td>
-                                <td style="color:#38bdf8; font-weight:700;">${creditsDisplay}</td>
+                                <td><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td>
                                 <td>₹${record.amount || 0}</td>
-                                <td><code style="font-family:monospace; color:var(--accent-cyan);">${record.utrNumber || record.transactionId || 'N/A'}</code></td>
+                                <td><code style="font-family:monospace; color:var(--accent-cyan);">${record.transactionId || 'N/A'}</code></td>
                                 <td><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td>
                             </tr>
                         `;
@@ -1402,6 +1432,7 @@ Please verify my payment and credit my account. Thank you!`;
             } catch(e) {}
         }
 
+        // ==================== 🔗 URL SHORTENER FEATURE ====================
         async function loadUserShortLinks() {
             const container = document.getElementById('userShortLinksList');
             container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
@@ -1480,12 +1511,14 @@ Please verify my payment and credit my account. Thank you!`;
             } catch(e) {}
         }
 
+        // Logout Action
         function performLogout() {
             localStorage.removeItem('activeUserSession');
             localStorage.removeItem('userActiveLinkId');
             window.location.reload();
         }
 
+        // Live Auto-Refresh (every 10s)
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 const selectEl = document.getElementById('userLinkSelect');
@@ -1507,6 +1540,7 @@ Please verify my payment and credit my account. Thank you!`;
             }
         }, 10000);
 
+        // Initialize on DOM load
         initApp();
     </script>
 </body>
