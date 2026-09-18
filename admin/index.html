@@ -1960,7 +1960,6 @@
                 await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
             } catch(e) {}
             document.cookie = 'adminToken=; Path=/; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-            localStorage.removeItem('01 Jan 1970 00:00:00 UTC;';
             localStorage.removeItem('adminToken');
             window.location.href = '/admin/login.html';
         }
@@ -1982,3 +1981,7 @@
             loadContactInfo();
             loadBlockedDevices();
             setInterval(() => { loadStats(); }, 6000);
+        });
+    </script>
+</body>
+</html>
