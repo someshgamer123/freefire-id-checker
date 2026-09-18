@@ -41,7 +41,7 @@
             --bg: #090a10; --card-bg: #131722; --text: #f8fafc;
             --text-light: #94a3b8; --border: #232838; --radius: 14px;
         }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; overflow-x: hidden; -webkit-user-select: none; user-select: none; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; overflow-x: hidden; user-select: auto; }
         body.dark { --bg: #090a10; --card-bg: #131722; --text: #f8fafc; --text-light: #94a3b8; --border: #232838; }
         body.light { --bg: #f1f5f9; --card-bg: #ffffff; --text: #1e293b; --text-light: #64748b; --border: #e2e8f0; }
 
@@ -94,12 +94,12 @@
         .top-nav-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
         .top-nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
 
-        /* Sidebar Drawer */
+        /* Sidebar Drawer & Safe Overlay */
         .sidebar-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
             z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
-        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
         .sidebar {
             position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg);
             border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%);
@@ -121,62 +121,29 @@
 
         /* 📅 Date Filter Card Style */
         .date-filter-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px 18px;
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;
         }
-        .date-filter-buttons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .date-filter-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .btn-filter-pill {
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: #090a0f;
-            color: var(--text-light);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
+            padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+            background: #090a0f; color: var(--text-light); font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: 0.2s;
         }
-        .btn-filter-pill:hover {
-            border-color: var(--primary);
-            color: #fff;
-        }
+        .btn-filter-pill:hover { border-color: var(--primary); color: #fff; }
         .btn-filter-pill.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
+            background: var(--primary); border-color: var(--primary); color: #fff;
             box-shadow: 0 4px 12px rgba(99,102,241,0.3);
         }
         .custom-range-inputs {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border);
+            display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding-top: 10px; border-top: 1px dashed var(--border);
         }
         .date-input-field {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: #090a0f;
-            color: #fff;
-            font-size: 13px;
-            outline: none;
+            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+            background: #090a0f; color: #fff; font-size: 13px; outline: none;
         }
-        .date-input-field:focus {
-            border-color: var(--primary);
-        }
+        .date-input-field:focus { border-color: var(--primary); }
 
         /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
@@ -403,7 +370,7 @@
                 <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this URL with clients to allow them to register, view link analytics, and pay renewals.</div>
             </div>
 
-            <!-- 📅 DATE FILTER CARD (TODAY, YESTERDAY, 7 DAYS, 30 DAYS, CUSTOM DATE RANGE) -->
+            <!-- 📅 DATE FILTER CARD -->
             <div class="date-filter-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div class="date-filter-buttons">
@@ -689,7 +656,7 @@
         <!-- 7. SETTINGS & DEVICES -->
         <div class="section" id="sec-settings">
             <div class="card">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                     <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">⛔ Blocked</button>
@@ -876,7 +843,10 @@
             document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active'));
 
             const target = document.getElementById('sec-' + id);
-            if (target) target.classList.add('active');
+            if (target) {
+                target.classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
 
             const sBtn = document.getElementById('btn-nav-' + id);
             if (sBtn) sBtn.classList.add('active');
@@ -911,6 +881,43 @@
                 previewBox.classList.add('show');
             } else {
                 previewBox.classList.remove('show');
+            }
+        }
+
+        function toggleCreateUidChecking() {
+            createUidChecking = !createUidChecking;
+            const badge = document.getElementById('createUidBadge');
+            const desc = document.getElementById('createUidDesc');
+            const btn = document.getElementById('btnToggleCreateUid');
+            const hidden = document.getElementById('cUidChecking');
+
+            if (createUidChecking) {
+                if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
+                if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
+                if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+                if (hidden) hidden.value = 'true';
+            } else {
+                if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
+                if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
+                if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
+                if (hidden) hidden.value = 'false';
+            }
+        }
+
+        function toggleEditUidChecking() {
+            editUidChecking = !editUidChecking;
+            const badge = document.getElementById('editUidBadge');
+            const desc = document.getElementById('editUidDesc');
+            const btn = document.getElementById('btnToggleEditUid');
+
+            if (editUidChecking) {
+                if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
+                if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
+                if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+            } else {
+                if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
+                if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
+                if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
             }
         }
 
@@ -969,7 +976,10 @@
         }
 
         // ==================== 📊 REAL-TIME LIVELY STATS ====================
+        let isStatsLoading = false;
         async function loadStats() {
+            if (isStatsLoading) return;
+            isStatsLoading = true;
             try {
                 let query = `filter=${encodeURIComponent(activeAdminFilter)}`;
                 if (activeAdminFilter === 'custom' && customAdminStart && customAdminEnd) {
@@ -982,7 +992,6 @@
                     if (data && data.global) {
                         const isFiltered = activeAdminFilter !== 'all';
                         
-                        // Card metrics update according to selected date filter
                         const displayV = isFiltered ? (data.global.rangeVisitors ?? data.global.todayVisitors) : data.global.totalVisitors;
                         const displayC = isFiltered ? (data.global.rangeClaims ?? data.global.todayClaims) : data.global.totalClaims;
 
@@ -993,7 +1002,6 @@
                         document.getElementById('lblVisits').textContent = isFiltered ? 'Filtered Visits' : 'Total Visits';
                         document.getElementById('lblClaims').textContent = isFiltered ? 'Filtered Claims (Video)' : 'Total Claims (Video)';
                         
-                        // Lifetime & Today Stream
                         document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
                         document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
                         document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
@@ -1011,7 +1019,10 @@
                         filterLinks();
                     }
                 }
-            } catch(e) {}
+            } catch(e) {
+            } finally {
+                isStatsLoading = false;
+            }
         }
 
         async function loadLinks() {
@@ -1058,7 +1069,6 @@
                 if (!l) return '';
                 const linkId = l.id || l._id || '1';
                 
-                // Show filtered visits & claims when a date filter is selected
                 const visits = isFiltered ? (l.rangeVisits !== undefined ? l.rangeVisits : l.todayVisits || 0) : (l.visits || 0);
                 const claims = isFiltered ? (l.rangeClaims !== undefined ? l.rangeClaims : l.todayClaims || 0) : (l.claims || 0);
                 
@@ -1912,7 +1922,6 @@
             }
         }
 
-        // 🎯 FIXED createShortLink without any syntax error
         async function createShortLink() {
             const originalUrl = document.getElementById('sUrl')?.value.trim();
             const title = document.getElementById('sTitle')?.value.trim();
@@ -1950,9 +1959,8 @@
             try {
                 await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
             } catch(e) {}
-            document.cookie = 'adminPOST', credentials: 'include' });
-            } catch(e) {}
             document.cookie = 'adminToken=; Path=/; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            localStorage.removeItem('01 Jan 1970 00:00:00 UTC;';
             localStorage.removeItem('adminToken');
             window.location.href = '/admin/login.html';
         }
@@ -1974,7 +1982,3 @@
             loadContactInfo();
             loadBlockedDevices();
             setInterval(() => { loadStats(); }, 6000);
-        });
-    </script>
-</body>
-</html>
