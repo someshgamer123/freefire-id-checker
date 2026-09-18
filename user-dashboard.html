@@ -5,26 +5,6 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 🛡️ SAFE ANTI-F12 & ANTI-INSPECT SHIELD -->
-    <script>
-        (function() {
-            document.addEventListener('contextmenu', e => { e.preventDefault(); return false; }, true);
-            window.addEventListener('keydown', function(e) {
-                if (e.keyCode === 123 || e.key === 'F12') { e.preventDefault(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); return false;
-                }
-            }, true);
-            try {
-                const noop = () => {};
-                ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace'].forEach(m => window.console[m] = noop);
-            } catch(e) {}
-        })();
-    </script>
-
     <!-- Clean Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,6 +43,7 @@
             min-height: 100vh;
             overflow-x: hidden;
             padding-bottom: 50px;
+            user-select: auto;
         }
 
         .ambient-layer {
@@ -167,8 +148,9 @@
             background: #34d399;
         }
 
-        /* Slide-out Sidebar Drawer */
+        /* Slide-out Sidebar Drawer & Safe Overlay */
         .sidebar-overlay {
+            display: none;
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.75);
             backdrop-filter: blur(8px);
@@ -176,7 +158,7 @@
             opacity: 0; pointer-events: none;
             transition: opacity 0.3s ease;
         }
-        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
 
         .sidebar-drawer {
             position: fixed; top: 0; left: 0;
@@ -1002,12 +984,14 @@
         }
 
         function hideHamburger() {
-            document.getElementById('btnHamburger').style.display = 'none';
+            const btn = document.getElementById('btnHamburger');
+            if (btn) btn.style.display = 'none';
             toggleSidebar(false);
         }
 
         function showHamburger() {
-            document.getElementById('btnHamburger').style.display = 'flex';
+            const btn = document.getElementById('btnHamburger');
+            if (btn) btn.style.display = 'flex';
         }
 
         // Toggle Sidebar Drawer
@@ -1015,11 +999,11 @@
             const sb = document.getElementById('sidebarDrawer');
             const ov = document.getElementById('sidebarOverlay');
             if (open) {
-                sb.classList.add('show');
-                ov.classList.add('show');
+                if (sb) sb.classList.add('show');
+                if (ov) ov.classList.add('show');
             } else {
-                sb.classList.remove('show');
-                ov.classList.remove('show');
+                if (sb) sb.classList.remove('show');
+                if (ov) ov.classList.remove('show');
             }
         }
 
@@ -1117,7 +1101,7 @@
             }
         }
 
-        // Sign Up with Clear Duplicate Error Message
+        // Sign Up with Duplicate Detection
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1189,7 +1173,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.success) {
                     activeLinkRecord = data.link;
@@ -1199,7 +1183,8 @@
 
                     if (data.pricing) applyLivePricing(data.pricing);
 
-                    document.getElementById('supportLink').href = `https://wa.me/${adminPhone}`;
+                    const sup = document.getElementById('supportLink');
+                    if (sup) sup.href = `https://wa.me/${adminPhone}`;
                     localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
 
                     populateUserLinksDropdown(myLinksList, activeLinkRecord.id);
@@ -1277,21 +1262,18 @@
             document.getElementById('txtExpiryDate').textContent = 'None';
         }
 
-        // Populate Analytics & Progress Bar (Unique 24h Values & Link Name)
+        // Populate Analytics & Progress Bar
         function populateDashboardMetrics(data) {
             const l = data.link || data;
             
-            // Set Link Name & Link ID
             const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
             document.getElementById('displayLinkName').textContent = linkTitle;
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
 
-            // Metrics display matching Admin Dashboard
             document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
             document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
             document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
             
-            // 🎯 UNIQUE TOTAL CLAIMS DISPLAY (EXACTLY MATCHING ADMIN DASHBOARD)
             const totalClaimsValue = (l.totalClaims !== undefined) ? l.totalClaims : 
                                     ((l.claims !== undefined) ? l.claims : 
                                     ((data.totalClaims !== undefined) ? data.totalClaims : 
@@ -1404,7 +1386,7 @@ Please verify my payment and approve my extension. Thank you!`;
             try {
                 const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = await res.json().catch(() => ({}));
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
                     const pastSeven = list.slice(0, 7);
@@ -1439,7 +1421,7 @@ Please verify my payment and approve my extension. Thank you!`;
 
             try {
                 const res = await fetch(`/api/user/short-links?userName=${encodeURIComponent(userProfile.name)}`);
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
                 const links = data.links || [];
 
                 if (!links.length) {
@@ -1488,7 +1470,7 @@ Please verify my payment and approve my extension. Thank you!`;
                         userName: userProfile.name
                     })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
                 if (data.success) {
                     notify('Short link created successfully!', 'Success', '🎉');
                     document.getElementById('uShortUrl').value = '';
@@ -1529,7 +1511,7 @@ Please verify my payment and approve my extension. Thank you!`;
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ userName: userProfile.name, linkInput: targetId })
                     })
-                    .then(r => r.json())
+                    .then(r => r.json().catch(() => ({})))
                     .then(data => {
                         if (data && data.success) {
                             populateDashboardMetrics(data);
