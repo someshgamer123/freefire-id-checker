@@ -96,6 +96,7 @@ const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('Visit
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
     type: { type: String, enum: ['visit', 'claim'], required: true, index: true },
+    source: { type: String, enum: ['video', 'popup', 'direct'], default: 'video' },
     uid: { type: String, default: null },
     lastSeen: { type: Date, default: Date.now, index: true }
 }, { timestamps: true }));
@@ -156,11 +157,68 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
+// 📅 Helper: Calculate Start & End Date range for filtering
+function parseDateRange(filter, customStart, customEnd) {
+    const now = new Date();
+    const formatDate = (d) => d.toISOString().split('T')[0];
+    const today = formatDate(now);
+
+    let startStr = today;
+    let endStr = today;
+
+    if (filter === 'yesterday') {
+        const y = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        startStr = formatDate(y);
+        endStr = startStr;
+    } else if (filter === '7days' || filter === '7d') {
+        const d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        startStr = formatDate(d);
+        endStr = today;
+    } else if (filter === '30days' || filter === '30d') {
+        const d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        startStr = formatDate(d);
+        endStr = today;
+    } else if (filter === 'thisMonth') {
+        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        startStr = formatDate(d);
+        endStr = today;
+    } else if (filter === 'lastMonth') {
+        const d1 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const d2 = new Date(now.getFullYear(), now.getMonth(), 0);
+        startStr = formatDate(d1);
+        endStr = formatDate(d2);
+    } else if (customStart && customEnd) {
+        startStr = customStart.toString().trim().slice(0, 10);
+        endStr = customEnd.toString().trim().slice(0, 10);
+    } else if (customStart) {
+        startStr = customStart.toString().trim().slice(0, 10);
+        endStr = today;
+    }
+
+    const startDateObj = new Date(`${startStr}T00:00:00.000Z`);
+    const endDateObj = new Date(`${endStr}T23:59:59.999Z`);
+
+    return { startStr, endStr, startDateObj, endDateObj };
+}
+
+// 📅 Helper: Sum daily visits or claims between two date strings
+function sumDailyMapBetween(mapData, startStr, endStr) {
+    if (!mapData) return 0;
+    const entries = mapData instanceof Map ? Array.from(mapData.entries()) : Object.entries(mapData);
+    let total = 0;
+    for (const [date, count] of entries) {
+        if (date >= startStr && date <= endStr) {
+            total += parseInt(count) || 0;
+        }
+    }
+    return total;
+}
+
 async function initializeDatabase() {
     try {
-        // 🔓 FIX: Database se purane sabhi block records clear karein taaki admin panel turant open ho sake
+        // 🔓 Auto-unblock all devices on startup
         await BlockedDevice.deleteMany({}).catch(() => {});
-        console.log('🔓 All blocked devices cleared! Admin access restored.');
+        console.log('🔓 All blocked devices cleared! Admin access unblocked.');
 
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
         let admin = await User.findOne();
@@ -323,7 +381,6 @@ function getDeviceDetails(req) {
     return { deviceName, deviceType };
 }
 
-// 🔓 FIX: Localhost aur local network IP ko block se exempt rakhein taaki administrator lock na ho
 async function isDeviceBlocked(req) {
     try {
         if (mongoose.connection.readyState !== 1) return null;
@@ -373,7 +430,7 @@ app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
             </style></head><body>
             <div class="box">
                 <h1 style="color:#22c55e;">✅ All Devices Unblocked!</h1>
-                <p>All lockout restrictions have been cleared.</p>
+                <p>All lockout and ban restrictions have been cleared.</p>
                 <a href="/admin">Go to Admin Panel ➜</a>
             </div></body></html>
         `);
@@ -429,12 +486,14 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         let link = await Link.findOne(getLinkQuery(cleanId));
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
         
         const uniqueClaimsTotal = await VisitorActivity.countDocuments({
             linkId: { $in: [link.id, String(link._id), cleanId].filter(Boolean) },
-            type: 'claim'
+            type: 'claim',
+            source: { $ne: 'popup' } // 🎯 Exclude popup image clicks
         }).catch(() => 0);
 
         const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
@@ -451,6 +510,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             claims: finalTotalClaims,
             todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
             todayClaims: link.dailyClaims?.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims?.[today] || 0),
+            yesterdayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(yesterday) || 0) : (link.dailyVisits?.[yesterday] || 0),
+            yesterdayClaims: link.dailyClaims?.get ? (link.dailyClaims.get(yesterday) || 0) : (link.dailyClaims?.[yesterday] || 0),
             dailyVisits: Object.fromEntries(link.dailyVisits || new Map()),
             dailyClaims: Object.fromEntries(link.dailyClaims || new Map()),
             status: link.status || 'active',
@@ -629,11 +690,17 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
 });
 
 // =========================================================================
-// 🎯 TRACK CLAIM (CENTRALIZED HELPER & COMPREHENSIVE ALIASES)
+// 🎯 TRACK CLAIM (POPUP CLICKS STRICTLY IGNORED — ONLY VIDEO CLAIMS COUNTED)
 // =========================================================================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
+
+    // 🛑 POPUP EXCLUSION: If claim request originated from popup image button, IGNORE IT!
+    const sourceParam = (req.query.source || req.body?.source || req.query.from || req.body?.from || '').toString().toLowerCase().trim();
+    if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
+        return { success: true, ignored: true, message: 'Popup claim clicks are not counted. Only video claims count.' };
+    }
 
     const link = await Link.findOne(getLinkQuery(cleanId));
     if (!link) return { success: false, error: 'Link not found' };
@@ -647,10 +714,12 @@ async function executeClaimTracking(rawLinkId, req) {
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
         type: 'claim',
+        source: { $ne: 'popup' },
         lastSeen: { $gte: twentyFourHoursAgo }
     }).catch(() => null);
 
     if (!recentClaim) {
+        // Atomic increment directly on MongoDB collection and mongoose model
         await Link.collection.updateOne(
             { _id: link._id },
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
@@ -668,7 +737,7 @@ async function executeClaimTracking(rawLinkId, req) {
 
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
-        { $set: { lastSeen: new Date() } },
+        { $set: { lastSeen: new Date(), source: 'video' } },
         { upsert: true, new: true }
     ).catch(() => {});
 
@@ -687,7 +756,7 @@ const handleClaimTrackingRequest = async (req, res) => {
         }
         const result = await executeClaimTracking(rawId, req);
         if (result.success) {
-            return res.json({ success: true, claims: result.claims, linkId: result.linkId });
+            return res.json({ success: true, claims: result.claims, linkId: result.linkId, ignored: !!result.ignored });
         } else {
             return res.status(404).json({ error: result.error || 'Failed to track claim' });
         }
@@ -802,12 +871,12 @@ app.post('/api/user/signin', async (req, res) => {
 });
 
 // =========================================================================
-// 👤 USER LINK DETAILS (UNIQUE COUNTS SYNCHRONIZED WITH ADMIN DASHBOARD)
+// 👤 USER LINK DETAILS (WITH DATE RANGE FILTER: TODAY, YESTERDAY, CUSTOM RANGE)
 // =========================================================================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        const { userName, linkInput, linkId, id, dashboardId } = req.body;
+        const { userName, linkInput, linkId, id, dashboardId, filter, startDate, endDate } = req.body;
         const cleanUser = (userName || '').trim();
         const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
 
@@ -871,30 +940,51 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const now = new Date();
         const today = now.toISOString().split('T')[0];
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         const targetIds = [link.id, String(link._id), searchId].filter(Boolean);
 
-        const [uniqueClaimsTotal, uniqueClaimsToday, uniqueClaims24h, uniqueVisitsToday, uniqueVisits24h, uniqueVisits7d] = await Promise.all([
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim' }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', lastSeen: { $gte: oneDayAgo } }).catch(() => 0),
+        // 📅 Parse requested date range (Today, Yesterday, 7 Days, or Custom)
+        const dateRangeInfo = parseDateRange(filter, startDate, endDate);
+
+        // Fetch true unique counts from VisitorActivity (EXCLUDING popup clicks from claims)
+        const [
+            uniqueClaimsTotal, 
+            uniqueClaimsToday, 
+            uniqueClaimsYesterday,
+            uniqueClaims24h, 
+            uniqueVisitsToday, 
+            uniqueVisitsYesterday,
+            uniqueVisits24h, 
+            uniqueVisits7d,
+            uniqueRangeVisits,
+            uniqueRangeClaims
+        ] = await Promise.all([
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: new Date(yesterday + 'T00:00:00.000Z'), $lt: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: oneDayAgo } }).catch(() => 0),
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: new Date(yesterday + 'T00:00:00.000Z'), $lt: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
             VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: oneDayAgo } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: sevenDaysAgo } }).catch(() => 0)
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: sevenDaysAgo } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: dateRangeInfo.startDateObj, $lte: dateRangeInfo.endDateObj } }).catch(() => 0),
+            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: dateRangeInfo.startDateObj, $lte: dateRangeInfo.endDateObj } }).catch(() => 0)
         ]);
 
         const entriesV = link.dailyVisits ? (link.dailyVisits instanceof Map ? Array.from(link.dailyVisits.entries()) : Object.entries(link.dailyVisits)) : [];
         const entriesC = link.dailyClaims ? (link.dailyClaims instanceof Map ? Array.from(link.dailyClaims.entries()) : Object.entries(link.dailyClaims)) : [];
 
-        let vToday = 0, cToday = 0, v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
+        let vToday = 0, cToday = 0, vYesterday = 0, cYesterday = 0, v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
 
         for (const [date, count] of entriesV) {
             const d = new Date(date);
             const cnt = parseInt(count) || 0;
             if (date === today) vToday += cnt;
+            if (date === yesterday) vYesterday += cnt;
             if (d >= oneDayAgo) v24h += cnt;
             if (d >= sevenDaysAgo) v7d += cnt;
             if (d >= thirtyDaysAgo) v30d += cnt;
@@ -904,18 +994,28 @@ app.post('/api/user/link-details', async (req, res) => {
             const d = new Date(date);
             const cnt = parseInt(count) || 0;
             if (date === today) cToday += cnt;
+            if (date === yesterday) cYesterday += cnt;
             if (d >= oneDayAgo) c24h += cnt;
             if (d >= sevenDaysAgo) c7d += cnt;
             if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
         const finalTodayVisits = Math.max(vToday, uniqueVisitsToday);
+        const finalYesterdayVisits = Math.max(vYesterday, uniqueVisitsYesterday);
         const final24hVisits = Math.max(v24h, uniqueVisits24h);
         const final7dVisits = Math.max(v7d, uniqueVisits7d);
 
+        // 🎯 TOTAL CLAIMS (EXCLUDING POPUP)
         const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
         const finalTodayClaims = Math.max(cToday, uniqueClaimsToday);
+        const finalYesterdayClaims = Math.max(cYesterday, uniqueClaimsYesterday);
         const final24hClaims = Math.max(c24h, uniqueClaims24h);
+
+        // 📅 Calculate custom range stats
+        const mappedRangeVisits = sumDailyMapBetween(link.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
+        const mappedRangeClaims = sumDailyMapBetween(link.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
+        const finalRangeVisits = Math.max(mappedRangeVisits, uniqueRangeVisits);
+        const finalRangeClaims = Math.max(mappedRangeClaims, uniqueRangeClaims);
 
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
@@ -943,9 +1043,19 @@ app.post('/api/user/link-details', async (req, res) => {
             claims: finalTotalClaims,
             todayVisits: finalTodayVisits,
             todayClaims: finalTodayClaims,
+            yesterdayVisits: finalYesterdayVisits,
+            yesterdayClaims: finalYesterdayClaims,
             v24h: final24hVisits,
             c24h: final24hClaims,
             v7d: final7dVisits,
+            // 📅 Range Filter Response for Dashboard
+            dateRange: {
+                filter: filter || 'today',
+                start: dateRangeInfo.startStr,
+                end: dateRangeInfo.endStr,
+                visits: finalRangeVisits,
+                claims: finalRangeClaims
+            },
             link: {
                 id: link.id,
                 linkId: link.id,
@@ -963,11 +1073,20 @@ app.post('/api/user/link-details', async (req, res) => {
                 claims: finalTotalClaims,
                 todayVisits: finalTodayVisits,
                 todayClaims: finalTodayClaims,
+                yesterdayVisits: finalYesterdayVisits,
+                yesterdayClaims: finalYesterdayClaims,
                 v24h: final24hVisits,
                 c24h: final24hClaims,
                 v7d: final7dVisits,
                 c7d, v30d, c30d,
-                uidChecking: isUidOn
+                uidChecking: isUidOn,
+                dateRange: {
+                    filter: filter || 'today',
+                    start: dateRangeInfo.startStr,
+                    end: dateRangeInfo.endStr,
+                    visits: finalRangeVisits,
+                    claims: finalRangeClaims
+                }
             },
             userLinks: formattedUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -1222,7 +1341,6 @@ app.post('/api/admin/login', async (req, res) => {
             }
 
             const jwtToken = generateToken('admin');
-            // 🔓 FIX: path '/' ensures token is sent to all admin routes
             res.cookie('adminToken', jwtToken, { path: '/', httpOnly: false, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
             return res.json({ success: true, token: jwtToken });
         }
@@ -1250,7 +1368,6 @@ app.post('/api/admin/login', async (req, res) => {
             record.lastAttempt = new Date();
         }
 
-        // Localhost ko block nahi karega
         if (record.attempts >= 3 && ip !== '127.0.0.1' && ip !== '::1' && !ip.includes('localhost')) {
             record.isPermanent = true;
             record.reason = 'Permanent ban: 3 failed passcode attempts';
@@ -1664,24 +1781,69 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
 });
 
-// Admin All Stats
+// =========================================================================
+// 📊 ADMIN ALL STATS (WITH DATE RANGE SUPPORT: TODAY, YESTERDAY, CUSTOM RANGE)
+// =========================================================================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
+        const { filter, startDate, endDate } = req.query;
         const links = await Link.find().lean();
-        const today = new Date().toISOString().split('T')[0];
-        let totV = 0, totC = 0, todayV = 0, todayC = 0;
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        links.forEach(l => {
-            totV += (l.visits || 0);
-            totC += (l.claims || 0);
+        const dateRangeInfo = parseDateRange(filter, startDate, endDate);
+
+        let totV = 0, totC = 0, todayV = 0, todayC = 0, yestV = 0, yestC = 0;
+        let rangeV = 0, rangeC = 0;
+
+        const formattedLinks = links.map(l => {
+            const v = l.visits || 0;
+            const c = l.claims || 0;
+            totV += v;
+            totC += c;
+
+            let tv = 0, tc = 0, yv = 0, yc = 0;
             if (l.dailyVisits) {
                 const dv = l.dailyVisits instanceof Map ? l.dailyVisits.get(today) : l.dailyVisits[today];
-                todayV += parseInt(dv) || 0;
+                tv = parseInt(dv) || 0;
+                const dy = l.dailyVisits instanceof Map ? l.dailyVisits.get(yesterday) : l.dailyVisits[yesterday];
+                yv = parseInt(dy) || 0;
             }
             if (l.dailyClaims) {
                 const dc = l.dailyClaims instanceof Map ? l.dailyClaims.get(today) : l.dailyClaims[today];
-                todayC += parseInt(dc) || 0;
+                tc = parseInt(dc) || 0;
+                const dcy = l.dailyClaims instanceof Map ? l.dailyClaims.get(yesterday) : l.dailyClaims[yesterday];
+                yc = parseInt(dcy) || 0;
             }
+
+            todayV += tv;
+            todayC += tc;
+            yestV += yv;
+            yestC += yc;
+
+            const lRangeVisits = sumDailyMapBetween(l.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
+            const lRangeClaims = sumDailyMapBetween(l.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
+
+            rangeV += lRangeVisits;
+            rangeC += lRangeClaims;
+
+            return {
+                ...l,
+                name: l.name || l.userName || 'User',
+                userName: l.name || l.userName || 'User',
+                linkName: l.linkName || l.title || 'Link',
+                title: l.linkName || l.title || 'Link',
+                claims: c,
+                visits: v,
+                todayVisits: tv,
+                todayClaims: tc,
+                yesterdayVisits: yv,
+                yesterdayClaims: yc,
+                rangeVisits: lRangeVisits,
+                rangeClaims: lRangeClaims,
+                uidChecking: !isUidCheckDisabled(l.uidChecking)
+            };
         });
 
         const activeWatching = await VisitorActivity.countDocuments({
@@ -1691,6 +1853,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 
         const activeClaiming = await VisitorActivity.countDocuments({
             type: 'claim',
+            source: { $ne: 'popup' },
             lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
         }).catch(() => 0);
 
@@ -1700,19 +1863,18 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 totalClaims: totC,
                 todayVisitors: todayV,
                 todayClaims: todayC,
+                yesterdayVisitors: yestV,
+                yesterdayClaims: yestC,
                 activeNow: activeWatching,
-                activeClaims: activeClaiming
+                activeClaims: activeClaiming,
+                // 📅 Date Range Filter stats for Admin
+                rangeVisitors: rangeV,
+                rangeClaims: rangeC,
+                rangeFilter: filter || 'all',
+                startDate: dateRangeInfo.startStr,
+                endDate: dateRangeInfo.endStr
             },
-            links: links.map(l => ({
-                ...l,
-                name: l.name || l.userName || 'User',
-                userName: l.name || l.userName || 'User',
-                linkName: l.linkName || l.title || 'Link',
-                title: l.linkName || l.title || 'Link',
-                claims: l.claims || 0,
-                visits: l.visits || 0,
-                uidChecking: !isUidCheckDisabled(l.uidChecking)
-            }))
+            links: formattedLinks
         });
     } catch(e) { res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
@@ -1973,7 +2135,7 @@ try {
     localStorage.setItem('uid_verified', 'true');
 } catch(e) {}
 
-// 🎯 AUTO-ATTACH CLAIM TRACKER TO ANY CLAIM BUTTON OR LINK
+// 🎯 ONLY VIDEO CLAIM BUTTON UNDER VIDEO WILL FIRE CLAIM (POPUP CLICKS ARE COMPLETELY EXCLUDED)
 document.addEventListener('DOMContentLoaded', function() {
     function fireClaim() {
         var lid = window.__LINK_ID__ || (new URLSearchParams(window.location.search)).get('link') || (new URLSearchParams(window.location.search)).get('id');
@@ -1982,19 +2144,28 @@ document.addEventListener('DOMContentLoaded', function() {
             lid = parts[parts.length - 1];
         }
         if (lid) {
+            var targetUrl = '/api/track-claim/' + encodeURIComponent(lid) + '?source=video';
             try {
                 if (navigator.sendBeacon) {
-                    navigator.sendBeacon('/api/track-claim/' + encodeURIComponent(lid));
+                    navigator.sendBeacon(targetUrl);
                 } else {
-                    fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
+                    fetch(targetUrl, { method: 'POST', keepalive: true }).catch(function(){});
                 }
             } catch(e) {
-                fetch('/api/track-claim/' + encodeURIComponent(lid), { method: 'POST', keepalive: true }).catch(function(){});
+                fetch(targetUrl, { method: 'POST', keepalive: true }).catch(function(){});
             }
         }
     }
+
     document.addEventListener('click', function(e) {
-        var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn');
+        // 🛑 STRICT POPUP EXCLUSION: If click was inside ANY popup, modal or overlay -> DO NOT COUNT AS CLAIM!
+        var inPopup = e.target.closest('#popup, .popup, #popupModal, .popup-modal, #entrancePopup, .modal-popup, .popup-container, .popup-overlay, #popupOverlay, [id*="popup" i], [class*="popup" i], [id*="modal" i], [class*="modal" i]');
+        if (inPopup) {
+            return; // ❌ DO NOT COUNT POPUP CLICKS
+        }
+
+        // 🎯 ONLY COUNT BUTTON UNDER VIDEO
+        var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn, #videoClaimBtn');
         if (target) {
             var href = (target.getAttribute('href') || '').toLowerCase();
             var text = (target.textContent || '').toLowerCase();
@@ -2030,13 +2201,13 @@ app.get('/admin/login.html', async (req, res) => {
         return res.send(`
             <!DOCTYPE html><html><head><title>Access Blocked</title>
             <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
-            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 0 50px rgba(239,68,68,0.2);}
+            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
             h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
             p{color:#94a3b8;font-size:14px;line-height:1.6;}
             a{color:#38bdf8;text-decoration:none;font-weight:700;display:inline-block;margin-top:14px;}
             </style></head>
             <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device has been unblocked. Click below to continue:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>
+            <p>Your device was blocked. Click below to unblock immediately:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>
         `);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
