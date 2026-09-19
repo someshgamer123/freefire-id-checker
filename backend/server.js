@@ -76,6 +76,17 @@ try {
         });
         Link.schema.set('strict', false);
     }
+    if (RenewalUser && RenewalUser.schema) {
+        RenewalUser.schema.add({
+            name: { type: String, default: '' },
+            email: { type: String, default: '' },
+            phone: { type: String, default: '' },
+            status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+            approvedAt: { type: Date, default: null },
+            notifiedAt: { type: Date, default: null }
+        });
+        RenewalUser.schema.set('strict', false);
+    }
     if (RenewalRequest && RenewalRequest.schema) {
         RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
         RenewalRequest.schema.set('strict', false);
@@ -192,7 +203,7 @@ function parseDateRange(filter, customStart, customEnd) {
         endStr = customEnd.toString().trim().slice(0, 10);
     } else if (customStart) {
         startStr = customStart.toString().trim().slice(0, 10);
-        endStr = today;
+        endStr = customStart.toString().trim().slice(0, 10); // Exact single date when single date passed
     }
 
     const startDateObj = new Date(`${startStr}T00:00:00.000Z`);
@@ -212,6 +223,39 @@ function sumDailyMapBetween(mapData, startStr, endStr) {
         }
     }
     return total;
+}
+
+// 💬 Helper: Build standard WhatsApp approval message
+function generateWhatsAppApprovalData(user, req) {
+    let cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10) {
+        cleanPhone = '91' + cleanPhone;
+    } else if (cleanPhone.startsWith('0')) {
+        cleanPhone = '91' + cleanPhone.replace(/^0+/, '');
+    }
+
+    const protocol = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
+    const host = req.get('host') || 'localhost:3001';
+    const loginUrl = `${protocol}://${host}/user-dashboard`;
+
+    const message = 
+`🎉 *Congratulations ${user.name}!*
+Your account has been officially approved by the Administrator.
+
+You can now log in to your personal dashboard to track your live links, view 24-hour unique visits, monitor reward claims, and manage renewals.
+
+🔐 *Your Login Credentials:*
+📧 *Email:* ${user.email}
+📱 *Phone:* ${user.phone}
+
+🔗 *Dashboard Login Link:*
+${loginUrl}
+
+If you have any questions or require extensions, feel free to reply directly to this number.
+Thank you! 🚀`;
+
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    return { message, whatsappUrl, cleanPhone, loginUrl };
 }
 
 async function initializeDatabase() {
@@ -615,6 +659,7 @@ app.get('/api/link/:id', async (req, res) => {
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+        // 🔒 STRICT 24-HOUR UNIQUE VISITOR CHECK
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
             visitorKey: visitorKey,
@@ -690,7 +735,7 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
 });
 
 // =========================================================================
-// 🎯 TRACK CLAIM (POPUP CLICKS STRICTLY IGNORED — ONLY VIDEO CLAIMS COUNTED)
+// 🎯 TRACK CLAIM (24-HOUR UNIQUE, DUMMY 16:9 POPUP CLICKS STRICTLY IGNORED)
 // =========================================================================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
@@ -699,7 +744,7 @@ async function executeClaimTracking(rawLinkId, req) {
     // 🛑 POPUP EXCLUSION: If claim request originated from popup image button, IGNORE IT!
     const sourceParam = (req.query.source || req.body?.source || req.query.from || req.body?.from || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
-        return { success: true, ignored: true, message: 'Popup claim clicks are not counted. Only video claims count.' };
+        return { success: true, ignored: true, message: 'Popup claim clicks are dummy and ignored. Only video claims count.' };
     }
 
     const link = await Link.findOne(getLinkQuery(cleanId));
@@ -710,6 +755,7 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = new Date().toISOString().split('T')[0];
 
+    // 🔒 STRICT 24-HOUR UNIQUE CLAIM CHECK
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -849,7 +895,8 @@ app.post('/api/user/signup', async (req, res) => {
             name: name.trim(),
             email: cleanEmail,
             phone: cleanPhone,
-            status: 'pending'
+            status: 'pending',
+            createdAt: new Date()
         });
         res.json({ success: true, message: 'Signup submitted! Admin approval is pending.' });
     } catch (e) { res.status(500).json({ error: 'Registration failed' }); }
@@ -871,7 +918,7 @@ app.post('/api/user/signin', async (req, res) => {
 });
 
 // =========================================================================
-// 👤 USER LINK DETAILS (WITH DATE RANGE FILTER: TODAY, YESTERDAY, CUSTOM RANGE)
+// 👤 USER LINK DETAILS (WITH CUSTOM DATE / RANGE FILTER & UNIQUE STATS)
 // =========================================================================
 app.post('/api/user/link-details', async (req, res) => {
     try {
@@ -947,7 +994,7 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const targetIds = [link.id, String(link._id), searchId].filter(Boolean);
 
-        // 📅 Parse requested date range (Today, Yesterday, 7 Days, or Custom)
+        // 📅 Parse requested date range (Today, Yesterday, 7 Days, or Custom Date e.g. 17th)
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
         // Fetch true unique counts from VisitorActivity (EXCLUDING popup clicks from claims)
@@ -1005,7 +1052,7 @@ app.post('/api/user/link-details', async (req, res) => {
         const final24hVisits = Math.max(v24h, uniqueVisits24h);
         const final7dVisits = Math.max(v7d, uniqueVisits7d);
 
-        // 🎯 TOTAL CLAIMS (EXCLUDING POPUP)
+        // 🎯 TOTAL CLAIMS (EXCLUDING DUMMY POPUP CLICKS)
         const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
         const finalTodayClaims = Math.max(cToday, uniqueClaimsToday);
         const finalYesterdayClaims = Math.max(cYesterday, uniqueClaimsYesterday);
@@ -1048,7 +1095,7 @@ app.post('/api/user/link-details', async (req, res) => {
             v24h: final24hVisits,
             c24h: final24hClaims,
             v7d: final7dVisits,
-            // 📅 Range Filter Response for Dashboard
+            // 📅 Range / Custom Date Response for Dashboard
             dateRange: {
                 filter: filter || 'today',
                 start: dateRangeInfo.startStr,
@@ -1150,18 +1197,71 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Failed to delete short link' }); }
 });
 
-// Admin User Management
+// =========================================================================
+// 👥 ADMIN USER MANAGEMENT (UNIQUE VISITS/CLAIMS & WHATSAPP APPROVAL MSG)
+// =========================================================================
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
         const links = await Link.find().lean();
-        const usersWithStats = users.map(u => {
+
+        const usersWithStats = await Promise.all(users.map(async (u) => {
             const cleanName = (u.name || '').toLowerCase().trim();
-            const userLinks = links.filter(l => (l.name || '').toLowerCase().trim() === cleanName || (l.assignedUser || '').toLowerCase().trim() === cleanName || (l.userName || '').toLowerCase().trim() === cleanName);
-            return { ...u, totalLinks: userLinks.length };
-        });
+            
+            // Match all links created by or assigned to this user
+            const userLinks = links.filter(l => {
+                const ln = (l.name || '').toLowerCase().trim();
+                const au = (l.assignedUser || '').toLowerCase().trim();
+                const un = (l.userName || '').toLowerCase().trim();
+                const cr = (l.creator || '').toLowerCase().trim();
+                return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
+            });
+
+            const linkIds = userLinks.map(l => l.id).filter(Boolean);
+
+            // Fetch true unique visits & unique video claims across all user links
+            let totalVisits = 0;
+            let totalClaims = 0;
+
+            if (linkIds.length > 0) {
+                const [uniqV, uniqC] = await Promise.all([
+                    VisitorActivity.countDocuments({ linkId: { $in: linkIds }, type: 'visit' }).catch(() => 0),
+                    VisitorActivity.countDocuments({ linkId: { $in: linkIds }, type: 'claim', source: { $ne: 'popup' } }).catch(() => 0)
+                ]);
+
+                // Also sum standard link document counts
+                const storedVisits = userLinks.reduce((acc, l) => acc + (l.visits || 0), 0);
+                const storedClaims = userLinks.reduce((acc, l) => acc + (l.claims || 0), 0);
+
+                totalVisits = Math.max(storedVisits, uniqV);
+                totalClaims = Math.max(storedClaims, uniqC);
+            }
+
+            const waData = generateWhatsAppApprovalData(u, req);
+
+            return { 
+                ...u, 
+                totalLinks: userLinks.length,
+                totalVisits,
+                totalClaims,
+                whatsappMessage: waData.message,
+                whatsappUrl: waData.whatsappUrl,
+                portalLoginUrl: waData.loginUrl
+            };
+        }));
+
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
+});
+
+// WhatsApp Approval Generator Endpoint
+app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, res) => {
+    try {
+        const user = await RenewalUser.findById(req.params.id).lean();
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const waData = generateWhatsAppApprovalData(user, req);
+        res.json({ success: true, user, ...waData });
+    } catch(e) { res.status(500).json({ error: 'Failed to generate WhatsApp approval message' }); }
 });
 
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
@@ -1173,21 +1273,46 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
 
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
-        const users = await RenewalUser.find({ status: 'pending' }).sort({ createdAt: -1 });
-        res.json({ success: true, users });
+        const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
+        const usersWithWa = users.map(u => ({
+            ...u,
+            ...generateWhatsAppApprovalData(u, req)
+        }));
+        res.json({ success: true, users: usersWithWa });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.post('/api/admin/renewal-users/:id/action', authMiddleware, async (req, res) => {
+// Handles User Approval / Rejection action
+const handleUserApprovalAction = async (req, res) => {
     try {
         const { action } = req.body;
+        const validActions = ['approved', 'rejected', 'pending'];
+        const targetAction = validActions.includes(action) ? action : 'approved';
+
         const user = await RenewalUser.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        user.status = action;
+
+        user.status = targetAction;
+        if (targetAction === 'approved') {
+            user.approvedAt = new Date();
+        }
         await user.save();
-        res.json({ success: true, message: `User ${action}!` });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
+
+        const waData = generateWhatsAppApprovalData(user, req);
+
+        res.json({ 
+            success: true, 
+            message: `User status updated to ${targetAction}!`, 
+            status: targetAction,
+            user,
+            whatsappUrl: waData.whatsappUrl,
+            whatsappMessage: waData.message
+        });
+    } catch (e) { res.status(500).json({ error: 'Failed to update user status' }); }
+};
+
+app.post('/api/admin/renewal-users/:id/action', authMiddleware, handleUserApprovalAction);
+app.post('/api/admin/users/:id/action', authMiddleware, handleUserApprovalAction);
 
 // Admin Renewal Settings & Requests
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
@@ -1867,7 +1992,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 yesterdayClaims: yestC,
                 activeNow: activeWatching,
                 activeClaims: activeClaiming,
-                // 📅 Date Range Filter stats for Admin
                 rangeVisitors: rangeV,
                 rangeClaims: rangeC,
                 rangeFilter: filter || 'all',
