@@ -37,6 +37,7 @@ const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
 const RenewalUser = require('./models/RenewalUser');
 const Pricing = require('./models/Pricing');
+const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
 const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
@@ -44,30 +45,6 @@ const BlockedDevice = require('./models/BlockedDevice');
 const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
-
-// Fail-safe Session Model initialization
-let Session;
-try {
-    Session = require('./models/Session');
-} catch(e) {
-    Session = null;
-}
-if (!Session || !Session.schema) {
-    const sessionSchema = new mongoose.Schema({
-        userId: { type: String, default: 'admin' },
-        deviceKey: { type: String, default: '' },
-        fingerprint: { type: String, default: '' },
-        ip: { type: String, default: '127.0.0.1' },
-        userAgent: { type: String, default: 'Unknown' },
-        deviceName: { type: String, default: 'Browser' },
-        deviceType: { type: String, default: 'Desktop' },
-        isActive: { type: Boolean, default: true },
-        lastActivity: { type: Date, default: Date.now },
-        createdAt: { type: Date, default: Date.now },
-        expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) }
-    }, { strict: false });
-    Session = mongoose.models.Session || mongoose.model('Session', sessionSchema);
-}
 
 // Security 2FA Helper
 const Security = {
@@ -81,7 +58,7 @@ const Security = {
 
 connectDB();
 
-// Register flexible schema fields for Link and Renewal
+// Register flexible schema fields
 try {
     if (Link && Link.schema) {
         Link.schema.add({ 
@@ -101,12 +78,8 @@ try {
     }
     if (RenewalUser && RenewalUser.schema) {
         RenewalUser.schema.add({
-            name: { type: String, default: '' },
-            email: { type: String, default: '' },
-            phone: { type: String, default: '' },
             status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-            approvedAt: { type: Date, default: null },
-            notifiedAt: { type: Date, default: null }
+            approvedAt: { type: Date, default: null }
         });
         RenewalUser.schema.set('strict', false);
     }
@@ -394,7 +367,7 @@ app.get('/health', (req, res) => {
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
-// 🚀 Optimized Rate Limiter (Skips all Admin Operations to prevent Panel Freezes)
+// 🚀 Rate Limiter (Skips all Admin Operations to completely avoid panel freeze)
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
@@ -419,7 +392,8 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+// 🔐 Persistent JWT Secret ensures admin is not logged out or frozen on restart
+const JWT_SECRET = process.env.JWT_SECRET || 'somu_dashboard_jwt_secret_key_2026_fixed_secure';
 const JWT_EXPIRY = '7d';
 
 function generateToken(userId) {
@@ -468,7 +442,7 @@ async function isDeviceBlocked(req) {
     } catch(e) { return null; }
 }
 
-// 🛡️ Reliable Auth Middleware: Verifies JWT token smoothly without blocking authenticated admin
+// 🛡️ Reliable Auth Middleware: Verifies authenticated admin without hang
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken || 
                   req.headers['authorization']?.replace('Bearer ', '') ||
@@ -483,7 +457,7 @@ async function authMiddleware(req, res, next) {
     
     req.user = decoded;
 
-    // Async heartbeat to keep session refreshed in background without blocking request
+    // Background heartbeat to refresh active device session
     if (Session) {
         const { deviceKey, ip, fingerprint } = getDeviceId(req);
         Session.updateOne(
@@ -566,8 +540,6 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
-        
-        const finalTotalClaims = link.claims || 0;
 
         res.json({
             linkId: link.id,
@@ -577,8 +549,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             linkName: lName,
             userName: link.userName || link.name || '',
             totalVisits: link.visits || 0,
-            totalClaims: finalTotalClaims,
-            claims: finalTotalClaims,
+            totalClaims: link.claims || 0,
+            claims: link.claims || 0,
             todayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(today) || 0) : (link.dailyVisits?.[today] || 0),
             todayClaims: link.dailyClaims?.get ? (link.dailyClaims.get(today) || 0) : (link.dailyClaims?.[today] || 0),
             yesterdayVisits: link.dailyVisits?.get ? (link.dailyVisits.get(yesterday) || 0) : (link.dailyVisits?.[yesterday] || 0),
@@ -1202,9 +1174,9 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
             });
 
-            // Sum up 24h unique visits and claims safely
-            const totalVisits = userLinks.reduce((acc, l) => acc + (parseInt(l.visits) || 0), 0);
-            const totalClaims = userLinks.reduce((acc, l) => acc + (parseInt(l.claims) || 0), 0);
+            // Fast summing of 24-hour unique visits and unique claims
+            const totalVisits = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
+            const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
 
             const waData = generateWhatsAppApprovalData(u, req);
 
@@ -1226,7 +1198,9 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
 // WhatsApp Approval Generator Endpoint
 app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, res) => {
     try {
-        const user = await RenewalUser.findById(req.params.id).lean();
+        const userId = req.params.id;
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        const user = await RenewalUser.findOne(userQuery).lean();
         if (!user) return res.status(404).json({ error: 'User not found' });
         const waData = generateWhatsAppApprovalData(user, req);
         res.json({ success: true, user, ...waData });
@@ -1235,7 +1209,9 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
 
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
-        await RenewalUser.findByIdAndDelete(req.params.id);
+        const userId = req.params.id;
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        await RenewalUser.findOneAndDelete(userQuery);
         res.json({ success: true, message: 'User deleted successfully' });
     } catch (e) { res.status(500).json({ error: 'Failed to delete user' }); }
 });
@@ -1251,14 +1227,15 @@ app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Handles User Approval / Rejection action
+// Handles User Approval / Rejection action (with ObjectId or string ID tolerance)
 const handleUserApprovalAction = async (req, res) => {
     try {
         const { action } = req.body;
-        const validActions = ['approved', 'rejected', 'pending'];
-        const targetAction = validActions.includes(action) ? action : 'approved';
+        const targetAction = (action || 'approved').toString().trim().toLowerCase();
+        const userId = req.params.id;
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
 
-        const user = await RenewalUser.findById(req.params.id);
+        const user = await RenewalUser.findOne(userQuery);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         user.status = targetAction;
@@ -1545,9 +1522,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-// =========================================================================
-// 🎯 ADMIN LINKS CRUD
-// =========================================================================
+// ==================== 🎯 ADMIN LINKS CRUD ====================
 app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -2040,7 +2015,12 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         if (Session) {
-            await Session.findByIdAndDelete(req.params.id);
+            const sid = req.params.id;
+            if (mongoose.Types.ObjectId.isValid(sid)) {
+                await Session.findByIdAndDelete(sid);
+            } else {
+                await Session.deleteOne({ id: sid });
+            }
         }
         res.json({ success: true, message: 'Session terminated' });
     } catch (e) { res.status(500).json({ error: 'Failed to terminate session' }); }
@@ -2050,7 +2030,12 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     try {
         let session = null;
         if (Session) {
-            session = await Session.findById(req.params.id);
+            const sid = req.params.id;
+            if (mongoose.Types.ObjectId.isValid(sid)) {
+                session = await Session.findById(sid);
+            } else {
+                session = await Session.findOne({ id: sid });
+            }
         }
         if (session) {
             await BlockedDevice.create({
@@ -2064,7 +2049,7 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
                 reason: 'Terminated & blocked by admin',
                 lastAttempt: new Date()
             });
-            await Session.findByIdAndDelete(req.params.id);
+            await Session.findByIdAndDelete(session._id);
         }
         res.json({ success: true, message: 'Device blocked permanently' });
     } catch (e) { res.status(500).json({ error: 'Failed to block device' }); }
