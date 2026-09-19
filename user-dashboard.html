@@ -394,7 +394,72 @@
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
 
-        /* Stats Row */
+        /* 📅 Custom Date Filter Card */
+        .date-filter-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .date-filter-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .date-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pill-btn {
+            padding: 6px 13px;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            background: #080c14;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .pill-btn:hover {
+            color: #fff;
+            border-color: var(--primary-light);
+        }
+        .pill-btn.active {
+            background: var(--primary);
+            border-color: var(--primary-light);
+            color: #fff;
+            box-shadow: 0 2px 10px var(--primary-glow);
+        }
+
+        .custom-date-container {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-subtle);
+        }
+        .date-input {
+            background: #080c14;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+        .date-input:focus { border-color: var(--primary-light); }
+
+        /* 📊 Stats Grid Rows */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -408,9 +473,20 @@
             border: 1px solid var(--border-subtle);
             border-radius: 12px;
             padding: 14px;
+            position: relative;
+            overflow: hidden;
         }
-        .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .metric-card.highlight {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1));
+        }
+        .metric-card.highlight-success {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1));
+        }
+        .metric-value { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+        .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
         /* Plan List */
         .plan-list-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
@@ -679,11 +755,67 @@
                 </div>
             </div>
 
-            <!-- 📊 REAL UNIQUE 24-HOUR ANALYTICS ROW -->
+            <!-- 📅 CUSTOM DATE SELECTION & QUICK FILTER CARD -->
+            <div class="date-filter-box">
+                <div class="date-filter-top">
+                    <div class="date-pills">
+                        <span style="font-size:12.5px; font-weight:700; color:var(--text-secondary);">📅 Select Date:</span>
+                        <button class="pill-btn active" id="pillToday" onclick="selectDateFilter('today', this)">Today</button>
+                        <button class="pill-btn" id="pillYesterday" onclick="selectDateFilter('yesterday', this)">Yesterday</button>
+                        <button class="pill-btn" id="pill7d" onclick="selectDateFilter('7days', this)">Last 7 Days</button>
+                        <button class="pill-btn" id="pillAll" onclick="selectDateFilter('all', this)">All Time</button>
+                        <button class="pill-btn" id="pillCustom" onclick="toggleCustomDateUI(this)">Custom Date ▾</button>
+                    </div>
+                    <span id="activeDateLabel" style="font-size:12px; color:var(--accent-cyan); font-weight:700;">
+                        Showing: Today's Unique Activity
+                    </span>
+                </div>
+
+                <!-- Custom Single Date or Date Range Selector -->
+                <div class="custom-date-container" id="customDateSection">
+                    <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">Pick Date:</span>
+                    <input type="date" id="customDateInput" class="date-input" onchange="onSingleDatePicked(this.value)">
+                    <span style="font-size:12px; color:var(--text-muted);">or Range To:</span>
+                    <input type="date" id="customEndDateInput" class="date-input">
+                    <button class="btn-action" onclick="applyCustomDateRange()" style="width:auto; padding:7px 14px; font-size:12px;">
+                        Apply Date
+                    </button>
+                </div>
+            </div>
+
+            <!-- 📊 ROW 1: LIFETIME UNIQUE TOTALS & SELECTED DATE ACTIVITY -->
+            <div class="stats-row">
+                <div class="metric-card highlight">
+                    <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
+                    <div class="metric-title">Total Visits (All Time)</div>
+                    <div class="metric-subtitle">Unique in 24h</div>
+                </div>
+                <div class="metric-card highlight-success">
+                    <div class="metric-value" id="metricTotalClaims" style="color:var(--success);">0</div>
+                    <div class="metric-title">Total Claims (All Time)</div>
+                    <div class="metric-subtitle">Original Video Claim Only</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricFilteredVisits">0</div>
+                    <div class="metric-title" id="lblFilteredVisits">Selected Date Visits</div>
+                    <div class="metric-subtitle" id="subFilteredVisits">Unique IP/Device</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricFilteredClaims" style="color:var(--success);">0</div>
+                    <div class="metric-title" id="lblFilteredClaims">Selected Date Claims</div>
+                    <div class="metric-subtitle">Video Claims Only</div>
+                </div>
+            </div>
+
+            <!-- 📊 ROW 2: TIME-BASED UNIQUE ANALYTICS -->
             <div class="stats-row">
                 <div class="metric-card">
                     <div class="metric-value" id="metricToday">0</div>
                     <div class="metric-title">Today Visits (Unique)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="metricTodayClaims" style="color:var(--success);">0</div>
+                    <div class="metric-title">Today Claims (Unique)</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metric24h">0</div>
@@ -692,10 +824,6 @@
                 <div class="metric-card">
                     <div class="metric-value" id="metric7d">0</div>
                     <div class="metric-title">Last 7 Days (Unique)</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value" id="metricClaims" style="color:var(--success);">0</div>
-                    <div class="metric-title">Total Claims (Unique)</div>
                 </div>
             </div>
 
@@ -893,16 +1021,20 @@
                 <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
             </div>
             <div class="guide-item">
-                <h4>2. Traffic & Claim Analytics</h4>
-                <p>Track 24-hour unique visitors, 7-day performance, and reward claims without duplicate count distortions.</p>
+                <h4>2. Traffic & Claim Analytics (24h Unique)</h4>
+                <p>Visitors and video claims are calculated on a strict 24-hour unique basis. Duplicate clicks by the same user within 24 hours are excluded.</p>
             </div>
             <div class="guide-item">
-                <h4>3. Selecting an Extension Plan</h4>
+                <h4>3. Custom Date Selection</h4>
+                <p>Filter data by specific single dates (such as 17th, 18th) or custom date ranges using the Date Filter bar above the statistics.</p>
+            </div>
+            <div class="guide-item">
+                <h4>4. Selecting an Extension Plan</h4>
                 <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
             </div>
             <div class="guide-item">
-                <h4>4. URL Shortener</h4>
-                <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns.</p>
+                <h4>5. URL Shortener</h4>
+                <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns (requires 3 active links).</p>
             </div>
 
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
@@ -956,6 +1088,11 @@
         let activePlan = { key: '30days', days: 30, cost: 400 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
+
+        // 📅 Date Filtering State
+        let currentDateFilter = 'today';
+        let currentStartDate = '';
+        let currentEndDate = '';
 
         function notify(message, title = 'Notification', icon = 'ℹ️') {
             document.getElementById('dialogIcon').textContent = icon;
@@ -1158,6 +1295,77 @@
             fetchUserLinkData();
         }
 
+        // ==================== 📅 DATE FILTER LOGIC ====================
+        function selectDateFilter(filterType, element) {
+            document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            const customBox = document.getElementById('customDateSection');
+            customBox.style.display = 'none';
+
+            currentDateFilter = filterType;
+            currentStartDate = '';
+            currentEndDate = '';
+
+            const label = document.getElementById('activeDateLabel');
+            if (filterType === 'today') label.textContent = "Showing: Today's Unique Activity";
+            else if (filterType === 'yesterday') label.textContent = "Showing: Yesterday's Unique Activity";
+            else if (filterType === '7days') label.textContent = "Showing: Last 7 Days Activity";
+            else if (filterType === 'all') label.textContent = "Showing: All-Time Overall Activity";
+
+            fetchUserLinkData();
+        }
+
+        function toggleCustomDateUI(element) {
+            document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            const customBox = document.getElementById('customDateSection');
+            const isOpen = customBox.style.display === 'flex';
+            customBox.style.display = isOpen ? 'none' : 'flex';
+
+            if (!isOpen) {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!document.getElementById('customDateInput').value) {
+                    document.getElementById('customDateInput').value = todayStr;
+                }
+            }
+        }
+
+        // Single date picked (e.g. 17th or 18th)
+        function onSingleDatePicked(dateVal) {
+            if (!dateVal) return;
+            currentDateFilter = 'custom';
+            currentStartDate = dateVal;
+            currentEndDate = document.getElementById('customEndDateInput').value || dateVal;
+
+            const formatted = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('activeDateLabel').textContent = `Showing: Data for ${formatted}`;
+
+            fetchUserLinkData();
+        }
+
+        // Custom Date Range applied
+        function applyCustomDateRange() {
+            const startVal = document.getElementById('customDateInput').value;
+            const endVal = document.getElementById('customEndDateInput').value || startVal;
+
+            if (!startVal) {
+                notify('Please select at least one date.', 'Date Required', '⚠️');
+                return;
+            }
+
+            currentDateFilter = 'custom';
+            currentStartDate = startVal;
+            currentEndDate = endVal;
+
+            const sFmt = new Date(startVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const eFmt = new Date(endVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('activeDateLabel').textContent = `Showing: Range (${sFmt} - ${eFmt})`;
+
+            fetchUserLinkData();
+        }
+
         // ==================== 👤 SAFE LINK QUERY & USER-SPECIFIC DROPDOWN ====================
         async function fetchUserLinkData(explicitLinkId) {
             const displayEl = document.getElementById('displayLinkId');
@@ -1171,7 +1379,13 @@
                 const res = await fetch('/api/user/link-details', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId })
+                    body: JSON.stringify({ 
+                        userName: userProfile.name, 
+                        linkInput: cachedId,
+                        filter: currentDateFilter,
+                        startDate: currentStartDate,
+                        endDate: currentEndDate
+                    })
                 });
                 const data = await res.json().catch(() => ({}));
 
@@ -1252,10 +1466,14 @@
         }
 
         function displayEmptyState(errMsg) {
+            document.getElementById('metricTotalVisits').textContent = '0';
+            document.getElementById('metricTotalClaims').textContent = '0';
+            document.getElementById('metricFilteredVisits').textContent = '0';
+            document.getElementById('metricFilteredClaims').textContent = '0';
             document.getElementById('metricToday').textContent = '0';
+            document.getElementById('metricTodayClaims').textContent = '0';
             document.getElementById('metric24h').textContent = '0';
             document.getElementById('metric7d').textContent = '0';
-            document.getElementById('metricClaims').textContent = '0';
             document.getElementById('badgeExpiry').className = 'badge-status expired';
             document.getElementById('badgeExpiry').textContent = 'Unassigned';
             document.getElementById('barExpiryProgress').style.width = '0%';
@@ -1270,15 +1488,50 @@
             document.getElementById('displayLinkName').textContent = linkTitle;
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
 
-            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
-            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
-            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
-            
-            const totalClaimsValue = (l.totalClaims !== undefined) ? l.totalClaims : 
+            // 🎯 Unique Total Visits & Total Claims (Video Only, Popup Ignored)
+            const totalVisitsVal = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || data.visits || 0);
+            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : 
                                     ((l.claims !== undefined) ? l.claims : 
                                     ((data.totalClaims !== undefined) ? data.totalClaims : 
                                     ((data.claims !== undefined) ? data.claims : (l.todayClaims || 0))));
-            document.getElementById('metricClaims').textContent = totalClaimsValue;
+
+            document.getElementById('metricTotalVisits').textContent = totalVisitsVal;
+            document.getElementById('metricTotalClaims').textContent = totalClaimsVal;
+
+            // 📅 Custom / Selected Date Filtered Values
+            const rangeVisits = (data.dateRange && data.dateRange.visits !== undefined) ? data.dateRange.visits : (l.todayVisits || 0);
+            const rangeClaims = (data.dateRange && data.dateRange.claims !== undefined) ? data.dateRange.claims : (l.todayClaims || 0);
+
+            document.getElementById('metricFilteredVisits').textContent = rangeVisits;
+            document.getElementById('metricFilteredClaims').textContent = rangeClaims;
+
+            // Update Labels to reflect chosen date
+            const filterLabel = document.getElementById('lblFilteredVisits');
+            const subFilterLabel = document.getElementById('subFilteredVisits');
+            if (currentDateFilter === 'custom' && currentStartDate) {
+                const datePretty = new Date(currentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                filterLabel.textContent = `${datePretty} Visits`;
+                document.getElementById('lblFilteredClaims').textContent = `${datePretty} Claims`;
+                subFilterLabel.textContent = 'Filtered Date';
+            } else if (currentDateFilter === 'yesterday') {
+                filterLabel.textContent = "Yesterday Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Yesterday Claims";
+                subFilterLabel.textContent = "Yesterday's Unique";
+            } else if (currentDateFilter === '7days') {
+                filterLabel.textContent = "Last 7 Days Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Last 7 Days Claims";
+                subFilterLabel.textContent = "Past Week Aggregate";
+            } else {
+                filterLabel.textContent = "Selected Date Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Selected Date Claims";
+                subFilterLabel.textContent = "Unique IP/Device";
+            }
+
+            // Standard Metrics
+            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
+            document.getElementById('metricTodayClaims').textContent = (l.todayClaims !== undefined ? l.todayClaims : (data.todayClaims || 0));
+            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
+            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
 
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
@@ -1509,7 +1762,13 @@ Please verify my payment and approve my extension. Thank you!`;
                     fetch('/api/user/link-details', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userName: userProfile.name, linkInput: targetId })
+                        body: JSON.stringify({ 
+                            userName: userProfile.name, 
+                            linkInput: targetId,
+                            filter: currentDateFilter,
+                            startDate: currentStartDate,
+                            endDate: currentEndDate
+                        })
                     })
                     .then(r => r.json().catch(() => ({})))
                     .then(data => {
