@@ -2455,7 +2455,6 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 });
 
 app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-re => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -2499,4 +2498,4 @@ setInterval(async () => {
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
 
-app.listen(port, '0.0
+app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
