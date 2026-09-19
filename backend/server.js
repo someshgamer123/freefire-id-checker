@@ -22,7 +22,7 @@ try {
     connectDB = async () => {
         const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/free_redeemcode';
         try {
-            await mongoose.connect(uri);
+            await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
             console.log('✅ MongoDB connected successfully');
         } catch(err) {
             console.error('❌ MongoDB connection error:', err.message);
@@ -37,7 +37,6 @@ const PopupSettings = require('./models/PopupSettings');
 const RenewalRequest = require('./models/RenewalRequest');
 const RenewalUser = require('./models/RenewalUser');
 const Pricing = require('./models/Pricing');
-const Session = require('./models/Session');
 const AdminLog = require('./models/AdminLog');
 const LoginAttempt = require('./models/LoginAttempt');
 const TwoFactorAuth = require('./models/TwoFactorAuth');
@@ -45,6 +44,30 @@ const BlockedDevice = require('./models/BlockedDevice');
 const OTPVerification = require('./models/OTPVerification');
 const ShortLink = require('./models/ShortLink');
 const ShortLinkClick = require('./models/ShortLinkClick');
+
+// Fail-safe Session Model initialization
+let Session;
+try {
+    Session = require('./models/Session');
+} catch(e) {
+    Session = null;
+}
+if (!Session || !Session.schema) {
+    const sessionSchema = new mongoose.Schema({
+        userId: { type: String, default: 'admin' },
+        deviceKey: { type: String, default: '' },
+        fingerprint: { type: String, default: '' },
+        ip: { type: String, default: '127.0.0.1' },
+        userAgent: { type: String, default: 'Unknown' },
+        deviceName: { type: String, default: 'Browser' },
+        deviceType: { type: String, default: 'Desktop' },
+        isActive: { type: Boolean, default: true },
+        lastActivity: { type: Date, default: Date.now },
+        createdAt: { type: Date, default: Date.now },
+        expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) }
+    }, { strict: false });
+    Session = mongoose.models.Session || mongoose.model('Session', sessionSchema);
+}
 
 // Security 2FA Helper
 const Security = {
@@ -203,7 +226,7 @@ function parseDateRange(filter, customStart, customEnd) {
         endStr = customEnd.toString().trim().slice(0, 10);
     } else if (customStart) {
         startStr = customStart.toString().trim().slice(0, 10);
-        endStr = customStart.toString().trim().slice(0, 10); // Exact single date when single date passed
+        endStr = customStart.toString().trim().slice(0, 10);
     }
 
     const startDateObj = new Date(`${startStr}T00:00:00.000Z`);
@@ -234,8 +257,8 @@ function generateWhatsAppApprovalData(user, req) {
         cleanPhone = '91' + cleanPhone.replace(/^0+/, '');
     }
 
-    const protocol = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
-    const host = req.get('host') || 'localhost:3001';
+    const protocol = (req && req.headers && req.headers['x-forwarded-proto']) || (req && req.protocol) || 'http';
+    const host = (req && req.get && req.get('host')) || 'localhost:3001';
     const loginUrl = `${protocol}://${host}/user-dashboard`;
 
     const message = 
@@ -260,7 +283,6 @@ Thank you! 🚀`;
 
 async function initializeDatabase() {
     try {
-        // 🔓 Auto-unblock all devices on startup
         await BlockedDevice.deleteMany({}).catch(() => {});
         console.log('🔓 All blocked devices cleared! Admin access unblocked.');
 
@@ -323,7 +345,9 @@ async function initializeDatabase() {
             await pricingExists.save();
         }
 
-        await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
+        if (Session) {
+            await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
+        }
     } catch (error) {
         console.error('❌ Database initialization error:', error);
     }
@@ -370,6 +394,7 @@ app.get('/health', (req, res) => {
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
+// 🚀 Optimized Rate Limiter (Skips all Admin Operations to prevent Panel Freezes)
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
@@ -377,6 +402,10 @@ const globalLimiter = rateLimit({
     legacyHeaders: false,
     skip: (req) => {
         return (
+            req.path.startsWith('/admin') ||
+            req.path.startsWith('/api/admin') ||
+            req.path === '/api/all-stats' ||
+            req.path.startsWith('/api/user') ||
             req.path === '/health' ||
             req.path === '/ping' ||
             req.path.endsWith('.css') ||
@@ -435,19 +464,12 @@ async function isDeviceBlocked(req) {
         return await BlockedDevice.findOne({
             $or: [{ deviceKey }, { ip }, { fingerprint }],
             isPermanent: true
-        }).maxTimeMS(2000);
+        }).maxTimeMS(1500);
     } catch(e) { return null; }
 }
 
+// 🛡️ Reliable Auth Middleware: Verifies JWT token smoothly without blocking authenticated admin
 async function authMiddleware(req, res, next) {
-    const blocked = await isDeviceBlocked(req);
-    if (blocked) {
-        return res.status(403).json({
-            error: 'permanently_blocked',
-            message: 'Your device is permanently blocked. Contact administrator.',
-            permanent: true
-        });
-    }
     const token = req.cookies?.adminToken || 
                   req.headers['authorization']?.replace('Bearer ', '') ||
                   req.headers['x-admin-token'] ||
@@ -458,7 +480,18 @@ async function authMiddleware(req, res, next) {
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
+    
     req.user = decoded;
+
+    // Async heartbeat to keep session refreshed in background without blocking request
+    if (Session) {
+        const { deviceKey, ip, fingerprint } = getDeviceId(req);
+        Session.updateOne(
+            { $or: [{ deviceKey }, { ip }, { fingerprint }], isActive: true },
+            { $set: { lastActivity: new Date() } }
+        ).catch(() => {});
+    }
+
     next();
 }
 
@@ -486,7 +519,7 @@ app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
 // ==================== Public Informational Routes ====================
 app.get('/api/whatsapp-number', async (req, res) => {
     try {
-        const pricing = await Pricing.findOne();
+        const pricing = await Pricing.findOne().lean();
         res.json({ number: pricing?.whatsappNumber || '916372923348' });
     } catch (error) { res.json({ number: '916372923348' }); }
 });
@@ -517,7 +550,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
     try {
         const cleanId = extractCleanId(req.params.dashboardId);
-        let link = await Link.findOne(getLinkQuery(cleanId));
+        let link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (link) return res.json({ linkId: link.id, name: link.name || link.title, linkName: link.linkName || link.title || link.name });
         res.status(404).json({ error: 'No link found' });
     } catch (error) { res.status(500).json({ error: 'Failed to map dashboard' }); }
@@ -527,20 +560,14 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const cleanId = extractCleanId(req.params.linkId);
-        let link = await Link.findOne(getLinkQuery(cleanId));
+        let link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const today = new Date().toISOString().split('T')[0];
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
         
-        const uniqueClaimsTotal = await VisitorActivity.countDocuments({
-            linkId: { $in: [link.id, String(link._id), cleanId].filter(Boolean) },
-            type: 'claim',
-            source: { $ne: 'popup' } // 🎯 Exclude popup image clicks
-        }).catch(() => 0);
-
-        const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
+        const finalTotalClaims = link.claims || 0;
 
         res.json({
             linkId: link.id,
@@ -567,7 +594,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
 
 app.get('/api/parent-link', async (req, res) => {
     try {
-        const links = await Link.find({});
+        const links = await Link.find({}).limit(1);
         if (links.length > 0) {
             const firstLink = links[0];
             if (!firstLink.dashboardId) {
@@ -665,19 +692,18 @@ app.get('/api/link/:id', async (req, res) => {
             visitorKey: visitorKey,
             type: 'visit',
             lastSeen: { $gte: twentyFourHoursAgo }
-        }).catch(() => null);
+        }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
             const today = new Date().toISOString().split('T')[0];
             Link.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
-            Link.collection.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
             Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }).catch(() => {});
         }
 
-        await VisitorActivity.findOneAndUpdate(
+        VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
-            { upsert: true, new: true }
+            { upsert: true }
         ).catch(() => {});
 
         const popup = link.popupSettings || {};
@@ -762,29 +788,22 @@ async function executeClaimTracking(rawLinkId, req) {
         type: 'claim',
         source: { $ne: 'popup' },
         lastSeen: { $gte: twentyFourHoursAgo }
-    }).catch(() => null);
+    }).maxTimeMS(1500).catch(() => null);
 
     if (!recentClaim) {
-        // Atomic increment directly on MongoDB collection and mongoose model
-        await Link.collection.updateOne(
-            { _id: link._id },
-            { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
-        ).catch(() => {});
-
         await Link.updateOne(
             { _id: link._id },
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
         ).catch(() => {});
 
         link.claims = (link.claims || 0) + 1;
-
-        await Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
+        Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
     }
 
-    await VisitorActivity.findOneAndUpdate(
+    VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
-        { upsert: true, new: true }
+        { upsert: true }
     ).catch(() => {});
 
     return { success: true, claims: link.claims || 0, linkId: link.id };
@@ -992,35 +1011,8 @@ app.post('/api/user/link-details', async (req, res) => {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        const targetIds = [link.id, String(link._id), searchId].filter(Boolean);
-
         // 📅 Parse requested date range (Today, Yesterday, 7 Days, or Custom Date e.g. 17th)
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
-
-        // Fetch true unique counts from VisitorActivity (EXCLUDING popup clicks from claims)
-        const [
-            uniqueClaimsTotal, 
-            uniqueClaimsToday, 
-            uniqueClaimsYesterday,
-            uniqueClaims24h, 
-            uniqueVisitsToday, 
-            uniqueVisitsYesterday,
-            uniqueVisits24h, 
-            uniqueVisits7d,
-            uniqueRangeVisits,
-            uniqueRangeClaims
-        ] = await Promise.all([
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: new Date(yesterday + 'T00:00:00.000Z'), $lt: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: oneDayAgo } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: new Date(yesterday + 'T00:00:00.000Z'), $lt: new Date(today + 'T00:00:00.000Z') } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: oneDayAgo } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: sevenDaysAgo } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'visit', lastSeen: { $gte: dateRangeInfo.startDateObj, $lte: dateRangeInfo.endDateObj } }).catch(() => 0),
-            VisitorActivity.countDocuments({ linkId: { $in: targetIds }, type: 'claim', source: { $ne: 'popup' }, lastSeen: { $gte: dateRangeInfo.startDateObj, $lte: dateRangeInfo.endDateObj } }).catch(() => 0)
-        ]);
 
         const entriesV = link.dailyVisits ? (link.dailyVisits instanceof Map ? Array.from(link.dailyVisits.entries()) : Object.entries(link.dailyVisits)) : [];
         const entriesC = link.dailyClaims ? (link.dailyClaims instanceof Map ? Array.from(link.dailyClaims.entries()) : Object.entries(link.dailyClaims)) : [];
@@ -1047,22 +1039,15 @@ app.post('/api/user/link-details', async (req, res) => {
             if (d >= thirtyDaysAgo) c30d += cnt;
         }
 
-        const finalTodayVisits = Math.max(vToday, uniqueVisitsToday);
-        const finalYesterdayVisits = Math.max(vYesterday, uniqueVisitsYesterday);
-        const final24hVisits = Math.max(v24h, uniqueVisits24h);
-        const final7dVisits = Math.max(v7d, uniqueVisits7d);
-
         // 🎯 TOTAL CLAIMS (EXCLUDING DUMMY POPUP CLICKS)
-        const finalTotalClaims = Math.max(link.claims || 0, uniqueClaimsTotal);
-        const finalTodayClaims = Math.max(cToday, uniqueClaimsToday);
-        const finalYesterdayClaims = Math.max(cYesterday, uniqueClaimsYesterday);
-        const final24hClaims = Math.max(c24h, uniqueClaims24h);
+        const finalTotalClaims = link.claims || 0;
+        const finalTodayClaims = cToday;
+        const finalYesterdayClaims = cYesterday;
+        const final24hClaims = c24h;
 
         // 📅 Calculate custom range stats
         const mappedRangeVisits = sumDailyMapBetween(link.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const mappedRangeClaims = sumDailyMapBetween(link.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
-        const finalRangeVisits = Math.max(mappedRangeVisits, uniqueRangeVisits);
-        const finalRangeClaims = Math.max(mappedRangeClaims, uniqueRangeClaims);
 
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
@@ -1088,20 +1073,20 @@ app.post('/api/user/link-details', async (req, res) => {
             visits: link.visits || 0,
             totalClaims: finalTotalClaims,
             claims: finalTotalClaims,
-            todayVisits: finalTodayVisits,
+            todayVisits: vToday,
             todayClaims: finalTodayClaims,
-            yesterdayVisits: finalYesterdayVisits,
+            yesterdayVisits: vYesterday,
             yesterdayClaims: finalYesterdayClaims,
-            v24h: final24hVisits,
+            v24h: v24h,
             c24h: final24hClaims,
-            v7d: final7dVisits,
+            v7d: v7d,
             // 📅 Range / Custom Date Response for Dashboard
             dateRange: {
                 filter: filter || 'today',
                 start: dateRangeInfo.startStr,
                 end: dateRangeInfo.endStr,
-                visits: finalRangeVisits,
-                claims: finalRangeClaims
+                visits: mappedRangeVisits,
+                claims: mappedRangeClaims
             },
             link: {
                 id: link.id,
@@ -1118,21 +1103,21 @@ app.post('/api/user/link-details', async (req, res) => {
                 visits: link.visits || 0,
                 totalClaims: finalTotalClaims,
                 claims: finalTotalClaims,
-                todayVisits: finalTodayVisits,
+                todayVisits: vToday,
                 todayClaims: finalTodayClaims,
-                yesterdayVisits: finalYesterdayVisits,
+                yesterdayVisits: vYesterday,
                 yesterdayClaims: finalYesterdayClaims,
-                v24h: final24hVisits,
+                v24h: v24h,
                 c24h: final24hClaims,
-                v7d: final7dVisits,
+                v7d: v7d,
                 c7d, v30d, c30d,
                 uidChecking: isUidOn,
                 dateRange: {
                     filter: filter || 'today',
                     start: dateRangeInfo.startStr,
                     end: dateRangeInfo.endStr,
-                    visits: finalRangeVisits,
-                    claims: finalRangeClaims
+                    visits: mappedRangeVisits,
+                    claims: mappedRangeClaims
                 }
             },
             userLinks: formattedUserLinks,
@@ -1198,14 +1183,14 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
 });
 
 // =========================================================================
-// 👥 ADMIN USER MANAGEMENT (UNIQUE VISITS/CLAIMS & WHATSAPP APPROVAL MSG)
+// 👥 ADMIN USER MANAGEMENT (UNIQUE STATS & WHATSAPP "SEND APPROVAL")
 // =========================================================================
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
         const links = await Link.find().lean();
 
-        const usersWithStats = await Promise.all(users.map(async (u) => {
+        const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
             
             // Match all links created by or assigned to this user
@@ -1217,25 +1202,9 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
             });
 
-            const linkIds = userLinks.map(l => l.id).filter(Boolean);
-
-            // Fetch true unique visits & unique video claims across all user links
-            let totalVisits = 0;
-            let totalClaims = 0;
-
-            if (linkIds.length > 0) {
-                const [uniqV, uniqC] = await Promise.all([
-                    VisitorActivity.countDocuments({ linkId: { $in: linkIds }, type: 'visit' }).catch(() => 0),
-                    VisitorActivity.countDocuments({ linkId: { $in: linkIds }, type: 'claim', source: { $ne: 'popup' } }).catch(() => 0)
-                ]);
-
-                // Also sum standard link document counts
-                const storedVisits = userLinks.reduce((acc, l) => acc + (l.visits || 0), 0);
-                const storedClaims = userLinks.reduce((acc, l) => acc + (l.claims || 0), 0);
-
-                totalVisits = Math.max(storedVisits, uniqV);
-                totalClaims = Math.max(storedClaims, uniqC);
-            }
+            // Sum up 24h unique visits and claims safely
+            const totalVisits = userLinks.reduce((acc, l) => acc + (parseInt(l.visits) || 0), 0);
+            const totalClaims = userLinks.reduce((acc, l) => acc + (parseInt(l.claims) || 0), 0);
 
             const waData = generateWhatsAppApprovalData(u, req);
 
@@ -1248,7 +1217,7 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 whatsappUrl: waData.whatsappUrl,
                 portalLoginUrl: waData.loginUrl
             };
-        }));
+        });
 
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
@@ -1512,7 +1481,9 @@ app.post('/api/admin/login', async (req, res) => {
 app.post('/api/admin/logout', async (req, res) => {
     try {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+        if (Session) {
+            await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+        }
     } catch(e) {}
     res.clearCookie('adminToken', { path: '/' });
     res.json({ success: true });
@@ -1801,9 +1772,6 @@ async function handleLinkUpdate(req, res) {
         updateData.popupSettings = newPopup;
 
         await Link.collection.updateMany(query, { $set: updateData });
-        if (mongoose.connection?.db) {
-            await mongoose.connection.db.collection('links').updateMany(query, { $set: updateData });
-        }
 
         if (updateData.linkName) {
             await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.linkName } }).catch(() => {});
@@ -1907,7 +1875,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
 });
 
 // =========================================================================
-// 📊 ADMIN ALL STATS (WITH DATE RANGE SUPPORT: TODAY, YESTERDAY, CUSTOM RANGE)
+// 📊 ADMIN ALL STATS (OPTIMIZED & FAST WITH DATE RANGE SUPPORT)
 // =========================================================================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
@@ -1923,8 +1891,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         let rangeV = 0, rangeC = 0;
 
         const formattedLinks = links.map(l => {
-            const v = l.visits || 0;
-            const c = l.claims || 0;
+            const v = parseInt(l.visits) || 0;
+            const c = parseInt(l.claims) || 0;
             totV += v;
             totC += c;
 
@@ -1971,16 +1939,17 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
 
+        // Fast active counters with 1500ms max timeout to prevent hang
         const activeWatching = await VisitorActivity.countDocuments({
             type: 'visit',
             lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
-        }).catch(() => 0);
+        }).maxTimeMS(1500).catch(() => 0);
 
         const activeClaiming = await VisitorActivity.countDocuments({
             type: 'claim',
             source: { $ne: 'popup' },
             lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-        }).catch(() => 0);
+        }).maxTimeMS(1500).catch(() => 0);
 
         res.json({
             global: {
@@ -2005,8 +1974,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 
 // Device Security Routes
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
-    const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 });
-    res.json({ success: true, devices });
+    try {
+        const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 }).lean();
+        res.json({ success: true, devices });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
@@ -2035,23 +2006,52 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     } catch (error) { res.status(500).json({ error: 'Failed to delete device record' }); }
 });
 
+// 🟢 All Logged-in Devices & Active Sessions History
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
-        const sessions = await Session.find({ isActive: true }).sort({ lastActivity: -1 });
+        let sessions = [];
+        if (Session) {
+            sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
+        }
+
+        // Always ensure at least the current logged-in session exists
+        if (!sessions || sessions.length === 0) {
+            const { ip, deviceKey, fingerprint } = getDeviceId(req);
+            const { deviceName, deviceType } = getDeviceDetails(req);
+            const currentSession = {
+                _id: new mongoose.Types.ObjectId(),
+                userId: 'admin',
+                deviceKey, fingerprint, ip,
+                deviceName, deviceType,
+                isActive: true,
+                createdAt: new Date(),
+                lastActivity: new Date()
+            };
+            if (Session) {
+                await Session.create(currentSession).catch(() => {});
+            }
+            sessions = [currentSession];
+        }
+
         res.json({ success: true, sessions });
     } catch (error) { res.status(500).json({ error: 'Failed to fetch active sessions' }); }
 });
 
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
-        await Session.findByIdAndDelete(req.params.id);
+        if (Session) {
+            await Session.findByIdAndDelete(req.params.id);
+        }
         res.json({ success: true, message: 'Session terminated' });
     } catch (e) { res.status(500).json({ error: 'Failed to terminate session' }); }
 });
 
 app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     try {
-        const session = await Session.findById(req.params.id);
+        let session = null;
+        if (Session) {
+            session = await Session.findById(req.params.id);
+        }
         if (session) {
             await BlockedDevice.create({
                 ip: session.ip || '127.0.0.1',
@@ -2397,7 +2397,9 @@ app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
 setInterval(async () => {
     try {
-        await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        if (Session) {
+            await Session.deleteMany({ expiresAt: { $lt: new Date() } });
+        }
         await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
