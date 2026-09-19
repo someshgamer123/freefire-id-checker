@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
-// ==================== MongoDB Connection & Models ====================
+// ==================== MongoDB Connection & Safe Model Loader ====================
 let connectDB;
 try {
     connectDB = require('./config/db');
@@ -30,73 +30,167 @@ try {
     };
 }
 
-const User = require('./models/User');
-const Link = require('./models/Link');
-const Stats = require('./models/Stats');
-const PopupSettings = require('./models/PopupSettings');
-const RenewalRequest = require('./models/RenewalRequest');
-const RenewalUser = require('./models/RenewalUser');
-const Pricing = require('./models/Pricing');
-const Session = require('./models/Session');
-const AdminLog = require('./models/AdminLog');
-const LoginAttempt = require('./models/LoginAttempt');
-const TwoFactorAuth = require('./models/TwoFactorAuth');
-const BlockedDevice = require('./models/BlockedDevice');
-const OTPVerification = require('./models/OTPVerification');
-const ShortLink = require('./models/ShortLink');
-const ShortLinkClick = require('./models/ShortLinkClick');
+// Safe Model Loader (Prevents deployment crashes if a file is missing or duplicate)
+function safeLoadModel(modelName, defaultSchema) {
+    try {
+        const mod = require(`./models/${modelName}`);
+        if (mod) return mod;
+    } catch(e) {}
+    if (mongoose.models && mongoose.models[modelName]) {
+        return mongoose.models[modelName];
+    }
+    return mongoose.model(modelName, new mongoose.Schema(defaultSchema || {}, { strict: false }));
+}
 
-// Security 2FA Helper
-const Security = {
-    generate2FASecret: () => ({ base32: crypto.randomBytes(20).toString('hex') }),
-    generateBackupCodes: () => [
-        crypto.randomBytes(4).toString('hex'),
-        crypto.randomBytes(4).toString('hex'),
-        crypto.randomBytes(4).toString('hex')
-    ]
-};
+const User = safeLoadModel('User', {
+    passcode: String,
+    lastEnvPasscode: String,
+    theme: { type: String, default: 'dark' },
+    email: String,
+    phone: String,
+    secretKey: String
+});
 
-connectDB();
+const Link = safeLoadModel('Link', {
+    id: String,
+    name: String,
+    title: String,
+    linkName: String,
+    userName: String,
+    assignedUser: String,
+    creator: String,
+    video: String,
+    claim: String,
+    buttonText: String,
+    headline: String,
+    status: { type: String, default: 'active' },
+    expiryDate: Date,
+    uidChecking: { type: Boolean, default: true },
+    claims: { type: Number, default: 0 },
+    visits: { type: Number, default: 0 },
+    dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} },
+    dailyVisits: { type: mongoose.Schema.Types.Mixed, default: {} },
+    popupSettings: Object,
+    image: String,
+    created: { type: Date, default: Date.now }
+});
 
-// Register flexible schema fields
-try {
-    if (Link && Link.schema) {
-        Link.schema.add({ 
-            name: { type: String, default: '' },
-            title: { type: String, default: '' },
-            linkName: { type: String, default: '' },
-            uidChecking: { type: Boolean, default: true },
-            creator: { type: String, default: '' },
-            assignedUser: { type: String, default: '' },
-            userName: { type: String, default: '' },
-            claims: { type: Number, default: 0 },
-            visits: { type: Number, default: 0 },
-            dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} },
-            dailyVisits: { type: mongoose.Schema.Types.Mixed, default: {} }
-        });
-        Link.schema.set('strict', false);
-    }
-    if (RenewalUser && RenewalUser.schema) {
-        RenewalUser.schema.add({
-            status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-            approvedAt: { type: Date, default: null }
-        });
-        RenewalUser.schema.set('strict', false);
-    }
-    if (RenewalRequest && RenewalRequest.schema) {
-        RenewalRequest.schema.add({ linkName: { type: String, default: '' } });
-        RenewalRequest.schema.set('strict', false);
-    }
-    if (PopupSettings && PopupSettings.schema) {
-        PopupSettings.schema.add({ uidChecking: { type: Boolean, default: true } });
-        PopupSettings.schema.set('strict', false);
-    }
-    if (Pricing && Pricing.schema) Pricing.schema.set('strict', false);
-    if (User && User.schema) User.schema.set('strict', false);
-    if (Session && Session.schema) Session.schema.set('strict', false);
-    if (BlockedDevice && BlockedDevice.schema) BlockedDevice.schema.set('strict', false);
-    if (ShortLink && ShortLink.schema) ShortLink.schema.set('strict', false);
-} catch(e) {}
+const Stats = safeLoadModel('Stats', {
+    totalVisitors: { type: Number, default: 0 },
+    totalClaims: { type: Number, default: 0 },
+    dailyVisitors: { type: mongoose.Schema.Types.Mixed, default: {} },
+    dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} }
+});
+
+const PopupSettings = safeLoadModel('PopupSettings', {
+    image: String,
+    title: { type: String, default: '🎁 Claim Your Reward' },
+    buttonText: { type: String, default: 'Claim Now' },
+    subtitle: { type: String, default: 'Tap below to unlock your reward' },
+    uidChecking: { type: Boolean, default: true }
+});
+
+const RenewalRequest = safeLoadModel('RenewalRequest', {
+    id: String,
+    linkId: String,
+    linkName: String,
+    plan: String,
+    days: Number,
+    amount: Number,
+    transactionId: String,
+    status: { type: String, default: 'pending' },
+    createdAt: { type: Date, default: Date.now },
+    approvedAt: Date
+});
+
+const RenewalUser = safeLoadModel('RenewalUser', {
+    name: String,
+    email: String,
+    phone: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    createdAt: { type: Date, default: Date.now },
+    approvedAt: Date
+});
+
+const Pricing = safeLoadModel('Pricing', {
+    pricing: { type: Object, default: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 } },
+    paymentSettings: { type: Object, default: { method: 'UPI', details: { upiId: 'admin@upi' } } },
+    whatsappNumber: { type: String, default: '916372923348' },
+    autoPaymentEnabled: { type: Boolean, default: false }
+});
+
+const Session = safeLoadModel('Session', {
+    userId: { type: String, default: 'admin' },
+    deviceKey: String,
+    fingerprint: String,
+    ip: String,
+    userAgent: String,
+    deviceName: String,
+    deviceType: String,
+    isActive: { type: Boolean, default: true },
+    lastActivity: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now },
+    expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) }
+});
+
+const AdminLog = safeLoadModel('AdminLog', {
+    action: String,
+    details: Object,
+    timestamp: { type: Date, default: Date.now }
+});
+
+const LoginAttempt = safeLoadModel('LoginAttempt', {
+    ip: String,
+    attempts: Number,
+    lastAttempt: Date
+});
+
+const TwoFactorAuth = safeLoadModel('TwoFactorAuth', {
+    userId: String,
+    secret: String,
+    backupCodes: Array,
+    isEnabled: Boolean,
+    verifiedAt: Date
+});
+
+const BlockedDevice = safeLoadModel('BlockedDevice', {
+    deviceKey: String,
+    fingerprint: String,
+    ip: String,
+    deviceName: String,
+    deviceType: String,
+    attempts: { type: Number, default: 1 },
+    reason: String,
+    isPermanent: { type: Boolean, default: false },
+    lastAttempt: { type: Date, default: Date.now }
+});
+
+const OTPVerification = safeLoadModel('OTPVerification', {
+    phone: String,
+    otp: String,
+    expiresAt: Date
+});
+
+const ShortLink = safeLoadModel('ShortLink', {
+    code: String,
+    originalUrl: String,
+    title: String,
+    creator: String,
+    visits: { type: Number, default: 0 },
+    appOpen: Boolean,
+    appScheme: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const ShortLinkClick = safeLoadModel('ShortLinkClick', {
+    shortLinkId: String,
+    ip: String,
+    userAgent: String,
+    deviceName: String,
+    deviceType: String,
+    referer: String,
+    timestamp: { type: Date, default: Date.now }
+});
 
 // Visitor Activity Model (24-Hour Unique Visitors & Claims)
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
@@ -120,10 +214,12 @@ const EMAIL_PASS = process.env.EMAIL_PASS || '';
 
 let transporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
-    transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-    });
+    try {
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+        });
+    } catch(e) {}
 }
 
 function verifyPasscode(inputPass, storedPass) {
@@ -325,7 +421,10 @@ async function initializeDatabase() {
         console.error('❌ Database initialization error:', error);
     }
 }
-initializeDatabase();
+
+connectDB().then(() => {
+    initializeDatabase();
+}).catch(() => {});
 
 app.set('trust proxy', 1);
 app.use(helmet({
@@ -367,7 +466,7 @@ app.get('/health', (req, res) => {
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
-// 🚀 Rate Limiter (Skips all Admin Operations to completely avoid panel freeze)
+// 🚀 Rate Limiter (Skips all Admin Operations to prevent Panel Freezes)
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
@@ -375,9 +474,8 @@ const globalLimiter = rateLimit({
     legacyHeaders: false,
     skip: (req) => {
         return (
-            req.path.startsWith('/admin') ||
-            req.path.startsWith('/api/admin') ||
-            req.path === '/api/all-stats' ||
+            req.path.includes('admin') ||
+            req.path.includes('all-stats') ||
             req.path.startsWith('/api/user') ||
             req.path === '/health' ||
             req.path === '/ping' ||
@@ -392,8 +490,8 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// 🔐 Persistent JWT Secret ensures admin is not logged out or frozen on restart
-const JWT_SECRET = process.env.JWT_SECRET || 'somu_dashboard_jwt_secret_key_2026_fixed_secure';
+// 🔐 Stable JWT Secret prevents token invalidation on server restart
+const JWT_SECRET = process.env.JWT_SECRET || 'somu_admin_secret_fixed_key_951753';
 const JWT_EXPIRY = '7d';
 
 function generateToken(userId) {
@@ -442,7 +540,7 @@ async function isDeviceBlocked(req) {
     } catch(e) { return null; }
 }
 
-// 🛡️ Reliable Auth Middleware: Verifies authenticated admin without hang
+// 🛡️ Reliable Auth Middleware: Validates token without hanging on device check
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken || 
                   req.headers['authorization']?.replace('Bearer ', '') ||
@@ -457,12 +555,23 @@ async function authMiddleware(req, res, next) {
     
     req.user = decoded;
 
-    // Background heartbeat to refresh active device session
+    // Async background session update
     if (Session) {
-        const { deviceKey, ip, fingerprint } = getDeviceId(req);
-        Session.updateOne(
-            { $or: [{ deviceKey }, { ip }, { fingerprint }], isActive: true },
-            { $set: { lastActivity: new Date() } }
+        const { deviceKey, fingerprint, ip } = getDeviceId(req);
+        const { deviceName, deviceType } = getDeviceDetails(req);
+        Session.findOneAndUpdate(
+            { $or: [{ deviceKey }, { fingerprint }, { ip }] },
+            { 
+                $set: { lastActivity: new Date(), isActive: true, ip, deviceName, deviceType },
+                $setOnInsert: {
+                    userId: 'admin',
+                    deviceKey,
+                    fingerprint,
+                    createdAt: new Date(),
+                    expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
+                }
+            },
+            { upsert: true }
         ).catch(() => {});
     }
 
@@ -1850,7 +1959,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
 });
 
 // =========================================================================
-// 📊 ADMIN ALL STATS (OPTIMIZED & FAST WITH DATE RANGE SUPPORT)
+// 📊 ADMIN ALL STATS (FAST & NON-BLOCKING WITH DATE RANGE SUPPORT)
 // =========================================================================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
@@ -1989,7 +2098,7 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
             sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
         }
 
-        // Always ensure at least the current logged-in session exists
+        // Always ensure at least the current active session exists
         if (!sessions || sessions.length === 0) {
             const { ip, deviceKey, fingerprint } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
@@ -2346,6 +2455,7 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 });
 
 app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-re => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
@@ -2389,4 +2499,4 @@ setInterval(async () => {
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
 
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
+app.listen(port, '0.0
