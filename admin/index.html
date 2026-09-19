@@ -405,7 +405,7 @@
 
             <div class="live-visitors">
                 <div class="lv-title">
-                    <span class="dot"></span> 🟢 Real-Time Visitor & Video Claim Stream (24h)
+                    <span class="dot"></span> 🟢 Real-Time Visitor & Video Claim Stream (24h Unique)
                     <span style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:400;" id="lastRefreshTime">Updated: Just now</span>
                 </div>
                 <div class="lv-grid">
@@ -561,7 +561,7 @@
             </div>
         </div>
 
-        <!-- 4. MANAGE USERS -->
+        <!-- 4. MANAGE USERS (WITH WHATSAPP APPROVAL & UNIQUE STATS) -->
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
@@ -653,14 +653,14 @@
             </div>
         </div>
 
-        <!-- 7. SETTINGS & DEVICES -->
+        <!-- 7. SETTINGS & DEVICES (ACTIVE LOGIN HISTORY + BLOCKING) -->
         <div class="section" id="sec-settings">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                     <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">⛔ Blocked</button>
-                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">🟢 Active</button>
+                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">🟢 Active Logged-in Devices</button>
                         <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">🔄 Refresh</button>
                     </div>
                 </div>
@@ -671,8 +671,8 @@
                 </div>
 
                 <div id="deviceViewActive" style="display:none;">
-                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices currently authenticated in this Admin Control Center. You can terminate their session or block them permanently.</p>
-                    <div id="activeDeviceList">Loading active sessions...</div>
+                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">All devices currently logged in to this Admin Panel. You can view login history, block them permanently, or terminate their sessions.</p>
+                    <div id="activeDeviceList">Loading active logged-in devices...</div>
                 </div>
             </div>
 
@@ -1404,10 +1404,10 @@
             if (inp) copyText(inp.value, 'Generated Link Copied!');
         }
 
-        // ==================== 👥 MANAGE USERS ====================
+        // ==================== 👥 MANAGE USERS (WITH WHATSAPP & STATS) ====================
         async function loadAllUsers() {
             const container = document.getElementById('usersFullList');
-            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
+            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users with live unique statistics...</p>';
 
             try {
                 const res = await fetchWithAuth('/api/admin/all-users');
@@ -1453,35 +1453,105 @@
 
             container.innerHTML = filtered.map(u => {
                 if (!u) return '';
-                const cleanName = (u.name || '').toLowerCase().trim();
-                const userLinkCount = allLinks.filter(l => l && (l.name || l.userName || '').toLowerCase().trim() === cleanName).length;
+                const uid = u._id || u.id || '';
                 const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                
                 const statusBadge = u.status === 'approved' 
                     ? '<span class="status-badge status-active">APPROVED</span>' 
-                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
-                const uid = u._id || u.id || '';
+                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+
+                // 🎯 Action Buttons: 'Approve' becomes 'Send Approval' once approved!
+                let actionButtons = '';
+                if (u.status === 'pending') {
+                    actionButtons += `
+                        <button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Approve</button>
+                        <button class="btn btn-sm btn-danger" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">❌ Reject</button>
+                    `;
+                } else if (u.status === 'approved') {
+                    actionButtons += `
+                        <button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;box-shadow:0 3px 12px rgba(16,185,129,0.35);" onclick="sendWhatsAppApproval('${escapeHTML(uid)}')">📲 Send Approval</button>
+                        <button class="btn btn-sm btn-warning" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">Revoke</button>
+                    `;
+                } else {
+                    actionButtons += `
+                        <button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Re-Approve</button>
+                    `;
+                }
+                actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove</button>`;
 
                 return `
                     <div class="link-item">
                         <div>
-                            <div class="name" style="display:flex;align-items:center;gap:8px;">
+                            <div class="name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                 <span>👤 ${escapeHTML(u.name || 'User')}</span>
                                 ${statusBadge}
                             </div>
                             <div class="details">
                                 <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
                                 <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
-                                <span>| 🔗 Total Links: <b style="color:var(--primary);">${userLinkCount}</b></span>
+                                <span>| 🔗 Links: <b style="color:var(--primary);">${u.totalLinks || 0}</b></span>
+                                <span>| 👁️ Visits: <b style="color:#38bdf8;">${u.totalVisits || 0}</b> <small style="color:var(--text-light);">(Unique 24h)</small></span>
+                                <span>| 🎁 Claims: <b style="color:var(--success);">${u.totalClaims || 0}</b> <small style="color:var(--text-light);">(Video Only)</small></span>
                                 <span>| 📅 Joined: <b>${joinedDate}</b></span>
                             </div>
                         </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            ${u.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="setUserStatus('${escapeHTML(uid)}', 'approved')">✅ Approve</button>` : ''}
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove User</button>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            ${actionButtons}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Approve user & optionally open WhatsApp right away
+        async function approveAndPromptWhatsApp(id) {
+            try {
+                const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approved' })
+                });
+                const data = await res.json();
+                showToast('✅ User Approved successfully!', 'success');
+                await loadAllUsers();
+                loadRenewalSystem();
+
+                if (data.whatsappUrl) {
+                    if (confirm('User approved! Do you want to open WhatsApp now to send the approval notification and login link?')) {
+                        window.open(data.whatsappUrl, '_blank');
+                    }
+                }
+            } catch(e) {
+                showToast('Failed to approve user', 'error');
+            }
+        }
+
+        // 📲 Send Approval WhatsApp Action
+        async function sendWhatsAppApproval(id) {
+            const user = allUsers.find(u => String(u._id || u.id) === String(id));
+            if (!user) return showToast('User not found', 'error');
+
+            let waUrl = user.whatsappUrl;
+            if (!waUrl) {
+                try {
+                    const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/whatsapp-approval`);
+                    if (res && res.ok) {
+                        const data = await res.json();
+                        waUrl = data.whatsappUrl;
+                    }
+                } catch(e) {}
+            }
+
+            if (!waUrl) {
+                const cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
+                const targetPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+                const loginUrl = window.location.origin + '/user-dashboard';
+                const msg = `🎉 *Congratulations ${user.name}!*\nYour account has been approved.\n\n🔐 *Credentials:*\nEmail: ${user.email}\nPhone: ${user.phone}\n\n🔗 *Login:* ${loginUrl}`;
+                waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
+            }
+
+            window.open(waUrl, '_blank');
+            showToast('Opening WhatsApp with Approval Details...', 'success');
         }
 
         async function deleteUser(id, name) {
@@ -1522,7 +1592,7 @@
                                     <div class="details">📧 ${escapeHTML(u.email || 'N/A')} | 📞 ${escapeHTML(u.phone || 'N/A')}</div>
                                 </div>
                                 <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-success" onclick="setUserStatus('${u._id || u.id}', 'approved')">✅ Approve</button>
+                                    <button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${u._id || u.id}')">✅ Approve</button>
                                     <button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')">❌ Reject</button>
                                 </div>
                             </div>
@@ -1575,7 +1645,7 @@
 
         async function setUserStatus(id, action) {
             try {
-                await fetchWithAuth(`/api/admin/renewal-users/${encodeURIComponent(id)}/action`, {
+                await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action })
@@ -1638,7 +1708,7 @@
             }
         }
 
-        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
+        // ==================== 🛡️ BLOCKED & ACTIVE LOGIN DEVICES ====================
         function toggleDeviceTab(tab) {
             currentDeviceTab = tab;
             const bBtn = document.getElementById('tabBtnBlocked');
@@ -1717,7 +1787,7 @@
 
         async function loadActiveDevices() {
             const list = document.getElementById('activeDeviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active sessions...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active login sessions...</p>';
             try {
                 const res = await fetchWithAuth('/api/admin/active-sessions');
                 if (res && res.ok) {
@@ -1734,28 +1804,34 @@
                                         <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
                                     </div>
                                 </div>
-                                <div>
-                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout</button>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout Current Device</button>
                                 </div>
                             </div>
                         `;
                     }
 
                     list.innerHTML = sessions.map(s => {
+                        const loginTime = s.createdAt ? new Date(s.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
                         const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
                         const sid = s._id || s.id || '';
+
                         return `
                             <div class="device-card-item active-dev">
                                 <div>
-                                    <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#4ade80;font-weight:600;">(${escapeHTML(s.deviceType || 'Browser')})</span></div>
+                                    <div class="device-title">
+                                        🟢 ${escapeHTML(s.deviceName || 'Admin Device')} 
+                                        <span style="font-size:11px;color:#4ade80;font-weight:700;">(${escapeHTML(s.deviceType || 'Browser')})</span>
+                                    </div>
                                     <div class="device-meta">
                                         <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
-                                        <span>🕒 Last Active: <b>${lastActive}</b></span>
+                                        <span>🕒 Logged In: <b>${loginTime}</b></span>
+                                        <span>⚡ Last Seen: <b>${lastActive}</b></span>
                                     </div>
                                 </div>
                                 <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button>
-                                    <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🗑️ Logout</button>
+                                    <button class="btn btn-sm btn-danger" style="background:var(--danger);" onclick="blockActiveSession('${sid}')">⛔ Block Device</button>
+                                    <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🚪 Logout</button>
                                 </div>
                             </div>
                         `;
@@ -1770,7 +1846,7 @@
             if (!confirm('Log out and terminate this session?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
-                showToast('Session terminated', 'info');
+                showToast('Session terminated successfully!', 'info');
                 loadActiveDevices();
             } catch(e) {
                 showToast('Failed to terminate session', 'error');
@@ -1778,11 +1854,12 @@
         }
 
         async function blockActiveSession(id) {
-            if (!confirm('Block this device permanently?')) return;
+            if (!confirm('Permanently ban and block this device from the Admin Panel?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' });
-                showToast('Device blocked permanently!', 'success');
+                showToast('✅ Device blocked permanently and logged out!', 'success');
                 loadActiveDevices();
+                loadBlockedDevices();
             } catch(e) {
                 showToast('Failed to block device', 'error');
             }
@@ -1966,6 +2043,11 @@
 
         function installApp() {
             showToast('Use browser menu -> Add to Home screen to install app', 'info');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedTheme');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
