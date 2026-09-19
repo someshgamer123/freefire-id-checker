@@ -1460,7 +1460,6 @@
                     ? '<span class="status-badge status-active">APPROVED</span>' 
                     : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
 
-                // 🎯 Action Buttons: 'Approve' becomes 'Send Approval' once approved!
                 let actionButtons = '';
                 if (u.status === 'pending') {
                     actionButtons += `
@@ -1503,7 +1502,6 @@
             }).join('');
         }
 
-        // Approve user & optionally open WhatsApp right away
         async function approveAndPromptWhatsApp(id) {
             try {
                 const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/action`, {
@@ -1526,7 +1524,6 @@
             }
         }
 
-        // 📲 Send Approval WhatsApp Action
         async function sendWhatsAppApproval(id) {
             const user = allUsers.find(u => String(u._id || u.id) === String(id));
             if (!user) return showToast('User not found', 'error');
@@ -2043,11 +2040,6 @@
 
         function installApp() {
             showToast('Use browser menu -> Add to Home screen to install app', 'info');
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            try {
-                const savedTheme');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
