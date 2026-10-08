@@ -223,7 +223,6 @@ if (EMAIL_USER && EMAIL_PASS) {
 
 // ==================== Helper Functions ====================
 
-// ✅ IST Date String (YYYY-MM-DD)
 function getISTDate() {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -231,7 +230,6 @@ function getISTDate() {
     return istNow.toISOString().split('T')[0];
 }
 
-// ✅ Get value from daily map (works with both Object and Map)
 function getDailyValue(mapData, dateStr) {
     if (!mapData) return 0;
     if (mapData instanceof Map) {
@@ -243,7 +241,6 @@ function getDailyValue(mapData, dateStr) {
     return 0;
 }
 
-// ✅ Sum values between two dates (works with both Object and Map)
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
@@ -269,7 +266,6 @@ function sumDailyMapBetween(mapData, startStr, endStr) {
     return 0;
 }
 
-// ✅ Parse date range for filters
 function parseDateRange(filter, customStart, customEnd) {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -718,7 +714,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER (with Daily Tracking) ====================
+// ==================== VISITOR LINK RESOLVER ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -750,7 +746,6 @@ app.get('/api/link/:id', async (req, res) => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const today = getISTDate();
 
-        // ✅ 24-hour unique check
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
             visitorKey: visitorKey,
@@ -759,7 +754,6 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            // ✅ CRITICAL FIX: Increment both lifetime AND daily
             await Link.updateOne(
                 { _id: link._id },
                 { 
@@ -784,7 +778,6 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
-        // Update visitor activity timestamp
         VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -848,12 +841,11 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING (with Daily Tracking) ====================
+// ==================== CLAIM TRACKING ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
-    // 🛑 Ignore popup clicks
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
@@ -867,7 +859,6 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    // ✅ 24-hour unique claim check
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -877,7 +868,6 @@ async function executeClaimTracking(rawLinkId, req) {
     }).maxTimeMS(1500).catch(() => null);
 
     if (!recentClaim) {
-        // ✅ CRITICAL FIX: Increment both lifetime AND daily
         await Link.updateOne(
             { _id: link._id },
             { 
@@ -1912,7 +1902,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS (with Daily Tracking) ====================
+// ==================== ADMIN ALL STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
