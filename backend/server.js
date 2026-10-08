@@ -307,16 +307,33 @@ function parseDateRange(filter, customStart, customEnd) {
     return { startStr, endStr, startDateObj, endDateObj };
 }
 
+// 📅 Universal Helper: Sum daily visits or claims between two date strings
+// Handles both Map and Object formats (for backward compatibility)
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
-    const entries = mapData instanceof Map ? Array.from(mapData.entries()) : Object.entries(mapData);
-    for (const [date, count] of entries) {
-        if (date >= startStr && date <= endStr) {
-            total += parseInt(count) || 0;
+    
+    // Handle Map format (old data)
+    if (mapData instanceof Map) {
+        for (const [date, count] of mapData.entries()) {
+            if (date >= startStr && date <= endStr) {
+                total += parseInt(count) || 0;
+            }
         }
+        return total;
     }
-    return total;
+    
+    // Handle Object format (new data)
+    if (typeof mapData === 'object') {
+        for (const [date, count] of Object.entries(mapData)) {
+            if (date >= startStr && date <= endStr) {
+                total += parseInt(count) || 0;
+            }
+        }
+        return total;
+    }
+    
+    return 0;
 }
 
 // 💬 Helper: Build standard WhatsApp approval message
@@ -1114,10 +1131,28 @@ app.post('/api/user/link-details', async (req, res) => {
         const mappedRangeVisits = sumDailyMapBetween(link.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const mappedRangeClaims = sumDailyMapBetween(link.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
 
-        const vToday = link.dailyVisits && link.dailyVisits[today] ? parseInt(link.dailyVisits[today]) : 0;
-        const cToday = link.dailyClaims && link.dailyClaims[today] ? parseInt(link.dailyClaims[today]) : 0;
-        const vYesterday = link.dailyVisits && link.dailyVisits[yesterday] ? parseInt(link.dailyVisits[yesterday]) : 0;
-        const cYesterday = link.dailyClaims && link.dailyClaims[yesterday] ? parseInt(link.dailyClaims[yesterday]) : 0;
+        // ✅ UNIVERSAL: Handle both Map and Object formats for daily data
+        let vToday = 0, cToday = 0, vYesterday = 0, cYesterday = 0;
+
+        if (link.dailyVisits) {
+            if (link.dailyVisits instanceof Map) {
+                vToday = parseInt(link.dailyVisits.get(today)) || 0;
+                vYesterday = parseInt(link.dailyVisits.get(yesterday)) || 0;
+            } else {
+                vToday = parseInt(link.dailyVisits[today]) || 0;
+                vYesterday = parseInt(link.dailyVisits[yesterday]) || 0;
+            }
+        }
+
+        if (link.dailyClaims) {
+            if (link.dailyClaims instanceof Map) {
+                cToday = parseInt(link.dailyClaims.get(today)) || 0;
+                cYesterday = parseInt(link.dailyClaims.get(yesterday)) || 0;
+            } else {
+                cToday = parseInt(link.dailyClaims[today]) || 0;
+                cYesterday = parseInt(link.dailyClaims[yesterday]) || 0;
+            }
+        }
 
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
@@ -1971,10 +2006,28 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             totV += v;
             totC += c;
 
-            let tv = l.dailyVisits && l.dailyVisits[today] ? parseInt(l.dailyVisits[today]) : 0;
-            let tc = l.dailyClaims && l.dailyClaims[today] ? parseInt(l.dailyClaims[today]) : 0;
-            let yv = l.dailyVisits && l.dailyVisits[yesterday] ? parseInt(l.dailyVisits[yesterday]) : 0;
-            let yc = l.dailyClaims && l.dailyClaims[yesterday] ? parseInt(l.dailyClaims[yesterday]) : 0;
+            // ✅ UNIVERSAL: Handle both Map and Object formats for daily data
+            let tv = 0, tc = 0, yv = 0, yc = 0;
+            
+            if (l.dailyVisits) {
+                if (l.dailyVisits instanceof Map) {
+                    tv = parseInt(l.dailyVisits.get(today)) || 0;
+                    yv = parseInt(l.dailyVisits.get(yesterday)) || 0;
+                } else {
+                    tv = parseInt(l.dailyVisits[today]) || 0;
+                    yv = parseInt(l.dailyVisits[yesterday]) || 0;
+                }
+            }
+            
+            if (l.dailyClaims) {
+                if (l.dailyClaims instanceof Map) {
+                    tc = parseInt(l.dailyClaims.get(today)) || 0;
+                    yc = parseInt(l.dailyClaims.get(yesterday)) || 0;
+                } else {
+                    tc = parseInt(l.dailyClaims[today]) || 0;
+                    yc = parseInt(l.dailyClaims[yesterday]) || 0;
+                }
+            }
 
             todayV += tv;
             todayC += tc;
