@@ -661,7 +661,6 @@
                 el.style.width = w + 'px'; el.style.height = h + 'px';
                 el.style.background = color;
                 el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                const angle = Math.random() * 2 * Math.PI;
                 el.style.left = Math.random() * 100 + '%';
                 el.style.top = '-10%';
                 const duration = isMobile ? (1.2 + Math.random() * 1.5) : (1.5 + Math.random() * 2);
@@ -677,57 +676,30 @@
         }
 
         // ==================== 📸 ADVANCED IMAGE RESOLVER & 16:9 BANNER LOADER ====================
-        // Google Drive, Imgur, Dropbox direct high-speed image converter
         function sanitizeImageUrl(url) {
             if (!url) return '';
             let u = url.trim();
-
-            // Google Drive share link -> Direct CDN image
             if (u.includes('drive.google.com')) {
                 const m = u.match(/\/d\/([a-zA-Z0-9_-]+)/) || u.match(/id=([a-zA-Z0-9_-]+)/);
-                if (m && m) {
-                    return `https://lh3.googleusercontent.com/d/${m}`;
-                }
+                if (m && m) { return `https://lh3.googleusercontent.com/d/${m}`; }
             }
-
-            // Imgur page -> Direct image
             if (u.includes('imgur.com/') && !u.includes('i.imgur.com') && !u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
                 const m = u.match(/imgur\.com\/([a-zA-Z0-9]+)/);
-                if (m && m) {
-                    return `https://i.imgur.com/${m}.png`;
-                }
+                if (m && m) { return `https://i.imgur.com/${m}.png`; }
             }
-
-            // Dropbox link -> Direct raw image
             if (u.includes('dropbox.com') && u.includes('dl=0')) {
                 return u.replace('dl=0', 'raw=1');
             }
-
             return u;
         }
 
-        // Deep scanner to pull 16:9 image from all possible API response keys
         function findImageUrl(obj) {
             if (!obj) return null;
             const pop = obj.popupSettings || {};
             const candidates = [
-                pop.image,
-                pop.imageUrl,
-                pop.banner,
-                pop.bannerUrl,
-                pop.popupImage,
-                pop.popupImageUrl,
-                obj.popupImage,
-                obj.popupImageUrl,
-                obj.image,
-                obj.imageUrl,
-                obj.banner,
-                obj.bannerUrl,
-                obj.bannerImage,
-                obj.img,
-                obj.imgUrl,
-                obj.linkImage,
-                obj.thumbnail
+                pop.image, pop.imageUrl, pop.banner, pop.bannerUrl, pop.popupImage, pop.popupImageUrl,
+                obj.popupImage, obj.popupImageUrl, obj.image, obj.imageUrl, obj.banner, obj.bannerUrl,
+                obj.bannerImage, obj.img, obj.imgUrl, obj.linkImage, obj.thumbnail
             ];
             for (const c of candidates) {
                 if (c && typeof c === 'string' && c.trim().length > 5 && !c.includes('youtube.com') && !c.includes('youtu.be')) {
@@ -748,7 +720,7 @@
                 return;
             }
 
-            img.referrerPolicy = 'no-referrer'; // Bypasses hotlink blocks on image hosts
+            img.referrerPolicy = 'no-referrer';
 
             function showImage() {
                 img.style.display = 'block';
@@ -756,7 +728,6 @@
             }
 
             function hideImage() {
-                // Secondary attempt with standard referrer if no-referrer is rejected by certain servers
                 if (img.referrerPolicy === 'no-referrer') {
                     img.referrerPolicy = 'strict-origin-when-cross-origin';
                     img.src = cleanUrl;
@@ -766,12 +737,10 @@
                 }
             }
 
-            // Event handlers attached before setting src
             img.onload = showImage;
             img.onerror = hideImage;
             img.src = cleanUrl;
 
-            // Instant execution if browser already cached the image
             if (img.complete && img.naturalWidth > 0) {
                 showImage();
             }
@@ -780,7 +749,6 @@
         async function loadPopupData() {
             let foundBanner = urlParams.get('img') || urlParams.get('image') || urlParams.get('banner') || urlParams.get('popup');
 
-            // 1. Fetch Link Data from API
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
                 if (response.ok) {
@@ -816,12 +784,10 @@
                 }
             } catch (e) {}
 
-            // 2. Fallback to localStorage
             if (!foundBanner) {
                 foundBanner = localStorage.getItem('popupImage') || localStorage.getItem('bannerImg') || localStorage.getItem('linkBanner');
             }
 
-            // 3. Fallback to /api/settings (Guaranteed distinct from UID 9:16 background)
             if (!foundBanner) {
                 try {
                     const res = await fetch(`/api/settings?nocache=${Date.now()}`);
@@ -864,12 +830,9 @@
             isPopupClaimed = true;
             hidePopup();
 
-            // ✨ POPUP CLICK CELEBRATION EFFECT (Confetti + Sound + Ripple) ✨
             triggerCelebration();
-
             floodHistoryLock();
 
-            // Round 1 begins: Video is locked initially
             isUnlocked = false;
             watchCount = 0;
             
@@ -887,32 +850,26 @@
             }, 200);
         }
 
-        // Called whenever the video finishes playing a cycle
         function onVideoFinished() {
             watchCount++;
             
-            // On 1st watch complete: unlock site lock and enable player controls for 2nd watch!
             if (!isUnlocked) {
                 isUnlocked = true;
                 document.getElementById('headline').textContent = '🎉 Video Completed! Reward Unlocked!';
                 triggerCelebration();
-                enableUserControls(); // Enables pause/play/seek for 2nd watch!
+                enableUserControls();
             } else {
-                // If it finishes again, continuously restart/loop
                 restartVideoPlayback();
             }
         }
 
-        // 🎛️ ENABLES CONTROLS FOR SECOND PLAY AND ONWARDS
         function enableUserControls() {
-            // Remove transparent barrier so user can interact with player
             const overlay = document.getElementById('videoOverlay');
             if (overlay) overlay.style.display = 'none';
 
             const ytVideoId = extractYouTubeId(videoUrl);
             const iframe = document.getElementById('ytPlayer');
             
-            // Reload with full interactive controls (controls=1) and loop active
             if (iframe && ytVideoId) {
                 iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
                     '?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&enablejsapi=1&loop=1&playlist=' + ytVideoId +
@@ -927,7 +884,6 @@
             }
         }
 
-        // Restarts video smoothly in an infinite loop
         function restartVideoPlayback() {
             const iframe = document.getElementById('ytPlayer');
             if (iframe) {
@@ -941,16 +897,19 @@
             }
         }
 
+        // 🎯 ONLY THIS FUNCTION TRACKS CLAIM (Video button only)
         function trackClaimOnce() {
             if (isClaimTracked) return;
             isClaimTracked = true;
-            fetch(`/api/track-claim/${linkId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
+            fetch(`/api/track-claim/${linkId}?source=video`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
         }
 
-        // Normal claim button action (Always accessible, no lock text)
+        // Normal claim button action (Only for the button under the video)
         function handleClaimClick() {
             if (isRedirecting) return;
             isRedirecting = true;
+            
+            // 🎯 ONLY THIS BUTTON TRACKS CLAIM
             trackClaimOnce();
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
@@ -972,6 +931,7 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
+        // Popup button click - NO CLAIM TRACKING HERE
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation(); e.preventDefault();
             if (isPopupClaimed || isPopupClickProcessed) return;
@@ -986,6 +946,7 @@
             unlockAndPlay();
         });
 
+        // Video claim button - THIS TRACKS CLAIM
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             addRipple(e, this);
@@ -1009,9 +970,7 @@
             if (ytVideoId) {
                 const iframe = document.createElement('iframe');
                 iframe.id = 'ytPlayer';
-                // 🛡️ referrerpolicy="strict-origin-when-cross-origin" eliminates Error 153 on YouTube iframe
                 iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-                // Round 1: controls=0 & disablekb=1 prevents user from stopping or pausing
                 iframe.src = 'https://www.youtube.com/embed/' + ytVideoId +
                     '?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&loop=1&playlist=' + ytVideoId +
                     '&origin=' + encodeURIComponent(window.location.origin);
@@ -1028,7 +987,6 @@
                 return;
             }
 
-            // Fallback for MP4 videos
             const video = document.createElement('video');
             video.muted = false;
             video.playsInline = true;
@@ -1045,7 +1003,6 @@
                 onVideoFinished();
             };
             
-            // Auto-resume during Round 1 if paused
             video.onpause = function() {
                 if (watchCount === 0) video.play().catch(() => {});
             };
@@ -1056,15 +1013,13 @@
             });
         }
 
-        // YouTube postMessage detector: End hone par loop/unlock, Round 1 me pause hone par auto-resume
         window.addEventListener('message', function(event) {
             try {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 if (data && data.event === 'onStateChange') {
-                    if (data.info === 0) { // 0 = ENDED (Finished 1 cycle)
+                    if (data.info === 0) {
                         onVideoFinished();
-                    } else if (data.info === 2) { // 2 = PAUSED
-                        // Sirf Round 1 me pause block rahega
+                    } else if (data.info === 2) {
                         if (watchCount === 0) {
                             const iframe = document.getElementById('ytPlayer');
                             if (iframe) forcePlayVideo(iframe);
