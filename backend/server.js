@@ -78,8 +78,8 @@ const Link = safeLoadModel('Link', {
 const Stats = safeLoadModel('Stats', {
     totalVisitors: { type: Number, default: 0 },
     totalClaims: { type: Number, default: 0 },
-    dailyVisitors: { type: mongoose.Schema.Types.Mixed, default: {} },
-    dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} }
+    dailyVisitors: { type: Object, default: {} },
+    dailyClaims: { type: Object, default: {} }
 });
 
 const PopupSettings = safeLoadModel('PopupSettings', {
@@ -260,34 +260,37 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
-// 📅 Helper: Calculate Start & End Date range for filtering
+// 📅 Helper: Calculate Start & End Date range for filtering (IST Timezone Fixed)
 function parseDateRange(filter, customStart, customEnd) {
     const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    
     const formatDate = (d) => d.toISOString().split('T')[0];
-    const today = formatDate(now);
+    const today = formatDate(istNow);
 
     let startStr = today;
     let endStr = today;
 
     if (filter === 'yesterday') {
-        const y = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const y = new Date(istNow.getTime() - 24 * 60 * 60 * 1000);
         startStr = formatDate(y);
         endStr = startStr;
     } else if (filter === '7days' || filter === '7d') {
-        const d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const d = new Date(istNow.getTime() - 7 * 24 * 60 * 60 * 1000);
         startStr = formatDate(d);
         endStr = today;
     } else if (filter === '30days' || filter === '30d') {
-        const d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const d = new Date(istNow.getTime() - 30 * 24 * 60 * 60 * 1000);
         startStr = formatDate(d);
         endStr = today;
     } else if (filter === 'thisMonth') {
-        const d = new Date(now.getFullYear(), now.getMonth(), 1);
+        const d = new Date(istNow.getFullYear(), istNow.getMonth(), 1);
         startStr = formatDate(d);
         endStr = today;
     } else if (filter === 'lastMonth') {
-        const d1 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const d2 = new Date(now.getFullYear(), now.getMonth(), 0);
+        const d1 = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
+        const d2 = new Date(istNow.getFullYear(), istNow.getMonth(), 0);
         startStr = formatDate(d1);
         endStr = formatDate(d2);
     } else if (customStart && customEnd) {
@@ -298,17 +301,16 @@ function parseDateRange(filter, customStart, customEnd) {
         endStr = customStart.toString().trim().slice(0, 10);
     }
 
-    const startDateObj = new Date(`${startStr}T00:00:00.000Z`);
-    const endDateObj = new Date(`${endStr}T23:59:59.999Z`);
+    const startDateObj = new Date(`${startStr}T00:00:00.000+05:30`);
+    const endDateObj = new Date(`${endStr}T23:59:59.999+05:30`);
 
     return { startStr, endStr, startDateObj, endDateObj };
 }
 
-// 📅 Helper: Sum daily visits or claims between two date strings
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
-    const entries = mapData instanceof Map ? Array.from(mapData.entries()) : Object.entries(mapData);
     let total = 0;
+    const entries = mapData instanceof Map ? Array.from(mapData.entries()) : Object.entries(mapData);
     for (const [date, count] of entries) {
         if (date >= startStr && date <= endStr) {
             total += parseInt(count) || 0;
@@ -645,8 +647,11 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         const cleanId = extractCleanId(req.params.linkId);
         let link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (!link) return res.status(404).json({ error: 'Link not found' });
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istNow = new Date(now.getTime() + istOffset);
+        const today = istNow.toISOString().split('T')[0];
+        const yesterday = new Date(istNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
 
@@ -776,9 +781,13 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            const istNow = new Date(now.getTime() + istOffset);
+            const today = istNow.toISOString().split('T')[0];
+            
             Link.updateOne({ _id: link._id }, { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }).catch(() => {});
-            Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }).catch(() => {});
+            Stats.updateOne({}, { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } }, { upsert: true }).catch(() => {});
         }
 
         VisitorActivity.findOneAndUpdate(
@@ -860,9 +869,13 @@ async function executeClaimTracking(rawLinkId, req) {
     const { ip, deviceKey } = getDeviceId(req);
     const visitorKey = deviceKey || ip;
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const today = new Date().toISOString().split('T')[0];
+    
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const today = istNow.toISOString().split('T')[0];
 
-    // 🔒 STRICT 24-HOUR UNIQUE CLAIM CHECK
+    // 🔒 STRICT 24-HOUR UNIQUE CLAIM CHECK (Only for video source)
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -877,8 +890,13 @@ async function executeClaimTracking(rawLinkId, req) {
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
         ).catch(() => {});
 
+        await Stats.updateOne(
+            {}, 
+            { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }, 
+            { upsert: true }
+        ).catch(() => {});
+        
         link.claims = (link.claims || 0) + 1;
-        Stats.updateOne({}, { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } }).catch(() => {});
     }
 
     VisitorActivity.findOneAndUpdate(
@@ -1086,49 +1104,20 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istNow = new Date(now.getTime() + istOffset);
+        const today = istNow.toISOString().split('T')[0];
+        const yesterday = new Date(istNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        // 📅 Parse requested date range (Today, Yesterday, 7 Days, or Custom Date e.g. 17th)
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
-        const entriesV = link.dailyVisits ? (link.dailyVisits instanceof Map ? Array.from(link.dailyVisits.entries()) : Object.entries(link.dailyVisits)) : [];
-        const entriesC = link.dailyClaims ? (link.dailyClaims instanceof Map ? Array.from(link.dailyClaims.entries()) : Object.entries(link.dailyClaims)) : [];
-
-        let vToday = 0, cToday = 0, vYesterday = 0, cYesterday = 0, v24h = 0, c24h = 0, v7d = 0, c7d = 0, v30d = 0, c30d = 0;
-
-        for (const [date, count] of entriesV) {
-            const d = new Date(date);
-            const cnt = parseInt(count) || 0;
-            if (date === today) vToday += cnt;
-            if (date === yesterday) vYesterday += cnt;
-            if (d >= oneDayAgo) v24h += cnt;
-            if (d >= sevenDaysAgo) v7d += cnt;
-            if (d >= thirtyDaysAgo) v30d += cnt;
-        }
-
-        for (const [date, count] of entriesC) {
-            const d = new Date(date);
-            const cnt = parseInt(count) || 0;
-            if (date === today) cToday += cnt;
-            if (date === yesterday) cYesterday += cnt;
-            if (d >= oneDayAgo) c24h += cnt;
-            if (d >= sevenDaysAgo) c7d += cnt;
-            if (d >= thirtyDaysAgo) c30d += cnt;
-        }
-
-        // 🎯 TOTAL CLAIMS (EXCLUDING DUMMY POPUP CLICKS)
-        const finalTotalClaims = link.claims || 0;
-        const finalTodayClaims = cToday;
-        const finalYesterdayClaims = cYesterday;
-        const final24hClaims = c24h;
-
-        // 📅 Calculate custom range stats
         const mappedRangeVisits = sumDailyMapBetween(link.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const mappedRangeClaims = sumDailyMapBetween(link.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
+
+        const vToday = link.dailyVisits && link.dailyVisits[today] ? parseInt(link.dailyVisits[today]) : 0;
+        const cToday = link.dailyClaims && link.dailyClaims[today] ? parseInt(link.dailyClaims[today]) : 0;
+        const vYesterday = link.dailyVisits && link.dailyVisits[yesterday] ? parseInt(link.dailyVisits[yesterday]) : 0;
+        const cYesterday = link.dailyClaims && link.dailyClaims[yesterday] ? parseInt(link.dailyClaims[yesterday]) : 0;
 
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
@@ -1152,16 +1141,15 @@ app.post('/api/user/link-details', async (req, res) => {
             userName: link.userName || link.assignedUser || cleanUser,
             totalVisits: link.visits || 0,
             visits: link.visits || 0,
-            totalClaims: finalTotalClaims,
-            claims: finalTotalClaims,
+            totalClaims: link.claims || 0,
+            claims: link.claims || 0,
             todayVisits: vToday,
-            todayClaims: finalTodayClaims,
+            todayClaims: cToday,
             yesterdayVisits: vYesterday,
-            yesterdayClaims: finalYesterdayClaims,
-            v24h: v24h,
-            c24h: final24hClaims,
-            v7d: v7d,
-            // 📅 Range / Custom Date Response for Dashboard
+            yesterdayClaims: cYesterday,
+            v24h: vToday,
+            c24h: cToday,
+            v7d: mappedRangeVisits,
             dateRange: {
                 filter: filter || 'today',
                 start: dateRangeInfo.startStr,
@@ -1182,16 +1170,18 @@ app.post('/api/user/link-details', async (req, res) => {
                 isEligibleForRenewal,
                 totalVisits: link.visits || 0,
                 visits: link.visits || 0,
-                totalClaims: finalTotalClaims,
-                claims: finalTotalClaims,
+                totalClaims: link.claims || 0,
+                claims: link.claims || 0,
                 todayVisits: vToday,
-                todayClaims: finalTodayClaims,
+                todayClaims: cToday,
                 yesterdayVisits: vYesterday,
-                yesterdayClaims: finalYesterdayClaims,
-                v24h: v24h,
-                c24h: final24hClaims,
-                v7d: v7d,
-                c7d, v30d, c30d,
+                yesterdayClaims: cYesterday,
+                v24h: vToday,
+                c24h: cToday,
+                v7d: mappedRangeVisits,
+                c7d: mappedRangeClaims, 
+                v30d: mappedRangeVisits, 
+                c30d: mappedRangeClaims,
                 uidChecking: isUidOn,
                 dateRange: {
                     filter: filter || 'today',
@@ -1274,7 +1264,6 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
             
-            // Match all links created by or assigned to this user
             const userLinks = links.filter(l => {
                 const ln = (l.name || '').toLowerCase().trim();
                 const au = (l.assignedUser || '').toLowerCase().trim();
@@ -1283,7 +1272,6 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
             });
 
-            // Fast summing of 24-hour unique visits and unique claims
             const totalVisits = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
             const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
 
@@ -1965,9 +1953,12 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
         const links = await Link.find().lean();
+        
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istNow = new Date(now.getTime() + istOffset);
+        const today = istNow.toISOString().split('T')[0];
+        const yesterday = new Date(istNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
@@ -1980,19 +1971,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             totV += v;
             totC += c;
 
-            let tv = 0, tc = 0, yv = 0, yc = 0;
-            if (l.dailyVisits) {
-                const dv = l.dailyVisits instanceof Map ? l.dailyVisits.get(today) : l.dailyVisits[today];
-                tv = parseInt(dv) || 0;
-                const dy = l.dailyVisits instanceof Map ? l.dailyVisits.get(yesterday) : l.dailyVisits[yesterday];
-                yv = parseInt(dy) || 0;
-            }
-            if (l.dailyClaims) {
-                const dc = l.dailyClaims instanceof Map ? l.dailyClaims.get(today) : l.dailyClaims[today];
-                tc = parseInt(dc) || 0;
-                const dcy = l.dailyClaims instanceof Map ? l.dailyClaims.get(yesterday) : l.dailyClaims[yesterday];
-                yc = parseInt(dcy) || 0;
-            }
+            let tv = l.dailyVisits && l.dailyVisits[today] ? parseInt(l.dailyVisits[today]) : 0;
+            let tc = l.dailyClaims && l.dailyClaims[today] ? parseInt(l.dailyClaims[today]) : 0;
+            let yv = l.dailyVisits && l.dailyVisits[yesterday] ? parseInt(l.dailyVisits[yesterday]) : 0;
+            let yc = l.dailyClaims && l.dailyClaims[yesterday] ? parseInt(l.dailyClaims[yesterday]) : 0;
 
             todayV += tv;
             todayC += tc;
@@ -2023,7 +2005,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
 
-        // Fast active counters with 1500ms max timeout to prevent hang
         const activeWatching = await VisitorActivity.countDocuments({
             type: 'visit',
             lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
@@ -2053,7 +2034,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             },
             links: formattedLinks
         });
-    } catch(e) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+    } catch(e) { 
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch stats' }); 
+    }
 });
 
 // Device Security Routes
@@ -2098,7 +2082,6 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
             sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
         }
 
-        // Always ensure at least the current active session exists
         if (!sessions || sessions.length === 0) {
             const { ip, deviceKey, fingerprint } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
