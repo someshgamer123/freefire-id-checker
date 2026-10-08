@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 const StatsSchema = new mongoose.Schema({
     totalVisitors: { type: Number, default: 0 },
     totalClaims: { type: Number, default: 0 },
-    dailyVisitors: { type: Map, of: Number, default: {} },
-    dailyClaims: { type: Map, of: Number, default: {} },
+    // Using Object instead of Map for better compatibility with MongoDB updates
+    dailyVisitors: { type: Object, default: {} },
+    dailyClaims: { type: Object, default: {} },
     lastUpdated: { type: Date, default: Date.now }
 });
 
