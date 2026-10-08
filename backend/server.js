@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
+// ==================== MongoDB Connection ====================
 let connectDB;
 try {
     connectDB = require('./config/db');
@@ -29,6 +30,7 @@ try {
     };
 }
 
+// ==================== Safe Model Loader ====================
 function safeLoadModel(modelName, defaultSchema) {
     try {
         const mod = require(`./models/${modelName}`);
@@ -66,8 +68,8 @@ const Link = safeLoadModel('Link', {
     uidChecking: { type: Boolean, default: true },
     claims: { type: Number, default: 0 },
     visits: { type: Number, default: 0 },
-    dailyClaims: { type: mongoose.Schema.Types.Mixed, default: {} },
-    dailyVisits: { type: mongoose.Schema.Types.Mixed, default: {} },
+    dailyClaims: { type: Object, default: {} },
+    dailyVisits: { type: Object, default: {} },
     popupSettings: Object,
     image: String,
     created: { type: Date, default: Date.now }
@@ -219,44 +221,9 @@ if (EMAIL_USER && EMAIL_PASS) {
     } catch(e) {}
 }
 
-function verifyPasscode(inputPass, storedPass) {
-    if (!inputPass || !storedPass) return false;
-    const cleanInput = inputPass.toString().trim();
-    const cleanStored = storedPass.toString().trim();
-    if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
-        try { return bcrypt.compareSync(cleanInput, cleanStored); } catch(e) { return false; }
-    }
-    return cleanInput === cleanStored;
-}
+// ==================== Helper Functions ====================
 
-function isUidCheckDisabled(val) {
-    return val === false || val === 'false' || val === 0 || val === '0' || val === 'off' || val === 'OFF' || val === 'disabled' || val === 'inactive' || val === 'no' || val === 'NO';
-}
-
-function extractCleanId(input) {
-    if (!input) return '';
-    let str = input.toString().trim();
-    if (str.includes('?link=')) str = (str.split('?link=') || '').split('&')[0];
-    else if (str.includes('&link=')) str = (str.split('&link=') || '').split('&')[0];
-    else if (str.includes('?id=')) str = (str.split('?id=') || '').split('&')[0];
-    else if (str.includes('&id=')) str = (str.split('&id=') || '').split('&')[0];
-    else if (str.includes('/user-dashboard/')) str = (str.split('/user-dashboard/') || '').split('?')[0];
-    else if (str.includes('/v/')) str = (str.split('/v/') || '').split('?')[0];
-    else if (str.includes('/uid/')) str = (str.split('/uid/') || '').split('?')[0];
-    try { str = decodeURIComponent(str); } catch(e) {}
-    return str.split('#')[0].replace(/\/+$/, '').trim();
-}
-
-function getLinkQuery(rawId) {
-    const cleanId = (rawId || '').toString().trim();
-    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
-    if (mongoose.Types.ObjectId.isValid(cleanId) && cleanId.length === 24) {
-        try { orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) }); } catch(e) {}
-        orConditions.push({ _id: cleanId });
-    }
-    return { $or: orConditions };
-}
-
+// ✅ IST Date String (YYYY-MM-DD)
 function getISTDate() {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -264,11 +231,50 @@ function getISTDate() {
     return istNow.toISOString().split('T')[0];
 }
 
+// ✅ Get value from daily map (works with both Object and Map)
+function getDailyValue(mapData, dateStr) {
+    if (!mapData) return 0;
+    if (mapData instanceof Map) {
+        return parseInt(mapData.get(dateStr)) || 0;
+    }
+    if (typeof mapData === 'object') {
+        return parseInt(mapData[dateStr]) || 0;
+    }
+    return 0;
+}
+
+// ✅ Sum values between two dates (works with both Object and Map)
+function sumDailyMapBetween(mapData, startStr, endStr) {
+    if (!mapData) return 0;
+    let total = 0;
+
+    if (mapData instanceof Map) {
+        for (const [date, count] of mapData.entries()) {
+            if (date >= startStr && date <= endStr) {
+                total += parseInt(count) || 0;
+            }
+        }
+        return total;
+    }
+
+    if (typeof mapData === 'object') {
+        for (const [date, count] of Object.entries(mapData)) {
+            if (date >= startStr && date <= endStr) {
+                total += parseInt(count) || 0;
+            }
+        }
+        return total;
+    }
+
+    return 0;
+}
+
+// ✅ Parse date range for filters
 function parseDateRange(filter, customStart, customEnd) {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
-    
+
     const formatDate = (d) => d.toISOString().split('T')[0];
     const today = formatDate(istNow);
 
@@ -307,37 +313,42 @@ function parseDateRange(filter, customStart, customEnd) {
     return { startStr, endStr };
 }
 
-function sumDailyMapBetween(mapData, startStr, endStr) {
-    if (!mapData) return 0;
-    let total = 0;
-    
-    if (mapData instanceof Map) {
-        for (const [date, count] of mapData.entries()) {
-            if (date >= startStr && date <= endStr) {
-                total += parseInt(count) || 0;
-            }
-        }
-        return total;
+function verifyPasscode(inputPass, storedPass) {
+    if (!inputPass || !storedPass) return false;
+    const cleanInput = inputPass.toString().trim();
+    const cleanStored = storedPass.toString().trim();
+    if (cleanStored.startsWith('$2a$') || cleanStored.startsWith('$2b$') || cleanStored.startsWith('$2y$')) {
+        try { return bcrypt.compareSync(cleanInput, cleanStored); } catch(e) { return false; }
     }
-    
-    if (typeof mapData === 'object') {
-        for (const [date, count] of Object.entries(mapData)) {
-            if (date >= startStr && date <= endStr) {
-                total += parseInt(count) || 0;
-            }
-        }
-        return total;
-    }
-    
-    return 0;
+    return cleanInput === cleanStored;
 }
 
-function getDailyValue(mapData, dateStr) {
-    if (!mapData) return 0;
-    if (mapData instanceof Map) {
-        return parseInt(mapData.get(dateStr)) || 0;
+function isUidCheckDisabled(val) {
+    return val === false || val === 'false' || val === 0 || val === '0' || val === 'off' || val === 'OFF' || val === 'disabled' || val === 'inactive' || val === 'no' || val === 'NO';
+}
+
+function extractCleanId(input) {
+    if (!input) return '';
+    let str = input.toString().trim();
+    if (str.includes('?link=')) str = (str.split('?link=') || '').split('&')[0];
+    else if (str.includes('&link=')) str = (str.split('&link=') || '').split('&')[0];
+    else if (str.includes('?id=')) str = (str.split('?id=') || '').split('&')[0];
+    else if (str.includes('&id=')) str = (str.split('&id=') || '').split('&')[0];
+    else if (str.includes('/user-dashboard/')) str = (str.split('/user-dashboard/') || '').split('?')[0];
+    else if (str.includes('/v/')) str = (str.split('/v/') || '').split('?')[0];
+    else if (str.includes('/uid/')) str = (str.split('/uid/') || '').split('?')[0];
+    try { str = decodeURIComponent(str); } catch(e) {}
+    return str.split('#')[0].replace(/\/+$/, '').trim();
+}
+
+function getLinkQuery(rawId) {
+    const cleanId = (rawId || '').toString().trim();
+    const orConditions = [{ id: cleanId }, { dashboardId: cleanId }];
+    if (mongoose.Types.ObjectId.isValid(cleanId) && cleanId.length === 24) {
+        try { orConditions.push({ _id: new mongoose.Types.ObjectId(cleanId) }); } catch(e) {}
+        orConditions.push({ _id: cleanId });
     }
-    return parseInt(mapData[dateStr]) || 0;
+    return { $or: orConditions };
 }
 
 function generateWhatsAppApprovalData(user, req) {
@@ -351,14 +362,13 @@ function generateWhatsAppApprovalData(user, req) {
 
     const message = 
 `🎉 *Congratulations ${user.name}!*
-Your account has been officially approved.
+Your account has been approved.
 
-🔐 *Your Login Credentials:*
-📧 *Email:* ${user.email}
-📱 *Phone:* ${user.phone}
+🔐 *Login:*
+📧 Email: ${user.email}
+📱 Phone: ${user.phone}
 
-🔗 *Dashboard Login Link:*
-${loginUrl}
+🔗 ${loginUrl}
 
 Thank you! 🚀`;
 
@@ -366,6 +376,7 @@ Thank you! 🚀`;
     return { message, whatsappUrl, cleanPhone, loginUrl };
 }
 
+// ==================== Database Init ====================
 async function initializeDatabase() {
     try {
         await BlockedDevice.deleteMany({}).catch(() => {});
@@ -425,6 +436,7 @@ connectDB().then(() => {
     initializeDatabase();
 }).catch(() => {});
 
+// ==================== Middleware ====================
 app.set('trust proxy', 1);
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -548,7 +560,7 @@ async function authMiddleware(req, res, next) {
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
-    
+
     req.user = decoded;
 
     if (Session) {
@@ -573,24 +585,13 @@ async function authMiddleware(req, res, next) {
     next();
 }
 
+// ==================== ROUTES ====================
+
 app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     try {
         await BlockedDevice.deleteMany({});
-        res.send(`
-            <!DOCTYPE html><html><head><title>Unblocked</title>
-            <style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;margin:0;}
-            .box{background:#131722;padding:40px;border-radius:16px;border:1px solid #22c55e;}
-            a{color:#6366f1;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;}
-            </style></head><body>
-            <div class="box">
-                <h1 style="color:#22c55e;">✅ All Devices Unblocked!</h1>
-                <p>All lockout and ban restrictions have been cleared.</p>
-                <a href="/admin">Go to Admin Panel ➜</a>
-            </div></body></html>
-        `);
-    } catch(e) {
-        res.status(500).send('Error clearing blocks');
-    }
+        res.send(`<h1 style="color:green;">✅ All Devices Unblocked!</h1><a href="/admin">Go to Admin Panel</a>`);
+    } catch(e) { res.status(500).send('Error'); }
 });
 
 app.get('/api/whatsapp-number', async (req, res) => {
@@ -609,7 +610,7 @@ app.post('/api/whatsapp-number', async (req, res) => {
         pricing.whatsappNumber = number.toString().trim();
         await pricing.save();
         res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
@@ -620,7 +621,7 @@ app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
         pricing.whatsappNumber = (number || '916372923348').toString().trim();
         await pricing.save();
         res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) { res.status(500).json({ error: 'Failed to save WhatsApp number' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
@@ -629,7 +630,7 @@ app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
         let link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (link) return res.json({ linkId: link.id, name: link.name || link.title, linkName: link.linkName || link.title || link.name });
         res.status(404).json({ error: 'No link found' });
-    } catch (error) { res.status(500).json({ error: 'Failed to map dashboard' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/visit-stats/:linkId', async (req, res) => {
@@ -661,7 +662,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
             expiryDate: link.expiryDate || null,
             uidChecking: isUidOn
         });
-    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/parent-link', async (req, res) => {
@@ -674,18 +675,12 @@ app.get('/api/parent-link', async (req, res) => {
                 await firstLink.save();
             }
             const lName = firstLink.linkName || firstLink.title || firstLink.name || 'Untitled Link';
-            res.json({
-                url: '/user-dashboard/' + firstLink.dashboardId,
-                linkName: lName,
-                name: lName,
-                title: lName,
-                linkId: firstLink.id
-            });
+            res.json({ url: '/user-dashboard/' + firstLink.dashboardId, linkName: lName, name: lName, title: lName, linkId: firstLink.id });
         } else {
             const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
             res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, name: null, title: null, linkId: null });
         }
-    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/pricing', async (req, res) => {
@@ -706,7 +701,7 @@ app.get('/api/pricing', async (req, res) => {
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
             autoPaymentEnabled: false
         });
-    } catch (error) { res.status(500).json({ error: 'Failed to fetch pricing' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
@@ -718,15 +713,12 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
         if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
         if (whatsappNumber) updateFields.whatsappNumber = whatsappNumber.toString().trim();
 
-        const updatedPricing = await Pricing.findOneAndUpdate(
-            {},
-            { $set: updateFields },
-            { upsert: true, new: true, lean: true }
-        );
+        const updatedPricing = await Pricing.findOneAndUpdate({}, { $set: updateFields }, { upsert: true, new: true, lean: true });
         res.json({ success: true, pricing: updatedPricing });
-    } catch (error) { res.status(500).json({ error: 'Failed to update pricing' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== VISITOR LINK RESOLVER (with Daily Tracking) ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -758,6 +750,7 @@ app.get('/api/link/:id', async (req, res) => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const today = getISTDate();
 
+        // ✅ 24-hour unique check
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
             visitorKey: visitorKey,
@@ -766,17 +759,32 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
+            // ✅ CRITICAL FIX: Increment both lifetime AND daily
             await Link.updateOne(
                 { _id: link._id },
-                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
-            ).catch(() => {});
+                { 
+                    $inc: { 
+                        visits: 1, 
+                        [`dailyVisits.${today}`]: 1 
+                    } 
+                }
+            ).catch(err => console.error('Link update error:', err));
+
             await Stats.updateOne(
                 {},
-                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
+                { 
+                    $inc: { 
+                        totalVisitors: 1, 
+                        [`dailyVisitors.${today}`]: 1 
+                    } 
+                },
                 { upsert: true }
-            ).catch(() => {});
+            ).catch(err => console.error('Stats update error:', err));
+
+            console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
+        // Update visitor activity timestamp
         VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -815,7 +823,10 @@ app.get('/api/link/:id', async (req, res) => {
                 subtitle: popup.subtitle || 'Tap below to unlock your reward'
             }
         });
-    } catch (error) { res.status(500).json({ error: 'Server error' }); }
+    } catch (error) { 
+        console.error('Link API error:', error);
+        res.status(500).json({ error: 'Server error' }); 
+    }
 });
 
 app.post('/api/submit-uid/:linkId', async (req, res) => {
@@ -834,13 +845,15 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
             { upsert: true, new: true }
         ).catch(() => {});
         res.json({ success: true, message: 'UID submitted successfully', uid: cleanUid });
-    } catch (error) { res.status(500).json({ error: 'Failed to submit UID' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== CLAIM TRACKING (with Daily Tracking) ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
+    // 🛑 Ignore popup clicks
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
@@ -854,6 +867,7 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
+    // ✅ 24-hour unique claim check
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -863,16 +877,29 @@ async function executeClaimTracking(rawLinkId, req) {
     }).maxTimeMS(1500).catch(() => null);
 
     if (!recentClaim) {
+        // ✅ CRITICAL FIX: Increment both lifetime AND daily
         await Link.updateOne(
             { _id: link._id },
-            { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
-        ).catch(() => {});
+            { 
+                $inc: { 
+                    claims: 1, 
+                    [`dailyClaims.${today}`]: 1 
+                } 
+            }
+        ).catch(err => console.error('Link claim update error:', err));
 
         await Stats.updateOne(
             {},
-            { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
+            { 
+                $inc: { 
+                    totalClaims: 1, 
+                    [`dailyClaims.${today}`]: 1 
+                } 
+            },
             { upsert: true }
-        ).catch(() => {});
+        ).catch(err => console.error('Stats claim update error:', err));
+
+        console.log(`✅ Claim tracked: ${link.name || link.id} | Date: ${today}`);
     }
 
     VisitorActivity.findOneAndUpdate(
@@ -907,9 +934,10 @@ app.all('/api/track/:linkId', handleClaimTrackingRequest);
 app.all('/api/links/:linkId/claim', handleClaimTrackingRequest);
 app.all('/api/claim-reward/:linkId', handleClaimTrackingRequest);
 
+// ==================== RENEWAL ====================
 app.get('/api/renewal/history/:linkId', async (req, res) => {
     try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const { linkId } = req.params;
         const history = await RenewalRequest.find({ linkId }).sort({ createdAt: -1 }).limit(7).lean();
         res.json({ history, count: history.length });
@@ -964,6 +992,7 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== USER AUTH ====================
 app.post('/api/user/signup', async (req, res) => {
     try {
         const { name, email, phone } = req.body;
@@ -1003,6 +1032,7 @@ app.post('/api/user/signin', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
+// ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1162,7 +1192,10 @@ app.post('/api/user/link-details', async (req, res) => {
             autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
-    } catch (e) { res.status(500).json({ error: 'Failed to fetch link data' }); }
+    } catch (e) { 
+        console.error('User link details error:', e);
+        res.status(500).json({ error: 'Failed to fetch link data' }); 
+    }
 });
 
 app.post('/api/user/renew-payment', async (req, res) => {
@@ -1183,13 +1216,14 @@ app.post('/api/user/renew-payment', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Payment processing error' }); }
 });
 
+// ==================== SHORT LINKS ====================
 app.get('/api/user/short-links', async (req, res) => {
     try {
         const { userName } = req.query;
         const filter = userName ? { creator: userName } : {};
         const links = await ShortLink.find(filter).sort({ createdAt: -1 }).lean();
         res.json({ success: true, links });
-    } catch(e) { res.status(500).json({ error: 'Failed to fetch short links' }); }
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/user/short-links', async (req, res) => {
@@ -1206,7 +1240,7 @@ app.post('/api/user/short-links', async (req, res) => {
         });
         await link.save();
         res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
-    } catch(e) { res.status(500).json({ error: 'Failed to create short link' }); }
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/user/short-links/:id', async (req, res) => {
@@ -1214,9 +1248,10 @@ app.delete('/api/user/short-links/:id', async (req, res) => {
         await ShortLink.findByIdAndDelete(req.params.id);
         await ShortLinkClick.deleteMany({ shortLinkId: req.params.id }).catch(() => {});
         res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: 'Failed to delete short link' }); }
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== ADMIN USER MANAGEMENT ====================
 app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
@@ -1249,7 +1284,7 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
         });
 
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
-    } catch (e) { res.status(500).json({ error: 'Failed to fetch users' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, res) => {
@@ -1269,7 +1304,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
         const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
         await RenewalUser.findOneAndDelete(userQuery);
         res.json({ success: true, message: 'User deleted' });
-    } catch (e) { res.status(500).json({ error: 'Failed to delete user' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
@@ -1307,12 +1342,13 @@ const handleUserApprovalAction = async (req, res) => {
             whatsappUrl: waData.whatsappUrl,
             whatsappMessage: waData.message
         });
-    } catch (e) { res.status(500).json({ error: 'Failed to update user status' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 };
 
 app.post('/api/admin/renewal-users/:id/action', authMiddleware, handleUserApprovalAction);
 app.post('/api/admin/users/:id/action', authMiddleware, handleUserApprovalAction);
 
+// ==================== ADMIN RENEWAL ====================
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const pricing = await Pricing.findOne().lean();
@@ -1332,7 +1368,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
 
         const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
         res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
-    } catch (e) { res.status(500).json({ error: 'Failed to save renewal settings' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
@@ -1404,6 +1440,7 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== ADMIN AUTH ====================
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const blocked = await isDeviceBlocked(req);
@@ -1563,6 +1600,7 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
+// ==================== ADMIN LINKS CRUD ====================
 app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1831,7 +1869,7 @@ app.put('/api/links/:id/status', authMiddleware, async (req, res) => {
         const link = await Link.findOneAndUpdate(getLinkQuery(rawId), { status: req.body.status }, { new: true });
         if (!link) return res.status(404).json({ error: 'Link not found' });
         res.json(link);
-    } catch (error) { res.status(500).json({ error: 'Failed to update status' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
@@ -1839,7 +1877,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
         const query = getLinkQuery(extractCleanId(req.params.id));
         await Link.deleteMany(query);
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Failed to delete link' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/search-links', authMiddleware, async (req, res) => {
@@ -1851,7 +1889,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
             $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
         }).limit(20);
         res.json({ links });
-    } catch (error) { res.status(500).json({ error: 'Failed to search links' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
@@ -1871,9 +1909,10 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
             linkName: lName,
             linkId: link.id
         });
-    } catch (error) { res.status(500).json({ error: 'Failed to generate dashboard link' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== ADMIN ALL STATS (with Daily Tracking) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1965,6 +2004,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     }
 });
 
+// ==================== DEVICES & SESSIONS ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 }).lean();
@@ -1976,7 +2016,7 @@ app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, r
     try {
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Device unblocked' });
-    } catch(e) { res.status(500).json({ error: 'Failed to unblock' }); }
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
@@ -1995,7 +2035,7 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     try {
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Failed to delete device record' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
@@ -2024,7 +2064,7 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
         }
 
         res.json({ success: true, sessions });
-    } catch (error) { res.status(500).json({ error: 'Failed to fetch active sessions' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
@@ -2038,7 +2078,7 @@ app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
             }
         }
         res.json({ success: true, message: 'Session terminated' });
-    } catch (e) { res.status(500).json({ error: 'Failed to terminate session' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
@@ -2067,9 +2107,10 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
             await Session.findByIdAndDelete(session._id);
         }
         res.json({ success: true, message: 'Device blocked permanently' });
-    } catch (e) { res.status(500).json({ error: 'Failed to block device' }); }
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== SHORT LINKS ====================
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
@@ -2113,7 +2154,7 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const clicks = await ShortLinkClick.find({ shortLinkId: req.params.id }).sort({ timestamp: -1 }).limit(100);
         res.json({ success: true, link, clicks, totalClicks: link.visits || 0 });
-    } catch (error) { res.status(500).json({ error: 'Failed to fetch analytics' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/short-links', authMiddleware, async (req, res) => {
@@ -2130,7 +2171,7 @@ app.put('/api/short-links/:id', authMiddleware, async (req, res) => {
     try {
         const link = await ShortLink.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json({ success: true, link });
-    } catch (error) { res.status(500).json({ error: 'Failed to update short link' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
@@ -2152,9 +2193,10 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
                 totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0
             }
         });
-    } catch (error) { res.status(500).json({ error: 'Failed to fetch stats' }); }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== FILE SERVING ====================
 function sendAppFile(res, ...fileNames) {
     const searchDirs = [
         path.join(__dirname, 'admin'),
@@ -2280,9 +2322,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('click', function(e) {
         var inPopup = e.target.closest('#popup, .popup, #popupModal, .popup-modal, #entrancePopup, .modal-popup, .popup-container, .popup-overlay, #popupOverlay, [id*="popup" i], [class*="popup" i], [id*="modal" i], [class*="modal" i]');
-        if (inPopup) {
-            return;
-        }
+        if (inPopup) return;
 
         var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn, #videoClaimBtn');
         if (target) {
