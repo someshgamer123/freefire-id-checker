@@ -223,11 +223,19 @@ if (EMAIL_USER && EMAIL_PASS) {
 
 // ==================== Helper Functions ====================
 
-function getISTDate() {
+function getISTDate(dateObj) {
+    const d = dateObj || new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(d.getTime() + istOffset);
+    return istNow.toISOString().split('T')[0];
+}
+
+function getISTDateMinus(days) {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
-    return istNow.toISOString().split('T')[0];
+    const past = new Date(istNow.getTime() - days * 24 * 60 * 60 * 1000);
+    return past.toISOString().split('T')[0];
 }
 
 function getDailyValue(mapData, dateStr) {
@@ -263,37 +271,39 @@ function sumDailyMapBetween(mapData, startStr, endStr) {
         return total;
     }
 
-    return 0;
+    return total;
 }
 
 function parseDateRange(filter, customStart, customEnd) {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istNow = new Date(now.getTime() + istOffset);
-
     const formatDate = (d) => d.toISOString().split('T')[0];
-    const today = formatDate(istNow);
+    const today = getISTDate();
 
     let startStr = today;
     let endStr = today;
 
-    if (filter === 'yesterday') {
-        const y = new Date(istNow.getTime() - 24 * 60 * 60 * 1000);
-        startStr = formatDate(y);
-        endStr = startStr;
+    if (filter === 'all') {
+        startStr = '1970-01-01';
+        endStr = '2099-12-31';
+    } else if (filter === 'today') {
+        startStr = today;
+        endStr = today;
+    } else if (filter === 'yesterday') {
+        const y = getISTDateMinus(1);
+        startStr = y;
+        endStr = y;
     } else if (filter === '7days' || filter === '7d') {
-        const d = new Date(istNow.getTime() - 7 * 24 * 60 * 60 * 1000);
-        startStr = formatDate(d);
+        startStr = getISTDateMinus(7);
         endStr = today;
     } else if (filter === '30days' || filter === '30d') {
-        const d = new Date(istNow.getTime() - 30 * 24 * 60 * 60 * 1000);
-        startStr = formatDate(d);
+        startStr = getISTDateMinus(30);
         endStr = today;
     } else if (filter === 'thisMonth') {
-        const d = new Date(istNow.getFullYear(), istNow.getMonth(), 1);
-        startStr = formatDate(d);
+        const istNow = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+        const firstDay = new Date(istNow.getFullYear(), istNow.getMonth(), 1);
+        startStr = formatDate(firstDay);
         endStr = today;
     } else if (filter === 'lastMonth') {
+        const istNow = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
         const d1 = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
         const d2 = new Date(istNow.getFullYear(), istNow.getMonth(), 0);
         startStr = formatDate(d1);
@@ -636,7 +646,7 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         let link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const today = getISTDate();
-        const yesterday = new Date(new Date().getTime() + 5.5*60*60*1000 - 24*60*60*1000).toISOString().split('T')[0];
+        const yesterday = getISTDateMinus(1);
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
 
@@ -1089,10 +1099,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         const today = getISTDate();
-        const now = new Date();
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const istNow = new Date(now.getTime() + istOffset);
-        const yesterday = new Date(istNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const yesterday = getISTDateMinus(1);
 
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
@@ -1104,10 +1111,17 @@ app.post('/api/user/link-details', async (req, res) => {
         const vYesterday = getDailyValue(link.dailyVisits, yesterday);
         const cYesterday = getDailyValue(link.dailyClaims, yesterday);
 
+        const sevenDaysAgo = getISTDateMinus(7);
+        const thirtyDaysAgo = getISTDateMinus(30);
+        const v7d = sumDailyMapBetween(link.dailyVisits, sevenDaysAgo, today);
+        const c7d = sumDailyMapBetween(link.dailyClaims, sevenDaysAgo, today);
+        const v30d = sumDailyMapBetween(link.dailyVisits, thirtyDaysAgo, today);
+        const c30d = sumDailyMapBetween(link.dailyClaims, thirtyDaysAgo, today);
+
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
         if (link.expiryDate) {
-            const diffTime = new Date(link.expiryDate) - now;
+            const diffTime = new Date(link.expiryDate) - new Date();
             daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (daysLeft <= 3) isEligibleForRenewal = true;
         }
@@ -1134,7 +1148,10 @@ app.post('/api/user/link-details', async (req, res) => {
             yesterdayClaims: cYesterday,
             v24h: vToday,
             c24h: cToday,
-            v7d: mappedRangeVisits,
+            v7d: v7d,
+            c7d: c7d,
+            v30d: v30d,
+            c30d: c30d,
             dateRange: {
                 filter: filter || 'today',
                 start: dateRangeInfo.startStr,
@@ -1163,10 +1180,10 @@ app.post('/api/user/link-details', async (req, res) => {
                 yesterdayClaims: cYesterday,
                 v24h: vToday,
                 c24h: cToday,
-                v7d: mappedRangeVisits,
-                c7d: mappedRangeClaims,
-                v30d: mappedRangeVisits,
-                c30d: mappedRangeClaims,
+                v7d: v7d,
+                c7d: c7d,
+                v30d: v30d,
+                c30d: c30d,
                 uidChecking: isUidOn,
                 dateRange: {
                     filter: filter || 'today',
@@ -1182,9 +1199,9 @@ app.post('/api/user/link-details', async (req, res) => {
             autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
-    } catch (e) { 
+    } catch (e) {
         console.error('User link details error:', e);
-        res.status(500).json({ error: 'Failed to fetch link data' }); 
+        res.status(500).json({ error: 'Failed to fetch link data' });
     }
 });
 
@@ -1909,10 +1926,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const links = await Link.find().lean();
 
         const today = getISTDate();
-        const now = new Date();
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const istNow = new Date(now.getTime() + istOffset);
-        const yesterday = new Date(istNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const yesterday = getISTDateMinus(1);
 
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
