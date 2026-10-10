@@ -878,7 +878,6 @@
             if (isClaimTracked) return;
             isClaimTracked = true;
             
-            // Always send source=video to ensure only video claims are counted
             fetch(`/api/track-claim/${linkId}?source=video`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' },
@@ -886,12 +885,10 @@
             }).catch(() => {});
         }
 
-        // Normal claim button action (Only for the button under the video)
         function handleClaimClick() {
             if (isRedirecting) return;
             isRedirecting = true;
             
-            // 🎯 ONLY THIS BUTTON TRACKS CLAIM
             trackClaimOnce();
             
             if (claimUrl && claimUrl !== '#' && claimUrl !== '') {
@@ -913,7 +910,7 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // Popup button click - NO CLAIM TRACKING HERE
+        // Popup button click - NO CLAIM TRACKING
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation(); e.preventDefault();
             if (isPopupClaimed || isPopupClickProcessed) return;
