@@ -202,24 +202,6 @@ const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('Visit
 }, { timestamps: true }));
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
-const LOCKOUT_TIME = parseInt(process.env.LOCKOUT_TIME) || 48;
-const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 60;
-const IP_WHITELIST = process.env.IP_WHITELIST || '0.0.0.0/0';
-const ENABLE_2FA = process.env.ENABLE_2FA === 'true';
-
-const EMAIL_USER = process.env.EMAIL_USER || '';
-const EMAIL_PASS = process.env.EMAIL_PASS || '';
-
-let transporter = null;
-if (EMAIL_USER && EMAIL_PASS) {
-    try {
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-        });
-    } catch(e) {}
-}
 
 // ==================== Helper Functions ====================
 
@@ -724,7 +706,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER ====================
+// ==================== VISITOR LINK RESOLVER (with Daily Tracking) ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -756,6 +738,7 @@ app.get('/api/link/:id', async (req, res) => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const today = getISTDate();
 
+        // ✅ 24-hour unique check
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
             visitorKey: visitorKey,
@@ -764,6 +747,7 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
+            // ✅ CRITICAL FIX: Increment both lifetime AND daily
             await Link.updateOne(
                 { _id: link._id },
                 { 
@@ -788,6 +772,7 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
+        // Update visitor activity timestamp
         VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -851,13 +836,15 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING ====================
+// ==================== CLAIM TRACKING (सिर्फ video claim काउंट करे) ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
+    // 🛑 POPUP claim को पूरी तरह इग्नोर करें
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
+        console.log('🚫 Popup claim ignored');
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
     }
 
@@ -869,6 +856,7 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
+    // 24 hour unique check
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -1919,7 +1907,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS ====================
+// ==================== ADMIN ALL STATS (with Daily Tracking) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
