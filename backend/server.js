@@ -192,6 +192,7 @@ const ShortLinkClick = safeLoadModel('ShortLinkClick', {
     timestamp: { type: Date, default: Date.now }
 });
 
+// Visitor Activity Model - यहाँ हम सिर्फ timestamp track करेंगे, uniqueVisitors जैसी भारी चीज़ नहीं
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -205,6 +206,7 @@ const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE
 
 // ==================== Helper Functions ====================
 
+// ✅ IST Date String (YYYY-MM-DD)
 function getISTDate(dateObj) {
     const d = dateObj || new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -212,6 +214,7 @@ function getISTDate(dateObj) {
     return istNow.toISOString().split('T')[0];
 }
 
+// ✅ IST Date N days ago
 function getISTDateMinus(days) {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -220,6 +223,7 @@ function getISTDateMinus(days) {
     return past.toISOString().split('T')[0];
 }
 
+// ✅ Get value from daily map (works with both Object and Map)
 function getDailyValue(mapData, dateStr) {
     if (!mapData) return 0;
     if (mapData instanceof Map) {
@@ -231,6 +235,7 @@ function getDailyValue(mapData, dateStr) {
     return 0;
 }
 
+// ✅ Sum values between two dates
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
@@ -253,9 +258,10 @@ function sumDailyMapBetween(mapData, startStr, endStr) {
         return total;
     }
 
-    return total;
+    return 0;
 }
 
+// ✅ Parse date range based on filter
 function parseDateRange(filter, customStart, customEnd) {
     const formatDate = (d) => d.toISOString().split('T')[0];
     const today = getISTDate();
@@ -747,7 +753,6 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            // ✅ CRITICAL FIX: Increment both lifetime AND daily
             await Link.updateOne(
                 { _id: link._id },
                 { 
@@ -772,7 +777,6 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
-        // Update visitor activity timestamp
         VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -856,7 +860,7 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    // 24 hour unique check
+    // 24 hour unique check - सिर्फ video source
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
