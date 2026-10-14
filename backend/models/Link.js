@@ -11,6 +11,26 @@ const LinkSchema = new mongoose.Schema({
         required: true,
         maxlength: 100
     },
+    userName: {
+        type: String,
+        default: ''
+    },
+    assignedUser: {
+        type: String,
+        default: ''
+    },
+    creator: {
+        type: String,
+        default: ''
+    },
+    linkName: {
+        type: String,
+        default: 'Link'
+    },
+    title: {
+        type: String,
+        default: 'Link'
+    },
     video: {
         type: String,
         default: 'https://youtu.be/dQw4w9WgXcQ'
@@ -29,7 +49,7 @@ const LinkSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'suspended', 'disabled'],
+        enum: ['active', 'suspended', 'disabled', 'inactive'],
         default: 'active'
     },
     expiryDate: {
@@ -48,10 +68,36 @@ const LinkSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // ✅ FIXED: dailyVisits / dailyClaims properly defined
+    dailyVisits: {
+        type: Object,
+        default: {}
+    },
+    dailyClaims: {
+        type: Object,
+        default: {}
+    },
+    uidChecking: {
+        type: Boolean,
+        default: true
+    },
+    popupSettings: {
+        type: Object,
+        default: {}
+    },
+    image: {
+        type: String,
+        default: null
+    },
     created: {
         type: Date,
         default: Date.now
     }
 });
+
+LinkSchema.index({ id: 1 });
+LinkSchema.index({ assignedUser: 1 });
+LinkSchema.index({ userName: 1 });
+LinkSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Link', LinkSchema);
