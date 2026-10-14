@@ -5,6 +5,10 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- 🛡️ SECURITY: Turnstile + Google Scripts -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -253,6 +257,7 @@
         }
         .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-action:active { transform: scale(0.99); }
+        .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .btn-secondary {
             background: var(--surface-2);
@@ -557,6 +562,18 @@
         .dialog-icon { font-size: 34px; margin-bottom: 8px; }
         .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
         .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
+
+        .google-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .google-btn-wrapper > div { width: 100% !important; }
+        .turnstile-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
@@ -613,8 +630,10 @@
     </header>
 
     <main class="content-wrap">
+        <!-- ==================== AUTH SECTION ==================== -->
         <div id="authSection" style="max-width:420px; margin:40px auto 0;">
             <div class="pro-card">
+                <!-- ==================== SIGN IN ==================== -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div style="text-align:center; margin-bottom:20px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
@@ -626,16 +645,52 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" id="inPhone" class="form-input" placeholder="Enter your number" required>
+                        <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
+
+                    <!-- 🛡️ TURNSTILE WIDGET -->
+                    <div class="turnstile-wrapper">
+                        <div class="cf-turnstile"
+                             data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
+                             data-theme="dark"
+                             data-size="flexible">
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
                         <span>Sign In</span>
                     </button>
+
+                    <div style="text-align:center; margin:18px 0 14px; color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:10px;">
+                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+                        <span>OR</span>
+                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+                    </div>
+
+                    <!-- 🛡️ GOOGLE LOGIN -->
+                    <div class="google-btn-wrapper">
+                        <div id="g_id_onload"
+                             data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
+                             data-callback="handleGoogleLogin"
+                             data-auto_prompt="false">
+                        </div>
+                        <div class="g_id_signin"
+                             data-type="standard"
+                             data-size="large"
+                             data-theme="outline"
+                             data-text="sign_in_with"
+                             data-shape="rectangular"
+                             data-logo_alignment="left"
+                             data-width="380">
+                        </div>
+                    </div>
+
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
                     </div>
                 </form>
 
+                <!-- ==================== SIGN UP ==================== -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
                     <div style="text-align:center; margin-bottom:20px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
@@ -651,7 +706,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" id="upPhone" class="form-input" placeholder="Enter your number" required>
+                        <input type="tel" id="upPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
 
                     <label class="checkbox-container">
@@ -661,9 +716,38 @@
                         </span>
                     </label>
 
+                    <!-- 🛡️ TURNSTILE WIDGET -->
+                    <div class="turnstile-wrapper">
+                        <div class="cf-turnstile"
+                             data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
+                             data-theme="dark"
+                             data-size="flexible">
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-action" id="btnSubmitRegister">
                         <span>Create Account</span>
                     </button>
+
+                    <div style="text-align:center; margin:18px 0 14px; color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:10px;">
+                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+                        <span>OR</span>
+                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+                    </div>
+
+                    <!-- 🛡️ GOOGLE SIGNUP -->
+                    <div class="google-btn-wrapper">
+                        <div class="g_id_signin"
+                             data-type="standard"
+                             data-size="large"
+                             data-theme="outline"
+                             data-text="signup_with"
+                             data-shape="rectangular"
+                             data-logo_alignment="left"
+                             data-width="380">
+                        </div>
+                    </div>
+
                     <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
                         Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
                     </div>
@@ -671,6 +755,7 @@
             </div>
         </div>
 
+        <!-- ==================== DASHBOARD SECTION ==================== -->
         <div id="dashboardSection">
             <div class="welcome-header">
                 <div class="welcome-title">
@@ -818,6 +903,7 @@
         </div>
     </main>
 
+    <!-- ==================== SHORTENER MODAL ==================== -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -845,6 +931,7 @@
         </div>
     </div>
 
+    <!-- ==================== LOCK MODAL ==================== -->
     <div class="app-modal" id="lockModal">
         <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
             <div style="font-size:48px; margin-bottom:12px;">🔒</div>
@@ -870,6 +957,7 @@
         </div>
     </div>
 
+    <!-- ==================== PLANS MODAL ==================== -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -968,6 +1056,7 @@
         </div>
     </div>
 
+    <!-- ==================== GUIDE MODAL ==================== -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1002,6 +1091,7 @@
         </div>
     </div>
 
+    <!-- ==================== TERMS MODAL ==================== -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1028,6 +1118,7 @@
         </div>
     </div>
 
+    <!-- ==================== CUSTOM DIALOG ==================== -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="dialog-icon" id="dialogIcon">🔔</div>
@@ -1153,13 +1244,57 @@
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
+            
+            // Reset Turnstile widgets on switch
+            if (window.turnstile && window.turnstile.reset) {
+                try { window.turnstile.reset(); } catch(e) {}
+            }
         }
 
+        // 🛡️ Get Turnstile token
+        function getTurnstileToken() {
+            const el = document.querySelector('input[name="cf-turnstile-response"]');
+            return el ? el.value : '';
+        }
+
+        // 🛡️ Email format + typo validation
+        function validateEmailFormat(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return { valid: false, error: 'Please enter a valid email format' };
+            }
+            const typoMap = {
+                'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com',
+                'gamil.com': 'gmail.com', 'gmaill.com': 'gmail.com',
+                'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com',
+                'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
+                'outlok.com': 'outlook.com', 'outllok.com': 'outlook.com'
+            };
+            const domain = email.split('@')[1].toLowerCase();
+            if (typoMap[domain]) {
+                return { valid: false, error: `Did you mean ${email.replace(domain, typoMap[domain])}?` };
+            }
+            return { valid: true };
+        }
+
+        // 🛡️ Mobile validation
+        function isValidMobile(mobile) {
+            const clean = mobile.replace(/[\s\-\(\)\+]/g, '');
+            return /^[6-9]\d{9}$/.test(clean);
+        }
+
+        // 🛡️ SIGN IN
         async function submitSignIn(e) {
             e.preventDefault();
             const email = document.getElementById('inEmail').value.trim();
             const phone = document.getElementById('inPhone').value.trim();
             const btn = document.getElementById('btnSubmitLogin');
+            const turnstileToken = getTurnstileToken();
+
+            if (!turnstileToken) {
+                notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<span>Verifying...</span>';
@@ -1168,7 +1303,7 @@
                 const res = await fetch('/api/user/signin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, phone })
+                    body: JSON.stringify({ email, phone, turnstileToken })
                 });
                 const data = await res.json().catch(() => ({}));
 
@@ -1178,6 +1313,7 @@
                     showDashboardView();
                 } else {
                     notify(data.error || 'Authentication failed. Please verify credentials.', 'Sign In Failed', '❌');
+                    if (window.turnstile) window.turnstile.reset();
                 }
             } catch (err) {
                 notify('Unable to reach server. Please check your network connection.', 'Connection Error', '⚠️');
@@ -1187,15 +1323,35 @@
             }
         }
 
+        // 🛡️ SIGN UP
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
             const email = document.getElementById('upEmail').value.trim();
             const phone = document.getElementById('upPhone').value.trim();
             const termsAgreed = document.getElementById('upTermsCheck').checked;
+            const turnstileToken = getTurnstileToken();
 
             if (!termsAgreed) {
                 notify('Please accept the Terms & Conditions before registering.', 'Terms Required', '⚠️');
+                return;
+            }
+
+            // Client-side email validation
+            const emailCheck = validateEmailFormat(email);
+            if (!emailCheck.valid) {
+                notify(emailCheck.error, 'Invalid Email', '⚠️');
+                return;
+            }
+
+            // Client-side mobile validation
+            if (!isValidMobile(phone)) {
+                notify('Please enter a valid 10-digit Indian mobile number starting with 6-9', 'Invalid Mobile', '⚠️');
+                return;
+            }
+
+            if (!turnstileToken) {
+                notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
                 return;
             }
 
@@ -1207,7 +1363,7 @@
                 const res = await fetch('/api/user/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, phone })
+                    body: JSON.stringify({ name, email, phone, turnstileToken })
                 });
                 const data = await res.json().catch(() => ({}));
 
@@ -1215,17 +1371,43 @@
                     notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
                     switchAuth('login');
                 } else {
-                    let errMsg = data.error || data.message || '';
-                    if (!errMsg || errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('registered') || res.status === 400 || res.status === 409) {
-                        errMsg = 'This email or phone number is already registered. Please sign in.';
-                    }
+                    let errMsg = data.error || data.message || 'Registration failed. Please try again.';
                     notify(errMsg, 'Error', '⚠️');
+                    if (window.turnstile) window.turnstile.reset();
                 }
             } catch (err) {
-                notify('This email or phone number is already registered. Please sign in.', 'Error', '⚠️');
+                notify('Unable to reach server. Please try again.', 'Connection Error', '⚠️');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<span>Create Account</span>';
+            }
+        }
+
+        // 🛡️ GOOGLE LOGIN
+        async function handleGoogleLogin(response) {
+            if (!response || !response.credential) {
+                notify('Google login failed. Please try again.', 'Error', '⚠️');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/user/google-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.success) {
+                    userProfile = data.user;
+                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                    showDashboardView();
+                    notify('Logged in with Google successfully!', 'Success', '✅');
+                } else {
+                    notify(data.error || 'Google login failed', 'Error', '❌');
+                }
+            } catch (err) {
+                notify('Unable to connect to server', 'Connection Error', '⚠️');
             }
         }
 
@@ -1692,7 +1874,7 @@ Please verify my payment and approve my extension. Thank you!`;
             window.location.reload();
         }
 
-        // ✅ FIXED: Live Auto-Refresh with proper syntax
+        // Live Auto-Refresh
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 const selectEl = document.getElementById('userLinkSelect');
