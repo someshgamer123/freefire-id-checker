@@ -14,6 +14,22 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
+// ==================== 🛡️ SECURITY IMPORTS ====================
+const { OAuth2Client } = require('google-auth-library');
+const { doubleCsrf } = require('csrf-csrf');
+
+// @arcis/node - Injection protection (optional, fallback if not installed)
+let arcis = null;
+try {
+    const arcisModule = require('@arcis/node');
+    arcis = arcisModule.arcis;
+} catch(e) {
+    console.log('⚠️ @arcis/node not installed - using fallback protection');
+}
+
+// Google Client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // ==================== MongoDB Connection ====================
 let connectDB;
 try {
@@ -52,17 +68,9 @@ const User = safeLoadModel('User', {
 });
 
 const Link = safeLoadModel('Link', {
-    id: String,
-    name: String,
-    title: String,
-    linkName: String,
-    userName: String,
-    assignedUser: String,
-    creator: String,
-    video: String,
-    claim: String,
-    buttonText: String,
-    headline: String,
+    id: String, name: String, title: String, linkName: String,
+    userName: String, assignedUser: String, creator: String,
+    video: String, claim: String, buttonText: String, headline: String,
     status: { type: String, default: 'active' },
     expiryDate: Date,
     uidChecking: { type: Boolean, default: true },
@@ -91,22 +99,17 @@ const PopupSettings = safeLoadModel('PopupSettings', {
 });
 
 const RenewalRequest = safeLoadModel('RenewalRequest', {
-    id: String,
-    linkId: String,
-    linkName: String,
-    plan: String,
-    days: Number,
-    amount: Number,
-    transactionId: String,
+    id: String, linkId: String, linkName: String, plan: String,
+    days: Number, amount: Number, transactionId: String,
     status: { type: String, default: 'pending' },
     createdAt: { type: Date, default: Date.now },
     approvedAt: Date
 });
 
 const RenewalUser = safeLoadModel('RenewalUser', {
-    name: String,
-    email: String,
-    phone: String,
+    name: String, email: String, phone: String,
+    googleId: String,
+    authMethod: { type: String, default: 'email' },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     createdAt: { type: Date, default: Date.now },
     approvedAt: Date
@@ -121,12 +124,8 @@ const Pricing = safeLoadModel('Pricing', {
 
 const Session = safeLoadModel('Session', {
     userId: { type: String, default: 'admin' },
-    deviceKey: String,
-    fingerprint: String,
-    ip: String,
-    userAgent: String,
-    deviceName: String,
-    deviceType: String,
+    deviceKey: String, fingerprint: String, ip: String,
+    userAgent: String, deviceName: String, deviceType: String,
     isActive: { type: Boolean, default: true },
     lastActivity: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now },
@@ -138,11 +137,8 @@ const LoginAttempt = safeLoadModel('LoginAttempt', { ip: String, attempts: Numbe
 const TwoFactorAuth = safeLoadModel('TwoFactorAuth', { userId: String, secret: String, backupCodes: Array, isEnabled: Boolean, verifiedAt: Date });
 
 const BlockedDevice = safeLoadModel('BlockedDevice', {
-    deviceKey: String,
-    fingerprint: String,
-    ip: String,
-    deviceName: String,
-    deviceType: String,
+    deviceKey: String, fingerprint: String, ip: String,
+    deviceName: String, deviceType: String,
     attempts: { type: Number, default: 1 },
     reason: String,
     isPermanent: { type: Boolean, default: false },
@@ -152,23 +148,15 @@ const BlockedDevice = safeLoadModel('BlockedDevice', {
 const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: String, expiresAt: Date });
 
 const ShortLink = safeLoadModel('ShortLink', {
-    code: String,
-    originalUrl: String,
-    title: String,
-    creator: String,
+    code: String, originalUrl: String, title: String, creator: String,
     visits: { type: Number, default: 0 },
-    appOpen: Boolean,
-    appScheme: String,
+    appOpen: Boolean, appScheme: String,
     createdAt: { type: Date, default: Date.now }
 });
 
 const ShortLinkClick = safeLoadModel('ShortLinkClick', {
-    shortLinkId: String,
-    ip: String,
-    userAgent: String,
-    deviceName: String,
-    deviceType: String,
-    referer: String,
+    shortLinkId: String, ip: String, userAgent: String,
+    deviceName: String, deviceType: String, referer: String,
     timestamp: { type: Date, default: Date.now }
 });
 
@@ -182,10 +170,18 @@ const VisitorActivitySchema = new mongoose.Schema({
 }, { timestamps: true, strict: false });
 
 VisitorActivitySchema.index({ linkId: 1, visitorKey: 1, type: 1, lastSeen: -1 });
-
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', VisitorActivitySchema);
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
+
+// ==================== 🛡️ DISPOSABLE EMAIL LIST ====================
+const DISPOSABLE_DOMAINS = [
+    'tempmail.com', 'guerrillamail.com', 'mailinator.com', '10minutemail.com',
+    'yopmail.com', 'throwaway.email', 'sharklasers.com', 'guerrillamailblock.com',
+    'temp-mail.org', 'fakeinbox.com', 'trashmail.com', 'getnada.com',
+    'maildrop.cc', 'mohmal.com', 'tempr.email', 'dispostable.com',
+    'emailondeck.com', 'mytemp.email', 'burnermail.io', 'mailsac.com'
+];
 
 // ==================== Helper Functions ====================
 
@@ -206,33 +202,23 @@ function getISTDateMinus(days) {
 
 function getDailyValue(mapData, dateStr) {
     if (!mapData) return 0;
-    if (typeof mapData.get === 'function') {
-        return parseInt(mapData.get(dateStr)) || 0;
-    }
-    if (typeof mapData === 'object') {
-        return parseInt(mapData[dateStr]) || 0;
-    }
+    if (typeof mapData.get === 'function') return parseInt(mapData.get(dateStr)) || 0;
+    if (typeof mapData === 'object') return parseInt(mapData[dateStr]) || 0;
     return 0;
 }
 
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
-
     if (typeof mapData.forEach === 'function' && typeof mapData.get === 'function') {
         mapData.forEach((count, date) => {
-            if (date >= startStr && date <= endStr) {
-                total += parseInt(count) || 0;
-            }
+            if (date >= startStr && date <= endStr) total += parseInt(count) || 0;
         });
         return total;
     }
-
     if (typeof mapData === 'object') {
         for (const date of Object.keys(mapData)) {
-            if (date >= startStr && date <= endStr) {
-                total += parseInt(mapData[date]) || 0;
-            }
+            if (date >= startStr && date <= endStr) total += parseInt(mapData[date]) || 0;
         }
     }
     return total;
@@ -242,38 +228,25 @@ function parseDateRange(filter, customStart, customEnd) {
     const today = getISTDate();
     let startStr = '1970-01-01';
     let endStr = '2099-12-31';
-
     const f = (filter || 'all').toString().trim().toLowerCase();
 
     if (f === 'all' || f === 'alltime' || f === 'lifetime') {
-        startStr = '1970-01-01';
-        endStr = '2099-12-31';
+        startStr = '1970-01-01'; endStr = '2099-12-31';
     } else if (f === 'today') {
-        startStr = today;
-        endStr = today;
+        startStr = today; endStr = today;
     } else if (f === 'yesterday') {
-        const y = getISTDateMinus(1);
-        startStr = y;
-        endStr = y;
+        const y = getISTDateMinus(1); startStr = y; endStr = y;
     } else if (f === '7days' || f === '7d' || f === 'last7days') {
-        startStr = getISTDateMinus(6);
-        endStr = today;
+        startStr = getISTDateMinus(6); endStr = today;
     } else if (f === '30days' || f === '30d' || f === 'last30days') {
-        startStr = getISTDateMinus(29);
-        endStr = today;
-    } else if (f === 'custom') {
-        if (customStart && customEnd) {
-            startStr = customStart.toString().trim().slice(0, 10);
-            endStr = customEnd.toString().trim().slice(0, 10);
-        } else if (customStart) {
-            startStr = customStart.toString().trim().slice(0, 10);
-            endStr = customStart.toString().trim().slice(0, 10);
-        }
+        startStr = getISTDateMinus(29); endStr = today;
+    } else if (f === 'custom' && customStart && customEnd) {
+        startStr = customStart.toString().trim().slice(0, 10);
+        endStr = customEnd.toString().trim().slice(0, 10);
     } else if (customStart && customEnd) {
         startStr = customStart.toString().trim().slice(0, 10);
         endStr = customEnd.toString().trim().slice(0, 10);
     }
-
     return { startStr, endStr };
 }
 
@@ -319,11 +292,9 @@ function generateWhatsAppApprovalData(user, req) {
     let cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
     if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
     else if (cleanPhone.startsWith('0')) cleanPhone = '91' + cleanPhone.replace(/^0+/, '');
-
     const protocol = (req && req.headers && req.headers['x-forwarded-proto']) || (req && req.protocol) || 'http';
     const host = (req && req.get && req.get('host')) || 'localhost:3001';
     const loginUrl = `${protocol}://${host}/user-dashboard`;
-
     const message = 
 `🎉 *Congratulations ${user.name}!*
 Your account has been approved.
@@ -335,16 +306,60 @@ Your account has been approved.
 🔗 ${loginUrl}
 
 Thank you! 🚀`;
-
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     return { message, whatsappUrl, cleanPhone, loginUrl };
+}
+
+// 🛡️ EMAIL VALIDATION HELPERS
+function isValidEmailFormat(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function isDisposableEmail(email) {
+    const domain = (email || '').split('@')[1]?.toLowerCase();
+    return DISPOSABLE_DOMAINS.includes(domain);
+}
+
+// 🛡️ MOBILE VALIDATION
+function isValidMobile(mobile, countryCode = 'IN') {
+    const clean = (mobile || '').replace(/[\s\-\(\)\+]/g, '');
+    if (countryCode === 'IN') {
+        return /^[6-9]\d{9}$/.test(clean);
+    }
+    return clean.length >= 10 && clean.length <= 15;
+}
+
+// 🛡️ TURNSTILE VERIFICATION
+async function verifyTurnstile(token, remoteIp) {
+    if (!token) return { success: false, error: 'No captcha token' };
+    if (!process.env.TURNSTILE_SECRET_KEY) {
+        console.log('⚠️ TURNSTILE_SECRET_KEY not set - skipping verification');
+        return { success: true, skipped: true };
+    }
+    try {
+        const verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        const verifyRes = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                secret: process.env.TURNSTILE_SECRET_KEY,
+                response: token,
+                remoteip: remoteIp
+            })
+        });
+        const data = await verifyRes.json();
+        return { success: data.success === true, data };
+    } catch(e) {
+        console.error('Turnstile verify error:', e.message);
+        return { success: false, error: 'Verification failed' };
+    }
 }
 
 // ==================== Database Init ====================
 async function initializeDatabase() {
     try {
         await BlockedDevice.deleteMany({}).catch(() => {});
-
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
         let admin = await User.findOne();
 
@@ -396,14 +411,14 @@ async function initializeDatabase() {
     }
 }
 
-connectDB().then(() => {
-    initializeDatabase();
-}).catch(() => {});
+connectDB().then(() => { initializeDatabase(); }).catch(() => {});
 
-// ==================== Middleware ====================
+// ==================== 🛡️ SECURITY MIDDLEWARE ====================
 app.set('trust proxy', 1);
+app.disable('x-powered-by'); // 🛡️ Hide Express
+
 app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false, // Keep false because we load external scripts
     frameguard: false,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
@@ -419,6 +434,32 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// 🛡️ INJECTION PROTECTION (@arcis/node)
+if (arcis) {
+    app.use(arcis({ block: true }));
+    console.log('✅ @arcis/node injection protection ENABLED');
+} else {
+    // Fallback: basic NoSQL sanitization
+    app.use((req, res, next) => {
+        const sanitize = (obj) => {
+            if (!obj || typeof obj !== 'object') return obj;
+            for (const key of Object.keys(obj)) {
+                if (key.startsWith('$') || key.includes('.')) {
+                    delete obj[key];
+                } else if (typeof obj[key] === 'object') {
+                    sanitize(obj[key]);
+                }
+            }
+            return obj;
+        };
+        if (req.body) sanitize(req.body);
+        if (req.query) sanitize(req.query);
+        if (req.params) sanitize(req.params);
+        next();
+    });
+    console.log('⚠️ Using fallback injection protection');
+}
+
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     const blocked = ['.env', '.log', '.json', '.md'];
@@ -430,6 +471,69 @@ app.use((req, res, next) => {
     next();
 });
 
+// ==================== 🛡️ CSRF PROTECTION ====================
+const csrfSecret = process.env.CSRF_SECRET || 'change-this-csrf-secret-32-chars-minimum-xyz';
+
+const { generateToken: generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
+    getSecret: () => csrfSecret,
+    cookieName: 'csrf-token',
+    cookieOptions: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/'
+    },
+    size: 64,
+    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+    getTokenFromRequest: (req) => req.headers['x-csrf-token'] || req.body?._csrf
+});
+
+// CSRF token endpoint
+app.get('/api/csrf-token', (req, res) => {
+    try {
+        const token = generateCsrfToken(req, res);
+        res.json({ csrfToken: token });
+    } catch(e) {
+        res.status(500).json({ error: 'Failed to generate token' });
+    }
+});
+
+// ==================== 🛡️ RATE LIMITING ====================
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        return (
+            req.path === '/health' || req.path === '/ping' ||
+            req.path.endsWith('.css') || req.path.endsWith('.js') ||
+            req.path.endsWith('.png') || req.path.endsWith('.jpg') ||
+            req.path.endsWith('.ico')
+        );
+    },
+    message: { error: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { error: 'Too many attempts. Please wait 15 minutes.' }
+});
+
+const claimLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Slow down.' }
+});
+
+app.use('/api', globalLimiter);
+
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'healthy',
@@ -440,29 +544,6 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
-
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX) || 50000,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-        return (
-            req.path.includes('admin') ||
-            req.path.includes('all-stats') ||
-            req.path.startsWith('/api/user') ||
-            req.path === '/health' ||
-            req.path === '/ping' ||
-            req.path.endsWith('.css') ||
-            req.path.endsWith('.js') ||
-            req.path.endsWith('.png') ||
-            req.path.endsWith('.jpg') ||
-            req.path.endsWith('.ico')
-        );
-    },
-    message: { error: 'Too many requests, please try again later.' }
-});
-app.use('/api', globalLimiter);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'somu_admin_secret_fixed_key_951753';
 const JWT_EXPIRY = '7d';
@@ -535,9 +616,7 @@ async function authMiddleware(req, res, next) {
             { 
                 $set: { lastActivity: new Date(), isActive: true, ip, deviceName, deviceType },
                 $setOnInsert: {
-                    userId: 'admin',
-                    deviceKey,
-                    fingerprint,
+                    userId: 'admin', deviceKey, fingerprint,
                     createdAt: new Date(),
                     expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
                 }
@@ -545,7 +624,6 @@ async function authMiddleware(req, res, next) {
             { upsert: true }
         ).catch(() => {});
     }
-
     next();
 }
 
@@ -607,13 +685,8 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         const yesterday = getISTDateMinus(1);
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
-
         res.json({
-            linkId: link.id,
-            id: link.id,
-            name: lName,
-            title: lName,
-            linkName: lName,
+            linkId: link.id, id: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.name || '',
             totalVisits: link.visits || 0,
             totalClaims: link.claims || 0,
@@ -676,7 +749,6 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
         if (paymentSettings) updateFields.paymentSettings = paymentSettings;
         if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
         if (whatsappNumber) updateFields.whatsappNumber = whatsappNumber.toString().trim();
-
         const updatedPricing = await Pricing.findOneAndUpdate({}, { $set: updateFields }, { upsert: true, new: true, lean: true });
         res.json({ success: true, pricing: updatedPricing });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
@@ -695,13 +767,10 @@ app.get('/api/link/:id', async (req, res) => {
         if (!link && (rawId === 'default' || !rawId)) {
             link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
         }
-
         if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
-
         if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
             return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
         }
-
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
@@ -716,40 +785,23 @@ app.get('/api/link/:id', async (req, res) => {
 
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
-            visitorKey: visitorKey,
-            type: 'visit',
+            visitorKey: visitorKey, type: 'visit',
             lastSeen: { $gte: twentyFourHoursAgo }
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            await Link.collection.updateOne(
-                { _id: link._id },
-                { 
-                    $inc: { 
-                        visits: 1, 
-                        [`dailyVisits.${today}`]: 1 
-                    } 
-                }
+            await Link.collection.updateOne({ _id: link._id },
+                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
             ).catch(err => console.error('Link update error:', err));
-
-            await Stats.collection.updateOne(
-                {},
-                { 
-                    $inc: { 
-                        totalVisitors: 1, 
-                        [`dailyVisitors.${today}`]: 1 
-                    } 
-                },
+            await Stats.collection.updateOne({},
+                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
                 { upsert: true }
             ).catch(err => console.error('Stats update error:', err));
-
-            console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
-            { $set: { lastSeen: new Date() } },
-            { upsert: true }
+            { $set: { lastSeen: new Date() } }, { upsert: true }
         ).catch(() => {});
 
         const popup = link.popupSettings || {};
@@ -760,11 +812,7 @@ app.get('/api/link/:id', async (req, res) => {
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
 
         res.json({
-            id: link.id,
-            linkId: link.id,
-            name: lName,
-            title: lName,
-            linkName: lName,
+            id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.name || '',
             video: link.video || 'https://youtu.be/dQw4w9WgXcQ',
             claim: link.claim || '#',
@@ -773,10 +821,7 @@ app.get('/api/link/:id', async (req, res) => {
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
             uidChecking: isUidOn,
-            image: bannerImage,
-            popupImage: bannerImage,
-            popupImageUrl: bannerImage,
-            banner: bannerImage,
+            image: bannerImage, popupImage: bannerImage, popupImageUrl: bannerImage, banner: bannerImage,
             popupSettings: {
                 image: bannerImage,
                 title: popup.title || '🎁 Claim Your Reward',
@@ -799,7 +844,6 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
         if (!link) return res.status(404).json({ error: 'Link not found' });
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
-
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date(), uid: cleanUid } },
@@ -809,21 +853,16 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING (ONLY VIDEO claim counts) ====================
+// ==================== CLAIM TRACKING ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
-    // 🛑 REJECT popup claims completely
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal' || sourceParam === 'entrance') {
-        console.log('🚫 Popup claim ignored (not counted)');
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
     }
-
-    // ✅ ONLY accept source=video
     if (sourceParam !== 'video') {
-        console.log('🚫 Non-video source claim ignored:', sourceParam);
         return { success: true, ignored: true, message: 'Only video claims counted.' };
     }
 
@@ -835,38 +874,20 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    // ✅ 24-hour unique check (only for video claims)
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
-        visitorKey: visitorKey,
-        type: 'claim',
-        source: 'video',
+        visitorKey: visitorKey, type: 'claim', source: 'video',
         lastSeen: { $gte: twentyFourHoursAgo }
     }).maxTimeMS(1500).catch(() => null);
 
     if (!recentClaim) {
-        await Link.collection.updateOne(
-            { _id: link._id },
-            { 
-                $inc: { 
-                    claims: 1, 
-                    [`dailyClaims.${today}`]: 1 
-                } 
-            }
+        await Link.collection.updateOne({ _id: link._id },
+            { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
         ).catch(err => console.error('Link claim update error:', err));
-
-        await Stats.collection.updateOne(
-            {},
-            { 
-                $inc: { 
-                    totalClaims: 1, 
-                    [`dailyClaims.${today}`]: 1 
-                } 
-            },
+        await Stats.collection.updateOne({},
+            { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
             { upsert: true }
         ).catch(err => console.error('Stats claim update error:', err));
-
-        console.log(`✅ Claim tracked (video): ${link.name || link.id} | Date: ${today}`);
     }
 
     await VisitorActivity.findOneAndUpdate(
@@ -887,19 +908,17 @@ const handleClaimTrackingRequest = async (req, res) => {
         } else {
             return res.status(404).json({ error: result.error || 'Failed' });
         }
-    } catch(err) {
-        return res.status(500).json({ error: 'Failed' });
-    }
+    } catch(err) { return res.status(500).json({ error: 'Failed' }); }
 };
 
-app.post('/api/track-claim/:linkId', handleClaimTrackingRequest);
-app.get('/api/track-claim/:linkId', handleClaimTrackingRequest);
-app.post('/api/track-claim', handleClaimTrackingRequest);
-app.all('/api/claim/:linkId', handleClaimTrackingRequest);
-app.all('/api/claim', handleClaimTrackingRequest);
-app.all('/api/track/:linkId', handleClaimTrackingRequest);
-app.all('/api/links/:linkId/claim', handleClaimTrackingRequest);
-app.all('/api/claim-reward/:linkId', handleClaimTrackingRequest);
+app.post('/api/track-claim/:linkId', claimLimiter, handleClaimTrackingRequest);
+app.get('/api/track-claim/:linkId', claimLimiter, handleClaimTrackingRequest);
+app.post('/api/track-claim', claimLimiter, handleClaimTrackingRequest);
+app.all('/api/claim/:linkId', claimLimiter, handleClaimTrackingRequest);
+app.all('/api/claim', claimLimiter, handleClaimTrackingRequest);
+app.all('/api/track/:linkId', claimLimiter, handleClaimTrackingRequest);
+app.all('/api/links/:linkId/claim', claimLimiter, handleClaimTrackingRequest);
+app.all('/api/claim-reward/:linkId', claimLimiter, handleClaimTrackingRequest);
 
 // ==================== RENEWAL ====================
 app.get('/api/renewal/history/:linkId', async (req, res) => {
@@ -917,13 +936,9 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
         const renewalRequest = new RenewalRequest({
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-            linkId,
-            linkName: linkName || 'Unknown Link',
-            plan,
-            days: days || 0,
-            amount: amount || 0,
-            status: 'pending',
-            createdAt: new Date()
+            linkId, linkName: linkName || 'Unknown Link', plan,
+            days: days || 0, amount: amount || 0,
+            status: 'pending', createdAt: new Date()
         });
         await renewalRequest.save();
         res.json({ success: true, requestId: renewalRequest.id });
@@ -948,10 +963,8 @@ app.get('/api/settings', async (req, res) => {
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
             popupSettings: popupSettings || {
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward'
+                image: null, title: '🎁 Claim Your Reward',
+                buttonText: 'Claim Now', subtitle: 'Tap below to unlock your reward'
             },
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
@@ -959,39 +972,86 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== USER AUTH ====================
-app.post('/api/user/signup', async (req, res) => {
+// ==================== USER AUTH (With Turnstile + Email + Mobile Validation) ====================
+
+// 🛡️ SIGNUP with all validations
+app.post('/api/user/signup', authLimiter, async (req, res) => {
     try {
-        const { name, email, phone } = req.body;
-        if (!name || !email || !phone) return res.status(400).json({ error: 'All fields are required' });
+        const { name, email, phone, turnstileToken } = req.body;
+
+        // 1. Basic field check
+        if (!name || !email || !phone) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        const cleanName = name.trim();
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
+        // 2. 🛡️ Turnstile verification
+        const { ip } = getDeviceId(req);
+        const turnstileResult = await verifyTurnstile(turnstileToken, ip);
+        if (!turnstileResult.success && !turnstileResult.skipped) {
+            return res.status(400).json({ error: 'Bot detected. Please try again.' });
+        }
+
+        // 3. 🛡️ Email format validation
+        if (!isValidEmailFormat(cleanEmail)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // 4. 🛡️ Disposable email check
+        if (isDisposableEmail(cleanEmail)) {
+            return res.status(400).json({ error: 'Disposable emails are not allowed. Please use a permanent email.' });
+        }
+
+        // 5. 🛡️ Mobile validation
+        if (!isValidMobile(cleanPhone)) {
+            return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
+        }
+
+        // 6. Check for duplicates
         const emailExists = await RenewalUser.findOne({ email: cleanEmail });
         if (emailExists) return res.status(400).json({ error: 'Email already registered.' });
 
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
         if (phoneExists) return res.status(400).json({ error: 'Phone already registered.' });
 
+        // 7. Create user
         await RenewalUser.create({
-            name: name.trim(),
+            name: cleanName,
             email: cleanEmail,
             phone: cleanPhone,
+            authMethod: 'email',
             status: 'pending',
             createdAt: new Date()
         });
+
         res.json({ success: true, message: 'Signup submitted!' });
-    } catch (e) { res.status(500).json({ error: 'Registration failed' }); }
+    } catch (e) {
+        console.error('Signup error:', e);
+        res.status(500).json({ error: 'Registration failed' });
+    }
 });
 
-app.post('/api/user/signin', async (req, res) => {
+// 🛡️ SIGNIN
+app.post('/api/user/signin', authLimiter, async (req, res) => {
     try {
-        const { email, phone } = req.body;
+        const { email, phone, turnstileToken } = req.body;
         if (!email || !phone) return res.status(400).json({ error: 'Enter email and phone' });
+
+        // Turnstile check
+        const { ip } = getDeviceId(req);
+        const turnstileResult = await verifyTurnstile(turnstileToken, ip);
+        if (!turnstileResult.success && !turnstileResult.skipped) {
+            return res.status(400).json({ error: 'Bot detected. Please try again.' });
+        }
+
         const user = await RenewalUser.findOne({ email: email.trim().toLowerCase(), phone: phone.trim() });
         if (!user) return res.status(404).json({ error: 'User not found.' });
         if (user.status === 'pending') return res.status(403).json({ error: 'Pending approval.' });
         if (user.status === 'rejected') return res.status(403).json({ error: 'Registration rejected.' });
+
         res.json({
             success: true,
             user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
@@ -999,7 +1059,74 @@ app.post('/api/user/signin', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
-// ==================== USER LINK DETAILS (FIXED FILTERS) ====================
+// ==================== 🛡️ GOOGLE LOGIN ====================
+app.post('/api/user/google-login', authLimiter, async (req, res) => {
+    try {
+        const { credential } = req.body;
+        if (!credential) return res.status(400).json({ error: 'Google credential missing' });
+
+        if (!process.env.GOOGLE_CLIENT_ID) {
+            return res.status(500).json({ error: 'Google login not configured on server' });
+        }
+
+        // 🛡️ Verify Google ID token
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+
+        if (!payload || !payload.email) {
+            return res.status(400).json({ error: 'Invalid Google token' });
+        }
+        if (!payload.email_verified) {
+            return res.status(400).json({ error: 'Google email is not verified' });
+        }
+
+        const cleanEmail = payload.email.toLowerCase();
+
+        // Find existing user or create new
+        let user = await RenewalUser.findOne({ email: cleanEmail });
+
+        if (!user) {
+            // 🛡️ Block disposable emails even via Google (rare but possible)
+            if (isDisposableEmail(cleanEmail)) {
+                return res.status(400).json({ error: 'Disposable emails not allowed' });
+            }
+
+            user = await RenewalUser.create({
+                name: payload.name || 'Google User',
+                email: cleanEmail,
+                phone: '',
+                googleId: payload.sub,
+                authMethod: 'google',
+                status: 'approved', // Google email is verified → auto-approve
+                createdAt: new Date(),
+                approvedAt: new Date()
+            });
+        }
+
+        if (user.status === 'rejected') {
+            return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone || '',
+                authMethod: user.authMethod
+            }
+        });
+    } catch (e) {
+        console.error('Google login error:', e.message);
+        res.status(401).json({ error: 'Google authentication failed' });
+    }
+});
+
+// ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1012,20 +1139,15 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const allUserLinks = await Link.find({
             $or: [
-                { assignedUser: userRegex },
-                { userName: userRegex },
-                { creator: userRegex },
-                { name: userRegex }
+                { assignedUser: userRegex }, { userName: userRegex },
+                { creator: userRegex }, { name: userRegex }
             ]
         }).sort({ created: -1 }).lean();
 
         const formattedUserLinks = allUserLinks.map(l => {
             const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
             return {
-                id: l.id,
-                name: lTitle,
-                title: lTitle,
-                linkName: lTitle,
+                id: l.id, name: lTitle, title: lTitle, linkName: lTitle,
                 status: l.status || 'active',
                 expiryDate: l.expiryDate || null,
                 visits: l.visits || 0,
@@ -1037,22 +1159,16 @@ app.post('/api/user/link-details', async (req, res) => {
         if (searchId && searchId !== cleanUser) {
             link = await Link.findOne(getLinkQuery(searchId));
         }
-        if (!link && allUserLinks.length > 0) {
-            link = await allUserLinks[0];
-        }
+        if (!link && allUserLinks.length > 0) link = await allUserLinks[0];
         if (!link && cleanUser) {
             link = await Link.findOne({
                 $or: [
-                    { assignedUser: userRegex },
-                    { userName: userRegex },
-                    { creator: userRegex },
-                    { name: userRegex }
+                    { assignedUser: userRegex }, { userName: userRegex },
+                    { creator: userRegex }, { name: userRegex }
                 ]
             }).sort({ created: -1 });
         }
-        if (!link) {
-            link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
-        }
+        if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
 
         if (!link) {
             return res.status(404).json({
@@ -1067,7 +1183,6 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
-
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
         const dailyVisitsObj = link.dailyVisits || {};
@@ -1102,65 +1217,33 @@ app.post('/api/user/link-details', async (req, res) => {
 
         res.json({
             success: true,
-            id: link.id,
-            linkId: link.id,
-            name: lName,
-            title: lName,
-            linkName: lName,
+            id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.assignedUser || cleanUser,
-            totalVisits: link.visits || 0,
-            visits: link.visits || 0,
-            totalClaims: link.claims || 0,
-            claims: link.claims || 0,
-            todayVisits: vToday,
-            todayClaims: cToday,
-            yesterdayVisits: vYesterday,
-            yesterdayClaims: cYesterday,
-            v24h: vToday,
-            c24h: cToday,
-            v7d: v7d,
-            c7d: c7d,
-            v30d: v30d,
-            c30d: c30d,
+            totalVisits: link.visits || 0, visits: link.visits || 0,
+            totalClaims: link.claims || 0, claims: link.claims || 0,
+            todayVisits: vToday, todayClaims: cToday,
+            yesterdayVisits: vYesterday, yesterdayClaims: cYesterday,
+            v24h: vToday, c24h: cToday, v7d, c7d, v30d, c30d,
             dateRange: {
                 filter: filter || 'today',
-                start: dateRangeInfo.startStr,
-                end: dateRangeInfo.endStr,
-                visits: mappedRangeVisits,
-                claims: mappedRangeClaims
+                start: dateRangeInfo.startStr, end: dateRangeInfo.endStr,
+                visits: mappedRangeVisits, claims: mappedRangeClaims
             },
             link: {
-                id: link.id,
-                linkId: link.id,
-                name: lName,
-                title: lName,
-                linkName: lName,
+                id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
                 userName: link.userName || link.assignedUser || cleanUser,
-                created: link.created,
-                expiryDate: link.expiryDate,
-                daysLeft,
-                isEligibleForRenewal,
-                totalVisits: link.visits || 0,
-                visits: link.visits || 0,
-                totalClaims: link.claims || 0,
-                claims: link.claims || 0,
-                todayVisits: vToday,
-                todayClaims: cToday,
-                yesterdayVisits: vYesterday,
-                yesterdayClaims: cYesterday,
-                v24h: vToday,
-                c24h: cToday,
-                v7d: v7d,
-                c7d: c7d,
-                v30d: v30d,
-                c30d: c30d,
+                created: link.created, expiryDate: link.expiryDate,
+                daysLeft, isEligibleForRenewal,
+                totalVisits: link.visits || 0, visits: link.visits || 0,
+                totalClaims: link.claims || 0, claims: link.claims || 0,
+                todayVisits: vToday, todayClaims: cToday,
+                yesterdayVisits: vYesterday, yesterdayClaims: cYesterday,
+                v24h: vToday, c24h: cToday, v7d, c7d, v30d, c30d,
                 uidChecking: isUidOn,
                 dateRange: {
                     filter: filter || 'today',
-                    start: dateRangeInfo.startStr,
-                    end: dateRangeInfo.endStr,
-                    visits: mappedRangeVisits,
-                    claims: mappedRangeClaims
+                    start: dateRangeInfo.startStr, end: dateRangeInfo.endStr,
+                    visits: mappedRangeVisits, claims: mappedRangeClaims
                 }
             },
             userLinks: formattedUserLinks,
@@ -1181,11 +1264,8 @@ app.post('/api/user/renew-payment', async (req, res) => {
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
         await RenewalRequest.create({
             id: 'req_' + Date.now(),
-            linkId,
-            linkName: linkName || userName || 'Unknown Link',
-            plan,
-            days: parseInt(days) || 30,
-            amount: parseInt(amount) || 0,
+            linkId, linkName: linkName || userName || 'Unknown Link',
+            plan, days: parseInt(days) || 30, amount: parseInt(amount) || 0,
             transactionId: (refNo || 'Manual-WhatsApp').toString().trim(),
             status: 'pending'
         });
@@ -1209,11 +1289,9 @@ app.post('/api/user/short-links', async (req, res) => {
         if (!originalUrl) return res.status(400).json({ error: 'URL required' });
         const link = new ShortLink({
             code: Math.random().toString(36).substring(2, 8),
-            originalUrl,
-            title: title || 'Untitled',
+            originalUrl, title: title || 'Untitled',
             creator: userName || 'User',
-            appOpen: !!appScheme,
-            appScheme: appScheme || ''
+            appOpen: !!appScheme, appScheme: appScheme || ''
         });
         await link.save();
         res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
@@ -1233,7 +1311,6 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
         const links = await Link.find().lean();
-
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
             const userLinks = links.filter(l => {
@@ -1243,23 +1320,16 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 const cr = (l.creator || '').toLowerCase().trim();
                 return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
             });
-
             const totalVisits = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
             const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
-
             const waData = generateWhatsAppApprovalData(u, req);
-
             return {
                 ...u,
-                totalLinks: userLinks.length,
-                totalVisits,
-                totalClaims,
-                whatsappMessage: waData.message,
-                whatsappUrl: waData.whatsappUrl,
+                totalLinks: userLinks.length, totalVisits, totalClaims,
+                whatsappMessage: waData.message, whatsappUrl: waData.whatsappUrl,
                 portalLoginUrl: waData.loginUrl
             };
         });
-
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1275,41 +1345,26 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ Delete user ALSO disables their links
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
         const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
-        
         const user = await RenewalUser.findOne(userQuery);
         if (!user) return res.status(404).json({ error: 'User not found' });
-
         const userName = user.name || '';
-        
         let linksAffected = 0;
         if (userName) {
             const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             const updateResult = await Link.updateMany(
-                {
-                    $or: [
-                        { assignedUser: userRegex },
-                        { userName: userRegex },
-                        { creator: userRegex },
-                        { name: userRegex }
-                    ]
-                },
-                { 
-                    $set: { 
-                        status: 'disabled',
-                        expiryDate: new Date()
-                    } 
-                }
+                { $or: [
+                    { assignedUser: userRegex }, { userName: userRegex },
+                    { creator: userRegex }, { name: userRegex }
+                ]},
+                { $set: { status: 'disabled', expiryDate: new Date() } }
             );
             linksAffected = updateResult.modifiedCount || updateResult.nModified || 0;
         }
-
         await RenewalUser.findOneAndDelete(userQuery);
-
         res.json({ 
             success: true, 
             message: `User "${userName}" removed. ${linksAffected} link(s) disabled.`,
@@ -1324,10 +1379,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
-        const usersWithWa = users.map(u => ({
-            ...u,
-            ...generateWhatsAppApprovalData(u, req)
-        }));
+        const usersWithWa = users.map(u => ({ ...u, ...generateWhatsAppApprovalData(u, req) }));
         res.json({ success: true, users: usersWithWa });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1338,36 +1390,26 @@ const handleUserApprovalAction = async (req, res) => {
         const targetAction = (action || 'approved').toString().trim().toLowerCase();
         const userId = req.params.id;
         const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
-
         const user = await RenewalUser.findOne(userQuery);
         if (!user) return res.status(404).json({ error: 'User not found' });
-
         user.status = targetAction;
         if (targetAction === 'approved') user.approvedAt = new Date();
         await user.save();
-
         if (targetAction === 'rejected') {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             await Link.updateMany(
-                {
-                    $or: [
-                        { assignedUser: userRegex },
-                        { userName: userRegex },
-                        { creator: userRegex },
-                        { name: userRegex }
-                    ]
-                },
+                { $or: [
+                    { assignedUser: userRegex }, { userName: userRegex },
+                    { creator: userRegex }, { name: userRegex }
+                ]},
                 { $set: { status: 'suspended' } }
             );
         }
-
         const waData = generateWhatsAppApprovalData(user, req);
-
         res.json({
             success: true,
             message: `User status updated to ${targetAction}!`,
-            status: targetAction,
-            user,
+            status: targetAction, user,
             whatsappUrl: waData.whatsappUrl,
             whatsappMessage: waData.message
         });
@@ -1394,7 +1436,6 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         if (paymentSettings) updateData.paymentSettings = paymentSettings;
         if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
         if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
-
         const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
         res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1473,14 +1514,12 @@ app.delete('/api/admin/renewal-requests/clear-all', authMiddleware, async (req, 
 app.get('/api/admin/block-status', async (req, res) => {
     try {
         const blocked = await isDeviceBlocked(req);
-        if (blocked) {
-            return res.json({ blocked: true, isPermanent: true, reason: blocked.reason || 'Permanent ban' });
-        }
+        if (blocked) return res.json({ blocked: true, isPermanent: true, reason: blocked.reason || 'Permanent ban' });
         res.json({ blocked: false });
     } catch (e) { res.json({ blocked: false }); }
 });
 
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', authLimiter, async (req, res) => {
     try {
         const { passcode } = req.body;
         const cleanPass = (passcode || '').toString().trim();
@@ -1492,12 +1531,9 @@ app.post('/api/admin/login', async (req, res) => {
         if (!admin || !admin.passcode) {
             const hashed = bcrypt.hashSync(activeEnvPass, 10);
             admin = await User.create({
-                passcode: hashed,
-                lastEnvPasscode: activeEnvPass,
-                theme: 'dark',
-                email: process.env.ADMIN_EMAIL || '',
-                phone: process.env.ADMIN_PHONE || '',
-                secretKey: 'admin@2024'
+                passcode: hashed, lastEnvPasscode: activeEnvPass,
+                theme: 'dark', email: process.env.ADMIN_EMAIL || '',
+                phone: process.env.ADMIN_PHONE || '', secretKey: 'admin@2024'
             });
         } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
@@ -1510,29 +1546,29 @@ app.post('/api/admin/login', async (req, res) => {
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
             await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
-
             if (Session) {
                 await Session.create({
-                    userId: 'admin',
-                    deviceKey, fingerprint, ip,
+                    userId: 'admin', deviceKey, fingerprint, ip,
                     userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
-                    deviceName, deviceType,
-                    isActive: true,
-                    lastActivity: new Date(),
-                    createdAt: new Date(),
+                    deviceName, deviceType, isActive: true,
+                    lastActivity: new Date(), createdAt: new Date(),
                     expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
                 }).catch(() => {});
             }
-
             const jwtToken = generateToken('admin');
-            res.cookie('adminToken', jwtToken, { path: '/', httpOnly: false, sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000 });
+            // 🛡️ SECURE COOKIE
+            res.cookie('adminToken', jwtToken, {
+                path: '/',
+                httpOnly: true,  // JavaScript से नहीं पढ़ा जा सकता
+                secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 3600 * 1000
+            });
             return res.json({ success: true, token: jwtToken });
         }
 
         const blocked = await isDeviceBlocked(req);
-        if (blocked) {
-            return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Device permanently banned.' });
-        }
+        if (blocked) return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Device permanently banned.' });
 
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
@@ -1540,8 +1576,7 @@ app.post('/api/admin/login', async (req, res) => {
         if (!record) {
             record = new BlockedDevice({
                 deviceKey, fingerprint, ip, deviceName, deviceType,
-                attempts: 1,
-                reason: 'Failed login attempt (1/3)',
+                attempts: 1, reason: 'Failed login attempt (1/3)',
                 lastAttempt: new Date()
             });
         } else {
@@ -1579,11 +1614,9 @@ app.post('/api/admin/passcode', authMiddleware, async (req, res) => {
         const cleanOld = (oldPasscode || '').toString().trim();
         const cleanNew = (newPasscode || '').toString().trim();
         if (!cleanNew || cleanNew.length !== 6) return res.status(400).json({ error: 'New passcode must be 6 digits' });
-
         const admin = await User.findOne();
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
         if (!verifyPasscode(cleanOld, admin.passcode)) return res.status(401).json({ error: 'Current passcode incorrect' });
-
         admin.passcode = bcrypt.hashSync(cleanNew, 10);
         admin.lastEnvPasscode = cleanNew;
         await admin.save();
@@ -1640,21 +1673,13 @@ app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => 
             const isUidOn = !isUidCheckDisabled(l.uidChecking);
             const userName = l.name || l.userName || l.assignedUser || 'User';
             const linkName = l.linkName || l.title || 'Link';
-
             return {
                 ...l,
-                name: userName,
-                userName: userName,
-                assignedUser: userName,
-                linkName: linkName,
-                title: linkName,
-                claims: l.claims || 0,
-                visits: l.visits || 0,
+                name: userName, userName: userName, assignedUser: userName,
+                linkName: linkName, title: linkName,
+                claims: l.claims || 0, visits: l.visits || 0,
                 uidChecking: isUidOn,
-                image: img,
-                popupImage: img,
-                popupImageUrl: img,
-                banner: img,
+                image: img, popupImage: img, popupImageUrl: img, banner: img,
                 popupSettings: { ...popup, image: img }
             };
         });
@@ -1674,17 +1699,11 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
         const linkName = l.linkName || l.title || 'Link';
         res.json({
             ...l,
-            name: userName,
-            userName: userName,
-            linkName: linkName,
-            title: linkName,
-            claims: l.claims || 0,
-            visits: l.visits || 0,
+            name: userName, userName: userName,
+            linkName: linkName, title: linkName,
+            claims: l.claims || 0, visits: l.visits || 0,
             uidChecking: isUidOn,
-            image: img,
-            popupImage: img,
-            popupImageUrl: img,
-            banner: img,
+            image: img, popupImage: img, popupImageUrl: img, banner: img,
             popupSettings: { ...popup, image: img }
         });
     } catch (e) { res.status(500).json({ error: 'Failed to fetch link' }); }
@@ -1701,10 +1720,8 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         const cleanUidChecking = incomingUidVal !== undefined ? !isUidCheckDisabled(incomingUidVal) : true;
-
         const rawExpiry = req.body.expiryDate || req.body.expiry || req.body.expDate;
         const cleanExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime()) ? new Date(rawExpiry) : null;
-
         let incomingImage = req.body.popupImage || req.body.image || req.body.banner || req.body.popupSettings?.image;
         const finalBanner = incomingImage && incomingImage.trim().length > 4 ? incomingImage.trim() : null;
 
@@ -1717,27 +1734,16 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
-            name: cleanUserName,
-            userName: cleanUserName,
-            assignedUser: cleanUserName,
-            creator: cleanUserName,
-            linkName: cleanLinkName,
-            title: cleanLinkName,
-            video: cleanVideo,
-            claim: cleanClaim,
-            buttonText: cleanButtonText,
-            headline: cleanHeadline,
-            expiryDate: cleanExpiry,
-            uidChecking: cleanUidChecking,
-            status: 'active',
-            claims: 0,
-            visits: 0,
-            dailyClaims: {},
-            dailyVisits: {},
-            image: finalBanner,
-            popupImage: finalBanner,
-            popupImageUrl: finalBanner,
-            banner: finalBanner,
+            name: cleanUserName, userName: cleanUserName,
+            assignedUser: cleanUserName, creator: cleanUserName,
+            linkName: cleanLinkName, title: cleanLinkName,
+            video: cleanVideo, claim: cleanClaim,
+            buttonText: cleanButtonText, headline: cleanHeadline,
+            expiryDate: cleanExpiry, uidChecking: cleanUidChecking,
+            status: 'active', claims: 0, visits: 0,
+            dailyClaims: {}, dailyVisits: {},
+            image: finalBanner, popupImage: finalBanner,
+            popupImageUrl: finalBanner, banner: finalBanner,
             popupSettings: finalPopup
         });
 
@@ -1745,15 +1751,10 @@ app.post('/api/links', authMiddleware, async (req, res) => {
 
         res.json({
             ...newLink.toObject(),
-            name: cleanUserName,
-            userName: cleanUserName,
-            linkName: cleanLinkName,
-            title: cleanLinkName,
-            uidChecking: cleanUidChecking,
-            claims: 0,
-            visits: 0,
-            image: finalBanner,
-            popupSettings: finalPopup
+            name: cleanUserName, userName: cleanUserName,
+            linkName: cleanLinkName, title: cleanLinkName,
+            uidChecking: cleanUidChecking, claims: 0, visits: 0,
+            image: finalBanner, popupSettings: finalPopup
         });
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
@@ -1781,37 +1782,28 @@ async function handleLinkUpdate(req, res) {
 
         if (req.body.name !== undefined && req.body.name !== null && req.body.name.toString().trim() !== '') {
             const uName = req.body.name.toString().trim();
-            updateData.name = uName;
-            updateData.userName = uName;
-            updateData.assignedUser = uName;
-            updateData.creator = uName;
+            updateData.name = uName; updateData.userName = uName;
+            updateData.assignedUser = uName; updateData.creator = uName;
         }
 
         const incomingLinkName = req.body.linkName ?? req.body.title ?? req.body.linkTitle ?? req.body.campaignName;
         if (incomingLinkName !== undefined && incomingLinkName !== null && incomingLinkName.toString().trim() !== '') {
             const lTitle = incomingLinkName.toString().trim();
-            updateData.linkName = lTitle;
-            updateData.title = lTitle;
+            updateData.linkName = lTitle; updateData.title = lTitle;
         }
 
         const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
         if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
-
         const incomingClaim = req.body.claim ?? req.body.claimUrl ?? req.body.claimLink;
         if (incomingClaim !== undefined) updateData.claim = incomingClaim.trim();
-
         const incomingBtn = req.body.buttonText ?? req.body.btnText;
         if (incomingBtn !== undefined) updateData.buttonText = incomingBtn.trim();
-
         const incomingHeadline = req.body.headline ?? req.body.heading;
         if (incomingHeadline !== undefined) updateData.headline = incomingHeadline.trim();
-
         if (req.body.status !== undefined) updateData.status = req.body.status;
 
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
-        if (incomingUidVal !== undefined) {
-            updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
-        }
+        if (incomingUidVal !== undefined) updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
 
         const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
         if (incomingExpiry !== undefined) {
@@ -1831,10 +1823,8 @@ async function handleLinkUpdate(req, res) {
             const cleanImg = (incomingImage || '').trim();
             const finalImg = cleanImg.length > 4 ? cleanImg : null;
             newPopup.image = finalImg;
-            updateData.image = finalImg;
-            updateData.popupImage = finalImg;
-            updateData.popupImageUrl = finalImg;
-            updateData.banner = finalImg;
+            updateData.image = finalImg; updateData.popupImage = finalImg;
+            updateData.popupImageUrl = finalImg; updateData.banner = finalImg;
         }
         updateData.popupSettings = newPopup;
 
@@ -1850,33 +1840,22 @@ async function handleLinkUpdate(req, res) {
         const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedDoc.uidChecking);
 
         res.json({
-            success: true,
-            ...updatedDoc,
+            success: true, ...updatedDoc,
             id: updatedDoc.id,
-            name: effectiveUserName,
-            userName: effectiveUserName,
-            linkName: effectiveLinkName,
-            title: effectiveLinkName,
-            claims: updatedDoc.claims || 0,
-            visits: updatedDoc.visits || 0,
+            name: effectiveUserName, userName: effectiveUserName,
+            linkName: effectiveLinkName, title: effectiveLinkName,
+            claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
             uidChecking: finalUidState,
-            image: newPopup.image,
-            popupImage: newPopup.image,
-            popupImageUrl: newPopup.image,
-            banner: newPopup.image,
+            image: newPopup.image, popupImage: newPopup.image,
+            popupImageUrl: newPopup.image, banner: newPopup.image,
             popupSettings: newPopup,
             link: {
-                ...updatedDoc,
-                id: updatedDoc.id,
-                name: effectiveLinkName,
-                userName: effectiveUserName,
-                title: effectiveLinkName,
-                linkName: effectiveLinkName,
-                claims: updatedDoc.claims || 0,
-                visits: updatedDoc.visits || 0,
+                ...updatedDoc, id: updatedDoc.id,
+                name: effectiveLinkName, userName: effectiveUserName,
+                title: effectiveLinkName, linkName: effectiveLinkName,
+                claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
                 uidChecking: finalUidState,
-                image: newPopup.image,
-                popupSettings: newPopup
+                image: newPopup.image, popupSettings: newPopup
             }
         });
     } catch (e) { res.status(500).json({ error: 'Failed to update link' }); }
@@ -1929,12 +1908,10 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
         await link.save();
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
         res.json({
-            success: true,
-            dashboardId,
+            success: true, dashboardId,
             dashboardUrl: '/user-dashboard/' + dashboardId,
             fullUrl: `${req.protocol}://${req.get('host')}/user-dashboard/${dashboardId}`,
-            linkName: lName,
-            linkId: link.id
+            linkName: lName, linkId: link.id
         });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1944,10 +1921,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
         const links = await Link.find().lean();
-
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
-
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
         let totV = 0, totC = 0, todayV = 0, todayC = 0, yestV = 0, yestC = 0;
@@ -1956,8 +1931,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const formattedLinks = links.map(l => {
             const v = parseInt(l.visits) || 0;
             const c = parseInt(l.claims) || 0;
-            totV += v;
-            totC += c;
+            totV += v; totC += c;
 
             const dailyVisitsObj = l.dailyVisits || {};
             const dailyClaimsObj = l.dailyClaims || {};
@@ -1967,16 +1941,13 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             const yv = getDailyValue(dailyVisitsObj, yesterday);
             const yc = getDailyValue(dailyClaimsObj, yesterday);
 
-            todayV += tv;
-            todayC += tc;
-            yestV += yv;
-            yestC += yc;
+            todayV += tv; todayC += tc;
+            yestV += yv; yestC += yc;
 
             const lRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
             const lRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
 
-            rangeV += lRangeVisits;
-            rangeC += lRangeClaims;
+            rangeV += lRangeVisits; rangeC += lRangeClaims;
 
             return {
                 ...l,
@@ -1984,51 +1955,36 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 userName: l.name || l.userName || 'User',
                 linkName: l.linkName || l.title || 'Link',
                 title: l.linkName || l.title || 'Link',
-                claims: c,
-                visits: v,
-                todayVisits: tv,
-                todayClaims: tc,
-                yesterdayVisits: yv,
-                yesterdayClaims: yc,
-                rangeVisits: lRangeVisits,
-                rangeClaims: lRangeClaims,
+                claims: c, visits: v,
+                todayVisits: tv, todayClaims: tc,
+                yesterdayVisits: yv, yesterdayClaims: yc,
+                rangeVisits: lRangeVisits, rangeClaims: lRangeClaims,
                 uidChecking: !isUidCheckDisabled(l.uidChecking)
             };
         });
 
         const activeWatching = await VisitorActivity.countDocuments({
-            type: 'visit',
-            lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
+            type: 'visit', lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
         }).maxTimeMS(1500).catch(() => 0);
 
         const activeClaiming = await VisitorActivity.countDocuments({
-            type: 'claim',
-            source: 'video',
+            type: 'claim', source: 'video',
             lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
         }).maxTimeMS(1500).catch(() => 0);
 
         res.json({
             global: {
-                totalVisitors: totV,
-                totalClaims: totC,
-                todayVisitors: todayV,
-                todayClaims: todayC,
-                yesterdayVisitors: yestV,
-                yesterdayClaims: yestC,
-                activeNow: activeWatching,
-                activeClaims: activeClaiming,
-                rangeVisitors: rangeV,
-                rangeClaims: rangeC,
+                totalVisitors: totV, totalClaims: totC,
+                todayVisitors: todayV, todayClaims: todayC,
+                yesterdayVisitors: yestV, yesterdayClaims: yestC,
+                activeNow: activeWatching, activeClaims: activeClaiming,
+                rangeVisitors: rangeV, rangeClaims: rangeC,
                 rangeFilter: filter || 'all',
-                startDate: dateRangeInfo.startStr,
-                endDate: dateRangeInfo.endStr
+                startDate: dateRangeInfo.startStr, endDate: dateRangeInfo.endStr
             },
             links: formattedLinks
         });
-    } catch(e) {
-        console.error(e);
-        res.status(500).json({ error: 'Failed to fetch stats' });
-    }
+    } catch(e) { console.error(e); res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
 // ==================== DEVICES & SESSIONS ====================
@@ -2071,25 +2027,18 @@ app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
         if (Session) {
             sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
         }
-
         if (!sessions || sessions.length === 0) {
             const { ip, deviceKey, fingerprint } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
             const currentSession = {
                 _id: new mongoose.Types.ObjectId(),
-                userId: 'admin',
-                deviceKey, fingerprint, ip,
-                deviceName, deviceType,
-                isActive: true,
-                createdAt: new Date(),
-                lastActivity: new Date()
+                userId: 'admin', deviceKey, fingerprint, ip,
+                deviceName, deviceType, isActive: true,
+                createdAt: new Date(), lastActivity: new Date()
             };
-            if (Session) {
-                await Session.create(currentSession).catch(() => {});
-            }
+            if (Session) await Session.create(currentSession).catch(() => {});
             sessions = [currentSession];
         }
-
         res.json({ success: true, sessions });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -2113,11 +2062,8 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
         let session = null;
         if (Session) {
             const sid = req.params.id;
-            if (mongoose.Types.ObjectId.isValid(sid)) {
-                session = await Session.findById(sid);
-            } else {
-                session = await Session.findOne({ id: sid });
-            }
+            if (mongoose.Types.ObjectId.isValid(sid)) session = await Session.findById(sid);
+            else session = await Session.findOne({ id: sid });
         }
         if (session) {
             await BlockedDevice.create({
@@ -2126,8 +2072,7 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
                 fingerprint: session.fingerprint || crypto.randomBytes(16).toString('hex'),
                 deviceName: session.deviceName || 'Admin Device',
                 deviceType: session.deviceType || 'Desktop',
-                attempts: 3,
-                isPermanent: true,
+                attempts: 3, isPermanent: true,
                 reason: 'Terminated & blocked by admin',
                 lastAttempt: new Date()
             });
@@ -2188,7 +2133,8 @@ app.post('/api/short-links', authMiddleware, async (req, res) => {
     const { originalUrl, title, appOpen, appScheme } = req.body;
     const link = new ShortLink({
         code: Math.random().toString(36).substring(2, 8),
-        originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || ''
+        originalUrl, title: title || 'Untitled',
+        appOpen: !!appScheme, appScheme: appScheme || ''
     });
     await link.save();
     res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
@@ -2215,8 +2161,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
         res.json({
             success: true,
             stats: {
-                totalLinks,
-                activeLinks,
+                totalLinks, activeLinks,
                 totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0
             }
         });
@@ -2283,13 +2228,9 @@ function sendUidCheckerFile(res, targetLinkId) {
 })();
 </script>
 `;
-                    if (content.includes('<head>')) {
-                        content = content.replace('<head>', '<head>' + guardScript);
-                    } else if (content.includes('<body>')) {
-                        content = content.replace('<body>', '<body>' + guardScript);
-                    } else {
-                        content = guardScript + content;
-                    }
+                    if (content.includes('<head>')) content = content.replace('<head>', '<head>' + guardScript);
+                    else if (content.includes('<body>')) content = content.replace('<body>', '<body>' + guardScript);
+                    else content = guardScript + content;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     return res.send(content);
                 } catch(e) { return res.sendFile(p); }
@@ -2299,7 +2240,6 @@ function sendUidCheckerFile(res, targetLinkId) {
     res.status(404).send('File not found: uid-checker.html');
 }
 
-// ✅ FIXED: Only inject link ID. No global click capture. video-lock.html handles its own claim tracking.
 function sendVideoLockFile(res, targetLinkId) {
     const searchDirs = [
         path.join(__dirname, 'admin'),
@@ -2328,13 +2268,9 @@ try {
 } catch(e) {}
 </script>
 `;
-                    if (content.includes('<head>')) {
-                        content = content.replace('<head>', '<head>' + preVerifyScript);
-                    } else if (content.includes('<body>')) {
-                        content = content.replace('<body>', '<body>' + preVerifyScript);
-                    } else {
-                        content = preVerifyScript + content;
-                    }
+                    if (content.includes('<head>')) content = content.replace('<head>', '<head>' + preVerifyScript);
+                    else if (content.includes('<body>')) content = content.replace('<body>', '<body>' + preVerifyScript);
+                    else content = preVerifyScript + content;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     return res.send(content);
                 } catch(e) { return res.sendFile(p); }
@@ -2422,9 +2358,7 @@ app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
 setInterval(async () => {
     try {
-        if (Session) {
-            await Session.deleteMany({ expiresAt: { $lt: new Date() } });
-        }
+        if (Session) await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
