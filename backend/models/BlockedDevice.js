@@ -44,8 +44,10 @@ const BlockedDeviceSchema = new mongoose.Schema({
     }
 });
 
+// ✅ FIXED: Removed duplicate index on `deviceKey` (unique: true already creates it)
 BlockedDeviceSchema.index({ fingerprint: 1 });
 BlockedDeviceSchema.index({ ip: 1 });
 BlockedDeviceSchema.index({ blockedUntil: 1 });
+BlockedDeviceSchema.index({ isPermanent: 1 });
 
 module.exports = mongoose.model('BlockedDevice', BlockedDeviceSchema);
