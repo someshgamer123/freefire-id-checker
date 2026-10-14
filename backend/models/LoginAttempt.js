@@ -20,6 +20,7 @@ const LoginAttemptSchema = new mongoose.Schema({
     }
 });
 
+// ✅ FIXED: Removed duplicate index on `ip` (unique: true handles it automatically)
 LoginAttemptSchema.index({ lockedUntil: 1 });
 
 module.exports = mongoose.model('LoginAttempt', LoginAttemptSchema);
