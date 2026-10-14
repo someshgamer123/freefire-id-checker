@@ -18,17 +18,21 @@ const mongoose = require('mongoose');
 const { OAuth2Client } = require('google-auth-library');
 const { doubleCsrf } = require('csrf-csrf');
 
-// @arcis/node - Injection protection (optional, fallback if not installed)
+// @arcis/node - OPTIONAL (with safe fallback)
 let arcis = null;
 try {
     const arcisModule = require('@arcis/node');
-    arcis = arcisModule.arcis;
+    arcis = arcisModule.arcis || arcisModule;
+    console.log('✅ @arcis/node loaded');
 } catch(e) {
-    console.log('⚠️ @arcis/node not installed - using fallback protection');
+    console.log('⚠️ @arcis/node not available - using fallback');
 }
 
-// Google Client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Google Client (only if configured)
+let googleClient = null;
+if (process.env.GOOGLE_CLIENT_ID) {
+    googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+}
 
 // ==================== MongoDB Connection ====================
 let connectDB;
@@ -36,7 +40,7 @@ try {
     connectDB = require('./config/db');
 } catch(e) {
     connectDB = async () => {
-        const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/free_redeemcode';
+        const uri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/free_redeemcode';
         try {
             await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
             console.log('✅ MongoDB connected successfully');
@@ -58,107 +62,21 @@ function safeLoadModel(modelName, defaultSchema) {
     return mongoose.model(modelName, new mongoose.Schema(defaultSchema || {}, { strict: false }));
 }
 
-const User = safeLoadModel('User', {
-    passcode: String,
-    lastEnvPasscode: String,
-    theme: { type: String, default: 'dark' },
-    email: String,
-    phone: String,
-    secretKey: String
-});
-
-const Link = safeLoadModel('Link', {
-    id: String, name: String, title: String, linkName: String,
-    userName: String, assignedUser: String, creator: String,
-    video: String, claim: String, buttonText: String, headline: String,
-    status: { type: String, default: 'active' },
-    expiryDate: Date,
-    uidChecking: { type: Boolean, default: true },
-    claims: { type: Number, default: 0 },
-    visits: { type: Number, default: 0 },
-    dailyClaims: { type: Object, default: {} },
-    dailyVisits: { type: Object, default: {} },
-    popupSettings: Object,
-    image: String,
-    created: { type: Date, default: Date.now }
-});
-
-const Stats = safeLoadModel('Stats', {
-    totalVisitors: { type: Number, default: 0 },
-    totalClaims: { type: Number, default: 0 },
-    dailyVisitors: { type: Object, default: {} },
-    dailyClaims: { type: Object, default: {} }
-});
-
-const PopupSettings = safeLoadModel('PopupSettings', {
-    image: String,
-    title: { type: String, default: '🎁 Claim Your Reward' },
-    buttonText: { type: String, default: 'Claim Now' },
-    subtitle: { type: String, default: 'Tap below to unlock your reward' },
-    uidChecking: { type: Boolean, default: true }
-});
-
-const RenewalRequest = safeLoadModel('RenewalRequest', {
-    id: String, linkId: String, linkName: String, plan: String,
-    days: Number, amount: Number, transactionId: String,
-    status: { type: String, default: 'pending' },
-    createdAt: { type: Date, default: Date.now },
-    approvedAt: Date
-});
-
-const RenewalUser = safeLoadModel('RenewalUser', {
-    name: String, email: String, phone: String,
-    googleId: String,
-    authMethod: { type: String, default: 'email' },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-    createdAt: { type: Date, default: Date.now },
-    approvedAt: Date
-});
-
-const Pricing = safeLoadModel('Pricing', {
-    pricing: { type: Object, default: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 } },
-    paymentSettings: { type: Object, default: { method: 'UPI', details: { upiId: 'admin@upi' } } },
-    whatsappNumber: { type: String, default: '916372923348' },
-    autoPaymentEnabled: { type: Boolean, default: false }
-});
-
-const Session = safeLoadModel('Session', {
-    userId: { type: String, default: 'admin' },
-    deviceKey: String, fingerprint: String, ip: String,
-    userAgent: String, deviceName: String, deviceType: String,
-    isActive: { type: Boolean, default: true },
-    lastActivity: { type: Date, default: Date.now },
-    createdAt: { type: Date, default: Date.now },
-    expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) }
-});
-
+const User = safeLoadModel('User', { passcode: String, lastEnvPasscode: String, theme: { type: String, default: 'dark' }, email: String, phone: String, secretKey: String });
+const Link = safeLoadModel('Link', { id: String, name: String, title: String, linkName: String, userName: String, assignedUser: String, creator: String, video: String, claim: String, buttonText: String, headline: String, status: { type: String, default: 'active' }, expiryDate: Date, uidChecking: { type: Boolean, default: true }, claims: { type: Number, default: 0 }, visits: { type: Number, default: 0 }, dailyClaims: { type: Object, default: {} }, dailyVisits: { type: Object, default: {} }, popupSettings: Object, image: String, created: { type: Date, default: Date.now } });
+const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0 }, totalClaims: { type: Number, default: 0 }, dailyVisitors: { type: Object, default: {} }, dailyClaims: { type: Object, default: {} } });
+const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
+const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
+const RenewalUser = safeLoadModel('RenewalUser', { name: String, email: String, phone: String, googleId: String, authMethod: { type: String, default: 'email' }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
+const Pricing = safeLoadModel('Pricing', { pricing: { type: Object, default: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 } }, paymentSettings: { type: Object, default: { method: 'UPI', details: { upiId: 'admin@upi' } } }, whatsappNumber: { type: String, default: '916372923348' }, autoPaymentEnabled: { type: Boolean, default: false } });
+const Session = safeLoadModel('Session', { userId: { type: String, default: 'admin' }, deviceKey: String, fingerprint: String, ip: String, userAgent: String, deviceName: String, deviceType: String, isActive: { type: Boolean, default: true }, lastActivity: { type: Date, default: Date.now }, createdAt: { type: Date, default: Date.now }, expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) } });
 const AdminLog = safeLoadModel('AdminLog', { action: String, details: Object, timestamp: { type: Date, default: Date.now } });
 const LoginAttempt = safeLoadModel('LoginAttempt', { ip: String, attempts: Number, lastAttempt: Date });
 const TwoFactorAuth = safeLoadModel('TwoFactorAuth', { userId: String, secret: String, backupCodes: Array, isEnabled: Boolean, verifiedAt: Date });
-
-const BlockedDevice = safeLoadModel('BlockedDevice', {
-    deviceKey: String, fingerprint: String, ip: String,
-    deviceName: String, deviceType: String,
-    attempts: { type: Number, default: 1 },
-    reason: String,
-    isPermanent: { type: Boolean, default: false },
-    lastAttempt: { type: Date, default: Date.now }
-});
-
+const BlockedDevice = safeLoadModel('BlockedDevice', { deviceKey: String, fingerprint: String, ip: String, deviceName: String, deviceType: String, attempts: { type: Number, default: 1 }, reason: String, isPermanent: { type: Boolean, default: false }, lastAttempt: { type: Date, default: Date.now } });
 const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: String, expiresAt: Date });
-
-const ShortLink = safeLoadModel('ShortLink', {
-    code: String, originalUrl: String, title: String, creator: String,
-    visits: { type: Number, default: 0 },
-    appOpen: Boolean, appScheme: String,
-    createdAt: { type: Date, default: Date.now }
-});
-
-const ShortLinkClick = safeLoadModel('ShortLinkClick', {
-    shortLinkId: String, ip: String, userAgent: String,
-    deviceName: String, deviceType: String, referer: String,
-    timestamp: { type: Date, default: Date.now }
-});
+const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
+const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
@@ -184,7 +102,6 @@ const DISPOSABLE_DOMAINS = [
 ];
 
 // ==================== Helper Functions ====================
-
 function getISTDate(dateObj) {
     const d = dateObj || new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -230,20 +147,12 @@ function parseDateRange(filter, customStart, customEnd) {
     let endStr = '2099-12-31';
     const f = (filter || 'all').toString().trim().toLowerCase();
 
-    if (f === 'all' || f === 'alltime' || f === 'lifetime') {
-        startStr = '1970-01-01'; endStr = '2099-12-31';
-    } else if (f === 'today') {
-        startStr = today; endStr = today;
-    } else if (f === 'yesterday') {
-        const y = getISTDateMinus(1); startStr = y; endStr = y;
-    } else if (f === '7days' || f === '7d' || f === 'last7days') {
-        startStr = getISTDateMinus(6); endStr = today;
-    } else if (f === '30days' || f === '30d' || f === 'last30days') {
-        startStr = getISTDateMinus(29); endStr = today;
-    } else if (f === 'custom' && customStart && customEnd) {
-        startStr = customStart.toString().trim().slice(0, 10);
-        endStr = customEnd.toString().trim().slice(0, 10);
-    } else if (customStart && customEnd) {
+    if (f === 'all' || f === 'alltime' || f === 'lifetime') { startStr = '1970-01-01'; endStr = '2099-12-31'; }
+    else if (f === 'today') { startStr = today; endStr = today; }
+    else if (f === 'yesterday') { const y = getISTDateMinus(1); startStr = y; endStr = y; }
+    else if (f === '7days' || f === '7d' || f === 'last7days') { startStr = getISTDateMinus(6); endStr = today; }
+    else if (f === '30days' || f === '30d' || f === 'last30days') { startStr = getISTDateMinus(29); endStr = today; }
+    else if (f === 'custom' && customStart && customEnd) {
         startStr = customStart.toString().trim().slice(0, 10);
         endStr = customEnd.toString().trim().slice(0, 10);
     }
@@ -310,10 +219,8 @@ Thank you! 🚀`;
     return { message, whatsappUrl, cleanPhone, loginUrl };
 }
 
-// 🛡️ EMAIL VALIDATION HELPERS
 function isValidEmailFormat(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function isDisposableEmail(email) {
@@ -321,16 +228,12 @@ function isDisposableEmail(email) {
     return DISPOSABLE_DOMAINS.includes(domain);
 }
 
-// 🛡️ MOBILE VALIDATION
 function isValidMobile(mobile, countryCode = 'IN') {
     const clean = (mobile || '').replace(/[\s\-\(\)\+]/g, '');
-    if (countryCode === 'IN') {
-        return /^[6-9]\d{9}$/.test(clean);
-    }
+    if (countryCode === 'IN') return /^[6-9]\d{9}$/.test(clean);
     return clean.length >= 10 && clean.length <= 15;
 }
 
-// 🛡️ TURNSTILE VERIFICATION
 async function verifyTurnstile(token, remoteIp) {
     if (!token) return { success: false, error: 'No captcha token' };
     if (!process.env.TURNSTILE_SECRET_KEY) {
@@ -342,11 +245,7 @@ async function verifyTurnstile(token, remoteIp) {
         const verifyRes = await fetch(verifyUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                secret: process.env.TURNSTILE_SECRET_KEY,
-                response: token,
-                remoteip: remoteIp
-            })
+            body: JSON.stringify({ secret: process.env.TURNSTILE_SECRET_KEY, response: token, remoteip: remoteIp })
         });
         const data = await verifyRes.json();
         return { success: data.success === true, data };
@@ -413,12 +312,12 @@ async function initializeDatabase() {
 
 connectDB().then(() => { initializeDatabase(); }).catch(() => {});
 
-// ==================== 🛡️ SECURITY MIDDLEWARE ====================
+// ==================== MIDDLEWARE ====================
 app.set('trust proxy', 1);
-app.disable('x-powered-by'); // 🛡️ Hide Express
+app.disable('x-powered-by');
 
 app.use(helmet({
-    contentSecurityPolicy: false, // Keep false because we load external scripts
+    contentSecurityPolicy: false,
     frameguard: false,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
@@ -434,30 +333,41 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// 🛡️ INJECTION PROTECTION (@arcis/node)
+// 🛡️ @arcis/node injection protection — WITH SAFE CONFIG
+// Skip for CSRF token and health check endpoints
 if (arcis) {
-    app.use(arcis({ block: true }));
-    console.log('✅ @arcis/node injection protection ENABLED');
-} else {
-    // Fallback: basic NoSQL sanitization
-    app.use((req, res, next) => {
-        const sanitize = (obj) => {
-            if (!obj || typeof obj !== 'object') return obj;
-            for (const key of Object.keys(obj)) {
-                if (key.startsWith('$') || key.includes('.')) {
-                    delete obj[key];
-                } else if (typeof obj[key] === 'object') {
-                    sanitize(obj[key]);
-                }
+    try {
+        app.use((req, res, next) => {
+            // Skip arcis for safe endpoints
+            if (req.path === '/api/csrf-token' || req.path === '/health' || req.path === '/ping') {
+                return next();
             }
-            return obj;
-        };
-        if (req.body) sanitize(req.body);
-        if (req.query) sanitize(req.query);
-        if (req.params) sanitize(req.params);
-        next();
-    });
-    console.log('⚠️ Using fallback injection protection');
+            return arcis({ block: true })(req, res, next);
+        });
+        console.log('✅ @arcis/node injection protection ENABLED');
+    } catch(e) {
+        console.log('⚠️ @arcis/node config error, using fallback:', e.message);
+        app.use(fallbackInjectionProtection);
+    }
+} else {
+    app.use(fallbackInjectionProtection);
+}
+
+function fallbackInjectionProtection(req, res, next) {
+    const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        for (const key of Object.keys(obj)) {
+            if (key.startsWith('$') || key.includes('.')) {
+                delete obj[key];
+            } else if (typeof obj[key] === 'object') {
+                sanitize(obj[key]);
+            }
+        }
+        return obj;
+    };
+    if (req.body) sanitize(req.body);
+    if (req.query) sanitize(req.query);
+    next();
 }
 
 app.use((req, res, next) => {
@@ -471,8 +381,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// ==================== 🛡️ CSRF PROTECTION ====================
-const csrfSecret = process.env.CSRF_SECRET || 'change-this-csrf-secret-32-chars-minimum-xyz';
+// ==================== CSRF PROTECTION ====================
+const csrfSecret = process.env.CSRF_SECRET || 'change-this-csrf-secret-32-chars-minimum-xyz-123';
 
 const { generateToken: generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getSecret: () => csrfSecret,
@@ -494,14 +404,15 @@ app.get('/api/csrf-token', (req, res) => {
         const token = generateCsrfToken(req, res);
         res.json({ csrfToken: token });
     } catch(e) {
+        console.error('CSRF token generation error:', e.message);
         res.status(500).json({ error: 'Failed to generate token' });
     }
 });
 
-// ==================== 🛡️ RATE LIMITING ====================
+// ==================== RATE LIMITING ====================
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 500,
+    max: parseInt(process.env.RATE_LIMIT_MAX) || 500,
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
@@ -539,12 +450,21 @@ app.get('/health', (req, res) => {
         status: 'healthy',
         uptime: Math.floor(process.uptime()),
         database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development',
+        env_check: {
+            MONGODB_URI: !!process.env.MONGODB_URI,
+            JWT_SECRET: !!process.env.JWT_SECRET,
+            CSRF_SECRET: !!process.env.CSRF_SECRET,
+            GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+            TURNSTILE_SECRET_KEY: !!process.env.TURNSTILE_SECRET_KEY
+        },
         timestamp: new Date().toISOString()
     });
 });
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
+// ==================== AUTH HELPERS ====================
 const JWT_SECRET = process.env.JWT_SECRET || 'somu_admin_secret_fixed_key_951753';
 const JWT_EXPIRY = '7d';
 
@@ -584,13 +504,8 @@ async function isDeviceBlocked(req) {
     try {
         if (mongoose.connection.readyState !== 1) return null;
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost') || ip.startsWith('192.168.')) {
-            return null;
-        }
-        return await BlockedDevice.findOne({
-            $or: [{ deviceKey }, { ip }, { fingerprint }],
-            isPermanent: true
-        }).maxTimeMS(1500);
+        if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost') || ip.startsWith('192.168.')) return null;
+        return await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }], isPermanent: true }).maxTimeMS(1500);
     } catch(e) { return null; }
 }
 
@@ -615,11 +530,7 @@ async function authMiddleware(req, res, next) {
             { $or: [{ deviceKey }, { fingerprint }, { ip }] },
             { 
                 $set: { lastActivity: new Date(), isActive: true, ip, deviceName, deviceType },
-                $setOnInsert: {
-                    userId: 'admin', deviceKey, fingerprint,
-                    createdAt: new Date(),
-                    expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
-                }
+                $setOnInsert: { userId: 'admin', deviceKey, fingerprint, createdAt: new Date(), expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000) }
             },
             { upsert: true }
         ).catch(() => {});
@@ -628,7 +539,6 @@ async function authMiddleware(req, res, next) {
 }
 
 // ==================== ROUTES ====================
-
 app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     try {
         await BlockedDevice.deleteMany({});
@@ -688,16 +598,12 @@ app.get('/api/visit-stats/:linkId', async (req, res) => {
         res.json({
             linkId: link.id, id: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.name || '',
-            totalVisits: link.visits || 0,
-            totalClaims: link.claims || 0,
-            claims: link.claims || 0,
+            totalVisits: link.visits || 0, totalClaims: link.claims || 0, claims: link.claims || 0,
             todayVisits: getDailyValue(link.dailyVisits, today),
             todayClaims: getDailyValue(link.dailyClaims, today),
             yesterdayVisits: getDailyValue(link.dailyVisits, yesterday),
             yesterdayClaims: getDailyValue(link.dailyClaims, yesterday),
-            status: link.status || 'active',
-            expiryDate: link.expiryDate || null,
-            uidChecking: isUidOn
+            status: link.status || 'active', expiryDate: link.expiryDate || null, uidChecking: isUidOn
         });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -728,8 +634,7 @@ app.get('/api/pricing', async (req, res) => {
             pricingDoc = {
                 pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
                 paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi' } },
-                whatsappNumber: '916372923348',
-                autoPaymentEnabled: false
+                whatsappNumber: '916372923348', autoPaymentEnabled: false
             };
         }
         res.json({
@@ -758,9 +663,6 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-
         let rawId = extractCleanId(req.params.id);
         let link = await Link.findOne(getLinkQuery(rawId)).lean();
 
@@ -815,11 +717,9 @@ app.get('/api/link/:id', async (req, res) => {
             id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.name || '',
             video: link.video || 'https://youtu.be/dQw4w9WgXcQ',
-            claim: link.claim || '#',
-            buttonText: link.buttonText || 'Claim Now',
+            claim: link.claim || '#', buttonText: link.buttonText || 'Claim Now',
             headline: link.headline || '🎬 Watch Video & Unlock Reward',
-            status: link.status || 'active',
-            expiryDate: link.expiryDate || null,
+            status: link.status || 'active', expiryDate: link.expiryDate || null,
             uidChecking: isUidOn,
             image: bannerImage, popupImage: bannerImage, popupImageUrl: bannerImage, banner: bannerImage,
             popupSettings: {
@@ -857,14 +757,11 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
-
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal' || sourceParam === 'entrance') {
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
     }
-    if (sourceParam !== 'video') {
-        return { success: true, ignored: true, message: 'Only video claims counted.' };
-    }
+    if (sourceParam !== 'video') return { success: true, ignored: true, message: 'Only video claims counted.' };
 
     const link = await Link.findOne(getLinkQuery(cleanId));
     if (!link) return { success: false, error: 'Link not found' };
@@ -903,11 +800,8 @@ const handleClaimTrackingRequest = async (req, res) => {
     try {
         let rawId = req.params.linkId || req.params.id || req.query.linkId || req.query.link || req.query.id || req.body?.linkId || req.body?.id || req.body?.link;
         const result = await executeClaimTracking(rawId, req);
-        if (result.success) {
-            return res.json({ success: true, linkId: result.linkId, ignored: !!result.ignored, counted: result.counted !== false });
-        } else {
-            return res.status(404).json({ error: result.error || 'Failed' });
-        }
+        if (result.success) return res.json({ success: true, linkId: result.linkId, ignored: !!result.ignored, counted: result.counted !== false });
+        else return res.status(404).json({ error: result.error || 'Failed' });
     } catch(err) { return res.status(500).json({ error: 'Failed' }); }
 };
 
@@ -936,8 +830,7 @@ app.post('/api/renewal/request-from-dashboard', async (req, res) => {
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
         const renewalRequest = new RenewalRequest({
             id: 'renewal_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-            linkId, linkName: linkName || 'Unknown Link', plan,
-            days: days || 0, amount: amount || 0,
+            linkId, linkName: linkName || 'Unknown Link', plan, days: days || 0, amount: amount || 0,
             status: 'pending', createdAt: new Date()
         });
         await renewalRequest.save();
@@ -962,71 +855,40 @@ app.get('/api/settings', async (req, res) => {
         res.json({
             theme: admin?.theme || 'dark',
             background: popupSettings?.image || null,
-            popupSettings: popupSettings || {
-                image: null, title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now', subtitle: 'Tap below to unlock your reward'
-            },
+            popupSettings: popupSettings || { image: null, title: '🎁 Claim Your Reward', buttonText: 'Claim Now', subtitle: 'Tap below to unlock your reward' },
             adminEmail: admin?.email || '',
             adminPhone: admin?.phone || ''
         });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== USER AUTH (With Turnstile + Email + Mobile Validation) ====================
-
-// 🛡️ SIGNUP with all validations
+// ==================== USER AUTH ====================
 app.post('/api/user/signup', authLimiter, async (req, res) => {
     try {
         const { name, email, phone, turnstileToken } = req.body;
-
-        // 1. Basic field check
-        if (!name || !email || !phone) {
-            return res.status(400).json({ error: 'All fields are required' });
-        }
-
+        if (!name || !email || !phone) return res.status(400).json({ error: 'All fields are required' });
         const cleanName = name.trim();
         const cleanEmail = email.trim().toLowerCase();
         const cleanPhone = phone.trim();
 
-        // 2. 🛡️ Turnstile verification
         const { ip } = getDeviceId(req);
         const turnstileResult = await verifyTurnstile(turnstileToken, ip);
         if (!turnstileResult.success && !turnstileResult.skipped) {
             return res.status(400).json({ error: 'Bot detected. Please try again.' });
         }
+        if (!isValidEmailFormat(cleanEmail)) return res.status(400).json({ error: 'Invalid email format' });
+        if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails are not allowed.' });
+        if (!isValidMobile(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
 
-        // 3. 🛡️ Email format validation
-        if (!isValidEmailFormat(cleanEmail)) {
-            return res.status(400).json({ error: 'Invalid email format' });
-        }
-
-        // 4. 🛡️ Disposable email check
-        if (isDisposableEmail(cleanEmail)) {
-            return res.status(400).json({ error: 'Disposable emails are not allowed. Please use a permanent email.' });
-        }
-
-        // 5. 🛡️ Mobile validation
-        if (!isValidMobile(cleanPhone)) {
-            return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
-        }
-
-        // 6. Check for duplicates
         const emailExists = await RenewalUser.findOne({ email: cleanEmail });
         if (emailExists) return res.status(400).json({ error: 'Email already registered.' });
-
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
         if (phoneExists) return res.status(400).json({ error: 'Phone already registered.' });
 
-        // 7. Create user
         await RenewalUser.create({
-            name: cleanName,
-            email: cleanEmail,
-            phone: cleanPhone,
-            authMethod: 'email',
-            status: 'pending',
-            createdAt: new Date()
+            name: cleanName, email: cleanEmail, phone: cleanPhone,
+            authMethod: 'email', status: 'pending', createdAt: new Date()
         });
-
         res.json({ success: true, message: 'Signup submitted!' });
     } catch (e) {
         console.error('Signup error:', e);
@@ -1034,99 +896,55 @@ app.post('/api/user/signup', authLimiter, async (req, res) => {
     }
 });
 
-// 🛡️ SIGNIN
 app.post('/api/user/signin', authLimiter, async (req, res) => {
     try {
         const { email, phone, turnstileToken } = req.body;
         if (!email || !phone) return res.status(400).json({ error: 'Enter email and phone' });
-
-        // Turnstile check
         const { ip } = getDeviceId(req);
         const turnstileResult = await verifyTurnstile(turnstileToken, ip);
         if (!turnstileResult.success && !turnstileResult.skipped) {
             return res.status(400).json({ error: 'Bot detected. Please try again.' });
         }
-
         const user = await RenewalUser.findOne({ email: email.trim().toLowerCase(), phone: phone.trim() });
         if (!user) return res.status(404).json({ error: 'User not found.' });
         if (user.status === 'pending') return res.status(403).json({ error: 'Pending approval.' });
         if (user.status === 'rejected') return res.status(403).json({ error: 'Registration rejected.' });
-
-        res.json({
-            success: true,
-            user: { id: user._id, name: user.name, email: user.email, phone: user.phone }
-        });
+        res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, phone: user.phone } });
     } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
-// ==================== 🛡️ GOOGLE LOGIN ====================
 app.post('/api/user/google-login', authLimiter, async (req, res) => {
     try {
         const { credential } = req.body;
         if (!credential) return res.status(400).json({ error: 'Google credential missing' });
+        if (!googleClient || !process.env.GOOGLE_CLIENT_ID) return res.status(500).json({ error: 'Google login not configured' });
 
-        if (!process.env.GOOGLE_CLIENT_ID) {
-            return res.status(500).json({ error: 'Google login not configured on server' });
-        }
-
-        // 🛡️ Verify Google ID token
-        const ticket = await googleClient.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID
-        });
+        const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
         const payload = ticket.getPayload();
 
-        if (!payload || !payload.email) {
-            return res.status(400).json({ error: 'Invalid Google token' });
-        }
-        if (!payload.email_verified) {
-            return res.status(400).json({ error: 'Google email is not verified' });
-        }
+        if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid Google token' });
+        if (!payload.email_verified) return res.status(400).json({ error: 'Google email is not verified' });
 
         const cleanEmail = payload.email.toLowerCase();
-
-        // Find existing user or create new
         let user = await RenewalUser.findOne({ email: cleanEmail });
 
         if (!user) {
-            // 🛡️ Block disposable emails even via Google (rare but possible)
-            if (isDisposableEmail(cleanEmail)) {
-                return res.status(400).json({ error: 'Disposable emails not allowed' });
-            }
-
+            if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
             user = await RenewalUser.create({
-                name: payload.name || 'Google User',
-                email: cleanEmail,
-                phone: '',
-                googleId: payload.sub,
-                authMethod: 'google',
-                status: 'approved', // Google email is verified → auto-approve
-                createdAt: new Date(),
-                approvedAt: new Date()
+                name: payload.name || 'Google User', email: cleanEmail, phone: '',
+                googleId: payload.sub, authMethod: 'google', status: 'approved',
+                createdAt: new Date(), approvedAt: new Date()
             });
         }
 
-        if (user.status === 'rejected') {
-            return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
-        }
-
-        res.json({
-            success: true,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone || '',
-                authMethod: user.authMethod
-            }
-        });
+        if (user.status === 'rejected') return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
+        res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, phone: user.phone || '', authMethod: user.authMethod } });
     } catch (e) {
         console.error('Google login error:', e.message);
         res.status(401).json({ error: 'Google authentication failed' });
     }
 });
 
-// ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1138,43 +956,24 @@ app.post('/api/user/link-details', async (req, res) => {
         let searchId = extractCleanId(rawInput);
 
         const allUserLinks = await Link.find({
-            $or: [
-                { assignedUser: userRegex }, { userName: userRegex },
-                { creator: userRegex }, { name: userRegex }
-            ]
+            $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }]
         }).sort({ created: -1 }).lean();
 
         const formattedUserLinks = allUserLinks.map(l => {
             const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
-            return {
-                id: l.id, name: lTitle, title: lTitle, linkName: lTitle,
-                status: l.status || 'active',
-                expiryDate: l.expiryDate || null,
-                visits: l.visits || 0,
-                claims: l.claims || 0
-            };
+            return { id: l.id, name: lTitle, title: lTitle, linkName: lTitle, status: l.status || 'active', expiryDate: l.expiryDate || null, visits: l.visits || 0, claims: l.claims || 0 };
         });
 
         let link = null;
-        if (searchId && searchId !== cleanUser) {
-            link = await Link.findOne(getLinkQuery(searchId));
-        }
+        if (searchId && searchId !== cleanUser) link = await Link.findOne(getLinkQuery(searchId));
         if (!link && allUserLinks.length > 0) link = await allUserLinks[0];
         if (!link && cleanUser) {
-            link = await Link.findOne({
-                $or: [
-                    { assignedUser: userRegex }, { userName: userRegex },
-                    { creator: userRegex }, { name: userRegex }
-                ]
-            }).sort({ created: -1 });
+            link = await Link.findOne({ $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] }).sort({ created: -1 });
         }
         if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
 
         if (!link) {
-            return res.status(404).json({
-                error: `No active link found for user "${cleanUser}".`,
-                userLinks: formattedUserLinks
-            });
+            return res.status(404).json({ error: `No active link found for user "${cleanUser}".`, userLinks: formattedUserLinks });
         }
 
         if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
@@ -1190,7 +989,6 @@ app.post('/api/user/link-details', async (req, res) => {
 
         const mappedRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const mappedRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
-
         const vToday = getDailyValue(dailyVisitsObj, today);
         const cToday = getDailyValue(dailyClaimsObj, today);
         const vYesterday = getDailyValue(dailyVisitsObj, yesterday);
@@ -1224,27 +1022,18 @@ app.post('/api/user/link-details', async (req, res) => {
             todayVisits: vToday, todayClaims: cToday,
             yesterdayVisits: vYesterday, yesterdayClaims: cYesterday,
             v24h: vToday, c24h: cToday, v7d, c7d, v30d, c30d,
-            dateRange: {
-                filter: filter || 'today',
-                start: dateRangeInfo.startStr, end: dateRangeInfo.endStr,
-                visits: mappedRangeVisits, claims: mappedRangeClaims
-            },
+            dateRange: { filter: filter || 'today', start: dateRangeInfo.startStr, end: dateRangeInfo.endStr, visits: mappedRangeVisits, claims: mappedRangeClaims },
             link: {
                 id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
                 userName: link.userName || link.assignedUser || cleanUser,
-                created: link.created, expiryDate: link.expiryDate,
-                daysLeft, isEligibleForRenewal,
+                created: link.created, expiryDate: link.expiryDate, daysLeft, isEligibleForRenewal,
                 totalVisits: link.visits || 0, visits: link.visits || 0,
                 totalClaims: link.claims || 0, claims: link.claims || 0,
                 todayVisits: vToday, todayClaims: cToday,
                 yesterdayVisits: vYesterday, yesterdayClaims: cYesterday,
                 v24h: vToday, c24h: cToday, v7d, c7d, v30d, c30d,
                 uidChecking: isUidOn,
-                dateRange: {
-                    filter: filter || 'today',
-                    start: dateRangeInfo.startStr, end: dateRangeInfo.endStr,
-                    visits: mappedRangeVisits, claims: mappedRangeClaims
-                }
+                dateRange: { filter: filter || 'today', start: dateRangeInfo.startStr, end: dateRangeInfo.endStr, visits: mappedRangeVisits, claims: mappedRangeClaims }
             },
             userLinks: formattedUserLinks,
             pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
@@ -1263,11 +1052,9 @@ app.post('/api/user/renew-payment', async (req, res) => {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
         await RenewalRequest.create({
-            id: 'req_' + Date.now(),
-            linkId, linkName: linkName || userName || 'Unknown Link',
+            id: 'req_' + Date.now(), linkId, linkName: linkName || userName || 'Unknown Link',
             plan, days: parseInt(days) || 30, amount: parseInt(amount) || 0,
-            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(),
-            status: 'pending'
+            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(), status: 'pending'
         });
         res.json({ success: true, message: 'Renewal request submitted.' });
     } catch (e) { res.status(500).json({ error: 'Payment processing error' }); }
@@ -1289,8 +1076,7 @@ app.post('/api/user/short-links', async (req, res) => {
         if (!originalUrl) return res.status(400).json({ error: 'URL required' });
         const link = new ShortLink({
             code: Math.random().toString(36).substring(2, 8),
-            originalUrl, title: title || 'Untitled',
-            creator: userName || 'User',
+            originalUrl, title: title || 'Untitled', creator: userName || 'User',
             appOpen: !!appScheme, appScheme: appScheme || ''
         });
         await link.save();
@@ -1323,12 +1109,7 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
             const totalVisits = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
             const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
             const waData = generateWhatsAppApprovalData(u, req);
-            return {
-                ...u,
-                totalLinks: userLinks.length, totalVisits, totalClaims,
-                whatsappMessage: waData.message, whatsappUrl: waData.whatsappUrl,
-                portalLoginUrl: waData.loginUrl
-            };
+            return { ...u, totalLinks: userLinks.length, totalVisits, totalClaims, whatsappMessage: waData.message, whatsappUrl: waData.whatsappUrl, portalLoginUrl: waData.loginUrl };
         });
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1356,20 +1137,13 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
         if (userName) {
             const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             const updateResult = await Link.updateMany(
-                { $or: [
-                    { assignedUser: userRegex }, { userName: userRegex },
-                    { creator: userRegex }, { name: userRegex }
-                ]},
+                { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
                 { $set: { status: 'disabled', expiryDate: new Date() } }
             );
             linksAffected = updateResult.modifiedCount || updateResult.nModified || 0;
         }
         await RenewalUser.findOneAndDelete(userQuery);
-        res.json({ 
-            success: true, 
-            message: `User "${userName}" removed. ${linksAffected} link(s) disabled.`,
-            linksAffected
-        });
+        res.json({ success: true, message: `User "${userName}" removed. ${linksAffected} link(s) disabled.`, linksAffected });
     } catch (e) { 
         console.error('Delete user error:', e);
         res.status(500).json({ error: 'Failed' }); 
@@ -1398,21 +1172,12 @@ const handleUserApprovalAction = async (req, res) => {
         if (targetAction === 'rejected') {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             await Link.updateMany(
-                { $or: [
-                    { assignedUser: userRegex }, { userName: userRegex },
-                    { creator: userRegex }, { name: userRegex }
-                ]},
+                { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
                 { $set: { status: 'suspended' } }
             );
         }
         const waData = generateWhatsAppApprovalData(user, req);
-        res.json({
-            success: true,
-            message: `User status updated to ${targetAction}!`,
-            status: targetAction, user,
-            whatsappUrl: waData.whatsappUrl,
-            whatsappMessage: waData.message
-        });
+        res.json({ success: true, message: `User status updated to ${targetAction}!`, status: targetAction, user, whatsappUrl: waData.whatsappUrl, whatsappMessage: waData.message });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 };
 
@@ -1531,9 +1296,8 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         if (!admin || !admin.passcode) {
             const hashed = bcrypt.hashSync(activeEnvPass, 10);
             admin = await User.create({
-                passcode: hashed, lastEnvPasscode: activeEnvPass,
-                theme: 'dark', email: process.env.ADMIN_EMAIL || '',
-                phone: process.env.ADMIN_PHONE || '', secretKey: 'admin@2024'
+                passcode: hashed, lastEnvPasscode: activeEnvPass, theme: 'dark',
+                email: process.env.ADMIN_EMAIL || '', phone: process.env.ADMIN_PHONE || '', secretKey: 'admin@2024'
             });
         } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
@@ -1550,19 +1314,15 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
                 await Session.create({
                     userId: 'admin', deviceKey, fingerprint, ip,
                     userAgent: (req.headers && req.headers['user-agent']) ? req.headers['user-agent'].toString() : 'Unknown',
-                    deviceName, deviceType, isActive: true,
-                    lastActivity: new Date(), createdAt: new Date(),
+                    deviceName, deviceType, isActive: true, lastActivity: new Date(), createdAt: new Date(),
                     expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000)
                 }).catch(() => {});
             }
             const jwtToken = generateToken('admin');
-            // 🛡️ SECURE COOKIE
             res.cookie('adminToken', jwtToken, {
-                path: '/',
-                httpOnly: true,  // JavaScript से नहीं पढ़ा जा सकता
-                secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-                sameSite: 'lax',
-                maxAge: 7 * 24 * 3600 * 1000
+                path: '/', httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000
             });
             return res.json({ success: true, token: jwtToken });
         }
@@ -1574,11 +1334,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const { deviceName, deviceType } = getDeviceDetails(req);
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
         if (!record) {
-            record = new BlockedDevice({
-                deviceKey, fingerprint, ip, deviceName, deviceType,
-                attempts: 1, reason: 'Failed login attempt (1/3)',
-                lastAttempt: new Date()
-            });
+            record = new BlockedDevice({ deviceKey, fingerprint, ip, deviceName, deviceType, attempts: 1, reason: 'Failed login attempt (1/3)', lastAttempt: new Date() });
         } else {
             record.attempts = (record.attempts || 0) + 1;
             record.lastAttempt = new Date();
@@ -1600,9 +1356,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
 app.post('/api/admin/logout', async (req, res) => {
     try {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        if (Session) {
-            await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
-        }
+        if (Session) await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
     } catch(e) {}
     res.clearCookie('adminToken', { path: '/' });
     res.json({ success: true });
@@ -1674,8 +1428,7 @@ app.get(['/api/links', '/api/admin/links'], authMiddleware, async (req, res) => 
             const userName = l.name || l.userName || l.assignedUser || 'User';
             const linkName = l.linkName || l.title || 'Link';
             return {
-                ...l,
-                name: userName, userName: userName, assignedUser: userName,
+                ...l, name: userName, userName: userName, assignedUser: userName,
                 linkName: linkName, title: linkName,
                 claims: l.claims || 0, visits: l.visits || 0,
                 uidChecking: isUidOn,
@@ -1698,11 +1451,8 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
         const userName = l.name || l.userName || l.assignedUser || 'User';
         const linkName = l.linkName || l.title || 'Link';
         res.json({
-            ...l,
-            name: userName, userName: userName,
-            linkName: linkName, title: linkName,
-            claims: l.claims || 0, visits: l.visits || 0,
-            uidChecking: isUidOn,
+            ...l, name: userName, userName: userName, linkName: linkName, title: linkName,
+            claims: l.claims || 0, visits: l.visits || 0, uidChecking: isUidOn,
             image: img, popupImage: img, popupImageUrl: img, banner: img,
             popupSettings: { ...popup, image: img }
         });
@@ -1724,7 +1474,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         const cleanExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime()) ? new Date(rawExpiry) : null;
         let incomingImage = req.body.popupImage || req.body.image || req.body.banner || req.body.popupSettings?.image;
         const finalBanner = incomingImage && incomingImage.trim().length > 4 ? incomingImage.trim() : null;
-
         const finalPopup = {
             title: req.body.popupSettings?.title || req.body.popupTitle || '🎁 Claim Your Reward',
             subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || 'Tap below to unlock your reward',
@@ -1746,16 +1495,8 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             popupImageUrl: finalBanner, banner: finalBanner,
             popupSettings: finalPopup
         });
-
         await newLink.save();
-
-        res.json({
-            ...newLink.toObject(),
-            name: cleanUserName, userName: cleanUserName,
-            linkName: cleanLinkName, title: cleanLinkName,
-            uidChecking: cleanUidChecking, claims: 0, visits: 0,
-            image: finalBanner, popupSettings: finalPopup
-        });
+        res.json({ ...newLink.toObject(), name: cleanUserName, userName: cleanUserName, linkName: cleanLinkName, title: cleanLinkName, uidChecking: cleanUidChecking, claims: 0, visits: 0, image: finalBanner, popupSettings: finalPopup });
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
@@ -1779,19 +1520,16 @@ async function handleLinkUpdate(req, res) {
         }
 
         const updateData = {};
-
         if (req.body.name !== undefined && req.body.name !== null && req.body.name.toString().trim() !== '') {
             const uName = req.body.name.toString().trim();
             updateData.name = uName; updateData.userName = uName;
             updateData.assignedUser = uName; updateData.creator = uName;
         }
-
         const incomingLinkName = req.body.linkName ?? req.body.title ?? req.body.linkTitle ?? req.body.campaignName;
         if (incomingLinkName !== undefined && incomingLinkName !== null && incomingLinkName.toString().trim() !== '') {
             const lTitle = incomingLinkName.toString().trim();
             updateData.linkName = lTitle; updateData.title = lTitle;
         }
-
         const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
         if (incomingVideo !== undefined) updateData.video = incomingVideo.trim();
         const incomingClaim = req.body.claim ?? req.body.claimUrl ?? req.body.claimLink;
@@ -1818,7 +1556,6 @@ async function handleLinkUpdate(req, res) {
             buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || currentPopup.buttonText || 'Claim Now',
             image: currentPopup.image || null
         };
-
         if (incomingImage !== undefined) {
             const cleanImg = (incomingImage || '').trim();
             const finalImg = cleanImg.length > 4 ? cleanImg : null;
@@ -1829,7 +1566,6 @@ async function handleLinkUpdate(req, res) {
         updateData.popupSettings = newPopup;
 
         await Link.collection.updateMany(query, { $set: updateData });
-
         if (updateData.linkName) {
             await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: updateData.linkName } }).catch(() => {});
         }
@@ -1840,8 +1576,7 @@ async function handleLinkUpdate(req, res) {
         const finalUidState = updateData.uidChecking !== undefined ? updateData.uidChecking : !isUidCheckDisabled(updatedDoc.uidChecking);
 
         res.json({
-            success: true, ...updatedDoc,
-            id: updatedDoc.id,
+            success: true, ...updatedDoc, id: updatedDoc.id,
             name: effectiveUserName, userName: effectiveUserName,
             linkName: effectiveLinkName, title: effectiveLinkName,
             claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
@@ -1849,14 +1584,7 @@ async function handleLinkUpdate(req, res) {
             image: newPopup.image, popupImage: newPopup.image,
             popupImageUrl: newPopup.image, banner: newPopup.image,
             popupSettings: newPopup,
-            link: {
-                ...updatedDoc, id: updatedDoc.id,
-                name: effectiveLinkName, userName: effectiveUserName,
-                title: effectiveLinkName, linkName: effectiveLinkName,
-                claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
-                uidChecking: finalUidState,
-                image: newPopup.image, popupSettings: newPopup
-            }
+            link: { ...updatedDoc, id: updatedDoc.id, name: effectiveLinkName, userName: effectiveUserName, title: effectiveLinkName, linkName: effectiveLinkName, claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0, uidChecking: finalUidState, image: newPopup.image, popupSettings: newPopup }
         });
     } catch (e) { res.status(500).json({ error: 'Failed to update link' }); }
 }
@@ -1891,9 +1619,7 @@ app.get('/api/search-links', authMiddleware, async (req, res) => {
         const { query } = req.query;
         if (!query) return res.json({ links: [] });
         const searchRegex = new RegExp(query, 'i');
-        const links = await Link.find({
-            $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }]
-        }).limit(20);
+        const links = await Link.find({ $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }] }).limit(20);
         res.json({ links });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1907,12 +1633,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
         link.dashboardId = dashboardId;
         await link.save();
         const lName = link.linkName || link.title || link.name || 'Untitled Link';
-        res.json({
-            success: true, dashboardId,
-            dashboardUrl: '/user-dashboard/' + dashboardId,
-            fullUrl: `${req.protocol}://${req.get('host')}/user-dashboard/${dashboardId}`,
-            linkName: lName, linkId: link.id
-        });
+        res.json({ success: true, dashboardId, dashboardUrl: '/user-dashboard/' + dashboardId, fullUrl: `${req.protocol}://${req.get('host')}/user-dashboard/${dashboardId}`, linkName: lName, linkId: link.id });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -1941,12 +1662,10 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             const yv = getDailyValue(dailyVisitsObj, yesterday);
             const yc = getDailyValue(dailyClaimsObj, yesterday);
 
-            todayV += tv; todayC += tc;
-            yestV += yv; yestC += yc;
+            todayV += tv; todayC += tc; yestV += yv; yestC += yc;
 
             const lRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
             const lRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
-
             rangeV += lRangeVisits; rangeC += lRangeClaims;
 
             return {
@@ -1963,14 +1682,8 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
 
-        const activeWatching = await VisitorActivity.countDocuments({
-            type: 'visit', lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) }
-        }).maxTimeMS(1500).catch(() => 0);
-
-        const activeClaiming = await VisitorActivity.countDocuments({
-            type: 'claim', source: 'video',
-            lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-        }).maxTimeMS(1500).catch(() => 0);
+        const activeWatching = await VisitorActivity.countDocuments({ type: 'visit', lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) } }).maxTimeMS(1500).catch(() => 0);
+        const activeClaiming = await VisitorActivity.countDocuments({ type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } }).maxTimeMS(1500).catch(() => 0);
 
         res.json({
             global: {
@@ -2024,18 +1737,11 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
         let sessions = [];
-        if (Session) {
-            sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
-        }
+        if (Session) sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
         if (!sessions || sessions.length === 0) {
             const { ip, deviceKey, fingerprint } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
-            const currentSession = {
-                _id: new mongoose.Types.ObjectId(),
-                userId: 'admin', deviceKey, fingerprint, ip,
-                deviceName, deviceType, isActive: true,
-                createdAt: new Date(), lastActivity: new Date()
-            };
+            const currentSession = { _id: new mongoose.Types.ObjectId(), userId: 'admin', deviceKey, fingerprint, ip, deviceName, deviceType, isActive: true, createdAt: new Date(), lastActivity: new Date() };
             if (Session) await Session.create(currentSession).catch(() => {});
             sessions = [currentSession];
         }
@@ -2047,11 +1753,8 @@ app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         if (Session) {
             const sid = req.params.id;
-            if (mongoose.Types.ObjectId.isValid(sid)) {
-                await Session.findByIdAndDelete(sid);
-            } else {
-                await Session.deleteOne({ id: sid });
-            }
+            if (mongoose.Types.ObjectId.isValid(sid)) await Session.findByIdAndDelete(sid);
+            else await Session.deleteOne({ id: sid });
         }
         res.json({ success: true, message: 'Session terminated' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -2092,13 +1795,9 @@ app.get('/s/:code', async (req, res) => {
 
     const { ip, userAgent } = getDeviceId(req);
     const { deviceName, deviceType } = getDeviceDetails(req);
-    await ShortLinkClick.create({
-        shortLinkId: link._id, ip, userAgent, deviceName, deviceType,
-        referer: req.headers.referer || null
-    });
+    await ShortLinkClick.create({ shortLinkId: link._id, ip, userAgent, deviceName, deviceType, referer: req.headers.referer || null });
 
     if (link.appOpen && link.appScheme) return res.redirect(link.appScheme);
-
     try {
         const orig = link.originalUrl || '';
         if (orig.includes('/uid') || orig.includes('link=')) {
@@ -2111,7 +1810,6 @@ app.get('/s/:code', async (req, res) => {
             }
         }
     } catch(err) {}
-
     res.redirect(link.originalUrl);
 });
 
@@ -2131,11 +1829,7 @@ app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
 
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     const { originalUrl, title, appOpen, appScheme } = req.body;
-    const link = new ShortLink({
-        code: Math.random().toString(36).substring(2, 8),
-        originalUrl, title: title || 'Untitled',
-        appOpen: !!appScheme, appScheme: appScheme || ''
-    });
+    const link = new ShortLink({ code: Math.random().toString(36).substring(2, 8), originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || '' });
     await link.save();
     res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
 });
@@ -2158,13 +1852,7 @@ app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
         const totalLinks = await ShortLink.countDocuments();
         const activeLinks = await ShortLink.countDocuments({ status: 'active' });
         const totalClicks = await ShortLink.aggregate([{ $group: { _id: null, total: { $sum: '$visits' } } }]);
-        res.json({
-            success: true,
-            stats: {
-                totalLinks, activeLinks,
-                totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0
-            }
-        });
+        res.json({ success: true, stats: { totalLinks, activeLinks, totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0 } });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -2188,14 +1876,7 @@ function sendAppFile(res, ...fileNames) {
 }
 
 function sendUidCheckerFile(res, targetLinkId) {
-    const searchDirs = [
-        path.join(__dirname, 'admin'),
-        path.join(__dirname, 'public'),
-        __dirname,
-        path.join(__dirname, '..'),
-        path.join(__dirname, '..', 'admin'),
-        path.join(__dirname, '..', 'public')
-    ];
+    const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['uid-checker.html', 'uid.html'];
 
     for (const name of fileNames) {
@@ -2241,14 +1922,7 @@ function sendUidCheckerFile(res, targetLinkId) {
 }
 
 function sendVideoLockFile(res, targetLinkId) {
-    const searchDirs = [
-        path.join(__dirname, 'admin'),
-        path.join(__dirname, 'public'),
-        __dirname,
-        path.join(__dirname, '..'),
-        path.join(__dirname, '..', 'admin'),
-        path.join(__dirname, '..', 'public')
-    ];
+    const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['video-lock.html'];
 
     for (const name of fileNames) {
@@ -2283,17 +1957,7 @@ try {
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
-        return res.send(`
-            <!DOCTYPE html><html><head><title>Access Blocked</title>
-            <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
-            .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
-            h1{color:#ef4444;font-size:24px;margin-bottom:10px;}
-            p{color:#94a3b8;font-size:14px;line-height:1.6;}
-            a{color:#38bdf8;text-decoration:none;font-weight:700;display:inline-block;margin-top:14px;}
-            </style></head>
-            <body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device was blocked. Click below to unblock immediately:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>
-        `);
+        return res.send(`<!DOCTYPE html><html><head><title>Access Blocked</title><style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:24px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}a{color:#38bdf8;text-decoration:none;font-weight:700;display:inline-block;margin-top:14px;}</style></head><body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1><p>Your device was blocked. Click below to unblock immediately:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>`);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
@@ -2304,11 +1968,8 @@ app.get('/', async (req, res) => {
         let cleanId = extractCleanId(rawParam);
         if (cleanId) {
             const link = await Link.findOne(getLinkQuery(cleanId)).lean();
-            if (link && isUidCheckDisabled(link.uidChecking)) {
-                return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
-            } else if (link) {
-                return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
-            }
+            if (link && isUidCheckDisabled(link.uidChecking)) return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
+            else if (link) return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
         }
     }
     res.redirect('/admin/secret-gateway');
@@ -2323,9 +1984,6 @@ app.get(['/admin/index.html', '/admin', '/admin/668379d1.html'], (req, res) => {
 
 app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-
     let cleanId = '';
     try {
         let rawParam = (req.query.link || req.query.id || req.query.l || req.query.linkId || req.params.id || '').toString().trim();
@@ -2342,7 +2000,6 @@ app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res)
             return res.redirect('/v/' + encodeURIComponent(targetId));
         }
     } catch(err) {}
-
     sendUidCheckerFile(res, cleanId);
 });
 
@@ -2355,6 +2012,14 @@ app.get('/v/:id', async (req, res) => {
 app.get(['/user-dashboard', '/user-dashboard/:id?'], (req, res) => sendAppFile(res, 'user-dashboard.html'));
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
+
+// 🛡️ Global error handlers
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Rejection:', reason);
+});
 
 setInterval(async () => {
     try {
