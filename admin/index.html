@@ -8,52 +8,15 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- 🛡️ SHORTCUT GUARDS -->
     <script>
         (function() {
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
-            }, true);
-
+            document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
             window.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || e.keyCode === 123) {
-                    e.preventDefault();
-                    return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
-                    e.preventDefault();
-                    return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && ['U','S'].includes(e.key.toUpperCase())) {
-                    e.preventDefault();
-                    return false;
-                }
+                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && ['U','S'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
             }, true);
         })();
-    </script>
-
-    <!-- 🛡️ CSRF TOKEN MANAGEMENT -->
-    <script>
-        let __csrfToken = null;
-        
-        async function fetchCsrfToken() {
-            try {
-                const res = await fetch('/api/csrf-token', { credentials: 'include' });
-                const data = await res.json();
-                if (data.csrfToken) {
-                    __csrfToken = data.csrfToken;
-                }
-            } catch(e) {}
-        }
-        
-        // Fetch CSRF token on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fetchCsrfToken);
-        } else {
-            fetchCsrfToken();
-        }
-        window.addEventListener('load', fetchCsrfToken);
     </script>
 
     <style>
@@ -75,7 +38,6 @@
 
         .admin-container { max-width: 1400px; margin: 0 auto; position: relative; }
 
-        /* Top Header */
         .header {
             background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius);
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
@@ -93,7 +55,6 @@
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        /* ☰ Hamburger Button */
         .btn-hamburger {
             width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border);
             border-radius: 10px; display: flex; flex-direction: column; justify-content: center;
@@ -102,7 +63,6 @@
         .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
         .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text); border-radius: 3px; }
 
-        /* Top Horizontal Nav Bar */
         .top-nav-bar {
             display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px;
             background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
@@ -117,7 +77,6 @@
         .top-nav-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
         .top-nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
 
-        /* Sidebar Drawer & Safe Overlay */
         .sidebar-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
             z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
@@ -142,47 +101,23 @@
         .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #fff; }
         .sidebar-btn.active { background: var(--primary); color: #fff; }
 
-        /* 📅 Date Filter Card Style */
-        .date-filter-card {
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;
-        }
+        .date-filter-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
         .date-filter-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .btn-filter-pill {
-            padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
-            background: #090a0f; color: var(--text-light); font-size: 12px; font-weight: 700;
-            cursor: pointer; transition: 0.2s;
-        }
+        .btn-filter-pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: #090a0f; color: var(--text-light); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-filter-pill:hover { border-color: var(--primary); color: #fff; }
-        .btn-filter-pill.active {
-            background: var(--primary); border-color: var(--primary); color: #fff;
-            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
-        }
-        .custom-range-inputs {
-            display: none; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding-top: 10px; border-top: 1px dashed var(--border);
-        }
-        .date-input-field {
-            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-            background: #090a0f; color: #fff; font-size: 13px; outline: none;
-        }
+        .btn-filter-pill.active { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .custom-range-inputs { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px dashed var(--border); }
+        .date-input-field { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #090a0f; color: #fff; font-size: 13px; outline: none; }
         .date-input-field:focus { border-color: var(--primary); }
 
-        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
         .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
         .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; font-weight: 600; }
 
-        .live-visitors {
-            background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px;
-            margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success);
-        }
-        .live-visitors .lv-title {
-            font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
+        .live-visitors { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; border: 1px solid var(--border); border-left: 4px solid var(--success); }
+        .live-visitors .lv-title { font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .live-visitors .lv-title .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.5s infinite; }
         .live-visitors .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
         .live-visitors .lv-item { background: #090a0f; border-radius: 10px; padding: 12px 14px; text-align: center; border: 1px solid var(--border); }
@@ -196,10 +131,7 @@
 
         .card { background: var(--card-bg); padding: 22px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border); }
         .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-        .card input, .card select, .card textarea {
-            width: 100%; padding: 11px 14px; margin: 6px 0; border: 1px solid var(--border);
-            border-radius: 10px; font-size: 13px; background: #090a0f; color: var(--text); outline: none; transition: 0.2s;
-        }
+        .card input, .card select, .card textarea { width: 100%; padding: 11px 14px; margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; background: #090a0f; color: var(--text); outline: none; transition: 0.2s; }
         .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -214,11 +146,7 @@
         .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
         .btn-sm { padding: 7px 14px; font-size: 11.5px; border-radius: 8px; width: auto; }
 
-        .link-item {
-            background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary);
-            border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s;
-        }
+        .link-item { background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s; }
         .link-item .name { font-weight: 700; font-size: 14px; }
         .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
@@ -231,10 +159,7 @@
         .search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
 
-        .share-box {
-            background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--primary);
-            border-radius: 12px; padding: 14px; margin-bottom: 20px;
-        }
+        .share-box { background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--primary); border-radius: 12px; padding: 14px; margin-bottom: 20px; }
         .share-box .share-title { font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px; }
         .share-box .box-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .share-box input { flex: 1; min-width: 200px; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; }
@@ -243,35 +168,22 @@
         .image-preview.show { display: block; }
         .image-preview img { width: 100%; max-height: 150px; object-fit: cover; display: block; }
 
-        .device-card-item {
-            background: #090a0f; border: 1px solid var(--border); border-radius: 12px;
-            padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between;
-            align-items: center; flex-wrap: wrap; gap: 10px;
-        }
+        .device-card-item { background: #090a0f; border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .device-card-item.blocked { border-color: rgba(239, 68, 68, 0.35); border-left: 4px solid var(--danger); }
         .device-card-item.active-dev { border-color: rgba(34, 197, 94, 0.35); border-left: 4px solid var(--success); }
         .device-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
         .device-meta { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
 
-        .edit-modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;
-        }
+        .edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 99999; justify-content: center; align-items: center; padding: 20px; }
         .edit-modal.show { display: flex; }
-        .edit-modal .modal-content {
-            background: var(--card-bg); border-radius: 20px; padding: 26px; max-width: 680px; width: 100%;
-            border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease;
-        }
+        .edit-modal .modal-content { background: var(--card-bg); border-radius: 20px; padding: 26px; max-width: 680px; width: 100%; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; animation: fadeInUp 0.3s ease; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 12px; width: 100%; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
         .form-group input, .form-group select { width: 100%; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
         .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
         @media (max-width: 650px) { .form-row-2 { grid-template-columns: 1fr; } }
 
-        .preview-box-16-9 {
-            width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f;
-            border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 8px auto 0;
-        }
+        .preview-box-16-9 { width: 100%; max-width: 340px; aspect-ratio: 16 / 9; border-radius: 12px; background: #090a0f; border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; margin: 8px auto 0; }
         .preview-box-16-9 img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
         .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
@@ -281,10 +193,7 @@
         .switch input:checked + span { background: var(--primary); }
         .switch input:checked + span:before { transform: translateX(20px); }
 
-        .toast {
-            position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease;
-        }
+        .toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px; color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease; }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
@@ -301,7 +210,6 @@
     </style>
 </head>
 <body>
-    <!-- Slide-out Sidebar Overlay & Drawer (☰) -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -309,27 +217,13 @@
             <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
         </div>
         <div class="sidebar-menu">
-            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
-                <span>📊</span> Dashboard
-            </button>
-            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
-                <span>🔗</span> Links Manager
-            </button>
-            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
-                <span>➕</span> Create Link
-            </button>
-            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
-                <span>👥</span> Manage Users
-            </button>
-            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
-                <span>🔄</span> Users & Renewal
-            </button>
-            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
-                <span>🔗</span> Short Link
-            </button>
-            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
-                <span>⚙️</span> Settings
-            </button>
+            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')"><span>📊</span> Dashboard</button>
+            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')"><span>🔗</span> Links Manager</button>
+            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')"><span>➕</span> Create Link</button>
+            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')"><span>👥</span> Manage Users</button>
+            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')"><span>🔄</span> Users & Renewal</button>
+            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')"><span>🔗</span> Short Link</button>
+            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')"><span>⚙️</span> Settings</button>
         </div>
         <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:auto;">
             <button class="btn btn-danger btn-sm" style="width:100%;" onclick="logout()">🚪 Logout</button>
@@ -337,13 +231,10 @@
     </aside>
 
     <div class="admin-container">
-        <!-- Header -->
         <header class="header">
             <div class="header-left">
                 <button class="btn-hamburger" id="hamburgerBtn" onclick="toggleSidebar(true)" title="Open Menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <span></span><span></span><span></span>
                 </button>
                 <h1>⚡ SOMU ADMIN</h1>
             </div>
@@ -357,32 +248,16 @@
             </div>
         </header>
 
-        <!-- TOP HORIZONTAL NAVIGATION -->
         <nav class="top-nav-bar" id="topNavBar">
-            <button class="top-nav-btn active" id="topnav-dashboard" onclick="showSection('dashboard')">
-                <span>📊</span> Dashboard
-            </button>
-            <button class="top-nav-btn" id="topnav-links" onclick="showSection('links')">
-                <span>🔗</span> Links Manager
-            </button>
-            <button class="top-nav-btn" id="topnav-create" onclick="showSection('create')">
-                <span>➕</span> Create Link
-            </button>
-            <button class="top-nav-btn" id="topnav-users" onclick="showSection('users')">
-                <span>👥</span> Manage Users
-            </button>
-            <button class="top-nav-btn" id="topnav-renewals" onclick="showSection('renewals')">
-                <span>🔄</span> Users & Renewal
-            </button>
-            <button class="top-nav-btn" id="topnav-shortener" onclick="showSection('shortener')">
-                <span>🔗</span> Short Link
-            </button>
-            <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')">
-                <span>⚙️</span> Settings
-            </button>
+            <button class="top-nav-btn active" id="topnav-dashboard" onclick="showSection('dashboard')"><span>📊</span> Dashboard</button>
+            <button class="top-nav-btn" id="topnav-links" onclick="showSection('links')"><span>🔗</span> Links Manager</button>
+            <button class="top-nav-btn" id="topnav-create" onclick="showSection('create')"><span>➕</span> Create Link</button>
+            <button class="top-nav-btn" id="topnav-users" onclick="showSection('users')"><span>👥</span> Manage Users</button>
+            <button class="top-nav-btn" id="topnav-renewals" onclick="showSection('renewals')"><span>🔄</span> Users & Renewal</button>
+            <button class="top-nav-btn" id="topnav-shortener" onclick="showSection('shortener')"><span>🔗</span> Short Link</button>
+            <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')"><span>⚙️</span> Settings</button>
         </nav>
 
-        <!-- 1. DASHBOARD -->
         <div class="section active" id="sec-dashboard">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
@@ -393,7 +268,6 @@
                 <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Share this URL with clients to allow them to register, view link analytics, and pay renewals.</div>
             </div>
 
-            <!-- 📅 DATE FILTER CARD -->
             <div class="date-filter-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div class="date-filter-buttons">
@@ -407,7 +281,6 @@
                     </div>
                     <span id="activeFilterLabel" style="font-size:11.5px; color:#38bdf8; font-weight:700;">Showing: All Time Overview</span>
                 </div>
-
                 <div class="custom-range-inputs" id="customRangeBox">
                     <span style="font-size:12px; color:var(--text-light);">From:</span>
                     <input type="date" id="adminStartDate" class="date-input-field">
@@ -417,7 +290,6 @@
                 </div>
             </div>
 
-            <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
                 <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Active Links</div></div>
@@ -453,7 +325,6 @@
             </div>
         </div>
 
-        <!-- 2. LINKS MANAGER -->
         <div class="section" id="sec-links">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -471,56 +342,33 @@
             </div>
         </div>
 
-        <!-- 3. CREATE LINK -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
-                
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">
-                        👤 Client Name / User Name:
-                    </label>
+                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">👤 Client Name / User Name:</label>
                     <input type="text" id="cCampaignName" placeholder="Enter user name (e.g. Rahul Sharma, John Doe...)" style="margin-bottom:8px;">
-
-                    <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:4px;">
-                        Or Assign to Registered User (Optional):
-                    </label>
+                    <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Or Assign to Registered User (Optional):</label>
                     <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
                         <option value="">-- Standalone Link (No User Assigned) --</option>
                     </select>
-
                     <div id="selectedUserBadge" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:12.5px;color:#fff;align-items:center;justify-content:space-between;">
                         <span>Selected User: <b id="selectedUserName" style="color:var(--primary);">None</b> (<span id="selectedUserMeta" style="color:var(--text-light);"></span>)</span>
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
                     </div>
-
                     <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
-                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">
-                            🏷️ Enter Link Name (Custom Label):
-                        </label>
+                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🏷️ Enter Link Name (Custom Label):</label>
                         <input type="text" id="cLinkName" placeholder="Enter link name..." style="margin-bottom:4px;">
                     </div>
                 </div>
 
                 <div class="grid-2">
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Video URL:</label>
-                        <input type="text" id="cVideo" placeholder="Video URL" value="">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Claim Destination URL:</label>
-                        <input type="text" id="cClaim" placeholder="Claim Destination URL" value="">
-                    </div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Video URL:</label><input type="text" id="cVideo" placeholder="Video URL" value=""></div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Claim Destination URL:</label><input type="text" id="cClaim" placeholder="Claim Destination URL" value=""></div>
                 </div>
                 <div class="grid-2">
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Button Text:</label>
-                        <input type="text" id="cButtonText" placeholder="Button Text" value="">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Headline:</label>
-                        <input type="text" id="cHeadline" placeholder="Headline" value="">
-                    </div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Button Text:</label><input type="text" id="cButtonText" placeholder="Button Text" value=""></div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Headline:</label><input type="text" id="cHeadline" placeholder="Headline" value=""></div>
                 </div>
 
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
@@ -529,40 +377,23 @@
                             <span>🛡️ UID Checking Status:</span>
                             <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
                         </div>
-                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            🟢 <b>ON</b> (UID screen pehle aayegi)
-                        </div>
+                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">🟢 <b>ON</b> (UID screen pehle aayegi)</div>
                     </div>
-                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
-                        ✅ ON UID CHECKING
-                    </button>
+                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">✅ ON UID CHECKING</button>
                     <input type="hidden" id="cUidChecking" value="true">
                 </div>
 
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
                     <div class="grid-2">
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Popup Title:</label>
-                            <input type="text" id="cPopTitle" placeholder="Popup Title" value="">
-                        </div>
-                        <div>
-                            <label style="font-size:12px;color:var(--text-light);">Popup Button Text:</label>
-                            <input type="text" id="cPopBtn" placeholder="Popup Button Text" value="">
-                        </div>
+                        <div><label style="font-size:12px;color:var(--text-light);">Popup Title:</label><input type="text" id="cPopTitle" placeholder="Popup Title" value=""></div>
+                        <div><label style="font-size:12px;color:var(--text-light);">Popup Button Text:</label><input type="text" id="cPopBtn" placeholder="Popup Button Text" value=""></div>
                     </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Subtitle:</label>
-                        <input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward">
-                    </div>
-                    <div>
-                        <label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9):</label>
-                        <input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)">
-                    </div>
-                    <div class="preview-box-16-9" id="createImgPreviewBox">
-                        <span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>
-                    </div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Popup Subtitle:</label><input type="text" id="cPopSub" placeholder="Popup Subtitle" value="Tap below to unlock your reward"></div>
+                    <div><label style="font-size:12px;color:var(--text-light);">Popup Image URL (16:9):</label><input type="text" id="cPopImg" placeholder="Popup Image URL (16:9 Aspect Ratio)" oninput="updateCreatePopupPreview(this.value)"></div>
+                    <div class="preview-box-16-9" id="createImgPreviewBox"><span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span></div>
                 </div>
+
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
                     <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
@@ -584,30 +415,25 @@
             </div>
         </div>
 
-        <!-- 4. MANAGE USERS -->
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
                     <h3 style="margin:0;padding:0;border:none;">👥 Registered Users Management</h3>
                     <button class="btn btn-sm btn-primary" onclick="loadAllUsers()">🔄 Refresh Users</button>
                 </div>
-
                 <div class="stats-grid" style="margin-bottom:16px;">
                     <div class="stat-card"><div class="number" id="statTotUsers">0</div><div class="label">Total Users</div></div>
                     <div class="stat-card"><div class="number" id="statAppUsers" style="color:var(--success);">0</div><div class="label">Approved Users</div></div>
                     <div class="stat-card"><div class="number" id="statPendUsers" style="color:var(--warning);">0</div><div class="label">Pending Approval</div></div>
                 </div>
-
                 <div class="search-bar">
                     <input type="text" id="searchUsersInput" placeholder="Search user by name, email, or phone..." oninput="filterUsersList()">
                     <span id="usersSearchCount" style="font-size:12px;color:var(--text-light);">Loading users...</span>
                 </div>
-
                 <div id="usersFullList">Loading users...</div>
             </div>
         </div>
 
-        <!-- 5. USERS & RENEWAL -->
         <div class="section" id="sec-renewals">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Portal & Signup Link:</div>
@@ -616,7 +442,6 @@
                     <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
                 </div>
             </div>
-
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
@@ -624,7 +449,6 @@
                 </div>
                 <div id="usersApprovalList">Loading user requests...</div>
             </div>
-
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <h3 style="margin:0;padding:0;border:none;">💳 Pending Renewal & Payment Requests</h3>
@@ -632,7 +456,6 @@
                 </div>
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
-
             <div class="card">
                 <h3>⚙️ Renewal & Payment Settings</h3>
                 <div class="grid-2">
@@ -651,7 +474,6 @@
             </div>
         </div>
 
-        <!-- 6. URL SHORTENER -->
         <div class="section" id="sec-shortener">
             <div class="card">
                 <h3>🔗 URL Shortener</h3>
@@ -676,7 +498,6 @@
             </div>
         </div>
 
-        <!-- 7. SETTINGS & DEVICES -->
         <div class="section" id="sec-settings">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -687,18 +508,15 @@
                         <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">🔄 Refresh</button>
                     </div>
                 </div>
-
                 <div id="deviceViewBlocked">
                     <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Devices that entered wrong passcodes multiple times are blocked here. Click Unblock to restore access.</p>
                     <div id="deviceList">Loading blocked devices...</div>
                 </div>
-
                 <div id="deviceViewActive" style="display:none;">
                     <p style="font-size:12px;color:var(--text-light);margin-bottom:14px;">All devices currently logged in to this Admin Panel. You can view login history, block them permanently, or terminate their sessions.</p>
                     <div id="activeDeviceList">Loading active logged-in devices...</div>
                 </div>
             </div>
-
             <div class="card">
                 <h3>🔐 Change Admin Passcode</h3>
                 <div class="grid-2">
@@ -707,7 +525,6 @@
                 </div>
                 <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">Update Passcode</button>
             </div>
-
             <div class="card">
                 <h3>📱 Contact & OTP Settings</h3>
                 <div class="grid-2">
@@ -716,13 +533,10 @@
                 </div>
                 <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">💾 Save Contact</button>
             </div>
-
             <div class="card">
                 <h3>🖼️ UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
-                <div class="image-preview" id="bgImagePreview">
-                    <img id="bgPreviewImg" alt="Preview">
-                </div>
+                <div class="image-preview" id="bgImagePreview"><img id="bgPreviewImg" alt="Preview"></div>
                 <div style="display:flex;gap:8px;margin-top:8px;">
                     <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
                     <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
@@ -731,7 +545,6 @@
         </div>
     </div>
 
-    <!-- ✏️ EDIT MODAL -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -749,53 +562,48 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ==================== GLOBAL STATE ====================
         let allLinks = [];
         let allUsers = [];
         let editingLinkId = null;
         let selectedExpiry = null;
         let currentDeviceTab = 'blocked';
-
         let createUidChecking = true;
         let editUidChecking = true;
-
-        // 📅 Active Date Filter State
         let activeAdminFilter = 'all';
         let customAdminStart = '';
         let customAdminEnd = '';
+        let __csrfToken = null;
 
+        // ==================== SAFE INIT (No top-level errors) ====================
         function getCookie(name) {
-            const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-            return match ? decodeURIComponent(match[3]) : null;
+            try {
+                const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+                return match ? decodeURIComponent(match[3]) : null;
+            } catch(e) { return null; }
         }
 
-        // 🛡️ SECURE fetchWithAuth with CSRF + JWT
+        // 🛡️ SAFE CSRF token fetch (never throws)
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/csrf-token', { credentials: 'include' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.csrfToken) __csrfToken = data.csrfToken;
+            } catch(e) { /* silent */ }
+        }
+
+        // 🛡️ SAFE fetchWithAuth (never crashes on error)
         async function fetchWithAuth(url, options = {}) {
             options.credentials = 'include';
             options.headers = options.headers || {};
             
             const method = (options.method || 'GET').toUpperCase();
             
-            // 🛡️ Add CSRF token for state-changing requests
             if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
                 if (!__csrfToken) await fetchCsrfToken();
                 if (__csrfToken) {
-                    if (typeof options.headers.set === 'function') {
-                        options.headers.set('X-CSRF-Token', __csrfToken);
-                    } else {
-                        options.headers['X-CSRF-Token'] = __csrfToken;
-                    }
-                }
-            }
-            
-            // JWT token from cookie (httpOnly now, so we can't read it from JS — that's OK, cookie will be sent automatically)
-            const token = getCookie('adminToken') || localStorage.getItem('adminToken');
-            if (token) {
-                if (typeof options.headers.set === 'function') {
-                    options.headers.set('Authorization', 'Bearer ' + token);
-                    options.headers.set('X-Admin-Token', token);
-                } else {
-                    options.headers['Authorization'] = 'Bearer ' + token;
-                    options.headers['X-Admin-Token'] = token;
+                    options.headers['X-CSRF-Token'] = __csrfToken;
                 }
             }
             
@@ -803,8 +611,8 @@
                 const res = await fetch(url, options);
                 if (res.status === 401) {
                     window.location.href = '/admin/login.html';
+                    return res;
                 }
-                // 🛡️ If CSRF fails (403), refresh token and retry once
                 if (res.status === 403) {
                     await fetchCsrfToken();
                 }
@@ -815,46 +623,48 @@
         }
 
         function showToast(msg, type = 'info') {
-            let t = document.getElementById('toast');
-            if (!t) {
-                t = document.createElement('div');
-                t.id = 'toast';
-                document.body.appendChild(t);
-            }
-            t.textContent = msg;
-            t.className = `toast ${type} show`;
-            setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
+            try {
+                let t = document.getElementById('toast');
+                if (!t) {
+                    t = document.createElement('div');
+                    t.id = 'toast';
+                    document.body.appendChild(t);
+                }
+                t.textContent = msg;
+                t.className = `toast ${type} show`;
+                setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
+            } catch(e) {}
         }
 
         function copyText(text, successMsg = 'Copied to clipboard!') {
             if (!text) return;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text)
-                    .then(() => showToast('✅ ' + successMsg, 'success'))
-                    .catch(() => fallbackCopy(text, successMsg));
-            } else {
-                fallbackCopy(text, successMsg);
-            }
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text)
+                        .then(() => showToast('✅ ' + successMsg, 'success'))
+                        .catch(() => fallbackCopy(text, successMsg));
+                } else {
+                    fallbackCopy(text, successMsg);
+                }
+            } catch(e) { fallbackCopy(text, successMsg); }
         }
 
         function fallbackCopy(text, successMsg) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.top = '0';
-            ta.style.left = '0';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.focus();
-            ta.select();
             try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.top = '0';
+                ta.style.left = '0';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
                 const ok = document.execCommand('copy');
                 if (ok) showToast('✅ ' + successMsg, 'success');
                 else prompt('Copy text manually:', text);
-            } catch(e) {
-                prompt('Copy text manually:', text);
-            }
-            document.body.removeChild(ta);
+                document.body.removeChild(ta);
+            } catch(e) {}
         }
 
         function copyPortalUrl() {
@@ -864,163 +674,165 @@
 
         function escapeHTML(str) {
             if (!str && str !== 0) return '';
-            const div = document.createElement('div');
-            div.textContent = String(str);
-            return div.innerHTML;
+            try {
+                const div = document.createElement('div');
+                div.textContent = String(str);
+                return div.innerHTML;
+            } catch(e) { return ''; }
         }
 
         function toggleSidebar(open) {
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            if (!sb || !ov) return;
-            if (open) {
-                sb.classList.add('show');
-                ov.classList.add('show');
-            } else {
-                sb.classList.remove('show');
-                ov.classList.remove('show');
-            }
+            try {
+                const sb = document.getElementById('sidebar');
+                const ov = document.getElementById('sidebarOverlay');
+                if (!sb || !ov) return;
+                if (open) { sb.classList.add('show'); ov.classList.add('show'); }
+                else { sb.classList.remove('show'); ov.classList.remove('show'); }
+            } catch(e) {}
         }
 
         function showSection(id) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active'));
-
-            const target = document.getElementById('sec-' + id);
-            if (target) {
-                target.classList.add('active');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-
-            const sBtn = document.getElementById('btn-nav-' + id);
-            if (sBtn) sBtn.classList.add('active');
-
-            const tBtn = document.getElementById('topnav-' + id);
-            if (tBtn) tBtn.classList.add('active');
-
-            toggleSidebar(false);
-
             try {
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active'));
+
+                const target = document.getElementById('sec-' + id);
+                if (target) {
+                    target.classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                const sBtn = document.getElementById('btn-nav-' + id);
+                if (sBtn) sBtn.classList.add('active');
+                const tBtn = document.getElementById('topnav-' + id);
+                if (tBtn) tBtn.classList.add('active');
+
+                toggleSidebar(false);
+
                 if (id === 'links') loadLinks();
                 if (id === 'users') loadAllUsers();
                 if (id === 'create') loadCreateUserDropdown();
                 if (id === 'renewals') loadRenewalSystem();
                 if (id === 'shortener') loadShortLinks();
                 if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
-            } catch(e) {}
+            } catch(e) { console.error('showSection error:', e); }
         }
 
         function updateCreatePopupPreview(url) {
-            const box = document.getElementById('createImgPreviewBox');
-            if (!box) return;
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            try {
+                const box = document.getElementById('createImgPreviewBox');
+                if (!box) return;
+                box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            } catch(e) {}
         }
 
         function previewBackgroundInput(url) {
-            const previewBox = document.getElementById('bgImagePreview');
-            const img = document.getElementById('bgPreviewImg');
-            if (!previewBox || !img) return;
-            if (url && url.startsWith('http')) {
-                img.src = url;
-                previewBox.classList.add('show');
-            } else {
-                previewBox.classList.remove('show');
-            }
+            try {
+                const previewBox = document.getElementById('bgImagePreview');
+                const img = document.getElementById('bgPreviewImg');
+                if (!previewBox || !img) return;
+                if (url && url.startsWith('http')) {
+                    img.src = url;
+                    previewBox.classList.add('show');
+                } else {
+                    previewBox.classList.remove('show');
+                }
+            } catch(e) {}
         }
 
         function toggleCreateUidChecking() {
-            createUidChecking = !createUidChecking;
-            const badge = document.getElementById('createUidBadge');
-            const desc = document.getElementById('createUidDesc');
-            const btn = document.getElementById('btnToggleCreateUid');
-            const hidden = document.getElementById('cUidChecking');
-
-            if (createUidChecking) {
-                if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
-                if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
-                if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
-                if (hidden) hidden.value = 'true';
-            } else {
-                if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
-                if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
-                if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
-                if (hidden) hidden.value = 'false';
-            }
+            try {
+                createUidChecking = !createUidChecking;
+                const badge = document.getElementById('createUidBadge');
+                const desc = document.getElementById('createUidDesc');
+                const btn = document.getElementById('btnToggleCreateUid');
+                const hidden = document.getElementById('cUidChecking');
+                if (createUidChecking) {
+                    if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
+                    if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
+                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+                    if (hidden) hidden.value = 'true';
+                } else {
+                    if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
+                    if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
+                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
+                    if (hidden) hidden.value = 'false';
+                }
+            } catch(e) {}
         }
 
         function toggleEditUidChecking() {
-            editUidChecking = !editUidChecking;
-            const badge = document.getElementById('editUidBadge');
-            const desc = document.getElementById('editUidDesc');
-            const btn = document.getElementById('btnToggleEditUid');
-
-            if (editUidChecking) {
-                if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
-                if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
-                if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
-            } else {
-                if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
-                if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
-                if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
-            }
+            try {
+                editUidChecking = !editUidChecking;
+                const badge = document.getElementById('editUidBadge');
+                const desc = document.getElementById('editUidDesc');
+                const btn = document.getElementById('btnToggleEditUid');
+                if (editUidChecking) {
+                    if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
+                    if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
+                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+                } else {
+                    if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
+                    if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
+                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
+                }
+            } catch(e) {}
         }
 
-        // ==================== 📅 DATE FILTER CONTROLLERS ====================
         function setAdminDateFilter(filterType, btn) {
-            document.querySelectorAll('.btn-filter-pill').forEach(p => p.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-            
-            document.getElementById('customRangeBox').style.display = 'none';
-            activeAdminFilter = filterType;
-            customAdminStart = '';
-            customAdminEnd = '';
-
-            const labelEl = document.getElementById('activeFilterLabel');
-            if (filterType === 'all') labelEl.textContent = 'Showing: All Time Overview';
-            else if (filterType === 'today') labelEl.textContent = 'Showing: Today\'s Filtered Data';
-            else if (filterType === 'yesterday') labelEl.textContent = 'Showing: Yesterday\'s Filtered Data';
-            else if (filterType === '7days') labelEl.textContent = 'Showing: Last 7 Days Data';
-            else if (filterType === '30days') labelEl.textContent = 'Showing: Last 30 Days Data';
-
-            loadStats();
+            try {
+                document.querySelectorAll('.btn-filter-pill').forEach(p => p.classList.remove('active'));
+                if (btn) btn.classList.add('active');
+                const box = document.getElementById('customRangeBox');
+                if (box) box.style.display = 'none';
+                activeAdminFilter = filterType;
+                customAdminStart = '';
+                customAdminEnd = '';
+                const labelEl = document.getElementById('activeFilterLabel');
+                if (labelEl) {
+                    if (filterType === 'all') labelEl.textContent = 'Showing: All Time Overview';
+                    else if (filterType === 'today') labelEl.textContent = "Showing: Today's Filtered Data";
+                    else if (filterType === 'yesterday') labelEl.textContent = "Showing: Yesterday's Filtered Data";
+                    else if (filterType === '7days') labelEl.textContent = 'Showing: Last 7 Days Data';
+                    else if (filterType === '30days') labelEl.textContent = 'Showing: Last 30 Days Data';
+                }
+                loadStats();
+            } catch(e) {}
         }
 
         function toggleCustomRange(btn) {
-            document.querySelectorAll('.btn-filter-pill').forEach(p => p.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-
-            const box = document.getElementById('customRangeBox');
-            const isOpen = box.style.display === 'flex';
-            box.style.display = isOpen ? 'none' : 'flex';
-
-            if (!isOpen) {
-                const todayStr = new Date().toISOString().split('T')[0];
-                if (!document.getElementById('adminStartDate').value) document.getElementById('adminStartDate').value = todayStr;
-                if (!document.getElementById('adminEndDate').value) document.getElementById('adminEndDate').value = todayStr;
-            }
+            try {
+                document.querySelectorAll('.btn-filter-pill').forEach(p => p.classList.remove('active'));
+                if (btn) btn.classList.add('active');
+                const box = document.getElementById('customRangeBox');
+                if (!box) return;
+                const isOpen = box.style.display === 'flex';
+                box.style.display = isOpen ? 'none' : 'flex';
+                if (!isOpen) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const s = document.getElementById('adminStartDate');
+                    const e = document.getElementById('adminEndDate');
+                    if (s && !s.value) s.value = todayStr;
+                    if (e && !e.value) e.value = todayStr;
+                }
+            } catch(e) {}
         }
 
         function applyCustomDateFilter() {
-            const s = document.getElementById('adminStartDate').value;
-            const e = document.getElementById('adminEndDate').value;
-
-            if (!s || !e) {
-                return showToast('Please select both Start Date and End Date!', 'error');
-            }
-            if (s > e) {
-                return showToast('Start Date cannot be greater than End Date!', 'error');
-            }
-
-            activeAdminFilter = 'custom';
-            customAdminStart = s;
-            customAdminEnd = e;
-
-            document.getElementById('activeFilterLabel').textContent = `Showing: Range (${s} to ${e})`;
-            loadStats();
+            try {
+                const s = document.getElementById('adminStartDate')?.value;
+                const e = document.getElementById('adminEndDate')?.value;
+                if (!s || !e) return showToast('Please select both Start and End dates!', 'error');
+                if (s > e) return showToast('Start Date cannot be greater than End Date!', 'error');
+                activeAdminFilter = 'custom';
+                customAdminStart = s;
+                customAdminEnd = e;
+                const l = document.getElementById('activeFilterLabel');
+                if (l) l.textContent = `Showing: Range (${s} to ${e})`;
+                loadStats();
+            } catch(e) {}
         }
 
-        // ==================== 📊 REAL-TIME LIVELY STATS ====================
         let isStatsLoading = false;
         async function loadStats() {
             if (isStatsLoading) return;
@@ -1030,44 +842,34 @@
                 if (activeAdminFilter === 'custom' && customAdminStart && customAdminEnd) {
                     query += `&startDate=${encodeURIComponent(customAdminStart)}&endDate=${encodeURIComponent(customAdminEnd)}`;
                 }
-
                 const res = await fetchWithAuth(`/api/all-stats?${query}`);
                 if (res && res.ok) {
                     const data = await res.json();
                     if (data && data.global) {
                         const isFiltered = activeAdminFilter !== 'all';
-                        
                         const displayV = isFiltered ? (data.global.rangeVisitors ?? data.global.todayVisitors) : data.global.totalVisitors;
                         const displayC = isFiltered ? (data.global.rangeClaims ?? data.global.todayClaims) : data.global.totalClaims;
-
-                        document.getElementById('totVisits').textContent = displayV || 0;
-                        document.getElementById('totClaims').textContent = displayC || 0;
-                        document.getElementById('activeLive').textContent = data.global.activeNow || 0;
-
-                        document.getElementById('lblVisits').textContent = isFiltered ? 'Filtered Visits' : 'Total Visits';
-                        document.getElementById('lblClaims').textContent = isFiltered ? 'Filtered Claims (Video)' : 'Total Claims (Video)';
-                        
-                        document.getElementById('liveLifetimeVisits').textContent = data.global.totalVisitors || 0;
-                        document.getElementById('liveLifetimeClaims').textContent = data.global.totalClaims || 0;
-                        document.getElementById('liveTodayVisits').textContent = data.global.todayVisitors || 0;
-                        document.getElementById('liveTodayClaims').textContent = data.global.todayClaims || 0;
-                        document.getElementById('liveActiveVisits').textContent = data.global.activeNow || 0;
-                        document.getElementById('liveActiveClaims').textContent = data.global.activeClaims || 0;
-
-                        const now = new Date();
-                        document.getElementById('lastRefreshTime').textContent = `Lively: ${now.toLocaleTimeString()}`;
+                        const tv = document.getElementById('totVisits'); if (tv) tv.textContent = displayV || 0;
+                        const tc = document.getElementById('totClaims'); if (tc) tc.textContent = displayC || 0;
+                        const al = document.getElementById('activeLive'); if (al) al.textContent = data.global.activeNow || 0;
+                        const lv = document.getElementById('lblVisits'); if (lv) lv.textContent = isFiltered ? 'Filtered Visits' : 'Total Visits';
+                        const lc = document.getElementById('lblClaims'); if (lc) lc.textContent = isFiltered ? 'Filtered Claims (Video)' : 'Total Claims (Video)';
+                        const llv = document.getElementById('liveLifetimeVisits'); if (llv) llv.textContent = data.global.totalVisitors || 0;
+                        const llc = document.getElementById('liveLifetimeClaims'); if (llc) llc.textContent = data.global.totalClaims || 0;
+                        const ltv = document.getElementById('liveTodayVisits'); if (ltv) ltv.textContent = data.global.todayVisitors || 0;
+                        const ltc = document.getElementById('liveTodayClaims'); if (ltc) ltc.textContent = data.global.todayClaims || 0;
+                        const lav = document.getElementById('liveActiveVisits'); if (lav) lav.textContent = data.global.activeNow || 0;
+                        const lac = document.getElementById('liveActiveClaims'); if (lac) lac.textContent = data.global.activeClaims || 0;
+                        const lrt = document.getElementById('lastRefreshTime'); if (lrt) lrt.textContent = `Lively: ${new Date().toLocaleTimeString()}`;
                     }
                     if (data && data.links) {
                         allLinks = Array.isArray(data.links) ? data.links : [];
-                        document.getElementById('totLinks').textContent = allLinks.length;
-                        document.getElementById('activeLinks').textContent = allLinks.filter(l => l && l.status === 'active').length;
+                        const tl = document.getElementById('totLinks'); if (tl) tl.textContent = allLinks.length;
+                        const aL = document.getElementById('activeLinks'); if (aL) aL.textContent = allLinks.filter(l => l && l.status === 'active').length;
                         filterLinks();
                     }
                 }
-            } catch(e) {
-            } finally {
-                isStatsLoading = false;
-            }
+            } catch(e) { /* silent */ } finally { isStatsLoading = false; }
         }
 
         async function loadLinks() {
@@ -1077,82 +879,75 @@
         }
 
         function getExpiryBadge(expDate) {
-            if (!expDate) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
-            const exp = new Date(expDate);
-            if (isNaN(exp.getTime())) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
-            const diffTime = exp.getTime() - Date.now();
-            if (diffTime <= 0) return '<span style="color:var(--danger);font-weight:700;">Expired</span>';
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const formattedDate = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const color = daysLeft <= 3 ? 'var(--warning)' : '#38bdf8';
-            return `<span style="color:${color};font-weight:700;">${daysLeft} Days Left (${formattedDate})</span>`;
+            try {
+                if (!expDate) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
+                const exp = new Date(expDate);
+                if (isNaN(exp.getTime())) return '<span style="color:var(--success);font-weight:700;">Lifetime Valid</span>';
+                const diffTime = exp.getTime() - Date.now();
+                if (diffTime <= 0) return '<span style="color:var(--danger);font-weight:700;">Expired</span>';
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const formattedDate = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const color = daysLeft <= 3 ? 'var(--warning)' : '#38bdf8';
+                return `<span style="color:${color};font-weight:700;">${daysLeft} Days Left (${formattedDate})</span>`;
+            } catch(e) { return ''; }
         }
 
         function filterLinks() {
-            const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allLinks.filter(l => l && (
-                (l.name || '').toLowerCase().includes(q) || 
-                (l.linkName || '').toLowerCase().includes(q) || 
-                (l.title || '').toLowerCase().includes(q) || 
-                String(l.id || l._id || '').toLowerCase().includes(q)
-            )) : allLinks;
-
-            const list = document.getElementById('linksList');
-            const countEl = document.getElementById('searchResultsCount');
-
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
-            if (!list) return;
-
-            if (!filtered.length) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No tracking links found.</p>';
-                return;
-            }
-
-            const isFiltered = activeAdminFilter !== 'all';
-
-            list.innerHTML = filtered.map(l => {
-                if (!l) return '';
-                const linkId = l.id || l._id || '1';
-                
-                const visits = isFiltered ? (l.rangeVisits !== undefined ? l.rangeVisits : l.todayVisits || 0) : (l.visits || 0);
-                const claims = isFiltered ? (l.rangeClaims !== undefined ? l.rangeClaims : l.todayClaims || 0) : (l.claims || 0);
-                
-                const status = l.status || 'active';
-                const isUidOn = l.uidChecking !== false;
-                const uidBadge = isUidOn 
-                    ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
-                    : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
-
-                const userName = l.name || l.userName || 'User';
-                const linkName = l.linkName || l.title || 'Link';
-
-                const filterTag = isFiltered ? `<span style="color:#fbbf24;font-size:11px;">[Filtered]</span>` : '';
-
-                return `
-                    <div class="link-item">
-                        <div>
-                            <div class="name" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-                                <span style="color:#a5b4fc;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(userName)} )</span>
-                                <span style="color:#38bdf8;background:rgba(6,182,212,0.14);border:1px solid rgba(6,182,212,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(linkName)} )</span>
+            try {
+                const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
+                const filtered = q ? allLinks.filter(l => l && (
+                    (l.name || '').toLowerCase().includes(q) || 
+                    (l.linkName || '').toLowerCase().includes(q) || 
+                    (l.title || '').toLowerCase().includes(q) || 
+                    String(l.id || l._id || '').toLowerCase().includes(q)
+                )) : allLinks;
+                const list = document.getElementById('linksList');
+                const countEl = document.getElementById('searchResultsCount');
+                if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
+                if (!list) return;
+                if (!filtered.length) {
+                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No tracking links found.</p>';
+                    return;
+                }
+                const isFiltered = activeAdminFilter !== 'all';
+                list.innerHTML = filtered.map(l => {
+                    if (!l) return '';
+                    const linkId = l.id || l._id || '1';
+                    const visits = isFiltered ? (l.rangeVisits !== undefined ? l.rangeVisits : l.todayVisits || 0) : (l.visits || 0);
+                    const claims = isFiltered ? (l.rangeClaims !== undefined ? l.rangeClaims : l.todayClaims || 0) : (l.claims || 0);
+                    const status = l.status || 'active';
+                    const isUidOn = l.uidChecking !== false;
+                    const uidBadge = isUidOn 
+                        ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
+                        : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
+                    const userName = l.name || l.userName || 'User';
+                    const linkName = l.linkName || l.title || 'Link';
+                    const filterTag = isFiltered ? `<span style="color:#fbbf24;font-size:11px;">[Filtered]</span>` : '';
+                    return `
+                        <div class="link-item">
+                            <div>
+                                <div class="name" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                                    <span style="color:#a5b4fc;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(userName)} )</span>
+                                    <span style="color:#38bdf8;background:rgba(6,182,212,0.14);border:1px solid rgba(6,182,212,0.3);padding:2px 9px;border-radius:20px;font-size:13px;font-weight:700;">( ${escapeHTML(linkName)} )</span>
+                                </div>
+                                <div class="details">
+                                    <span>ID: <b>#${escapeHTML(linkId)}</b></span>
+                                    <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
+                                    <span>| Visits: <b>${visits}</b> ${filterTag}</span>
+                                    <span>| Claims: <b style="color:var(--success);">${claims}</b> (Video Only)</span>
+                                    <span>| Status: <span class="status-badge status-${status}">${status.toUpperCase()}</span></span>
+                                    <span>| UID Check: ${uidBadge}</span>
+                                </div>
                             </div>
-
-                            <div class="details">
-                                <span>ID: <b>#${escapeHTML(linkId)}</b></span>
-                                <span>| Expiry: <b>${getExpiryBadge(l.expiryDate)}</b></span>
-                                <span>| Visits: <b>${visits}</b> ${filterTag}</span>
-                                <span>| Claims: <b style="color:var(--success);">${claims}</b> (Video Only)</span>
-                                <span>| Status: <span class="status-badge status-${status}">${status.toUpperCase()}</span></span>
-                                <span>| UID Check: ${uidBadge}</span>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${escapeHTML(linkId)}')">📋 Copy</button>
+                                <button class="btn btn-sm btn-warning" onclick="openEditModal('${escapeHTML(linkId)}')">✏️ Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteLink('${escapeHTML(linkId)}')">🗑️ Delete</button>
                             </div>
                         </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${escapeHTML(linkId)}')">📋 Copy</button>
-                            <button class="btn btn-sm btn-warning" onclick="openEditModal('${escapeHTML(linkId)}')">✏️ Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteLink('${escapeHTML(linkId)}')">🗑️ Delete</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            } catch(e) { console.error('filterLinks error:', e); }
         }
 
         function copyLinkUrl(id) {
@@ -1169,171 +964,132 @@
                     filterLinks();
                     showToast('Link deleted successfully', 'info');
                     loadStats();
-                } else {
-                    showToast('Failed to delete link', 'error');
-                }
-            } catch(e) {
-                showToast('Failed to delete link', 'error');
-            }
+                } else showToast('Failed to delete link', 'error');
+            } catch(e) { showToast('Failed to delete link', 'error'); }
         }
 
         function openEditModal(id) {
-            const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
-            if (!link) return showToast('Link not found', 'error');
-            editingLinkId = id;
-            const popup = link.popupSettings || {};
-            const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
-
-            editUidChecking = (link.uidChecking !== false);
-
-            const b = document.getElementById('editModalBody');
-            b.innerHTML = `
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>👤 User Name (Client)</label>
-                        <input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name">
-                    </div>
-                    <div class="form-group">
-                        <label style="color:#38bdf8;">🏷️ Link Name</label>
-                        <input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name">
-                    </div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
-                    <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
-                    <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select id="eStatus">
-                            <option value="active" ${link.status==='active'?'selected':''}>Active</option>
-                            <option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option>
-                            <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
-                </div>
-
-                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                    <div>
-                        <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                            <span>🛡️ UID Checking Control:</span>
-                            <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">
-                                ${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}
-                            </span>
-                        </div>
-                        <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">
-                            ${editUidChecking 
-                                ? '🟢 <b>ON</b> (UID screen aayegi)' 
-                                : '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)'}
-                        </div>
-                    </div>
-                    <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">
-                        ${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}
-                    </button>
-                </div>
-
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
+            try {
+                const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
+                if (!link) return showToast('Link not found', 'error');
+                editingLinkId = id;
+                const popup = link.popupSettings || {};
+                const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
+                editUidChecking = (link.uidChecking !== false);
+                const b = document.getElementById('editModalBody');
+                b.innerHTML = `
                     <div class="form-row-2">
-                        <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
-                        <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
+                        <div class="form-group"><label>👤 User Name (Client)</label><input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name"></div>
+                        <div class="form-group"><label style="color:#38bdf8;">🏷️ Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
                     </div>
-                    <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                    <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
-                    <div class="preview-box-16-9" id="editPreviewBox">
-                        ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
+                    <div class="form-row-2">
+                        <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
+                        <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
                     </div>
-                </div>
-            `;
-            document.getElementById('editModal').classList.add('show');
+                    <div class="form-row-2">
+                        <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
+                        <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group"><label>Status</label>
+                            <select id="eStatus">
+                                <option value="active" ${link.status==='active'?'selected':''}>Active</option>
+                                <option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option>
+                                <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
+                    </div>
+                    <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <div>
+                            <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                                <span>🛡️ UID Checking Control:</span>
+                                <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}</span>
+                            </div>
+                            <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">${editUidChecking ? '🟢 <b>ON</b> (UID screen aayegi)' : '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)'}</div>
+                        </div>
+                        <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}</button>
+                    </div>
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                        <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
+                        <div class="form-row-2">
+                            <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
+                            <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
+                        </div>
+                        <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
+                        <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
+                        <div class="preview-box-16-9" id="editPreviewBox">
+                            ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('editModal').classList.add('show');
+            } catch(e) { console.error('openEditModal error:', e); }
         }
 
         function updateEditPopupPreview(url) {
-            const box = document.getElementById('editPreviewBox');
-            if (!box) return;
-            box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            try {
+                const box = document.getElementById('editPreviewBox');
+                if (!box) return;
+                box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+            } catch(e) {}
         }
 
         function closeEditModal() {
-            const m = document.getElementById('editModal');
-            if (m) m.classList.remove('show');
-            editingLinkId = null;
+            try {
+                const m = document.getElementById('editModal');
+                if (m) m.classList.remove('show');
+                editingLinkId = null;
+            } catch(e) {}
         }
 
         async function saveLinkEdit() {
-            const name = document.getElementById('eName')?.value.trim();
-            const linkName = document.getElementById('eLinkName')?.value.trim() || 'Link';
-            const video = document.getElementById('eVideo')?.value.trim();
-            const claim = document.getElementById('eClaim')?.value.trim();
-            const buttonText = document.getElementById('eBtnText')?.value.trim();
-            const headline = document.getElementById('eHead')?.value.trim();
-            const status = document.getElementById('eStatus')?.value;
-            const expiryInput = document.getElementById('eExpiry')?.value;
-            const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
-            const uidChecking = editUidChecking;
-            const popupSettings = {
-                title: document.getElementById('ePopTitle')?.value.trim() || '🎁 Claim Your Reward',
-                subtitle: document.getElementById('ePopSub')?.value.trim() || 'Tap below to unlock your reward',
-                buttonText: document.getElementById('ePopBtn')?.value.trim() || 'Claim Now',
-                image: document.getElementById('ePopImg')?.value.trim() || null
-            };
-
             try {
+                const name = document.getElementById('eName')?.value.trim();
+                const linkName = document.getElementById('eLinkName')?.value.trim() || 'Link';
+                const video = document.getElementById('eVideo')?.value.trim();
+                const claim = document.getElementById('eClaim')?.value.trim();
+                const buttonText = document.getElementById('eBtnText')?.value.trim();
+                const headline = document.getElementById('eHead')?.value.trim();
+                const status = document.getElementById('eStatus')?.value;
+                const expiryInput = document.getElementById('eExpiry')?.value;
+                const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
+                const uidChecking = editUidChecking;
+                const popupSettings = {
+                    title: document.getElementById('ePopTitle')?.value.trim() || '🎁 Claim Your Reward',
+                    subtitle: document.getElementById('ePopSub')?.value.trim() || 'Tap below to unlock your reward',
+                    buttonText: document.getElementById('ePopBtn')?.value.trim() || 'Claim Now',
+                    image: document.getElementById('ePopImg')?.value.trim() || null
+                };
                 const res = await fetchWithAuth('/api/links/' + encodeURIComponent(editingLinkId), {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name, 
-                        userName: name,
-                        linkName,
-                        title: linkName,
-                        video, 
-                        claim, 
-                        buttonText, 
-                        headline, 
-                        status, 
-                        expiryDate, 
-                        popupSettings, 
-                        uidChecking
-                    })
+                    body: JSON.stringify({ name, userName: name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking })
                 });
-
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     return showToast('❌ ' + (errData.error || 'Failed to update link'), 'error');
                 }
-
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(editingLinkId));
-                if (link) {
-                    Object.assign(link, { name, userName: name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
-                }
-
+                if (link) Object.assign(link, { name, userName: name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
                 showToast(`✅ Link updated: ( ${name} ) ( ${linkName} )`, 'success');
                 closeEditModal();
                 filterLinks();
-            } catch(e) {
-                showToast('Error saving changes: ' + e.message, 'error');
-            }
+            } catch(e) { showToast('Error saving changes: ' + e.message, 'error'); }
         }
 
         function updateSchedulePreset() {
-            const p = document.getElementById('schedulePreset')?.value;
-            if (p) {
-                const days = parseInt(p, 10);
-                const d = new Date();
-                d.setDate(d.getDate() + days);
-                selectedExpiry = d.toISOString();
-            } else {
-                selectedExpiry = null;
-            }
+            try {
+                const p = document.getElementById('schedulePreset')?.value;
+                if (p) {
+                    const days = parseInt(p, 10);
+                    const d = new Date();
+                    d.setDate(d.getDate() + days);
+                    selectedExpiry = d.toISOString();
+                } else selectedExpiry = null;
+            } catch(e) {}
         }
 
-        // ==================== ➕ CREATE LINK ====================
         async function loadCreateUserDropdown() {
             if (!allUsers.length) {
                 try {
@@ -1348,100 +1104,79 @@
         }
 
         function filterCreateUserList() {
-            const selectEl = document.getElementById('cUserSelect');
-            if (!selectEl) return;
-
-            selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' + 
-                allUsers.map(u => {
-                    const uName = u?.name || 'Unnamed';
-                    return `<option value="${escapeHTML(uName)}">👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`;
-                }).join('');
+            try {
+                const selectEl = document.getElementById('cUserSelect');
+                if (!selectEl) return;
+                selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' + 
+                    allUsers.map(u => {
+                        const uName = u?.name || 'Unnamed';
+                        return `<option value="${escapeHTML(uName)}">👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`;
+                    }).join('');
+            } catch(e) {}
         }
 
         function onUserSelected(userName) {
-            const trimmed = (userName || '').trim();
-            const badge = document.getElementById('selectedUserBadge');
-            const nameInp = document.getElementById('cCampaignName');
-            
-            if (trimmed) {
-                const userObj = allUsers.find(u => (u?.name || '').trim() === trimmed);
-                document.getElementById('selectedUserName').textContent = trimmed;
-                document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone || 'Registered User') : 'User Selected';
-                badge.style.display = 'flex';
-                if (nameInp && !nameInp.value) nameInp.value = trimmed;
-            } else {
-                if (badge) badge.style.display = 'none';
-            }
+            try {
+                const trimmed = (userName || '').trim();
+                const badge = document.getElementById('selectedUserBadge');
+                const nameInp = document.getElementById('cCampaignName');
+                if (trimmed) {
+                    const userObj = allUsers.find(u => (u?.name || '').trim() === trimmed);
+                    document.getElementById('selectedUserName').textContent = trimmed;
+                    document.getElementById('selectedUserMeta').textContent = userObj ? (userObj.email || userObj.phone || 'Registered User') : 'User Selected';
+                    badge.style.display = 'flex';
+                    if (nameInp && !nameInp.value) nameInp.value = trimmed;
+                } else { if (badge) badge.style.display = 'none'; }
+            } catch(e) {}
         }
 
         function clearSelectedUser() {
-            const sel = document.getElementById('cUserSelect');
-            if (sel) sel.value = '';
-            const badge = document.getElementById('selectedUserBadge');
-            if (badge) badge.style.display = 'none';
+            try {
+                const sel = document.getElementById('cUserSelect');
+                if (sel) sel.value = '';
+                const badge = document.getElementById('selectedUserBadge');
+                if (badge) badge.style.display = 'none';
+            } catch(e) {}
         }
 
         async function createLink() {
-            const campaignInput = document.getElementById('cCampaignName')?.value.trim();
-            const selectedUser = document.getElementById('cUserSelect')?.value.trim();
-            const userName = selectedUser || campaignInput;
-            const linkName = document.getElementById('cLinkName')?.value.trim() || 'Link';
-            const video = document.getElementById('cVideo')?.value.trim();
-            const claim = document.getElementById('cClaim')?.value.trim();
-            const headline = document.getElementById('cHeadline')?.value.trim();
-            const buttonText = document.getElementById('cButtonText')?.value.trim();
-            const uidChecking = createUidChecking;
-            const popupSettings = {
-                title: document.getElementById('cPopTitle')?.value.trim() || '🎁 Claim Your Reward',
-                subtitle: document.getElementById('cPopSub')?.value.trim() || 'Tap below to unlock your reward',
-                buttonText: document.getElementById('cPopBtn')?.value.trim() || 'Claim Now',
-                image: document.getElementById('cPopImg')?.value.trim() || null
-            };
-
-            if (!userName) {
-                return showToast('Please enter a Client/User Name or choose a registered user!', 'error');
-            }
-
             try {
+                const campaignInput = document.getElementById('cCampaignName')?.value.trim();
+                const selectedUser = document.getElementById('cUserSelect')?.value.trim();
+                const userName = selectedUser || campaignInput;
+                const linkName = document.getElementById('cLinkName')?.value.trim() || 'Link';
+                const video = document.getElementById('cVideo')?.value.trim();
+                const claim = document.getElementById('cClaim')?.value.trim();
+                const headline = document.getElementById('cHeadline')?.value.trim();
+                const buttonText = document.getElementById('cButtonText')?.value.trim();
+                const uidChecking = createUidChecking;
+                const popupSettings = {
+                    title: document.getElementById('cPopTitle')?.value.trim() || '🎁 Claim Your Reward',
+                    subtitle: document.getElementById('cPopSub')?.value.trim() || 'Tap below to unlock your reward',
+                    buttonText: document.getElementById('cPopBtn')?.value.trim() || 'Claim Now',
+                    image: document.getElementById('cPopImg')?.value.trim() || null
+                };
+                if (!userName) return showToast('Please enter a Client/User Name or choose a registered user!', 'error');
                 const res = await fetchWithAuth('/api/links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name: userName, 
-                        userName: userName,
-                        linkName: linkName,
-                        title: linkName,
-                        url: claim,
-                        claim, 
-                        video, 
-                        headline, 
-                        buttonText, 
-                        uidChecking,
-                        expiryDate: selectedExpiry, 
-                        popupSettings 
-                    })
+                    body: JSON.stringify({ name: userName, userName, linkName, title: linkName, url: claim, claim, video, headline, buttonText, uidChecking, expiryDate: selectedExpiry, popupSettings })
                 });
-
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     return showToast('❌ ' + (errData.error || 'Failed to create link'), 'error');
                 }
-
                 const d = await res.json();
                 const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
-
                 showToast(`✅ Link Created: ( ${userName} ) ( ${linkName} )`, 'success');
                 const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
                 const genBox = document.getElementById('generatedLinkBox');
                 const genInp = document.getElementById('generatedLinkUrl');
                 if (genInp) genInp.value = fullUrl;
                 if (genBox) genBox.style.display = 'block';
-
                 loadLinks();
                 loadStats();
-            } catch(err) {
-                showToast('Failed to create link: ' + err.message, 'error');
-            }
+            } catch(err) { showToast('Failed to create link: ' + err.message, 'error'); }
         }
 
         function copyGeneratedLink() {
@@ -1449,11 +1184,9 @@
             if (inp) copyText(inp.value, 'Generated Link Copied!');
         }
 
-        // ==================== 👥 MANAGE USERS ====================
         async function loadAllUsers() {
             const container = document.getElementById('usersFullList');
-            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users with live unique statistics...</p>';
-
+            if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users...</p>';
             try {
                 const res = await fetchWithAuth('/api/admin/all-users');
                 if (res && res.ok) {
@@ -1466,85 +1199,68 @@
                         allUsers = d2.users || [];
                     }
                 }
-            } catch(e) {
-                allUsers = [];
-            }
-
-            document.getElementById('statTotUsers').textContent = allUsers.length;
-            document.getElementById('statAppUsers').textContent = allUsers.filter(u => u && u.status === 'approved').length;
-            document.getElementById('statPendUsers').textContent = allUsers.filter(u => u && u.status === 'pending').length;
-
+            } catch(e) { allUsers = []; }
+            const st = document.getElementById('statTotUsers'); if (st) st.textContent = allUsers.length;
+            const sa = document.getElementById('statAppUsers'); if (sa) sa.textContent = allUsers.filter(u => u && u.status === 'approved').length;
+            const sp = document.getElementById('statPendUsers'); if (sp) sp.textContent = allUsers.filter(u => u && u.status === 'pending').length;
             filterUsersList();
             loadCreateUserDropdown();
         }
 
         function filterUsersList() {
-            const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
-            const filtered = q ? allUsers.filter(u => u && (
-                (u.name || '').toLowerCase().includes(q) || 
-                (u.email || '').toLowerCase().includes(q) || 
-                (u.phone || '').toLowerCase().includes(q)
-            )) : allUsers;
-
-            const countEl = document.getElementById('usersSearchCount');
-            if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
-
-            const container = document.getElementById('usersFullList');
-            if (!container) return;
-            if (!filtered.length) {
-                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
-                return;
-            }
-
-            container.innerHTML = filtered.map(u => {
-                if (!u) return '';
-                const uid = u._id || u.id || '';
-                const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-                
-                const statusBadge = u.status === 'approved' 
-                    ? '<span class="status-badge status-active">APPROVED</span>' 
-                    : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
-
-                let actionButtons = '';
-                if (u.status === 'pending') {
-                    actionButtons += `
-                        <button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Approve</button>
-                        <button class="btn btn-sm btn-danger" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">❌ Reject</button>
-                    `;
-                } else if (u.status === 'approved') {
-                    actionButtons += `
-                        <button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;box-shadow:0 3px 12px rgba(16,185,129,0.35);" onclick="sendWhatsAppApproval('${escapeHTML(uid)}')">📲 Send Approval</button>
-                        <button class="btn btn-sm btn-warning" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">Revoke</button>
-                    `;
-                } else {
-                    actionButtons += `
-                        <button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Re-Approve</button>
-                    `;
+            try {
+                const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
+                const filtered = q ? allUsers.filter(u => u && (
+                    (u.name || '').toLowerCase().includes(q) || 
+                    (u.email || '').toLowerCase().includes(q) || 
+                    (u.phone || '').toLowerCase().includes(q)
+                )) : allUsers;
+                const countEl = document.getElementById('usersSearchCount');
+                if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
+                const container = document.getElementById('usersFullList');
+                if (!container) return;
+                if (!filtered.length) {
+                    container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
+                    return;
                 }
-                actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove</button>`;
-
-                return `
-                    <div class="link-item">
-                        <div>
-                            <div class="name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                <span>👤 ${escapeHTML(u.name || 'User')}</span>
-                                ${statusBadge}
+                container.innerHTML = filtered.map(u => {
+                    if (!u) return '';
+                    const uid = u._id || u.id || '';
+                    const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                    const statusBadge = u.status === 'approved' 
+                        ? '<span class="status-badge status-active">APPROVED</span>' 
+                        : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+                    let actionButtons = '';
+                    if (u.status === 'pending') {
+                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Approve</button>
+                        <button class="btn btn-sm btn-danger" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">❌ Reject</button>`;
+                    } else if (u.status === 'approved') {
+                        actionButtons += `<button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;" onclick="sendWhatsAppApproval('${escapeHTML(uid)}')">📲 Send Approval</button>
+                        <button class="btn btn-sm btn-warning" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">Revoke</button>`;
+                    } else {
+                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Re-Approve</button>`;
+                    }
+                    actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove</button>`;
+                    return `
+                        <div class="link-item">
+                            <div>
+                                <div class="name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span>👤 ${escapeHTML(u.name || 'User')}</span>${statusBadge}
+                                </div>
+                                <div class="details">
+                                    <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
+                                    <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
+                                    <span>| 🔗 Links: <b style="color:var(--primary);">${u.totalLinks || 0}</b></span>
+                                    <span>| 👁️ Visits: <b style="color:#38bdf8;">${u.totalVisits || 0}</b></span>
+                                    <span>| 🎁 Claims: <b style="color:var(--success);">${u.totalClaims || 0}</b></span>
+                                    <span>| 📅 Joined: <b>${joinedDate}</b></span>
+                                </div>
                             </div>
-                            <div class="details">
-                                <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
-                                <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
-                                <span>| 🔗 Links: <b style="color:var(--primary);">${u.totalLinks || 0}</b></span>
-                                <span>| 👁️ Visits: <b style="color:#38bdf8;">${u.totalVisits || 0}</b> <small style="color:var(--text-light);">(Unique 24h)</small></span>
-                                <span>| 🎁 Claims: <b style="color:var(--success);">${u.totalClaims || 0}</b> <small style="color:var(--text-light);">(Video Only)</small></span>
-                                <span>| 📅 Joined: <b>${joinedDate}</b></span>
-                            </div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${actionButtons}</div>
                         </div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                            ${actionButtons}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            } catch(e) { console.error('filterUsersList error:', e); }
         }
 
         async function approveAndPromptWhatsApp(id) {
@@ -1555,67 +1271,57 @@
                     body: JSON.stringify({ action: 'approved' })
                 });
                 const data = await res.json();
-                showToast('✅ User Approved successfully!', 'success');
+                showToast('✅ User Approved!', 'success');
                 await loadAllUsers();
                 loadRenewalSystem();
-
-                if (data.whatsappUrl) {
-                    if (confirm('User approved! Do you want to open WhatsApp now to send the approval notification and login link?')) {
-                        window.open(data.whatsappUrl, '_blank');
-                    }
+                if (data.whatsappUrl && confirm('User approved! Open WhatsApp to send notification?')) {
+                    window.open(data.whatsappUrl, '_blank');
                 }
-            } catch(e) {
-                showToast('Failed to approve user', 'error');
-            }
+            } catch(e) { showToast('Failed to approve user', 'error'); }
         }
 
         async function sendWhatsAppApproval(id) {
-            const user = allUsers.find(u => String(u._id || u.id) === String(id));
-            if (!user) return showToast('User not found', 'error');
-
-            let waUrl = user.whatsappUrl;
-            if (!waUrl) {
-                try {
+            try {
+                const user = allUsers.find(u => String(u._id || u.id) === String(id));
+                if (!user) return showToast('User not found', 'error');
+                let waUrl = user.whatsappUrl;
+                if (!waUrl) {
                     const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/whatsapp-approval`);
-                    if (res && res.ok) {
-                        const data = await res.json();
-                        waUrl = data.whatsappUrl;
-                    }
-                } catch(e) {}
-            }
-
-            if (!waUrl) {
-                const cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
-                const targetPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-                const loginUrl = window.location.origin + '/user-dashboard';
-                const msg = `🎉 *Congratulations ${user.name}!*\nYour account has been approved.\n\n🔐 *Credentials:*\nEmail: ${user.email}\nPhone: ${user.phone}\n\n🔗 *Login:* ${loginUrl}`;
-                waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
-            }
-
-            window.open(waUrl, '_blank');
-            showToast('Opening WhatsApp with Approval Details...', 'success');
+                    if (res && res.ok) { const data = await res.json(); waUrl = data.whatsappUrl; }
+                }
+                if (waUrl) window.open(waUrl, '_blank');
+                else showToast('WhatsApp URL not available', 'error');
+            } catch(e) { showToast('Failed to open WhatsApp', 'error'); }
         }
 
         async function deleteUser(id, name) {
-            if (!confirm(`Are you sure you want to permanently remove user "${name}"?`)) return;
+            if (!confirm(`Remove user "${name}"? All their links will be disabled.`)) return;
             try {
                 await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
                 allUsers = allUsers.filter(u => u && String(u._id || u.id) !== String(id));
                 filterUsersList();
-                showToast('✅ User removed successfully!', 'success');
+                showToast('✅ User removed!', 'success');
                 loadRenewalSystem();
-            } catch(e) {
-                showToast('Failed to remove user', 'error');
-            }
+            } catch(e) { showToast('Failed to remove user', 'error'); }
         }
 
-        // ==================== 🔄 RENEWAL SYSTEM ====================
+        async function setUserStatus(id, action) {
+            try {
+                await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+                showToast(`User ${action}!`, 'success');
+                loadRenewalSystem();
+                loadAllUsers();
+            } catch(e) { showToast('Failed to update status', 'error'); }
+        }
+
         async function loadRenewalSystem() {
             const portalUrl = window.location.origin + '/user-dashboard';
-            const dInput = document.getElementById('dashUserPortalUrl');
-            const rInput = document.getElementById('renewUserPortalUrl');
-            if (dInput) dInput.value = portalUrl;
-            if (rInput) rInput.value = portalUrl;
+            const dInput = document.getElementById('dashUserPortalUrl'); if (dInput) dInput.value = portalUrl;
+            const rInput = document.getElementById('renewUserPortalUrl'); if (rInput) rInput.value = portalUrl;
 
             try {
                 const uRes = await fetchWithAuth('/api/admin/renewal-users');
@@ -1623,7 +1329,6 @@
                     const uData = await uRes.json();
                     const uList = document.getElementById('usersApprovalList');
                     const pendingUsers = (uData.users || []).filter(u => u && u.status === 'pending');
-
                     if (!pendingUsers.length) {
                         uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user registration requests.</p>';
                     } else {
@@ -1649,7 +1354,6 @@
                     const sData = await sRes.json();
                     const rList = document.getElementById('renewalReqsList');
                     const pendingReqs = (sData.requests || []).filter(r => r && r.status === 'pending');
-
                     if (!pendingReqs.length) {
                         rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
                     } else {
@@ -1666,115 +1370,80 @@
                             </div>
                         `).join('');
                     }
-
                     if (sData.pricing) {
                         const pr = sData.pricing.pricing || sData.pricing || {};
-                        if (pr['7days']) document.getElementById('p7d').value = pr['7days'];
-                        if (pr['15days']) document.getElementById('p15d').value = pr['15days'];
-                        if (pr['30days']) document.getElementById('p30d').value = pr['30days'];
-                        if (pr['90days']) document.getElementById('p90d').value = pr['90days'];
-                        if (pr['1year']) document.getElementById('p1y').value = pr['1year'];
-                        if (document.getElementById('setUpiId')) {
-                            document.getElementById('setUpiId').value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
-                        }
-                        if (document.getElementById('setWaNumber')) {
-                            document.getElementById('setWaNumber').value = sData.pricing.whatsappNumber || '';
-                        }
+                        if (pr['7days']) { const e = document.getElementById('p7d'); if(e) e.value = pr['7days']; }
+                        if (pr['15days']) { const e = document.getElementById('p15d'); if(e) e.value = pr['15days']; }
+                        if (pr['30days']) { const e = document.getElementById('p30d'); if(e) e.value = pr['30days']; }
+                        if (pr['90days']) { const e = document.getElementById('p90d'); if(e) e.value = pr['90days']; }
+                        if (pr['1year']) { const e = document.getElementById('p1y'); if(e) e.value = pr['1year']; }
+                        const si = document.getElementById('setUpiId');
+                        if (si) si.value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
+                        const sw = document.getElementById('setWaNumber');
+                        if (sw) sw.value = sData.pricing.whatsappNumber || '';
                     }
                 }
             } catch(err) {}
         }
 
-        async function setUserStatus(id, action) {
-            try {
-                await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action })
-                });
-                showToast(`User ${action}!`, 'success');
-                loadRenewalSystem();
-                loadAllUsers();
-            } catch(e) {
-                showToast('Failed to update status', 'error');
-            }
-        }
-
         async function approveRenewal(id) {
             try {
-                await fetchWithAuth(`/api/admin/renewal-requests/${encodeURIComponent(id)}/approve`, {
-                    method: 'POST'
-                });
-                showToast('Renewal approved & Link extended!', 'success');
+                await fetchWithAuth(`/api/admin/renewal-requests/${encodeURIComponent(id)}/approve`, { method: 'POST' });
+                showToast('Renewal approved!', 'success');
                 loadRenewalSystem();
                 loadStats();
                 loadLinks();
-            } catch(e) {
-                showToast('Error approving renewal', 'error');
-            }
+            } catch(e) { showToast('Error approving renewal', 'error'); }
         }
 
         async function rejectRenewal(id) {
-            if (!confirm('Are you sure you want to reject this renewal request?')) return;
+            if (!confirm('Reject this renewal request?')) return;
             try {
-                await fetchWithAuth(`/api/renewal/reject/${encodeURIComponent(id)}`, {
-                    method: 'POST'
-                });
-                showToast('Renewal request rejected.', 'info');
+                await fetchWithAuth(`/api/renewal/reject/${encodeURIComponent(id)}`, { method: 'POST' });
+                showToast('Renewal rejected.', 'info');
                 loadRenewalSystem();
-            } catch(e) {
-                showToast('Error rejecting renewal', 'error');
-            }
+            } catch(e) { showToast('Error rejecting renewal', 'error'); }
         }
 
         async function saveRenewalSettings() {
-            const pricing = {
-                '7days': parseInt(document.getElementById('p7d')?.value || 100, 10),
-                '15days': parseInt(document.getElementById('p15d')?.value || 200, 10),
-                '30days': parseInt(document.getElementById('p30d')?.value || 400, 10),
-                '90days': parseInt(document.getElementById('p90d')?.value || 1000, 10),
-                '1year': parseInt(document.getElementById('p1y')?.value || 3000, 10)
-            };
-            const upiId = document.getElementById('setUpiId')?.value.trim();
-            const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
-
             try {
+                const pricing = {
+                    '7days': parseInt(document.getElementById('p7d')?.value || 100, 10),
+                    '15days': parseInt(document.getElementById('p15d')?.value || 200, 10),
+                    '30days': parseInt(document.getElementById('p30d')?.value || 400, 10),
+                    '90days': parseInt(document.getElementById('p90d')?.value || 1000, 10),
+                    '1year': parseInt(document.getElementById('p1y')?.value || 3000, 10)
+                };
+                const upiId = document.getElementById('setUpiId')?.value.trim();
+                const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
                 await fetchWithAuth('/api/admin/renewal-settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
                 });
-                showToast('✅ Renewal settings saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save settings', 'error');
-            }
+                showToast('✅ Renewal settings saved!', 'success');
+            } catch(e) { showToast('Failed to save settings', 'error'); }
         }
 
-        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
         function toggleDeviceTab(tab) {
-            currentDeviceTab = tab;
-            const bBtn = document.getElementById('tabBtnBlocked');
-            const aBtn = document.getElementById('tabBtnActive');
-            const bView = document.getElementById('deviceViewBlocked');
-            const aView = document.getElementById('deviceViewActive');
-
-            if (tab === 'blocked') {
-                bBtn.style.background = 'var(--danger)';
-                bBtn.style.color = '#fff';
-                aBtn.style.background = 'var(--bg)';
-                aBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'block';
-                aView.style.display = 'none';
-                loadBlockedDevices();
-            } else {
-                aBtn.style.background = 'var(--success)';
-                aBtn.style.color = '#fff';
-                bBtn.style.background = 'var(--bg)';
-                bBtn.style.color = 'var(--text-light)';
-                bView.style.display = 'none';
-                aView.style.display = 'block';
-                loadActiveDevices();
-            }
+            try {
+                currentDeviceTab = tab;
+                const bBtn = document.getElementById('tabBtnBlocked');
+                const aBtn = document.getElementById('tabBtnActive');
+                const bView = document.getElementById('deviceViewBlocked');
+                const aView = document.getElementById('deviceViewActive');
+                if (tab === 'blocked') {
+                    bBtn.style.background = 'var(--danger)'; bBtn.style.color = '#fff';
+                    aBtn.style.background = 'var(--bg)'; aBtn.style.color = 'var(--text-light)';
+                    bView.style.display = 'block'; aView.style.display = 'none';
+                    loadBlockedDevices();
+                } else {
+                    aBtn.style.background = 'var(--success)'; aBtn.style.color = '#fff';
+                    bBtn.style.background = 'var(--bg)'; bBtn.style.color = 'var(--text-light)';
+                    bView.style.display = 'none'; aView.style.display = 'block';
+                    loadActiveDevices();
+                }
+            } catch(e) {}
         }
 
         function refreshDeviceTabs() {
@@ -1784,127 +1453,90 @@
 
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading blocked devices...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
                 const res = await fetchWithAuth('/api/admin/blocked-devices');
                 if (res && res.ok) {
                     const d = await res.json();
                     const devices = d.devices || d.data || (Array.isArray(d) ? d : []);
-                    if (!devices.length) {
-                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No blocked devices currently.</p>';
-                    }
+                    if (!devices.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">✅ No blocked devices.</p>';
                     list.innerHTML = devices.map(dev => `
                         <div class="device-card-item blocked">
                             <div>
-                                <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Visitor Device')} <span style="font-size:11px;color:#f87171;font-weight:600;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
+                                <div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Device')} <span style="font-size:11px;color:#f87171;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div>
                                 <div class="device-meta">
                                     <span>🌐 IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span>
                                     <span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span>
-                                    <span>🚨 Reason: <span style="color:#fca5a5;">${escapeHTML(dev.reason || 'Passcode violations')}</span></span>
+                                    <span>🚨 ${escapeHTML(dev.reason || 'Passcode violations')}</span>
                                 </div>
                             </div>
-                            <div>
-                                <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock</button>
-                            </div>
+                            <button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock</button>
                         </div>
                     `).join('');
-                } else {
-                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices recorded.</p>';
                 }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load blocked devices.</p>';
-            }
+            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
         }
 
         async function unblockDev(id) {
-            if (!confirm('Unblock this device so it can access again?')) return;
+            if (!confirm('Unblock this device?')) return;
             try {
                 await fetchWithAuth('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST' });
-                showToast('✅ Device unblocked successfully!', 'success');
+                showToast('✅ Device unblocked!', 'success');
                 loadBlockedDevices();
-            } catch(e) {
-                showToast('Failed to unblock device', 'error');
-            }
+            } catch(e) { showToast('Failed to unblock', 'error'); }
         }
 
         async function loadActiveDevices() {
             const list = document.getElementById('activeDeviceList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading active login sessions...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
                 const res = await fetchWithAuth('/api/admin/active-sessions');
                 if (res && res.ok) {
                     const d = await res.json();
                     const sessions = d.sessions || d.data || (Array.isArray(d) ? d : []);
-
                     if (!sessions.length) {
-                        return list.innerHTML = `
-                            <div class="device-card-item active-dev">
-                                <div>
-                                    <div class="device-title">🟢 Current Browser Session <span style="font-size:11px;color:#4ade80;font-weight:700;">(Active Now)</span></div>
-                                    <div class="device-meta">
-                                        <span>🌐 IP: <b>Connected Client IP</b></span>
-                                        <span>🛡️ Status: <b style="color:var(--success);">Authorized</b></span>
-                                    </div>
-                                </div>
-                                <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-danger" onclick="logout()">🚪 Logout Current Device</button>
-                                </div>
-                            </div>
-                        `;
+                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No active sessions.</p>';
                     }
-
                     list.innerHTML = sessions.map(s => {
                         const loginTime = s.createdAt ? new Date(s.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
-                        const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
                         const sid = s._id || s.id || '';
-
                         return `
                             <div class="device-card-item active-dev">
                                 <div>
-                                    <div class="device-title">
-                                        🟢 ${escapeHTML(s.deviceName || 'Admin Device')} 
-                                        <span style="font-size:11px;color:#4ade80;font-weight:700;">(${escapeHTML(s.deviceType || 'Browser')})</span>
-                                    </div>
+                                    <div class="device-title">🟢 ${escapeHTML(s.deviceName || 'Device')} <span style="font-size:11px;color:#4ade80;">(${escapeHTML(s.deviceType || 'Browser')})</span></div>
                                     <div class="device-meta">
                                         <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
                                         <span>🕒 Logged In: <b>${loginTime}</b></span>
-                                        <span>⚡ Last Seen: <b>${lastActive}</b></span>
                                     </div>
                                 </div>
                                 <div style="display:flex;gap:6px;">
-                                    <button class="btn btn-sm btn-danger" style="background:var(--danger);" onclick="blockActiveSession('${sid}')">⛔ Block Device</button>
+                                    <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button>
                                     <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🚪 Logout</button>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Active sessions data loaded.</p>';
-            }
+            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
         }
 
         async function deleteActiveSession(id) {
-            if (!confirm('Log out and terminate this session?')) return;
+            if (!confirm('Logout this session?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
-                showToast('Session terminated successfully!', 'info');
+                showToast('Session terminated!', 'info');
                 loadActiveDevices();
-            } catch(e) {
-                showToast('Failed to terminate session', 'error');
-            }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function blockActiveSession(id) {
-            if (!confirm('Permanently ban and block this device from the Admin Panel?')) return;
+            if (!confirm('Permanently block this device?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' });
-                showToast('✅ Device blocked permanently and logged out!', 'success');
+                showToast('✅ Device blocked!', 'success');
                 loadActiveDevices();
                 loadBlockedDevices();
-            } catch(e) {
-                showToast('Failed to block device', 'error');
-            }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function loadContactInfo() {
@@ -1913,12 +1545,12 @@
                 if (res && res.ok) {
                     const d = await res.json();
                     if (d) {
-                        if (d.adminEmail) document.getElementById('adminEmail').value = d.adminEmail;
-                        if (d.adminPhone) document.getElementById('adminPhone').value = d.adminPhone;
+                        const e = document.getElementById('adminEmail'); if (d.adminEmail && e) e.value = d.adminEmail;
+                        const p = document.getElementById('adminPhone'); if (d.adminPhone && p) p.value = d.adminPhone;
                         if (d.background) {
-                            document.getElementById('bgImgUrl').value = d.background;
-                            document.getElementById('bgPreviewImg').src = d.background;
-                            document.getElementById('bgImagePreview').classList.add('show');
+                            const bi = document.getElementById('bgImgUrl'); if (bi) bi.value = d.background;
+                            const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = d.background;
+                            const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.add('show');
                         }
                     }
                 }
@@ -1934,10 +1566,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, phone })
                 });
-                showToast('✅ Contact info saved successfully!', 'success');
-            } catch(e) {
-                showToast('Failed to save contact info', 'error');
-            }
+                showToast('✅ Contact saved!', 'success');
+            } catch(e) { showToast('Failed to save', 'error'); }
         }
 
         async function saveBackground() {
@@ -1949,13 +1579,11 @@
                     body: JSON.stringify({ background: bg }) 
                 });
                 if (bg) {
-                    document.getElementById('bgPreviewImg').src = bg;
-                    document.getElementById('bgImagePreview').classList.add('show');
+                    const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = bg;
+                    const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.add('show');
                 }
                 showToast('✅ Background updated!', 'success');
-            } catch(e) {
-                showToast('Failed to update background', 'error');
-            }
+            } catch(e) { showToast('Failed to update', 'error'); }
         }
 
         async function removeBackground() {
@@ -1965,12 +1593,10 @@
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ background: null }) 
                 });
-                document.getElementById('bgImgUrl').value = '';
-                document.getElementById('bgImagePreview').classList.remove('show');
+                const bi = document.getElementById('bgImgUrl'); if (bi) bi.value = '';
+                const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.remove('show');
                 showToast('Background removed', 'info');
-            } catch(e) {
-                showToast('Failed to remove background', 'error');
-            }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function changePasscode() {
@@ -1985,44 +1611,39 @@
                 });
                 const d = await res.json();
                 if (d.success) showToast('✅ Passcode updated!', 'success');
-                else showToast('❌ ' + (d.error || 'Failed to update passcode'), 'error');
-            } catch(e) {
-                showToast('Error changing passcode', 'error');
-            }
+                else showToast('❌ ' + (d.error || 'Failed'), 'error');
+            } catch(e) { showToast('Error', 'error'); }
         }
 
-        // ==================== 🔗 SHORT LINKS ====================
         function toggleAppScheme() {
             const chk = document.getElementById('shortAppOpen')?.checked;
-            const container = document.getElementById('appSchemeContainer');
-            if (container) container.style.display = chk ? 'block' : 'none';
+            const c = document.getElementById('appSchemeContainer');
+            if (c) c.style.display = chk ? 'block' : 'none';
         }
 
         async function loadShortLinks() {
             const list = document.getElementById('shortLinksList');
-            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
+            if (list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
                 const res = await fetchWithAuth('/api/short-links');
                 if (res && res.ok) {
                     const d = await res.json();
                     const sLinks = d.links || d.data || (Array.isArray(d) ? d : []);
-                    if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No short links yet.</p>';
+                    if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
                     list.innerHTML = sLinks.map(l => `
                         <div class="link-item">
                             <div>
-                                <div class="name">${escapeHTML(l.title || 'Untitled Link')}</div>
-                                <div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || l.clicks || 0}</b></div>
+                                <div class="name">${escapeHTML(l.title || 'Untitled')}</div>
+                                <div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || 0}</b></div>
                             </div>
                             <div style="display:flex;gap:6px;">
                                 <button class="btn btn-sm btn-success" onclick="copyShortLink('${escapeHTML(l.code)}')">📋 Copy</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${escapeHTML(l._id || l.id)}')">🗑️ Delete</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteShortLink('${escapeHTML(l._id || l.id)}')">🗑️</button>
                             </div>
                         </div>
                     `).join('');
                 }
-            } catch(e) {
-                list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
-            }
+            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
         }
 
         function copyShortLink(code) {
@@ -2031,14 +1652,12 @@
         }
 
         async function deleteShortLink(id) {
-            if (!confirm('Permanently delete this short link?')) return;
+            if (!confirm('Delete this short link?')) return;
             try {
                 await fetchWithAuth('/api/short-links/' + encodeURIComponent(id), { method: 'DELETE' });
-                showToast('Short link deleted', 'info');
+                showToast('Deleted', 'info');
                 loadShortLinks();
-            } catch(e) {
-                showToast('Failed to delete short link', 'error');
-            }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function createShortLink() {
@@ -2046,8 +1665,7 @@
             const title = document.getElementById('sTitle')?.value.trim();
             const appScheme = document.getElementById('sScheme')?.value.trim() || '';
             const appOpen = document.getElementById('shortAppOpen')?.checked;
-            if (!originalUrl) return showToast('Please enter a destination URL', 'error');
-
+            if (!originalUrl) return showToast('Enter URL', 'error');
             try {
                 const res = await fetchWithAuth('/api/short-links', {
                     method: 'POST',
@@ -2055,51 +1673,55 @@
                     body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme })
                 });
                 if (res && res.ok) {
-                    showToast('✅ Short link created successfully!', 'success');
-                    document.getElementById('sUrl').value = '';
-                    document.getElementById('sTitle').value = '';
+                    showToast('✅ Short link created!', 'success');
+                    const su = document.getElementById('sUrl'); if(su) su.value = '';
+                    const st = document.getElementById('sTitle'); if(st) st.value = '';
                     loadShortLinks();
-                } else {
-                    showToast('Failed to create short link', 'error');
-                }
-            } catch(e) {
-                showToast('Failed to create short link', 'error');
-            }
+                } else showToast('Failed', 'error');
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         function setTheme(t) {
-            document.body.className = t;
-            document.getElementById('theme-dark')?.classList.toggle('active', t === 'dark');
-            document.getElementById('theme-light')?.classList.toggle('active', t === 'light');
-            try { localStorage.setItem('adminTheme', t); } catch(e) {}
+            try {
+                document.body.className = t;
+                document.getElementById('theme-dark')?.classList.toggle('active', t === 'dark');
+                document.getElementById('theme-light')?.classList.toggle('active', t === 'light');
+                localStorage.setItem('adminTheme', t);
+            } catch(e) {}
         }
 
         async function logout() {
-            try {
-                await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
-            } catch(e) {}
-            document.cookie = 'adminToken=; Path=/; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            try { await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
+            document.cookie = 'adminToken=; Path=/; Max-Age=0;';
             localStorage.removeItem('adminToken');
             window.location.href = '/admin/login.html';
         }
 
         function installApp() {
-            showToast('Use browser menu -> Add to Home screen to install app', 'info');
+            showToast('Use browser menu -> Add to Home screen', 'info');
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // ==================== SAFE DOMContentLoaded ====================
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const savedTheme = localStorage.getItem('adminTheme') || 'dark';
                 setTheme(savedTheme);
             } catch(e) {}
 
-            loadStats();
-            loadLinks();
-            loadAllUsers();
-            loadRenewalSystem();
-            loadContactInfo();
-            loadBlockedDevices();
-            setInterval(() => { loadStats(); }, 6000);
+            // Fetch CSRF token first (safe)
+            await fetchCsrfToken();
+
+            // Load data (each in try-catch, one failure doesn't block others)
+            try { loadStats(); } catch(e) { console.error('loadStats failed:', e); }
+            try { loadLinks(); } catch(e) { console.error('loadLinks failed:', e); }
+            try { loadAllUsers(); } catch(e) { console.error('loadAllUsers failed:', e); }
+            try { loadRenewalSystem(); } catch(e) { console.error('loadRenewalSystem failed:', e); }
+            try { loadContactInfo(); } catch(e) { console.error('loadContactInfo failed:', e); }
+            try { loadBlockedDevices(); } catch(e) { console.error('loadBlockedDevices failed:', e); }
+
+            setInterval(() => {
+                try { loadStats(); } catch(e) {}
+            }, 6000);
         });
     </script>
 </body>
