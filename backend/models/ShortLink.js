@@ -14,6 +14,10 @@ const ShortLinkSchema = new mongoose.Schema({
         type: String,
         default: 'Untitled Link'
     },
+    creator: {
+        type: String,
+        default: 'User'
+    },
     visits: {
         type: Number,
         default: 0
@@ -49,6 +53,9 @@ const ShortLinkSchema = new mongoose.Schema({
     }
 });
 
+// ✅ FIXED: Removed duplicate index on `code` (unique: true already creates it)
+ShortLinkSchema.index({ creator: 1 });
 ShortLinkSchema.index({ createdAt: -1 });
+ShortLinkSchema.index({ status: 1 });
 
 module.exports = mongoose.model('ShortLink', ShortLinkSchema);
