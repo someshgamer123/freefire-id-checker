@@ -118,6 +118,7 @@
         }
         .claim-btn-wrapper.show { opacity: 1; }
 
+        /* ✅ MAIN VIDEO CLAIM BUTTON (the ONLY one that counts) */
         .claim-btn {
             position: relative;
             padding: 16px 54px;
@@ -263,6 +264,7 @@
             font-size: 13.5px; color: #94a3b8; margin-bottom: 18px; font-weight: 500;
         }
 
+        /* ❌ DUMMY POPUP CLAIM BUTTON (does NOT count as claim) */
         .popup-claim-btn {
             width: 100%; padding: 15px; border: none; border-radius: 16px; font-size: 17px; font-weight: 900;
             cursor: pointer; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff;
@@ -430,6 +432,7 @@
             </div>
             <div class="headline" id="headline">🎬 Watch Video & Unlock Reward</div>
             <div class="claim-btn-wrapper" id="claimBtnWrapper">
+                <!-- ✅ MAIN CLAIM BUTTON — ONLY THIS COUNTS -->
                 <button class="claim-btn" id="claimBtn">🎁 Claim Now</button>
             </div>
         </div>
@@ -472,6 +475,7 @@
             </div>
             <div class="popup-title" id="popupTitle">🎁 Claim Your Reward</div>
             <div class="popup-sub" id="popupSub">Tap below to unlock your reward</div>
+            <!-- ❌ DUMMY POPUP BUTTON — DOES NOT COUNT AS CLAIM -->
             <button class="popup-claim-btn" id="popupClaimBtn">
                 <span>🔓 Unlock Now</span> <span>➜</span>
             </button>
@@ -800,6 +804,8 @@
             document.body.style.overflow = '';
         }
 
+        // ⚠️ IMPORTANT: This function is called when user clicks POPUP button
+        // IT DOES NOT TRACK ANY CLAIM — IT ONLY UNLOCKS THE VIDEO
         function unlockAndPlay() {
             if (isPopupClaimed) return;
             isPopupClaimed = true;
@@ -872,7 +878,7 @@
             }
         }
 
-        // 🎯 ONLY main video claim button tracks claim (popup ignored)
+        // ✅ ONLY called from main video claim button
         function trackClaimOnce() {
             if (isClaimTracked) return;
             isClaimTracked = true;
@@ -909,22 +915,25 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // ⚠️ Popup button click — NO claim tracking
+        // ❌ POPUP BUTTON — just unlocks video, NEVER tracks claim
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
-            e.stopPropagation(); e.preventDefault();
+            e.stopPropagation(); 
+            e.preventDefault();
             if (isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
             addRipple(e, this);
+            // NO trackClaimOnce() call here!
             unlockAndPlay();
         });
 
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
+            // NO trackClaimOnce() call here!
             unlockAndPlay();
         });
 
-        // ✅ Video main claim button — THIS TRACKS CLAIM
+        // ✅ MAIN VIDEO CLAIM BUTTON — THIS TRACKS CLAIM
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             addRipple(e, this);
