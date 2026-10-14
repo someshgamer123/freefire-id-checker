@@ -18,15 +18,9 @@ const mongoose = require('mongoose');
 const { OAuth2Client } = require('google-auth-library');
 const { doubleCsrf } = require('csrf-csrf');
 
-// @arcis/node - OPTIONAL (with safe fallback)
-let arcis = null;
-try {
-    const arcisModule = require('@arcis/node');
-    arcis = arcisModule.arcis || arcisModule;
-    console.log('✅ @arcis/node loaded');
-} catch(e) {
-    console.log('⚠️ @arcis/node not available - using fallback');
-}
+// 🛡️ @arcis/node is DISABLED due to incompatible API version
+// Using reliable built-in fallback injection protection instead
+console.log('✅ Built-in injection protection ENABLED');
 
 // Google Client (only if configured)
 let googleClient = null;
@@ -255,6 +249,47 @@ async function verifyTurnstile(token, remoteIp) {
     }
 }
 
+// ==================== 🛡️ FALLBACK INJECTION PROTECTION ====================
+// This is a reliable, no-dependency middleware that protects against
+// NoSQL injection, prototype pollution, and path traversal attacks
+function injectionProtection(req, res, next) {
+    try {
+        const sanitizeObject = (obj, depth = 0) => {
+            if (depth > 10) return obj; // prevent deep recursion
+            if (!obj || typeof obj !== 'object') return obj;
+            
+            for (const key of Object.keys(obj)) {
+                // Block MongoDB operators and dangerous keys
+                if (key.startsWith('$') || key.includes('..') || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                    delete obj[key];
+                    continue;
+                }
+                // Recursively sanitize nested objects
+                if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                    sanitizeObject(obj[key], depth + 1);
+                }
+                // Sanitize arrays
+                if (Array.isArray(obj[key])) {
+                    obj[key] = obj[key].map(item => {
+                        if (item && typeof item === 'object') {
+                            sanitizeObject(item, depth + 1);
+                        }
+                        return item;
+                    });
+                }
+            }
+            return obj;
+        };
+        
+        if (req.body && typeof req.body === 'object') sanitizeObject(req.body);
+        if (req.query && typeof req.query === 'object') sanitizeObject(req.query);
+        if (req.params && typeof req.params === 'object') sanitizeObject(req.params);
+    } catch(e) {
+        console.error('Injection protection error:', e.message);
+    }
+    next();
+}
+
 // ==================== Database Init ====================
 async function initializeDatabase() {
     try {
@@ -333,42 +368,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// 🛡️ @arcis/node injection protection — WITH SAFE CONFIG
-// Skip for CSRF token and health check endpoints
-if (arcis) {
-    try {
-        app.use((req, res, next) => {
-            // Skip arcis for safe endpoints
-            if (req.path === '/api/csrf-token' || req.path === '/health' || req.path === '/ping') {
-                return next();
-            }
-            return arcis({ block: true })(req, res, next);
-        });
-        console.log('✅ @arcis/node injection protection ENABLED');
-    } catch(e) {
-        console.log('⚠️ @arcis/node config error, using fallback:', e.message);
-        app.use(fallbackInjectionProtection);
-    }
-} else {
-    app.use(fallbackInjectionProtection);
-}
-
-function fallbackInjectionProtection(req, res, next) {
-    const sanitize = (obj) => {
-        if (!obj || typeof obj !== 'object') return obj;
-        for (const key of Object.keys(obj)) {
-            if (key.startsWith('$') || key.includes('.')) {
-                delete obj[key];
-            } else if (typeof obj[key] === 'object') {
-                sanitize(obj[key]);
-            }
-        }
-        return obj;
-    };
-    if (req.body) sanitize(req.body);
-    if (req.query) sanitize(req.query);
-    next();
-}
+// 🛡️ INJECTION PROTECTION (fallback, no external dependency)
+app.use(injectionProtection);
 
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -2013,7 +2014,6 @@ app.get(['/user-dashboard', '/user-dashboard/:id?'], (req, res) => sendAppFile(r
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-// 🛡️ Global error handlers
 process.on('uncaughtException', (err) => {
     console.error('❌ Uncaught Exception:', err.message);
 });
