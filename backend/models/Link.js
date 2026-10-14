@@ -68,7 +68,6 @@ const LinkSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    // ✅ FIXED: dailyVisits / dailyClaims properly defined
     dailyVisits: {
         type: Object,
         default: {}
@@ -95,9 +94,12 @@ const LinkSchema = new mongoose.Schema({
     }
 });
 
-LinkSchema.index({ id: 1 });
+// ✅ FIXED: Removed duplicate index on `id` (unique: true already creates it)
+// Added useful indexes for query performance
 LinkSchema.index({ assignedUser: 1 });
 LinkSchema.index({ userName: 1 });
 LinkSchema.index({ status: 1 });
+LinkSchema.index({ dashboardId: 1 });
+LinkSchema.index({ created: -1 });
 
 module.exports = mongoose.model('Link', LinkSchema);
