@@ -112,6 +112,10 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
             background: #11141f;
         }
+        .pin-group input:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
 
         .btn-submit {
             width: 100%;
@@ -126,8 +130,9 @@
             transition: all 0.2s ease;
             box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
         }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(99, 102, 241, 0.55); }
-        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(99, 102, 241, 0.55); }
+        .btn-submit:active:not(:disabled) { transform: scale(0.98); }
+        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .status-msg {
             margin-top: 16px;
@@ -151,6 +156,21 @@
             line-height: 1.5;
             animation: popIn 0.3s ease;
         }
+
+        .attempt-warning {
+            display: none;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #fbbf24;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 12px;
+            line-height: 1.5;
+            animation: popIn 0.3s ease;
+        }
+        .attempt-warning.show { display: block; }
     </style>
 </head>
 <body>
@@ -173,6 +193,8 @@
         <button class="btn-submit" id="loginBtn" onclick="submitPasscode()">Sign In ➜</button>
         <div class="status-msg" id="statusMsg"></div>
 
+        <div class="attempt-warning" id="attemptWarning"></div>
+
         <div class="blocked-banner" id="blockedBanner">
             ⛔ YOUR DEVICE IS PERMANENTLY BLOCKED!
             <span style="display:block;font-size:11px;font-weight:400;margin-top:6px;color:#cbd5e1;">
@@ -183,7 +205,7 @@
     </div>
 
     <script>
-        // Persistent Client Device Identifier (Prevents unblock on refresh)
+        // 🛡️ Persistent Client Device Identifier
         let deviceId = localStorage.getItem('adminDevId');
         if (!deviceId) {
             deviceId = 'dev_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
@@ -195,8 +217,9 @@
         const btn = document.getElementById('loginBtn');
         const status = document.getElementById('statusMsg');
         const banner = document.getElementById('blockedBanner');
+        const attemptWarning = document.getElementById('attemptWarning');
 
-        // Check if device is banned on load
+        // 🛡️ Check if device is banned on load
         async function checkInitialBlock() {
             try {
                 const res = await fetch('/api/admin/block-status', { credentials: 'include' });
@@ -229,6 +252,10 @@
                 if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus();
                 if (e.key === 'Enter') submitPasscode();
             });
+            // 🛡️ Only allow digits
+            inp.addEventListener('input', () => {
+                inp.value = inp.value.replace(/[^0-9]/g, '');
+            });
         });
 
         async function submitPasscode() {
@@ -241,6 +268,7 @@
             btn.disabled = true;
             btn.textContent = 'Verifying...';
             status.textContent = '';
+            attemptWarning.classList.remove('show');
 
             try {
                 const res = await fetch('/api/admin/login', {
@@ -262,6 +290,19 @@
                     btn.disabled = false;
                     btn.textContent = 'Sign In ➜';
                     status.textContent = '❌ ' + (data.error || 'Incorrect Passcode');
+                    
+                    // 🛡️ Attempt warning
+                    const errorMsg = data.error || '';
+                    const attemptMatch = errorMsg.match(/Attempt (\d) of (\d)/);
+                    if (attemptMatch) {
+                        const attemptNum = attemptMatch[1];
+                        const maxAttempts = attemptMatch[2];
+                        if (parseInt(attemptNum) === parseInt(maxAttempts) - 1) {
+                            attemptWarning.textContent = `⚠️ Warning: ${maxAttempts - attemptNum} attempt(s) remaining before permanent block!`;
+                            attemptWarning.classList.add('show');
+                        }
+                    }
+                    
                     inputs.forEach(x => x.value = '');
                     inputs[0].focus();
                 }
