@@ -172,7 +172,6 @@ const ShortLinkClick = safeLoadModel('ShortLinkClick', {
     timestamp: { type: Date, default: Date.now }
 });
 
-// ✅ FIXED: VisitorActivity with proper indexes and strict schema
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -190,7 +189,6 @@ const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE
 
 // ==================== Helper Functions ====================
 
-// ✅ FIXED: Better IST date handling
 function getISTDate(dateObj) {
     const d = dateObj || new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -206,7 +204,6 @@ function getISTDateMinus(days) {
     return past.toISOString().split('T')[0];
 }
 
-// ✅ FIXED: Handles both plain object (from .lean()) and Map
 function getDailyValue(mapData, dateStr) {
     if (!mapData) return 0;
     if (typeof mapData.get === 'function') {
@@ -218,13 +215,11 @@ function getDailyValue(mapData, dateStr) {
     return 0;
 }
 
-// ✅ FIXED: Handles both plain object (from .lean()) and Map
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
 
     if (typeof mapData.forEach === 'function' && typeof mapData.get === 'function') {
-        // It's a Map
         mapData.forEach((count, date) => {
             if (date >= startStr && date <= endStr) {
                 total += parseInt(count) || 0;
@@ -243,7 +238,6 @@ function sumDailyMapBetween(mapData, startStr, endStr) {
     return total;
 }
 
-// ✅ FIXED: Robust filter range parser
 function parseDateRange(filter, customStart, customEnd) {
     const today = getISTDate();
     let startStr = '1970-01-01';
@@ -715,7 +709,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // ✅ FIXED: Proper 24-hour unique visit tracking
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -729,7 +722,6 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            // ✅ FIXED: Use $inc with dot notation, ensure dailyVisits object exists
             await Link.collection.updateOne(
                 { _id: link._id },
                 { 
@@ -754,7 +746,6 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
-        // Upsert visitor record
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
@@ -844,7 +835,7 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    // ✅ FIXED: 24-hour unique check (only for video claims)
+    // ✅ 24-hour unique check (only for video claims)
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -1077,10 +1068,8 @@ app.post('/api/user/link-details', async (req, res) => {
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
 
-        // ✅ FIXED: Proper filter range parsing (was broken before)
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
-        // ✅ FIXED: Ensure dailyVisits/dailyClaims are read as plain objects
         const dailyVisitsObj = link.dailyVisits || {};
         const dailyClaimsObj = link.dailyClaims || {};
 
@@ -1286,7 +1275,7 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ FIXED: Delete user ALSO disables their links
+// ✅ Delete user ALSO disables their links
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
@@ -1297,7 +1286,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
 
         const userName = user.name || '';
         
-        // ✅ Disable/suspend all links belonging to this user
         let linksAffected = 0;
         if (userName) {
             const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
@@ -1313,7 +1301,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
                 { 
                     $set: { 
                         status: 'disabled',
-                        expiryDate: new Date() // Expire immediately
+                        expiryDate: new Date()
                     } 
                 }
             );
@@ -1358,7 +1346,6 @@ const handleUserApprovalAction = async (req, res) => {
         if (targetAction === 'approved') user.approvedAt = new Date();
         await user.save();
 
-        // If rejected, also disable their links
         if (targetAction === 'rejected') {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             await Link.updateMany(
@@ -1399,7 +1386,6 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ FIXED: Renewal settings update now properly refreshes everything
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
@@ -1953,7 +1939,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS (FIXED) ====================
+// ==================== ADMIN ALL STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1962,9 +1948,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
 
-        // ✅ FIXED: Proper date range parsing
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
-        console.log('📊 Admin stats filter:', filter, '| Range:', dateRangeInfo);
 
         let totV = 0, totC = 0, todayV = 0, todayC = 0, yestV = 0, yestC = 0;
         let rangeV = 0, rangeC = 0;
@@ -2315,6 +2299,7 @@ function sendUidCheckerFile(res, targetLinkId) {
     res.status(404).send('File not found: uid-checker.html');
 }
 
+// ✅ FIXED: Only inject link ID. No global click capture. video-lock.html handles its own claim tracking.
 function sendVideoLockFile(res, targetLinkId) {
     const searchDirs = [
         path.join(__dirname, 'admin'),
@@ -2332,8 +2317,6 @@ function sendVideoLockFile(res, targetLinkId) {
             if (fs.existsSync(p)) {
                 try {
                     let content = fs.readFileSync(p, 'utf8');
-                    // ✅ FIXED: Only main video claim button triggers claim tracking
-                    // Popup claim buttons are explicitly EXCLUDED
                     const preVerifyScript = `
 <script>
 window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
@@ -2343,48 +2326,6 @@ try {
     localStorage.setItem('player_uid', 'verified');
     localStorage.setItem('uid_verified', 'true');
 } catch(e) {}
-
-document.addEventListener('DOMContentLoaded', function() {
-    function fireClaim() {
-        var lid = window.__LINK_ID__ || (new URLSearchParams(window.location.search)).get('link') || (new URLSearchParams(window.location.search)).get('id');
-        if (!lid) {
-            var parts = window.location.pathname.split('/');
-            lid = parts[parts.length - 1];
-        }
-        if (lid) {
-            var targetUrl = '/api/track-claim/' + encodeURIComponent(lid) + '?source=video';
-            try {
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(targetUrl);
-                } else {
-                    fetch(targetUrl, { method: 'POST', keepalive: true }).catch(function(){});
-                }
-            } catch(e) {
-                fetch(targetUrl, { method: 'POST', keepalive: true }).catch(function(){});
-            }
-        }
-    }
-
-    document.addEventListener('click', function(e) {
-        // 🛑 SKIP: Any click inside popup/modal/overlay
-        var inPopup = e.target.closest(
-            '#popup, .popup, #popupModal, .popup-modal, #entrancePopup, .modal-popup, ' +
-            '.popup-container, .popup-overlay, #popupOverlay, #popupCard, .popup-card, ' +
-            '#popupClaimBtn, .popup-claim-btn, [id*="popup" i], [class*="popup" i], ' +
-            '[id*="modal" i], [class*="modal" i]'
-        );
-        if (inPopup) {
-            console.log('🚫 Popup click ignored (not counted as claim)');
-            return;
-        }
-
-        // ✅ ONLY main video claim button (with id="claimBtn" or class="claim-btn")
-        var target = e.target.closest('#claimBtn, .claim-btn, #vClaimBtn, #videoClaimBtn');
-        if (target && !target.closest('#popupClaimBtn, .popup-claim-btn')) {
-            fireClaim();
-        }
-    }, true);
-});
 </script>
 `;
                     if (content.includes('<head>')) {
