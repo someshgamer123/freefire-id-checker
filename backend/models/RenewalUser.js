@@ -17,6 +17,15 @@ const RenewalUserSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    googleId: {
+        type: String,
+        default: null
+    },
+    authMethod: {
+        type: String,
+        enum: ['email', 'google'],
+        default: 'email'
+    },
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
@@ -25,10 +34,17 @@ const RenewalUserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    approvedAt: {
+        type: Date,
+        default: null
     }
 });
 
+// ✅ Compound index for unique email+phone combination
 RenewalUserSchema.index({ email: 1, phone: 1 });
 RenewalUserSchema.index({ status: 1 });
+RenewalUserSchema.index({ createdAt: -1 });
+RenewalUserSchema.index({ googleId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('RenewalUser', RenewalUserSchema);
