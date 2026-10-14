@@ -872,8 +872,7 @@
             }
         }
 
-        // 🎯 ONLY THIS FUNCTION TRACKS CLAIM (Video button only)
-        // Popup clicks are COMPLETELY IGNORED
+        // 🎯 ONLY main video claim button tracks claim (popup ignored)
         function trackClaimOnce() {
             if (isClaimTracked) return;
             isClaimTracked = true;
@@ -910,7 +909,7 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
-        // Popup button click - NO CLAIM TRACKING
+        // ⚠️ Popup button click — NO claim tracking
         document.getElementById('popupClaimBtn').addEventListener('click', function(e) {
             e.stopPropagation(); e.preventDefault();
             if (isPopupClaimed || isPopupClickProcessed) return;
@@ -925,7 +924,7 @@
             unlockAndPlay();
         });
 
-        // Video claim button - THIS TRACKS CLAIM
+        // ✅ Video main claim button — THIS TRACKS CLAIM
         document.getElementById('claimBtn').addEventListener('click', function(e) {
             e.stopPropagation();
             addRipple(e, this);
