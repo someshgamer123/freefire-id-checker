@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     passcode: {
         type: String,
-        required: true,
+        required: true
+    },
+    lastEnvPasscode: {
+        type: String,
+        default: null
     },
     theme: {
         type: String,
@@ -36,4 +40,5 @@ const UserSchema = new mongoose.Schema({
     }
 });
 
+// No unique fields, no duplicate indexes
 module.exports = mongoose.model('User', UserSchema);
