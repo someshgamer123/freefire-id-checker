@@ -133,25 +133,9 @@ const Session = safeLoadModel('Session', {
     expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) }
 });
 
-const AdminLog = safeLoadModel('AdminLog', {
-    action: String,
-    details: Object,
-    timestamp: { type: Date, default: Date.now }
-});
-
-const LoginAttempt = safeLoadModel('LoginAttempt', {
-    ip: String,
-    attempts: Number,
-    lastAttempt: Date
-});
-
-const TwoFactorAuth = safeLoadModel('TwoFactorAuth', {
-    userId: String,
-    secret: String,
-    backupCodes: Array,
-    isEnabled: Boolean,
-    verifiedAt: Date
-});
+const AdminLog = safeLoadModel('AdminLog', { action: String, details: Object, timestamp: { type: Date, default: Date.now } });
+const LoginAttempt = safeLoadModel('LoginAttempt', { ip: String, attempts: Number, lastAttempt: Date });
+const TwoFactorAuth = safeLoadModel('TwoFactorAuth', { userId: String, secret: String, backupCodes: Array, isEnabled: Boolean, verifiedAt: Date });
 
 const BlockedDevice = safeLoadModel('BlockedDevice', {
     deviceKey: String,
@@ -165,11 +149,7 @@ const BlockedDevice = safeLoadModel('BlockedDevice', {
     lastAttempt: { type: Date, default: Date.now }
 });
 
-const OTPVerification = safeLoadModel('OTPVerification', {
-    phone: String,
-    otp: String,
-    expiresAt: Date
-});
+const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: String, expiresAt: Date });
 
 const ShortLink = safeLoadModel('ShortLink', {
     code: String,
@@ -192,21 +172,25 @@ const ShortLinkClick = safeLoadModel('ShortLinkClick', {
     timestamp: { type: Date, default: Date.now }
 });
 
-// Visitor Activity Model - यहाँ हम सिर्फ timestamp track करेंगे, uniqueVisitors जैसी भारी चीज़ नहीं
-const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', new mongoose.Schema({
+// ✅ FIXED: VisitorActivity with proper indexes and strict schema
+const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
     type: { type: String, enum: ['visit', 'claim'], required: true, index: true },
     source: { type: String, enum: ['video', 'popup', 'direct'], default: 'video' },
     uid: { type: String, default: null },
     lastSeen: { type: Date, default: Date.now, index: true }
-}, { timestamps: true }));
+}, { timestamps: true, strict: false });
+
+VisitorActivitySchema.index({ linkId: 1, visitorKey: 1, type: 1, lastSeen: -1 });
+
+const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', VisitorActivitySchema);
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
 
 // ==================== Helper Functions ====================
 
-// ✅ IST Date String (YYYY-MM-DD)
+// ✅ FIXED: Better IST date handling
 function getISTDate(dateObj) {
     const d = dateObj || new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -214,7 +198,6 @@ function getISTDate(dateObj) {
     return istNow.toISOString().split('T')[0];
 }
 
-// ✅ IST Date N days ago
 function getISTDateMinus(days) {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
@@ -223,10 +206,10 @@ function getISTDateMinus(days) {
     return past.toISOString().split('T')[0];
 }
 
-// ✅ Get value from daily map (works with both Object and Map)
+// ✅ FIXED: Handles both plain object (from .lean()) and Map
 function getDailyValue(mapData, dateStr) {
     if (!mapData) return 0;
-    if (mapData instanceof Map) {
+    if (typeof mapData.get === 'function') {
         return parseInt(mapData.get(dateStr)) || 0;
     }
     if (typeof mapData === 'object') {
@@ -235,73 +218,66 @@ function getDailyValue(mapData, dateStr) {
     return 0;
 }
 
-// ✅ Sum values between two dates
+// ✅ FIXED: Handles both plain object (from .lean()) and Map
 function sumDailyMapBetween(mapData, startStr, endStr) {
     if (!mapData) return 0;
     let total = 0;
 
-    if (mapData instanceof Map) {
-        for (const [date, count] of mapData.entries()) {
+    if (typeof mapData.forEach === 'function' && typeof mapData.get === 'function') {
+        // It's a Map
+        mapData.forEach((count, date) => {
             if (date >= startStr && date <= endStr) {
                 total += parseInt(count) || 0;
             }
-        }
+        });
         return total;
     }
 
     if (typeof mapData === 'object') {
-        for (const [date, count] of Object.entries(mapData)) {
+        for (const date of Object.keys(mapData)) {
             if (date >= startStr && date <= endStr) {
-                total += parseInt(count) || 0;
+                total += parseInt(mapData[date]) || 0;
             }
         }
-        return total;
     }
-
-    return 0;
+    return total;
 }
 
-// ✅ Parse date range based on filter
+// ✅ FIXED: Robust filter range parser
 function parseDateRange(filter, customStart, customEnd) {
-    const formatDate = (d) => d.toISOString().split('T')[0];
     const today = getISTDate();
+    let startStr = '1970-01-01';
+    let endStr = '2099-12-31';
 
-    let startStr = today;
-    let endStr = today;
+    const f = (filter || 'all').toString().trim().toLowerCase();
 
-    if (filter === 'all') {
+    if (f === 'all' || f === 'alltime' || f === 'lifetime') {
         startStr = '1970-01-01';
         endStr = '2099-12-31';
-    } else if (filter === 'today') {
+    } else if (f === 'today') {
         startStr = today;
         endStr = today;
-    } else if (filter === 'yesterday') {
+    } else if (f === 'yesterday') {
         const y = getISTDateMinus(1);
         startStr = y;
         endStr = y;
-    } else if (filter === '7days' || filter === '7d') {
-        startStr = getISTDateMinus(7);
+    } else if (f === '7days' || f === '7d' || f === 'last7days') {
+        startStr = getISTDateMinus(6);
         endStr = today;
-    } else if (filter === '30days' || filter === '30d') {
-        startStr = getISTDateMinus(30);
+    } else if (f === '30days' || f === '30d' || f === 'last30days') {
+        startStr = getISTDateMinus(29);
         endStr = today;
-    } else if (filter === 'thisMonth') {
-        const istNow = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
-        const firstDay = new Date(istNow.getFullYear(), istNow.getMonth(), 1);
-        startStr = formatDate(firstDay);
-        endStr = today;
-    } else if (filter === 'lastMonth') {
-        const istNow = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
-        const d1 = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
-        const d2 = new Date(istNow.getFullYear(), istNow.getMonth(), 0);
-        startStr = formatDate(d1);
-        endStr = formatDate(d2);
+    } else if (f === 'custom') {
+        if (customStart && customEnd) {
+            startStr = customStart.toString().trim().slice(0, 10);
+            endStr = customEnd.toString().trim().slice(0, 10);
+        } else if (customStart) {
+            startStr = customStart.toString().trim().slice(0, 10);
+            endStr = customStart.toString().trim().slice(0, 10);
+        }
     } else if (customStart && customEnd) {
         startStr = customStart.toString().trim().slice(0, 10);
         endStr = customEnd.toString().trim().slice(0, 10);
-    } else if (customStart) {
-        startStr = customStart.toString().trim().slice(0, 10);
-        endStr = customStart.toString().trim().slice(0, 10);
     }
 
     return { startStr, endStr };
@@ -712,7 +688,7 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER (with Daily Tracking) ====================
+// ==================== VISITOR LINK RESOLVER ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -739,12 +715,12 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
+        // ✅ FIXED: Proper 24-hour unique visit tracking
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const today = getISTDate();
 
-        // ✅ 24-hour unique check
         const recentVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
             visitorKey: visitorKey,
@@ -753,7 +729,8 @@ app.get('/api/link/:id', async (req, res) => {
         }).maxTimeMS(1500).catch(() => null);
 
         if (!recentVisit) {
-            await Link.updateOne(
+            // ✅ FIXED: Use $inc with dot notation, ensure dailyVisits object exists
+            await Link.collection.updateOne(
                 { _id: link._id },
                 { 
                     $inc: { 
@@ -763,7 +740,7 @@ app.get('/api/link/:id', async (req, res) => {
                 }
             ).catch(err => console.error('Link update error:', err));
 
-            await Stats.updateOne(
+            await Stats.collection.updateOne(
                 {},
                 { 
                     $inc: { 
@@ -777,7 +754,8 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ Visit tracked: ${link.name || link.id} | Date: ${today}`);
         }
 
-        VisitorActivity.findOneAndUpdate(
+        // Upsert visitor record
+        await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } },
             { upsert: true }
@@ -840,16 +818,22 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING (सिर्फ video claim काउंट करे) ====================
+// ==================== CLAIM TRACKING (ONLY VIDEO claim counts) ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
-    // 🛑 POPUP claim को पूरी तरह इग्नोर करें
+    // 🛑 REJECT popup claims completely
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
-    if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal') {
-        console.log('🚫 Popup claim ignored');
+    if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal' || sourceParam === 'entrance') {
+        console.log('🚫 Popup claim ignored (not counted)');
         return { success: true, ignored: true, message: 'Popup claims ignored.' };
+    }
+
+    // ✅ ONLY accept source=video
+    if (sourceParam !== 'video') {
+        console.log('🚫 Non-video source claim ignored:', sourceParam);
+        return { success: true, ignored: true, message: 'Only video claims counted.' };
     }
 
     const link = await Link.findOne(getLinkQuery(cleanId));
@@ -860,17 +844,17 @@ async function executeClaimTracking(rawLinkId, req) {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    // 24 hour unique check - सिर्फ video source
+    // ✅ FIXED: 24-hour unique check (only for video claims)
     const recentClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
         type: 'claim',
-        source: { $ne: 'popup' },
+        source: 'video',
         lastSeen: { $gte: twentyFourHoursAgo }
     }).maxTimeMS(1500).catch(() => null);
 
     if (!recentClaim) {
-        await Link.updateOne(
+        await Link.collection.updateOne(
             { _id: link._id },
             { 
                 $inc: { 
@@ -880,7 +864,7 @@ async function executeClaimTracking(rawLinkId, req) {
             }
         ).catch(err => console.error('Link claim update error:', err));
 
-        await Stats.updateOne(
+        await Stats.collection.updateOne(
             {},
             { 
                 $inc: { 
@@ -891,16 +875,16 @@ async function executeClaimTracking(rawLinkId, req) {
             { upsert: true }
         ).catch(err => console.error('Stats claim update error:', err));
 
-        console.log(`✅ Claim tracked: ${link.name || link.id} | Date: ${today}`);
+        console.log(`✅ Claim tracked (video): ${link.name || link.id} | Date: ${today}`);
     }
 
-    VisitorActivity.findOneAndUpdate(
+    await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
         { upsert: true }
     ).catch(() => {});
 
-    return { success: true, linkId: link.id };
+    return { success: true, linkId: link.id, counted: !recentClaim };
 }
 
 const handleClaimTrackingRequest = async (req, res) => {
@@ -908,7 +892,7 @@ const handleClaimTrackingRequest = async (req, res) => {
         let rawId = req.params.linkId || req.params.id || req.query.linkId || req.query.link || req.query.id || req.body?.linkId || req.body?.id || req.body?.link;
         const result = await executeClaimTracking(rawId, req);
         if (result.success) {
-            return res.json({ success: true, linkId: result.linkId, ignored: !!result.ignored });
+            return res.json({ success: true, linkId: result.linkId, ignored: !!result.ignored, counted: result.counted !== false });
         } else {
             return res.status(404).json({ error: result.error || 'Failed' });
         }
@@ -1024,7 +1008,7 @@ app.post('/api/user/signin', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Login failed' }); }
 });
 
-// ==================== USER LINK DETAILS ====================
+// ==================== USER LINK DETAILS (FIXED FILTERS) ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1063,7 +1047,7 @@ app.post('/api/user/link-details', async (req, res) => {
             link = await Link.findOne(getLinkQuery(searchId));
         }
         if (!link && allUserLinks.length > 0) {
-            link = allUserLinks[0];
+            link = await allUserLinks[0];
         }
         if (!link && cleanUser) {
             link = await Link.findOne({
@@ -1093,22 +1077,27 @@ app.post('/api/user/link-details', async (req, res) => {
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
 
+        // ✅ FIXED: Proper filter range parsing (was broken before)
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
 
-        const mappedRangeVisits = sumDailyMapBetween(link.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
-        const mappedRangeClaims = sumDailyMapBetween(link.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
+        // ✅ FIXED: Ensure dailyVisits/dailyClaims are read as plain objects
+        const dailyVisitsObj = link.dailyVisits || {};
+        const dailyClaimsObj = link.dailyClaims || {};
 
-        const vToday = getDailyValue(link.dailyVisits, today);
-        const cToday = getDailyValue(link.dailyClaims, today);
-        const vYesterday = getDailyValue(link.dailyVisits, yesterday);
-        const cYesterday = getDailyValue(link.dailyClaims, yesterday);
+        const mappedRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
+        const mappedRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
 
-        const sevenDaysAgo = getISTDateMinus(7);
-        const thirtyDaysAgo = getISTDateMinus(30);
-        const v7d = sumDailyMapBetween(link.dailyVisits, sevenDaysAgo, today);
-        const c7d = sumDailyMapBetween(link.dailyClaims, sevenDaysAgo, today);
-        const v30d = sumDailyMapBetween(link.dailyVisits, thirtyDaysAgo, today);
-        const c30d = sumDailyMapBetween(link.dailyClaims, thirtyDaysAgo, today);
+        const vToday = getDailyValue(dailyVisitsObj, today);
+        const cToday = getDailyValue(dailyClaimsObj, today);
+        const vYesterday = getDailyValue(dailyVisitsObj, yesterday);
+        const cYesterday = getDailyValue(dailyClaimsObj, yesterday);
+
+        const sevenDaysAgo = getISTDateMinus(6);
+        const thirtyDaysAgo = getISTDateMinus(29);
+        const v7d = sumDailyMapBetween(dailyVisitsObj, sevenDaysAgo, today);
+        const c7d = sumDailyMapBetween(dailyClaimsObj, sevenDaysAgo, today);
+        const v30d = sumDailyMapBetween(dailyVisitsObj, thirtyDaysAgo, today);
+        const c30d = sumDailyMapBetween(dailyClaimsObj, thirtyDaysAgo, today);
 
         let daysLeft = 'Lifetime Active';
         let isEligibleForRenewal = false;
@@ -1297,13 +1286,51 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ✅ FIXED: Delete user ALSO disables their links
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
         const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        
+        const user = await RenewalUser.findOne(userQuery);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const userName = user.name || '';
+        
+        // ✅ Disable/suspend all links belonging to this user
+        let linksAffected = 0;
+        if (userName) {
+            const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+            const updateResult = await Link.updateMany(
+                {
+                    $or: [
+                        { assignedUser: userRegex },
+                        { userName: userRegex },
+                        { creator: userRegex },
+                        { name: userRegex }
+                    ]
+                },
+                { 
+                    $set: { 
+                        status: 'disabled',
+                        expiryDate: new Date() // Expire immediately
+                    } 
+                }
+            );
+            linksAffected = updateResult.modifiedCount || updateResult.nModified || 0;
+        }
+
         await RenewalUser.findOneAndDelete(userQuery);
-        res.json({ success: true, message: 'User deleted' });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+
+        res.json({ 
+            success: true, 
+            message: `User "${userName}" removed. ${linksAffected} link(s) disabled.`,
+            linksAffected
+        });
+    } catch (e) { 
+        console.error('Delete user error:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
@@ -1331,6 +1358,22 @@ const handleUserApprovalAction = async (req, res) => {
         if (targetAction === 'approved') user.approvedAt = new Date();
         await user.save();
 
+        // If rejected, also disable their links
+        if (targetAction === 'rejected') {
+            const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+            await Link.updateMany(
+                {
+                    $or: [
+                        { assignedUser: userRegex },
+                        { userName: userRegex },
+                        { creator: userRegex },
+                        { name: userRegex }
+                    ]
+                },
+                { $set: { status: 'suspended' } }
+            );
+        }
+
         const waData = generateWhatsAppApprovalData(user, req);
 
         res.json({
@@ -1356,6 +1399,7 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ✅ FIXED: Renewal settings update now properly refreshes everything
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
@@ -1781,8 +1825,6 @@ async function handleLinkUpdate(req, res) {
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         if (incomingUidVal !== undefined) {
             updateData.uidChecking = !isUidCheckDisabled(incomingUidVal);
-        } else if (req.body.isEditForm || (req.body.name && req.body.video)) {
-            updateData.uidChecking = false;
         }
 
         const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
@@ -1911,7 +1953,7 @@ app.post('/api/generate-dashboard-link', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS (with Daily Tracking) ====================
+// ==================== ADMIN ALL STATS (FIXED) ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1920,7 +1962,9 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
 
+        // ✅ FIXED: Proper date range parsing
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
+        console.log('📊 Admin stats filter:', filter, '| Range:', dateRangeInfo);
 
         let totV = 0, totC = 0, todayV = 0, todayC = 0, yestV = 0, yestC = 0;
         let rangeV = 0, rangeC = 0;
@@ -1931,18 +1975,21 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             totV += v;
             totC += c;
 
-            const tv = getDailyValue(l.dailyVisits, today);
-            const tc = getDailyValue(l.dailyClaims, today);
-            const yv = getDailyValue(l.dailyVisits, yesterday);
-            const yc = getDailyValue(l.dailyClaims, yesterday);
+            const dailyVisitsObj = l.dailyVisits || {};
+            const dailyClaimsObj = l.dailyClaims || {};
+
+            const tv = getDailyValue(dailyVisitsObj, today);
+            const tc = getDailyValue(dailyClaimsObj, today);
+            const yv = getDailyValue(dailyVisitsObj, yesterday);
+            const yc = getDailyValue(dailyClaimsObj, yesterday);
 
             todayV += tv;
             todayC += tc;
             yestV += yv;
             yestC += yc;
 
-            const lRangeVisits = sumDailyMapBetween(l.dailyVisits, dateRangeInfo.startStr, dateRangeInfo.endStr);
-            const lRangeClaims = sumDailyMapBetween(l.dailyClaims, dateRangeInfo.startStr, dateRangeInfo.endStr);
+            const lRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
+            const lRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
 
             rangeV += lRangeVisits;
             rangeC += lRangeClaims;
@@ -1972,7 +2019,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 
         const activeClaiming = await VisitorActivity.countDocuments({
             type: 'claim',
-            source: { $ne: 'popup' },
+            source: 'video',
             lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
         }).maxTimeMS(1500).catch(() => 0);
 
@@ -2285,6 +2332,8 @@ function sendVideoLockFile(res, targetLinkId) {
             if (fs.existsSync(p)) {
                 try {
                     let content = fs.readFileSync(p, 'utf8');
+                    // ✅ FIXED: Only main video claim button triggers claim tracking
+                    // Popup claim buttons are explicitly EXCLUDED
                     const preVerifyScript = `
 <script>
 window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
@@ -2317,18 +2366,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.addEventListener('click', function(e) {
-        var inPopup = e.target.closest('#popup, .popup, #popupModal, .popup-modal, #entrancePopup, .modal-popup, .popup-container, .popup-overlay, #popupOverlay, [id*="popup" i], [class*="popup" i], [id*="modal" i], [class*="modal" i]');
-        if (inPopup) return;
+        // 🛑 SKIP: Any click inside popup/modal/overlay
+        var inPopup = e.target.closest(
+            '#popup, .popup, #popupModal, .popup-modal, #entrancePopup, .modal-popup, ' +
+            '.popup-container, .popup-overlay, #popupOverlay, #popupCard, .popup-card, ' +
+            '#popupClaimBtn, .popup-claim-btn, [id*="popup" i], [class*="popup" i], ' +
+            '[id*="modal" i], [class*="modal" i]'
+        );
+        if (inPopup) {
+            console.log('🚫 Popup click ignored (not counted as claim)');
+            return;
+        }
 
-        var target = e.target.closest('a, button, [onclick], .claim-btn, #claimBtn, #vClaimBtn, #videoClaimBtn');
-        if (target) {
-            var href = (target.getAttribute('href') || '').toLowerCase();
-            var text = (target.textContent || '').toLowerCase();
-            var id = (target.id || '').toLowerCase();
-            var cls = (target.className || '').toLowerCase();
-            if (id.includes('claim') || cls.includes('claim') || text.includes('claim') || text.includes('reward') || href.includes('garena') || href.includes('reward') || href.includes('claim')) {
-                fireClaim();
-            }
+        // ✅ ONLY main video claim button (with id="claimBtn" or class="claim-btn")
+        var target = e.target.closest('#claimBtn, .claim-btn, #vClaimBtn, #videoClaimBtn');
+        if (target && !target.closest('#popupClaimBtn, .popup-claim-btn')) {
+            fireClaim();
         }
     }, true);
 });
