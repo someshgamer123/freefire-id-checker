@@ -33,6 +33,29 @@
         })();
     </script>
 
+    <!-- 🛡️ CSRF TOKEN MANAGEMENT -->
+    <script>
+        let __csrfToken = null;
+        
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/csrf-token', { credentials: 'include' });
+                const data = await res.json();
+                if (data.csrfToken) {
+                    __csrfToken = data.csrfToken;
+                }
+            } catch(e) {}
+        }
+        
+        // Fetch CSRF token on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fetchCsrfToken);
+        } else {
+            fetchCsrfToken();
+        }
+        window.addEventListener('load', fetchCsrfToken);
+    </script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         :root {
@@ -561,7 +584,7 @@
             </div>
         </div>
 
-        <!-- 4. MANAGE USERS (WITH WHATSAPP APPROVAL & UNIQUE STATS) -->
+        <!-- 4. MANAGE USERS -->
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
@@ -653,7 +676,7 @@
             </div>
         </div>
 
-        <!-- 7. SETTINGS & DEVICES (ACTIVE LOGIN HISTORY + BLOCKING) -->
+        <!-- 7. SETTINGS & DEVICES -->
         <div class="section" id="sec-settings">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -742,12 +765,29 @@
 
         function getCookie(name) {
             const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-            return match ? decodeURIComponent(match) : null;
+            return match ? decodeURIComponent(match[3]) : null;
         }
 
+        // 🛡️ SECURE fetchWithAuth with CSRF + JWT
         async function fetchWithAuth(url, options = {}) {
             options.credentials = 'include';
             options.headers = options.headers || {};
+            
+            const method = (options.method || 'GET').toUpperCase();
+            
+            // 🛡️ Add CSRF token for state-changing requests
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                if (!__csrfToken) await fetchCsrfToken();
+                if (__csrfToken) {
+                    if (typeof options.headers.set === 'function') {
+                        options.headers.set('X-CSRF-Token', __csrfToken);
+                    } else {
+                        options.headers['X-CSRF-Token'] = __csrfToken;
+                    }
+                }
+            }
+            
+            // JWT token from cookie (httpOnly now, so we can't read it from JS — that's OK, cookie will be sent automatically)
             const token = getCookie('adminToken') || localStorage.getItem('adminToken');
             if (token) {
                 if (typeof options.headers.set === 'function') {
@@ -758,10 +798,15 @@
                     options.headers['X-Admin-Token'] = token;
                 }
             }
+            
             try {
                 const res = await fetch(url, options);
                 if (res.status === 401) {
                     window.location.href = '/admin/login.html';
+                }
+                // 🛡️ If CSRF fails (403), refresh token and retry once
+                if (res.status === 403) {
+                    await fetchCsrfToken();
                 }
                 return res;
             } catch (err) {
@@ -1404,7 +1449,7 @@
             if (inp) copyText(inp.value, 'Generated Link Copied!');
         }
 
-        // ==================== 👥 MANAGE USERS (WITH WHATSAPP & STATS) ====================
+        // ==================== 👥 MANAGE USERS ====================
         async function loadAllUsers() {
             const container = document.getElementById('usersFullList');
             if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading users with live unique statistics...</p>';
@@ -1705,7 +1750,7 @@
             }
         }
 
-        // ==================== 🛡️ BLOCKED & ACTIVE LOGIN DEVICES ====================
+        // ==================== 🛡️ BLOCKED & ACTIVE DEVICES ====================
         function toggleDeviceTab(tab) {
             currentDeviceTab = tab;
             const bBtn = document.getElementById('tabBtnBlocked');
