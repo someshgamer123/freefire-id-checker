@@ -5,7 +5,8 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- 🛡️ FIXED: Turnstile with explicit rendering -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -562,9 +563,7 @@
         .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
         .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
 
-        /* ============================================ */
-        /* 🛡️ FIXED: Turnstile Widget — Compact & Centered */
-        /* ============================================ */
+        /* 🛡️ Turnstile Widget — Compact & Centered */
         .turnstile-wrapper {
             display: flex;
             justify-content: center;
@@ -575,34 +574,22 @@
             overflow: hidden;
             min-height: 65px;
         }
-        .turnstile-wrapper .cf-turnstile {
+        .turnstile-wrapper > div {
             display: flex;
             justify-content: center;
-            width: auto !important;
-            max-width: 100% !important;
+            width: 100%;
         }
-        /* Force Turnstile iframe to be compact */
         .turnstile-wrapper iframe {
             max-width: 100% !important;
-            width: 100% !important;
         }
-        /* Mobile-specific Turnstile fix */
         @media (max-width: 500px) {
-            .turnstile-wrapper {
-                transform: scale(0.95);
-                transform-origin: center center;
-            }
+            .turnstile-wrapper { transform: scale(0.95); transform-origin: center center; }
         }
         @media (max-width: 380px) {
-            .turnstile-wrapper {
-                transform: scale(0.88);
-                transform-origin: center center;
-            }
+            .turnstile-wrapper { transform: scale(0.88); transform-origin: center center; }
         }
 
-        /* ============================================ */
-        /* 🛡️ FIXED: Google Sign-In Button — Compact & Centered */
-        /* ============================================ */
+        /* 🛡️ Google Sign-In Button — Compact & Centered */
         .google-btn-wrapper {
             display: flex;
             justify-content: center;
@@ -612,9 +599,7 @@
             max-width: 100%;
             overflow: hidden;
         }
-        .google-btn-wrapper #g_id_onload {
-            display: none;
-        }
+        .google-btn-wrapper #g_id_onload { display: none; }
         .google-btn-wrapper .g_id_signin {
             display: flex;
             justify-content: center;
@@ -622,17 +607,12 @@
             max-width: 340px !important;
             margin: 0 auto;
         }
-        /* Override Google's default iframe width */
-        .google-btn-wrapper .g_id_signin > div {
-            width: 100% !important;
-            max-width: 340px !important;
-        }
+        .google-btn-wrapper .g_id_signin > div,
         .google-btn-wrapper .g_id_signin iframe {
             width: 100% !important;
             max-width: 340px !important;
             margin: 0 auto !important;
         }
-        /* Mobile-specific Google button fix */
         @media (max-width: 500px) {
             .google-btn-wrapper .g_id_signin,
             .google-btn-wrapper .g_id_signin > div,
@@ -642,7 +622,7 @@
             }
         }
 
-        /* OR divider — cleaner spacing */
+        /* OR divider */
         .auth-divider {
             text-align: center;
             margin: 16px 0 12px;
@@ -665,7 +645,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Mobile-specific overrides */
         @media (max-width: 400px) {
             .pro-card { padding: 18px 14px; }
             #authSection { max-width: 100% !important; padding: 0 8px; }
@@ -747,13 +726,9 @@
                         <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
 
-                    <!-- 🛡️ FIXED: Turnstile — compact, centered -->
+                    <!-- 🛡️ Turnstile Sign In -->
                     <div class="turnstile-wrapper">
-                        <div class="cf-turnstile"
-                             data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
-                             data-theme="dark"
-                             data-size="normal">
-                        </div>
+                        <div id="signin-turnstile"></div>
                     </div>
 
                     <button type="submit" class="btn-action" id="btnSubmitLogin">
@@ -762,7 +737,7 @@
 
                     <div class="auth-divider"><span>OR</span></div>
 
-                    <!-- 🛡️ FIXED: Google Button — compact, centered -->
+                    <!-- 🛡️ Google Sign In -->
                     <div class="google-btn-wrapper">
                         <div id="g_id_onload"
                              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
@@ -811,13 +786,9 @@
                         </span>
                     </label>
 
-                    <!-- 🛡️ FIXED: Turnstile — compact, centered -->
+                    <!-- 🛡️ Turnstile Sign Up -->
                     <div class="turnstile-wrapper">
-                        <div class="cf-turnstile"
-                             data-sitekey="0x4AAAAAAFWuPtu-QY0H3zjwvBiYMby_sTY"
-                             data-theme="dark"
-                             data-size="normal">
-                        </div>
+                        <div id="signup-turnstile"></div>
                     </div>
 
                     <button type="submit" class="btn-action" id="btnSubmitRegister">
@@ -826,7 +797,7 @@
 
                     <div class="auth-divider"><span>OR</span></div>
 
-                    <!-- 🛡️ FIXED: Google Button — compact, centered -->
+                    <!-- 🛡️ Google Sign Up -->
                     <div class="google-btn-wrapper">
                         <div class="g_id_signin"
                              data-type="standard"
@@ -994,7 +965,7 @@
         </div>
     </main>
 
-    <!-- Modals (same as before) -->
+    <!-- Modals -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1211,6 +1182,93 @@
         let currentStartDate = '';
         let currentEndDate = '';
 
+        // ============================================
+        // 🛡️ TURNSTILE — Explicit Rendering Fix
+        // ============================================
+        const TURNSTILE_SITE_KEY = '0x4AAAAAAFWuPkWZgks7bCLe'; // 👈 यहाँ अपनी असली Site Key डालें
+
+        let signinWidgetId = null;
+        let signupWidgetId = null;
+        let currentTurnstileToken = '';
+
+        window.onTurnstileLoad = function() {
+            // Sign In widget render करें (default visible है)
+            renderSignInTurnstile();
+        };
+
+        function renderSignInTurnstile() {
+            try {
+                const container = document.getElementById('signin-turnstile');
+                if (!container || !window.turnstile) return;
+
+                // अगर already rendered है, सिर्फ reset करें
+                if (signinWidgetId !== null) {
+                    try { window.turnstile.reset(signinWidgetId); } catch(e) {}
+                    return;
+                }
+
+                signinWidgetId = window.turnstile.render('#signin-turnstile', {
+                    sitekey: TURNSTILE_SITE_KEY,
+                    theme: 'dark',
+                    size: 'normal',
+                    callback: function(token) {
+                        currentTurnstileToken = token;
+                    },
+                    'error-callback': function() {
+                        console.warn('Turnstile error on sign in');
+                    }
+                });
+            } catch(e) {
+                console.error('Sign In Turnstile render error:', e);
+            }
+        }
+
+        function renderSignUpTurnstile() {
+            try {
+                const container = document.getElementById('signup-turnstile');
+                if (!container || !window.turnstile) return;
+
+                // अगर already rendered है, सिर्फ reset करें
+                if (signupWidgetId !== null) {
+                    try { window.turnstile.reset(signupWidgetId); } catch(e) {}
+                    return;
+                }
+
+                signupWidgetId = window.turnstile.render('#signup-turnstile', {
+                    sitekey: TURNSTILE_SITE_KEY,
+                    theme: 'dark',
+                    size: 'normal',
+                    callback: function(token) {
+                        currentTurnstileToken = token;
+                    },
+                    'error-callback': function() {
+                        console.warn('Turnstile error on sign up');
+                    }
+                });
+            } catch(e) {
+                console.error('Sign Up Turnstile render error:', e);
+            }
+        }
+
+        function resetTurnstile() {
+            try {
+                currentTurnstileToken = '';
+                if (signinWidgetId !== null && window.turnstile) {
+                    try { window.turnstile.reset(signinWidgetId); } catch(e) {}
+                }
+                if (signupWidgetId !== null && window.turnstile) {
+                    try { window.turnstile.reset(signupWidgetId); } catch(e) {}
+                }
+            } catch(e) {}
+        }
+
+        function getTurnstileToken() {
+            return currentTurnstileToken || '';
+        }
+
+        // ============================================
+        // NOTIFICATION HELPER
+        // ============================================
         function notify(message, title = 'Notification', icon = 'ℹ️') {
             document.getElementById('dialogIcon').textContent = icon;
             document.getElementById('dialogTitle').textContent = title;
@@ -1311,21 +1369,20 @@
             document.getElementById('lockModal').classList.remove('active');
         }
 
+        // 🛡️ FIXED: switchAuth now re-renders Turnstile widget
         function switchAuth(mode) {
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
-            
-            if (window.turnstile && window.turnstile.reset) {
-                try { window.turnstile.reset(); } catch(e) {}
-            }
-        }
 
-        function getTurnstileToken() {
-            try {
-                const el = document.querySelector('input[name="cf-turnstile-response"]');
-                return el ? el.value : '';
-            } catch(e) { return ''; }
+            currentTurnstileToken = '';
+
+            // जब form switch हो, उस form का widget render करें
+            if (isLogin) {
+                setTimeout(() => { renderSignInTurnstile(); }, 100);
+            } else {
+                setTimeout(() => { renderSignUpTurnstile(); }, 100);
+            }
         }
 
         function validateEmailFormat(email) {
@@ -1381,7 +1438,7 @@
                     showDashboardView();
                 } else {
                     notify(data.error || 'Authentication failed. Please verify credentials.', 'Sign In Failed', '❌');
-                    if (window.turnstile) window.turnstile.reset();
+                    resetTurnstile();
                 }
             } catch (err) {
                 notify('Unable to reach server. Please check your network connection.', 'Connection Error', '⚠️');
@@ -1434,11 +1491,12 @@
 
                 if (res.ok && data.success) {
                     notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
+                    resetTurnstile();
                     switchAuth('login');
                 } else {
                     let errMsg = data.error || data.message || 'Registration failed. Please try again.';
                     notify(errMsg, 'Error', '⚠️');
-                    if (window.turnstile) window.turnstile.reset();
+                    resetTurnstile();
                 }
             } catch (err) {
                 notify('Unable to reach server. Please try again.', 'Connection Error', '⚠️');
@@ -1931,6 +1989,13 @@ Please verify my payment and approve my extension. Thank you!`;
                 }
             }
         }, 10000);
+
+        // 🛡️ Ensure Sign In Turnstile renders after DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (window.turnstile) renderSignInTurnstile();
+            }, 500);
+        });
 
         initApp();
     </script>
