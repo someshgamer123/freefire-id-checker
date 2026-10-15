@@ -14,15 +14,11 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
-// ==================== 🛡️ SECURITY IMPORTS ====================
 const { OAuth2Client } = require('google-auth-library');
 const { doubleCsrf } = require('csrf-csrf');
 
-// 🛡️ @arcis/node is DISABLED due to incompatible API version
-// Using reliable built-in fallback injection protection instead
 console.log('✅ Built-in injection protection ENABLED');
 
-// Google Client (only if configured)
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
     googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -44,7 +40,6 @@ try {
     };
 }
 
-// ==================== Safe Model Loader ====================
 function safeLoadModel(modelName, defaultSchema) {
     try {
         const mod = require(`./models/${modelName}`);
@@ -86,7 +81,6 @@ const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('Visit
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
 
-// ==================== 🛡️ DISPOSABLE EMAIL LIST ====================
 const DISPOSABLE_DOMAINS = [
     'tempmail.com', 'guerrillamail.com', 'mailinator.com', '10minutemail.com',
     'yopmail.com', 'throwaway.email', 'sharklasers.com', 'guerrillamailblock.com',
@@ -250,25 +244,20 @@ async function verifyTurnstile(token, remoteIp) {
 }
 
 // ==================== 🛡️ FALLBACK INJECTION PROTECTION ====================
-// This is a reliable, no-dependency middleware that protects against
-// NoSQL injection, prototype pollution, and path traversal attacks
 function injectionProtection(req, res, next) {
     try {
         const sanitizeObject = (obj, depth = 0) => {
-            if (depth > 10) return obj; // prevent deep recursion
+            if (depth > 10) return obj;
             if (!obj || typeof obj !== 'object') return obj;
             
             for (const key of Object.keys(obj)) {
-                // Block MongoDB operators and dangerous keys
                 if (key.startsWith('$') || key.includes('..') || key === '__proto__' || key === 'constructor' || key === 'prototype') {
                     delete obj[key];
                     continue;
                 }
-                // Recursively sanitize nested objects
                 if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
                     sanitizeObject(obj[key], depth + 1);
                 }
-                // Sanitize arrays
                 if (Array.isArray(obj[key])) {
                     obj[key] = obj[key].map(item => {
                         if (item && typeof item === 'object') {
@@ -293,7 +282,6 @@ function injectionProtection(req, res, next) {
 // ==================== Database Init ====================
 async function initializeDatabase() {
     try {
-        await BlockedDevice.deleteMany({}).catch(() => {});
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
         let admin = await User.findOne();
 
@@ -367,8 +355,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
-
-// 🛡️ INJECTION PROTECTION (fallback, no external dependency)
 app.use(injectionProtection);
 
 app.use((req, res, next) => {
@@ -399,7 +385,6 @@ const { generateToken: generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     getTokenFromRequest: (req) => req.headers['x-csrf-token'] || req.body?._csrf
 });
 
-// CSRF token endpoint
 app.get('/api/csrf-token', (req, res) => {
     try {
         const token = generateCsrfToken(req, res);
@@ -541,10 +526,16 @@ async function authMiddleware(req, res, next) {
 
 // ==================== ROUTES ====================
 app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
-    try {
-        await BlockedDevice.deleteMany({});
-        res.send(`<h1 style="color:green;">✅ All Devices Unblocked!</h1><a href="/admin">Go to Admin Panel</a>`);
-    } catch(e) { res.status(500).send('Error'); }
+    res.status(403).send(`
+        <!DOCTYPE html><html><head><title>Forbidden</title>
+        <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
+        .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
+        h1{color:#ef4444;font-size:22px;margin-bottom:10px;}
+        p{color:#94a3b8;font-size:14px;line-height:1.6;}
+        </style></head>
+        <body><div class="card"><h1>⛔ ACCESS DENIED</h1>
+        <p>This action is restricted. Only an authorized administrator can unblock devices from the Admin Panel.</p></div></body></html>
+    `);
 });
 
 app.get('/api/whatsapp-number', async (req, res) => {
@@ -1291,6 +1282,15 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const cleanPass = (passcode || '').toString().trim();
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
+        // 🛡️ Check if device is already blocked — if yes, deny immediately
+        const existingBlock = await isDeviceBlocked(req);
+        if (existingBlock) {
+            return res.status(403).json({ 
+                error: 'permanently_blocked', 
+                message: '⛔ Your device is permanently blocked. Contact the administrator.' 
+            });
+        }
+
         let admin = await User.findOne();
         const activeEnvPass = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : DEFAULT_PASSCODE;
 
@@ -1310,7 +1310,13 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         if (isValid) {
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
-            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+            
+            // Clear any non-permanent blocked records for this device (fresh login)
+            await BlockedDevice.deleteMany({ 
+                $or: [{ deviceKey }, { ip }, { fingerprint }],
+                isPermanent: false
+            }).catch(() => {});
+
             if (Session) {
                 await Session.create({
                     userId: 'admin', deviceKey, fingerprint, ip,
@@ -1328,36 +1334,58 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             return res.json({ success: true, token: jwtToken });
         }
 
-        const blocked = await isDeviceBlocked(req);
-        if (blocked) return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Device permanently banned.' });
-
+        // Wrong passcode — increment attempts
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
+        
         if (!record) {
-            record = new BlockedDevice({ deviceKey, fingerprint, ip, deviceName, deviceType, attempts: 1, reason: 'Failed login attempt (1/3)', lastAttempt: new Date() });
+            record = new BlockedDevice({ 
+                deviceKey, fingerprint, ip, deviceName, deviceType, 
+                attempts: 1, 
+                reason: 'Failed login attempt (1/3)', 
+                isPermanent: false,
+                lastAttempt: new Date() 
+            });
         } else {
             record.attempts = (record.attempts || 0) + 1;
             record.lastAttempt = new Date();
+            // Update device info in case it changed
+            record.ip = ip;
+            record.deviceName = deviceName;
+            record.deviceType = deviceType;
         }
 
+        // 🛡️ 3 failed attempts → PERMANENT BLOCK forever
         if (record.attempts >= 3 && ip !== '127.0.0.1' && ip !== '::1' && !ip.includes('localhost')) {
             record.isPermanent = true;
             record.reason = 'Permanent ban: 3 failed passcode attempts';
             await record.save();
-            return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Device permanently blocked.' });
+            return res.status(403).json({ 
+                error: 'permanently_blocked', 
+                message: '⛔ Device permanently blocked due to 3 failed attempts. Contact administrator.' 
+            });
         } else {
             record.reason = `Failed passcode attempt (${record.attempts}/3)`;
             await record.save();
             return res.status(401).json({ error: `Incorrect Passcode! Attempt ${record.attempts} of 3.` });
         }
-    } catch (error) { res.status(500).json({ error: 'Server authentication error' }); }
+    } catch (error) { 
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Server authentication error' }); 
+    }
 });
 
 app.post('/api/admin/logout', async (req, res) => {
     try {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
-        if (Session) await Session.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }).catch(() => {});
+        if (Session) {
+            // Deactivate session but don't delete (keep history for Active Devices tab)
+            await Session.updateMany(
+                { $or: [{ deviceKey }, { ip }, { fingerprint }] },
+                { $set: { isActive: false, lastActivity: new Date() } }
+            ).catch(() => {});
+        }
     } catch(e) {}
     res.clearCookie('adminToken', { path: '/' });
     res.json({ success: true });
@@ -1704,13 +1732,15 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 // ==================== DEVICES & SESSIONS ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
-        const devices = await BlockedDevice.find({ isPermanent: true }).sort({ lastAttempt: -1 }).lean();
+        // 🛡️ Show all blocked devices (permanent AND temporary)
+        const devices = await BlockedDevice.find({}).sort({ lastAttempt: -1 }).lean();
         res.json({ success: true, devices });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
+        // 🛡️ Only authenticated admin can unblock
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Device unblocked' });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
@@ -1735,27 +1765,50 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// 🛡️ NEW: Show ALL login sessions (active + inactive), one per unique device
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
-        let sessions = [];
-        if (Session) sessions = await Session.find().sort({ lastActivity: -1 }).limit(50).lean();
-        if (!sessions || sessions.length === 0) {
-            const { ip, deviceKey, fingerprint } = getDeviceId(req);
-            const { deviceName, deviceType } = getDeviceDetails(req);
-            const currentSession = { _id: new mongoose.Types.ObjectId(), userId: 'admin', deviceKey, fingerprint, ip, deviceName, deviceType, isActive: true, createdAt: new Date(), lastActivity: new Date() };
-            if (Session) await Session.create(currentSession).catch(() => {});
-            sessions = [currentSession];
+        let allSessions = [];
+        if (Session) {
+            // Get all sessions (active and inactive) from last 30 days
+            allSessions = await Session.find({
+                createdAt: { $gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) }
+            }).sort({ lastActivity: -1 }).lean();
         }
-        res.json({ success: true, sessions });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
+
+        // Deduplicate by deviceKey — show one entry per unique device
+        const uniqueDevices = new Map();
+        for (const s of allSessions) {
+            const key = s.deviceKey || s.fingerprint || s._id.toString();
+            const existing = uniqueDevices.get(key);
+            // Prefer active/most recent session per device
+            if (!existing || (s.isActive && !existing.isActive) || (new Date(s.lastActivity) > new Date(existing.lastActivity))) {
+                uniqueDevices.set(key, s);
+            }
+        }
+
+        const sessionsList = Array.from(uniqueDevices.values()).sort((a, b) => {
+            // Active first, then by last activity
+            if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+            return new Date(b.lastActivity) - new Date(a.lastActivity);
+        });
+
+        res.json({ success: true, sessions: sessionsList });
+    } catch (error) { 
+        console.error('Active sessions error:', error);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         if (Session) {
             const sid = req.params.id;
-            if (mongoose.Types.ObjectId.isValid(sid)) await Session.findByIdAndDelete(sid);
-            else await Session.deleteOne({ id: sid });
+            if (mongoose.Types.ObjectId.isValid(sid)) {
+                await Session.updateOne({ _id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
+            } else {
+                await Session.updateOne({ id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
+            }
         }
         res.json({ success: true, message: 'Session terminated' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1776,11 +1829,16 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
                 fingerprint: session.fingerprint || crypto.randomBytes(16).toString('hex'),
                 deviceName: session.deviceName || 'Admin Device',
                 deviceType: session.deviceType || 'Desktop',
-                attempts: 3, isPermanent: true,
-                reason: 'Terminated & blocked by admin',
+                attempts: 3, 
+                isPermanent: true,
+                reason: 'Permanently blocked by admin',
                 lastAttempt: new Date()
             });
-            await Session.findByIdAndDelete(session._id);
+            // Deactivate all sessions for this device
+            await Session.updateMany(
+                { $or: [{ deviceKey: session.deviceKey }, { fingerprint: session.fingerprint }, { ip: session.ip }] },
+                { $set: { isActive: false } }
+            ).catch(() => {});
         }
         res.json({ success: true, message: 'Device blocked permanently' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1958,7 +2016,25 @@ try {
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
-        return res.send(`<!DOCTYPE html><html><head><title>Access Blocked</title><style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:24px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}a{color:#38bdf8;text-decoration:none;font-weight:700;display:inline-block;margin-top:14px;}</style></head><body><div class="card"><h1>⛔ DEVICE PERMANENTLY BLOCKED</h1><p>Your device was blocked. Click below to unblock immediately:<br><br><a href="/admin/unblock-all">Click here to Unblock Immediately ➜</a></p></div></body></html>`);
+        // 🛡️ REMOVED "unblock immediately" link — no way to bypass ban
+        return res.send(`<!DOCTYPE html><html><head><title>Access Blocked</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;text-align:center;padding:20px;margin:0;}
+            .card{background:#131722;padding:40px 30px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 25px 60px rgba(0,0,0,0.7);}
+            .icon{font-size:56px;margin-bottom:12px;display:block;}
+            h1{color:#ef4444;font-size:22px;margin-bottom:14px;font-weight:800;letter-spacing:0.5px;}
+            p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px;}
+            .note{color:#64748b;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);}
+            strong{color:#f87171;}
+        </style></head>
+        <body><div class="card">
+            <span class="icon">⛔</span>
+            <h1>DEVICE PERMANENTLY BLOCKED</h1>
+            <p>Your device has been <strong>permanently blocked</strong> due to repeated failed login attempts.</p>
+            <p>This ban cannot be removed automatically.</p>
+            <p class="note">Only an authorized administrator can unblock this device from the Admin Panel. Please contact the site owner if you believe this is a mistake.</p>
+        </div></body></html>`);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
