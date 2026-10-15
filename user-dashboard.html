@@ -562,44 +562,107 @@
         .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
         .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
 
-        /* 🛡️ FIXED: Google button responsive width */
-        .google-btn-wrapper {
-            display: flex;
-            justify-content: center;
-            margin-top: 4px;
-            width: 100%;
-            overflow: hidden;
-        }
-        .google-btn-wrapper > div {
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-        .google-btn-wrapper iframe {
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-        /* Google Sign-In button override */
-        .g_id_signin {
-            width: 100% !important;
-            display: flex;
-            justify-content: center;
-        }
-        .g_id_signin > div,
-        .g_id_signin iframe {
-            max-width: 100% !important;
-            width: 100% !important;
-        }
-        
+        /* ============================================ */
+        /* 🛡️ FIXED: Turnstile Widget — Compact & Centered */
+        /* ============================================ */
         .turnstile-wrapper {
             display: flex;
             justify-content: center;
-            margin-bottom: 12px;
+            align-items: center;
+            margin: 12px auto 14px;
             width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            min-height: 65px;
+        }
+        .turnstile-wrapper .cf-turnstile {
+            display: flex;
+            justify-content: center;
+            width: auto !important;
+            max-width: 100% !important;
+        }
+        /* Force Turnstile iframe to be compact */
+        .turnstile-wrapper iframe {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        /* Mobile-specific Turnstile fix */
+        @media (max-width: 500px) {
+            .turnstile-wrapper {
+                transform: scale(0.95);
+                transform-origin: center center;
+            }
+        }
+        @media (max-width: 380px) {
+            .turnstile-wrapper {
+                transform: scale(0.88);
+                transform-origin: center center;
+            }
+        }
+
+        /* ============================================ */
+        /* 🛡️ FIXED: Google Sign-In Button — Compact & Centered */
+        /* ============================================ */
+        .google-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 4px;
+            width: 100%;
+            max-width: 100%;
             overflow: hidden;
         }
-        .cf-turnstile {
+        .google-btn-wrapper #g_id_onload {
+            display: none;
+        }
+        .google-btn-wrapper .g_id_signin {
+            display: flex;
+            justify-content: center;
             width: 100% !important;
-            max-width: 100% !important;
+            max-width: 340px !important;
+            margin: 0 auto;
+        }
+        /* Override Google's default iframe width */
+        .google-btn-wrapper .g_id_signin > div {
+            width: 100% !important;
+            max-width: 340px !important;
+        }
+        .google-btn-wrapper .g_id_signin iframe {
+            width: 100% !important;
+            max-width: 340px !important;
+            margin: 0 auto !important;
+        }
+        /* Mobile-specific Google button fix */
+        @media (max-width: 500px) {
+            .google-btn-wrapper .g_id_signin,
+            .google-btn-wrapper .g_id_signin > div,
+            .google-btn-wrapper .g_id_signin iframe {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+        }
+
+        /* OR divider — cleaner spacing */
+        .auth-divider {
+            text-align: center;
+            margin: 16px 0 12px;
+            color: var(--text-muted);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+        .auth-divider span {
+            padding: 0 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         /* Mobile-specific overrides */
@@ -608,6 +671,7 @@
             #authSection { max-width: 100% !important; padding: 0 8px; }
             .form-input { font-size: 13px; padding: 11px 12px; }
             .btn-action { font-size: 13.5px; padding: 12px; }
+            .form-group { margin-bottom: 12px; }
         }
     </style>
 </head>
@@ -666,11 +730,11 @@
 
     <main class="content-wrap">
         <!-- ==================== AUTH SECTION ==================== -->
-        <div id="authSection" style="max-width:420px; margin:40px auto 0;">
+        <div id="authSection" style="max-width:420px; margin:30px auto 0;">
             <div class="pro-card">
                 <!-- ==================== SIGN IN ==================== -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
-                    <div style="text-align:center; margin-bottom:20px;">
+                    <div style="text-align:center; margin-bottom:18px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
                         <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Enter your credentials to access your link dashboard</p>
                     </div>
@@ -683,11 +747,12 @@
                         <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
 
+                    <!-- 🛡️ FIXED: Turnstile — compact, centered -->
                     <div class="turnstile-wrapper">
                         <div class="cf-turnstile"
                              data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
                              data-theme="dark"
-                             data-size="flexible">
+                             data-size="normal">
                         </div>
                     </div>
 
@@ -695,13 +760,9 @@
                         <span>Sign In</span>
                     </button>
 
-                    <div style="text-align:center; margin:18px 0 14px; color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:10px;">
-                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
-                        <span>OR</span>
-                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
-                    </div>
+                    <div class="auth-divider"><span>OR</span></div>
 
-                    <!-- 🛡️ FIXED: Google button responsive — width 100% max 320px -->
+                    <!-- 🛡️ FIXED: Google Button — compact, centered -->
                     <div class="google-btn-wrapper">
                         <div id="g_id_onload"
                              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
@@ -710,23 +771,23 @@
                         </div>
                         <div class="g_id_signin"
                              data-type="standard"
-                             data-size="large"
-                             data-theme="outline"
-                             data-text="sign_in_with"
+                             data-size="medium"
+                             data-theme="filled_black"
+                             data-text="signin_with"
                              data-shape="rectangular"
                              data-logo_alignment="left"
-                             data-width="300">
+                             data-width="280">
                         </div>
                     </div>
 
-                    <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
+                    <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
                         Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
                     </div>
                 </form>
 
                 <!-- ==================== SIGN UP ==================== -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
-                    <div style="text-align:center; margin-bottom:20px;">
+                    <div style="text-align:center; margin-bottom:18px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
                         <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to start managing your active tracking links</p>
                     </div>
@@ -750,11 +811,12 @@
                         </span>
                     </label>
 
+                    <!-- 🛡️ FIXED: Turnstile — compact, centered -->
                     <div class="turnstile-wrapper">
                         <div class="cf-turnstile"
-                             data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
+                             data-sitekey="0x4AAAAAAFWuPtu-QY0H3zjwvBiYMby_sTY"
                              data-theme="dark"
-                             data-size="flexible">
+                             data-size="normal">
                         </div>
                     </div>
 
@@ -762,26 +824,22 @@
                         <span>Create Account</span>
                     </button>
 
-                    <div style="text-align:center; margin:18px 0 14px; color:var(--text-muted); font-size:12px; display:flex; align-items:center; gap:10px;">
-                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
-                        <span>OR</span>
-                        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
-                    </div>
+                    <div class="auth-divider"><span>OR</span></div>
 
-                    <!-- 🛡️ FIXED: Google button responsive -->
+                    <!-- 🛡️ FIXED: Google Button — compact, centered -->
                     <div class="google-btn-wrapper">
                         <div class="g_id_signin"
                              data-type="standard"
-                             data-size="large"
-                             data-theme="outline"
+                             data-size="medium"
+                             data-theme="filled_black"
                              data-text="signup_with"
                              data-shape="rectangular"
                              data-logo_alignment="left"
-                             data-width="300">
+                             data-width="280">
                         </div>
                     </div>
 
-                    <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-secondary);">
+                    <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
                         Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
                     </div>
                 </form>
@@ -936,13 +994,13 @@
         </div>
     </main>
 
+    <!-- Modals (same as before) -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
                 <h3>🔗 URL Shortener</h3>
                 <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
             </div>
-            
             <div class="form-group">
                 <label class="form-label">Destination URL</label>
                 <input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com" required>
@@ -951,11 +1009,9 @@
                 <label class="form-label">Title / Label</label>
                 <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
             </div>
-
             <button class="btn-action" onclick="createUserShortLink()">
                 <span>Create Short Link ➜</span>
             </button>
-
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle);">
                 <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading short links...</div>
@@ -994,7 +1050,6 @@
                 <h3>💎 Extension Plans</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
-
             <div class="plan-list-container">
                 <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
                     <div class="plan-row-left">
@@ -1008,7 +1063,6 @@
                         <div class="plan-price-tag">₹100</div>
                     </div>
                 </div>
-
                 <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -1021,7 +1075,6 @@
                         <div class="plan-price-tag">₹200</div>
                     </div>
                 </div>
-
                 <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -1034,7 +1087,6 @@
                         <div class="plan-price-tag">₹400</div>
                     </div>
                 </div>
-
                 <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -1047,7 +1099,6 @@
                         <div class="plan-price-tag">₹1000</div>
                     </div>
                 </div>
-
                 <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
                     <div class="plan-row-left">
                         <div class="plan-radio-circle"></div>
@@ -1061,7 +1112,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="payment-panel">
                 <div class="qr-wrapper">
                     <img id="qrImageElement" src="" alt="Payment QR">
@@ -1072,12 +1122,10 @@
                         <span>UPI: <strong id="upiIdDisplay">admin@upi</strong></span>
                         <span>📋</span>
                     </div>
-
                     <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
                         Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
                         Scan QR or pay to UPI ID, then submit your request below.
                     </div>
-
                     <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
                         <span>📩 Request Admin Renewal via WhatsApp</span>
                     </button>
@@ -1092,7 +1140,6 @@
                 <h3>📖 How to Use Your Dashboard</h3>
                 <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
             </div>
-            
             <div class="guide-item">
                 <h4>1. Account Access & Ownership</h4>
                 <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
@@ -1113,7 +1160,6 @@
                 <h4>5. URL Shortener</h4>
                 <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns (requires 3 active links).</p>
             </div>
-
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
                 <span>Understood, Close Guide</span>
             </button>
@@ -1126,7 +1172,6 @@
                 <h3>📜 Terms & Guidelines</h3>
                 <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
             </div>
-            
             <div class="guide-item">
                 <h4>1. Account Integrity</h4>
                 <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
@@ -1139,7 +1184,6 @@
                 <h4>3. Support Desk</h4>
                 <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
             </div>
-
             <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;">
                 <span>I Understand & Agree</span>
             </button>
@@ -1435,43 +1479,34 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('navUserBadge').style.display = 'flex';
-
             showHamburger();
-
             document.getElementById('navUserName').textContent = userProfile.name;
             document.getElementById('labelUserName').textContent = userProfile.name;
-
             fetchUserLinkData();
         }
 
         function selectDateFilter(filterType, element) {
             document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
             if (element) element.classList.add('active');
-
             const customBox = document.getElementById('customDateSection');
             customBox.style.display = 'none';
-
             currentDateFilter = filterType;
             currentStartDate = '';
             currentEndDate = '';
-
             const label = document.getElementById('activeDateLabel');
             if (filterType === 'today') label.textContent = "Showing: Today's Unique Activity";
             else if (filterType === 'yesterday') label.textContent = "Showing: Yesterday's Unique Activity";
             else if (filterType === '7days') label.textContent = "Showing: Last 7 Days Activity";
             else if (filterType === 'all') label.textContent = "Showing: All-Time Overall Activity";
-
             fetchUserLinkData();
         }
 
         function toggleCustomDateUI(element) {
             document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
             if (element) element.classList.add('active');
-
             const customBox = document.getElementById('customDateSection');
             const isOpen = customBox.style.display === 'flex';
             customBox.style.display = isOpen ? 'none' : 'flex';
-
             if (!isOpen) {
                 const todayStr = new Date().toISOString().split('T')[0];
                 if (!document.getElementById('customDateInput').value) {
@@ -1485,30 +1520,24 @@
             currentDateFilter = 'custom';
             currentStartDate = dateVal;
             currentEndDate = document.getElementById('customEndDateInput').value || dateVal;
-
             const formatted = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             document.getElementById('activeDateLabel').textContent = `Showing: Data for ${formatted}`;
-
             fetchUserLinkData();
         }
 
         function applyCustomDateRange() {
             const startVal = document.getElementById('customDateInput').value;
             const endVal = document.getElementById('customEndDateInput').value || startVal;
-
             if (!startVal) {
                 notify('Please select at least one date.', 'Date Required', '⚠️');
                 return;
             }
-
             currentDateFilter = 'custom';
             currentStartDate = startVal;
             currentEndDate = endVal;
-
             const sFmt = new Date(startVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const eFmt = new Date(endVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             document.getElementById('activeDateLabel').textContent = `Showing: Range (${sFmt} - ${eFmt})`;
-
             fetchUserLinkData();
         }
 
@@ -1567,7 +1596,6 @@
                 selectEl.innerHTML = '<option value="">No links assigned to your account</option>';
                 return;
             }
-
             selectEl.innerHTML = links.map(l => {
                 const isSelected = l.id === currentActiveId ? 'selected' : '';
                 const lName = l.name || l.title || l.linkName || 'Untitled Campaign';
@@ -1627,7 +1655,6 @@
 
         function populateDashboardMetrics(data) {
             const l = data.link || data;
-            
             const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
             document.getElementById('displayLinkName').textContent = linkTitle;
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
@@ -1687,7 +1714,6 @@
                 const d = new Date(l.expiryDate);
                 expText.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const left = typeof l.daysLeft === 'number' ? l.daysLeft : 0;
-
                 if (left <= 0) {
                     badge.className = 'badge-status expired';
                     badge.textContent = 'Expired';
@@ -1735,14 +1761,11 @@
 
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-
             if (!currentId) {
                 notify('Please select your Link ID before requesting renewal.', 'Link Required', '⚠️');
                 return;
             }
-
             const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
-
             try {
                 fetch('/api/user/renew-payment', {
                     method: 'POST',
@@ -1786,16 +1809,13 @@ Please verify my payment and approve my extension. Thank you!`;
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
                     const pastSeven = list.slice(0, 7);
-
                     if (pastSeven.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>';
                         return;
                     }
-
                     tbody.innerHTML = pastSeven.map(record => {
                         const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
-                        
                         return `
                             <tr>
                                 <td>${dateStr}</td>
@@ -1813,16 +1833,13 @@ Please verify my payment and approve my extension. Thank you!`;
         async function loadUserShortLinks() {
             const container = document.getElementById('userShortLinksList');
             container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
-
             try {
                 const res = await fetch(`/api/user/short-links?userName=${encodeURIComponent(userProfile.name)}`);
                 const data = await res.json().catch(() => ({}));
                 const links = data.links || [];
-
                 if (!links.length) {
                     return container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created yet.</p>';
                 }
-
                 container.innerHTML = links.map(l => `
                     <div class="short-item">
                         <div>
@@ -1849,21 +1866,15 @@ Please verify my payment and approve my extension. Thank you!`;
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-
             if (!originalUrl) {
                 notify('Please enter a destination URL', 'URL Required', '⚠️');
                 return;
             }
-
             try {
                 const res = await fetch('/api/user/short-links', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        originalUrl,
-                        title,
-                        userName: userProfile.name
-                    })
+                    body: JSON.stringify({ originalUrl, title, userName: userProfile.name })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (data.success) {
