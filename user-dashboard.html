@@ -5,7 +5,6 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 🛡️ SECURITY: Turnstile + Google Scripts -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
@@ -563,16 +562,52 @@
         .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
         .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
 
+        /* 🛡️ FIXED: Google button responsive width */
         .google-btn-wrapper {
             display: flex;
             justify-content: center;
             margin-top: 4px;
+            width: 100%;
+            overflow: hidden;
         }
-        .google-btn-wrapper > div { width: 100% !important; }
+        .google-btn-wrapper > div {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .google-btn-wrapper iframe {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        /* Google Sign-In button override */
+        .g_id_signin {
+            width: 100% !important;
+            display: flex;
+            justify-content: center;
+        }
+        .g_id_signin > div,
+        .g_id_signin iframe {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        
         .turnstile-wrapper {
             display: flex;
             justify-content: center;
             margin-bottom: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .cf-turnstile {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Mobile-specific overrides */
+        @media (max-width: 400px) {
+            .pro-card { padding: 18px 14px; }
+            #authSection { max-width: 100% !important; padding: 0 8px; }
+            .form-input { font-size: 13px; padding: 11px 12px; }
+            .btn-action { font-size: 13.5px; padding: 12px; }
         }
     </style>
 </head>
@@ -648,7 +683,6 @@
                         <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
 
-                    <!-- 🛡️ TURNSTILE WIDGET -->
                     <div class="turnstile-wrapper">
                         <div class="cf-turnstile"
                              data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
@@ -667,7 +701,7 @@
                         <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
                     </div>
 
-                    <!-- 🛡️ GOOGLE LOGIN -->
+                    <!-- 🛡️ FIXED: Google button responsive — width 100% max 320px -->
                     <div class="google-btn-wrapper">
                         <div id="g_id_onload"
                              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
@@ -681,7 +715,7 @@
                              data-text="sign_in_with"
                              data-shape="rectangular"
                              data-logo_alignment="left"
-                             data-width="380">
+                             data-width="300">
                         </div>
                     </div>
 
@@ -716,7 +750,6 @@
                         </span>
                     </label>
 
-                    <!-- 🛡️ TURNSTILE WIDGET -->
                     <div class="turnstile-wrapper">
                         <div class="cf-turnstile"
                              data-sitekey="0x4AAAAAAFWuPkWZgks7bCLe"
@@ -735,7 +768,7 @@
                         <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
                     </div>
 
-                    <!-- 🛡️ GOOGLE SIGNUP -->
+                    <!-- 🛡️ FIXED: Google button responsive -->
                     <div class="google-btn-wrapper">
                         <div class="g_id_signin"
                              data-type="standard"
@@ -744,7 +777,7 @@
                              data-text="signup_with"
                              data-shape="rectangular"
                              data-logo_alignment="left"
-                             data-width="380">
+                             data-width="300">
                         </div>
                     </div>
 
@@ -903,7 +936,6 @@
         </div>
     </main>
 
-    <!-- ==================== SHORTENER MODAL ==================== -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -931,7 +963,6 @@
         </div>
     </div>
 
-    <!-- ==================== LOCK MODAL ==================== -->
     <div class="app-modal" id="lockModal">
         <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
             <div style="font-size:48px; margin-bottom:12px;">🔒</div>
@@ -957,7 +988,6 @@
         </div>
     </div>
 
-    <!-- ==================== PLANS MODAL ==================== -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1056,7 +1086,6 @@
         </div>
     </div>
 
-    <!-- ==================== GUIDE MODAL ==================== -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1091,7 +1120,6 @@
         </div>
     </div>
 
-    <!-- ==================== TERMS MODAL ==================== -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1118,7 +1146,6 @@
         </div>
     </div>
 
-    <!-- ==================== CUSTOM DIALOG ==================== -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="dialog-icon" id="dialogIcon">🔔</div>
@@ -1245,19 +1272,18 @@
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
             
-            // Reset Turnstile widgets on switch
             if (window.turnstile && window.turnstile.reset) {
                 try { window.turnstile.reset(); } catch(e) {}
             }
         }
 
-        // 🛡️ Get Turnstile token
         function getTurnstileToken() {
-            const el = document.querySelector('input[name="cf-turnstile-response"]');
-            return el ? el.value : '';
+            try {
+                const el = document.querySelector('input[name="cf-turnstile-response"]');
+                return el ? el.value : '';
+            } catch(e) { return ''; }
         }
 
-        // 🛡️ Email format + typo validation
         function validateEmailFormat(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
@@ -1277,13 +1303,11 @@
             return { valid: true };
         }
 
-        // 🛡️ Mobile validation
         function isValidMobile(mobile) {
             const clean = mobile.replace(/[\s\-\(\)\+]/g, '');
             return /^[6-9]\d{9}$/.test(clean);
         }
 
-        // 🛡️ SIGN IN
         async function submitSignIn(e) {
             e.preventDefault();
             const email = document.getElementById('inEmail').value.trim();
@@ -1323,7 +1347,6 @@
             }
         }
 
-        // 🛡️ SIGN UP
         async function submitSignUp(e) {
             e.preventDefault();
             const name = document.getElementById('upName').value.trim();
@@ -1337,14 +1360,12 @@
                 return;
             }
 
-            // Client-side email validation
             const emailCheck = validateEmailFormat(email);
             if (!emailCheck.valid) {
                 notify(emailCheck.error, 'Invalid Email', '⚠️');
                 return;
             }
 
-            // Client-side mobile validation
             if (!isValidMobile(phone)) {
                 notify('Please enter a valid 10-digit Indian mobile number starting with 6-9', 'Invalid Mobile', '⚠️');
                 return;
@@ -1383,7 +1404,6 @@
             }
         }
 
-        // 🛡️ GOOGLE LOGIN
         async function handleGoogleLogin(response) {
             if (!response || !response.credential) {
                 notify('Google login failed. Please try again.', 'Error', '⚠️');
@@ -1874,7 +1894,6 @@ Please verify my payment and approve my extension. Thank you!`;
             window.location.reload();
         }
 
-        // Live Auto-Refresh
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 const selectEl = document.getElementById('userLinkSelect');
