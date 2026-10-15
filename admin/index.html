@@ -200,6 +200,218 @@
         .toast.error { background: #dc2626; }
         .toast.info { background: #4f46e5; }
 
+        /* 🆕 NEW: Copy-able URL input wrapper */
+        .copyable-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .copyable-input-wrap input {
+            padding-right: 44px !important;
+            margin: 0 !important;
+            cursor: pointer;
+            width: 100%;
+        }
+        .copyable-input-wrap .copy-icon-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #818cf8;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        .copyable-input-wrap .copy-icon-btn:hover {
+            background: rgba(99, 102, 241, 0.3);
+            color: #fff;
+            transform: translateY(-50%) scale(1.05);
+        }
+        .copyable-input-wrap .copy-icon-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .copyable-input-wrap .copy-icon-btn.copied {
+            background: rgba(34, 197, 94, 0.25);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #22c55e;
+        }
+        .copyable-input-wrap input[readonly]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+
+        /* 🆕 NEW: Lifetime active button */
+        .lifetime-btn-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .btn-lifetime {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-lifetime:hover {
+            background: rgba(34, 197, 94, 0.3);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .btn-lifetime:active {
+            transform: scale(0.97);
+        }
+        .lifetime-active-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        /* 🆕 NEW: Secret Key / UID card in edit modal */
+        .uid-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .uid-card .uid-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .uid-card .uid-value-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .uid-card .uid-value {
+            flex: 1;
+            min-width: 180px;
+            background: #090a0f;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .uid-card .uid-value:hover {
+            border-color: var(--primary);
+            background: #0d1119;
+        }
+        .uid-card .uid-copy-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .uid-card .uid-copy-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+        .uid-card .uid-copy-btn:active { transform: scale(0.97); }
+
+        /* 🆕 NEW: Paste UID box in create form */
+        .paste-uid-card {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.08));
+            border: 1px dashed rgba(6, 182, 212, 0.45);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .paste-uid-card .paste-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .paste-uid-card .paste-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .paste-uid-card input {
+            flex: 1;
+            min-width: 180px;
+            margin: 0 !important;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+        .paste-uid-card .paste-btn {
+            padding: 11px 18px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .paste-uid-card .paste-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+        .paste-uid-card .paste-btn:active { transform: scale(0.97); }
+        .paste-uid-card .paste-hint {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
         @media (max-width: 768px) {
             body { padding: 12px; }
             .header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -207,6 +419,8 @@
             .header-actions { justify-content: center; }
             .link-item { flex-direction: column; align-items: stretch; }
             .edit-modal .modal-content { padding: 16px; }
+            .uid-card .uid-value-row { flex-direction: column; align-items: stretch; }
+            .uid-card .uid-copy-btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -346,6 +560,20 @@
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
+
+                <!-- 🆕 NEW: Paste UID to Duplicate Link Settings -->
+                <div class="paste-uid-card">
+                    <div class="paste-label">📋 Quick Duplicate — Paste Existing UID</div>
+                    <div class="paste-row">
+                        <input type="text" id="pasteUidInput" placeholder="Paste existing UID here (e.g. link_xxxxx...)" autocomplete="off">
+                        <button type="button" class="paste-btn" onclick="pasteAndLoadUid()">⚡ Paste & Load</button>
+                        <button type="button" class="paste-btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);" onclick="pasteFromClipboard()">📥 From Clipboard</button>
+                    </div>
+                    <div class="paste-hint">
+                        💡 Copy UID from any existing link's edit page, paste here, and all settings (Video URL, Claim URL, Button Text, Popup Settings, etc.) will be auto-filled. Perfect for creating multiple similar links quickly.
+                    </div>
+                </div>
+
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
                     <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">👤 Client Name / User Name:</label>
                     <input type="text" id="cCampaignName" placeholder="Enter user name (e.g. Rahul Sharma, John Doe...)" style="margin-bottom:8px;">
@@ -694,6 +922,28 @@
             } catch(e) { console.error('showSection error:', e); }
         }
 
+        // 🆕 NEW: Copy URL on click (for copyable inputs in edit modal)
+        function copyFromInput(inputId, msg) {
+            try {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                copyText(input.value, msg || 'Copied!');
+                // Visual feedback
+                const wrap = input.closest('.copyable-input-wrap');
+                if (wrap) {
+                    const btn = wrap.querySelector('.copy-icon-btn');
+                    if (btn) {
+                        btn.classList.add('copied');
+                        btn.innerHTML = '✓';
+                        setTimeout(() => {
+                            btn.classList.remove('copied');
+                            btn.innerHTML = '📋';
+                        }, 1500);
+                    }
+                }
+            } catch(e) {}
+        }
+
         function updateCreatePopupPreview(url) {
             try {
                 const box = document.getElementById('createImgPreviewBox');
@@ -940,6 +1190,7 @@
             } catch(e) { showToast('Failed to delete link', 'error'); }
         }
 
+        // 🆕 NEW: Edit modal with copyable inputs + UID card + Lifetime button
         function openEditModal(id) {
             try {
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
@@ -947,17 +1198,48 @@
                 editingLinkId = id;
                 const popup = link.popupSettings || {};
                 const expiryVal = link.expiryDate ? new Date(link.expiryDate).toISOString().slice(0, 16) : '';
+                const isLifetime = !link.expiryDate;
+                const uidValue = link.id || link._id || '';
+
                 editUidChecking = (link.uidChecking !== false);
+
                 const b = document.getElementById('editModalBody');
                 b.innerHTML = `
+                    <!-- 🆕 UID Card with Copy button -->
+                    <div class="uid-card">
+                        <div class="uid-label">🔑 <span>Link UID (Secret Key)</span></div>
+                        <div class="uid-value-row">
+                            <div class="uid-value" onclick="copyText('${escapeHTML(uidValue)}', 'UID Copied!')" title="Click to copy UID">${escapeHTML(uidValue)}</div>
+                            <button type="button" class="uid-copy-btn" onclick="copyText('${escapeHTML(uidValue)}', 'UID Copied!')">📋 Copy UID</button>
+                        </div>
+                        <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.4;">
+                            💡 Copy this UID to duplicate this link's settings in the Create Link page.
+                        </div>
+                    </div>
+
                     <div class="form-row-2">
                         <div class="form-group"><label>👤 User Name (Client)</label><input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name"></div>
                         <div class="form-group"><label style="color:#38bdf8;">🏷️ Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
                     </div>
+
+                    <!-- 🆕 Copyable Video URL -->
                     <div class="form-row-2">
-                        <div class="form-group"><label>Video URL</label><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}"></div>
-                        <div class="form-group"><label>Claim Destination URL</label><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}"></div>
+                        <div class="form-group">
+                            <label>🎬 Video URL <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="eVideo" value="${escapeHTML(link.video || '')}" readonly onclick="copyFromInput('eVideo', 'Video URL copied!')">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eVideo', 'Video URL copied!')">📋</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>🎯 Claim URL <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}" readonly onclick="copyFromInput('eClaim', 'Claim URL copied!')">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eClaim', 'Claim URL copied!')">📋</button>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="form-row-2">
                         <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
                         <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
@@ -970,8 +1252,18 @@
                                 <option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option>
                             </select>
                         </div>
-                        <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"></div>
+                        <div class="form-group">
+                            <label style="color:var(--warning);">📅 Expiry Date</label>
+                            <input type="datetime-local" id="eExpiry" value="${expiryVal}">
+                            <!-- 🆕 Lifetime Active Button -->
+                            <div class="lifetime-btn-wrap">
+                                ${isLifetime 
+                                    ? `<span class="lifetime-active-badge">♾️ Lifetime Active</span>` 
+                                    : `<button type="button" class="btn-lifetime" onclick="setLifetimeActive()">♾️ Make Lifetime Active</button>`}
+                            </div>
+                        </div>
                     </div>
+
                     <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                         <div>
                             <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
@@ -982,6 +1274,7 @@
                         </div>
                         <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}</button>
                     </div>
+
                     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
                         <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
                         <div class="form-row-2">
@@ -989,7 +1282,13 @@
                             <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
                         </div>
                         <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                        <div class="form-group"><label>Popup Image URL (16:9)</label><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" oninput="updateEditPopupPreview(this.value)"></div>
+                        <div class="form-group">
+                            <label>Popup Image URL (16:9) <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" readonly onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')">📋</button>
+                            </div>
+                        </div>
                         <div class="preview-box-16-9" id="editPreviewBox">
                             ${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}
                         </div>
@@ -997,6 +1296,20 @@
                 `;
                 document.getElementById('editModal').classList.add('show');
             } catch(e) { console.error('openEditModal error:', e); }
+        }
+
+        // 🆕 NEW: Set lifetime active (clear expiry date)
+        function setLifetimeActive() {
+            try {
+                const expiryInput = document.getElementById('eExpiry');
+                if (expiryInput) expiryInput.value = '';
+                showToast('♾️ Link will be set to Lifetime Active on save', 'success');
+                // Visual feedback
+                const wrap = document.querySelector('.lifetime-btn-wrap');
+                if (wrap) {
+                    wrap.innerHTML = '<span class="lifetime-active-badge">♾️ Lifetime Active (will be saved)</span>';
+                }
+            } catch(e) {}
         }
 
         function updateEditPopupPreview(url) {
@@ -1025,6 +1338,7 @@
                 const headline = document.getElementById('eHead')?.value.trim();
                 const status = document.getElementById('eStatus')?.value;
                 const expiryInput = document.getElementById('eExpiry')?.value;
+                // 🆕 Empty expiry = lifetime active
                 const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
                 const uidChecking = editUidChecking;
                 const popupSettings = {
@@ -1060,6 +1374,96 @@
                     selectedExpiry = d.toISOString();
                 } else selectedExpiry = null;
             } catch(e) {}
+        }
+
+        // ==================== 🆕 PASTE UID FEATURE ====================
+        async function pasteAndLoadUid() {
+            try {
+                const input = document.getElementById('pasteUidInput');
+                const uid = (input?.value || '').trim();
+                if (!uid) return showToast('Please paste a UID first', 'error');
+
+                // Find the link by ID in allLinks
+                let sourceLink = allLinks.find(l => l && (String(l.id || l._id) === uid));
+                
+                // If not in memory, fetch from server
+                if (!sourceLink) {
+                    showToast('Looking up UID on server...', 'info');
+                    try {
+                        const res = await fetchWithAuth('/api/links/' + encodeURIComponent(uid));
+                        if (res && res.ok) {
+                            sourceLink = await res.json();
+                        }
+                    } catch(e) {}
+                }
+
+                if (!sourceLink) {
+                    return showToast('❌ No link found with this UID', 'error');
+                }
+
+                // Auto-fill all fields
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+
+                setVal('cVideo', sourceLink.video || '');
+                setVal('cClaim', sourceLink.claim || sourceLink.url || '');
+                setVal('cButtonText', sourceLink.buttonText || '');
+                setVal('cHeadline', sourceLink.headline || '');
+                setVal('cPopTitle', sourceLink.popupSettings?.title || '');
+                setVal('cPopBtn', sourceLink.popupSettings?.buttonText || '');
+                setVal('cPopSub', sourceLink.popupSettings?.subtitle || '');
+                setVal('cPopImg', sourceLink.popupSettings?.image || '');
+
+                // Update preview
+                updateCreatePopupPreview(sourceLink.popupSettings?.image || '');
+
+                // Set UID checking status
+                if (sourceLink.uidChecking === false) {
+                    createUidChecking = true;
+                    toggleCreateUidChecking();
+                    createUidChecking = false;
+                    toggleCreateUidChecking();
+                } else {
+                    if (!createUidChecking) {
+                        createUidChecking = false;
+                        toggleCreateUidChecking();
+                    }
+                }
+
+                // Clear the paste input
+                input.value = '';
+
+                showToast('✅ Settings loaded! Now fill User Name & Link Name to create new link', 'success');
+
+                // Scroll to top of create form
+                setTimeout(() => {
+                    const campInput = document.getElementById('cCampaignName');
+                    if (campInput) campInput.focus();
+                }, 300);
+
+            } catch(e) {
+                console.error('pasteAndLoadUid error:', e);
+                showToast('Failed to load UID settings', 'error');
+            }
+        }
+
+        // 🆕 NEW: Paste from clipboard
+        async function pasteFromClipboard() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    const input = document.getElementById('pasteUidInput');
+                    if (input && text) {
+                        input.value = text.trim();
+                        showToast('Pasted from clipboard!', 'info');
+                    } else {
+                        showToast('Clipboard empty or permission denied', 'error');
+                    }
+                } else {
+                    showToast('Clipboard access not supported. Please paste manually.', 'error');
+                }
+            } catch(e) {
+                showToast('Please paste manually (Ctrl+V)', 'error');
+            }
         }
 
         async function loadCreateUserDropdown() {
