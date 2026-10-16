@@ -31,13 +31,7 @@
             --text-muted: #64748b;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--bg-base);
@@ -49,8 +43,7 @@
         }
 
         .ambient-layer {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
             pointer-events: none;
             z-index: 0;
@@ -60,16 +53,12 @@
         }
 
         .top-navbar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: sticky; top: 0; z-index: 100;
             background: rgba(10, 14, 23, 0.94);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-subtle);
             padding: 12px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: flex; align-items: center; justify-content: space-between;
         }
 
         .btn-hamburger {
@@ -77,85 +66,41 @@
             background: var(--surface-1);
             border: 1px solid var(--border-subtle);
             border-radius: 10px;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 4.5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            gap: 4.5px; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;
         }
-        .btn-hamburger:hover {
-            background: rgba(99, 102, 241, 0.15);
-            border-color: var(--border-hover);
-        }
-        .btn-hamburger span {
-            display: block;
-            width: 20px; height: 2.2px;
-            background: var(--text-primary);
-            border-radius: 3px;
-            transition: 0.3s;
-        }
+        .btn-hamburger:hover { background: rgba(99, 102, 241, 0.15); border-color: var(--border-hover); }
+        .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text-primary); border-radius: 3px; transition: 0.3s; }
 
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
+        .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 
         .brand-badge-icon {
             width: 32px; height: 32px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #fff;
             box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        .brand-title {
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: var(--text-primary);
-        }
+        .brand-title { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-primary); }
 
-        .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .navbar-right { display: flex; align-items: center; gap: 10px; }
 
         .user-pill {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700;
+            display: flex; align-items: center; gap: 6px;
         }
-        .user-pill .live-indicator {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #34d399;
-        }
+        .user-pill .live-indicator { width: 6px; height: 6px; border-radius: 50%; background: #34d399; }
 
         .sidebar-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(8px);
-            z-index: 9998;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s ease;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
 
@@ -164,8 +109,7 @@
             width: 290px; height: 100vh;
             background: var(--surface-1);
             border-right: 1px solid var(--border-subtle);
-            z-index: 9999;
-            transform: translateX(-100%);
+            z-index: 9999; transform: translateX(-100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column;
             padding: 24px 18px;
@@ -179,10 +123,7 @@
             border-bottom: 1px solid var(--border-subtle);
         }
         .sidebar-head h2 { font-size: 16px; font-weight: 800; color: #fff; }
-        .sidebar-close {
-            background: none; border: none; font-size: 24px;
-            color: var(--text-muted); cursor: pointer; line-height: 1;
-        }
+        .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; line-height: 1; }
         .sidebar-close:hover { color: #fff; }
 
         .sidebar-links-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
@@ -196,73 +137,36 @@
         .drawer-item.danger { color: #f87171; }
         .drawer-item.danger:hover { background: rgba(239, 68, 68, 0.12); }
 
-        .content-wrap {
-            max-width: 960px;
-            margin: 24px auto 0;
-            padding: 0 16px;
-            position: relative;
-            z-index: 1;
-        }
+        .content-wrap { max-width: 960px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; }
 
         .pro-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 22px;
-            margin-bottom: 18px;
+            background: var(--surface-1); border: 1px solid var(--border-subtle);
+            border-radius: 16px; padding: 22px; margin-bottom: 18px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
         .form-group { margin-bottom: 14px; }
-        .form-label {
-            display: block;
-            font-size: 12.5px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
+        .form-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
         .form-input {
-            width: 100%;
-            padding: 12px 14px;
-            background: #080c14;
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            outline: none;
-            transition: all 0.2s;
+            width: 100%; padding: 12px 14px;
+            background: #080c14; border: 1px solid var(--border-subtle);
+            border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600;
+            outline: none; transition: all 0.2s;
         }
-        .form-input:focus {
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px var(--primary-glow);
-        }
+        .form-input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-glow); }
 
         .btn-action {
-            width: 100%;
-            padding: 13px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14.5px;
-            font-weight: 700;
-            cursor: pointer;
+            width: 100%; padding: 13px; border: none; border-radius: 10px;
+            font-size: 14.5px; font-weight: 700; cursor: pointer;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            color: #fff; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-action:active { transform: scale(0.99); }
         .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .btn-secondary {
-            background: var(--surface-2);
-            color: var(--text-primary);
-            border: 1px solid var(--border-subtle);
-        }
+        .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
 
         .btn-whatsapp {
@@ -271,42 +175,20 @@
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
         }
 
-        .checkbox-container {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin: 16px 0;
-            cursor: pointer;
-        }
+        .checkbox-container { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; cursor: pointer; }
         .checkbox-container input[type="checkbox"] {
-            width: 18px; height: 18px;
-            border-radius: 5px;
-            border: 1px solid var(--border-subtle);
-            background: #080c14;
-            cursor: pointer;
-            flex-shrink: 0;
-            margin-top: 2px;
+            width: 18px; height: 18px; border-radius: 5px;
+            border: 1px solid var(--border-subtle); background: #080c14;
+            cursor: pointer; flex-shrink: 0; margin-top: 2px;
         }
-        .checkbox-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
-        .checkbox-label a {
-            color: var(--primary-light);
-            text-decoration: underline;
-            font-weight: 600;
-        }
+        .checkbox-label { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+        .checkbox-label a { color: var(--primary-light); text-decoration: underline; font-weight: 600; }
 
         #dashboardSection { display: none; }
 
         .welcome-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 14px; margin-bottom: 16px;
         }
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
@@ -318,42 +200,42 @@
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 16px;
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
         .plan-usage-card.vip-mode {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(251, 191, 36, 0.08));
-            border-color: rgba(245, 158, 11, 0.5);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(251, 191, 36, 0.10));
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2);
         }
         .plan-usage-card.vip-mode::before {
             content: '👑';
-            position: absolute;
-            top: -20px;
-            right: -20px;
-            font-size: 120px;
-            opacity: 0.08;
-            pointer-events: none;
+            position: absolute; top: -20px; right: -20px;
+            font-size: 140px; opacity: 0.1; pointer-events: none;
+        }
+        .plan-usage-card.expired-mode {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.08));
+            border-color: rgba(239, 68, 68, 0.5);
         }
 
         .plan-usage-header {
             display: flex; justify-content: space-between; align-items: center;
             flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
         }
-        .plan-usage-title {
-            display: flex; align-items: center; gap: 12px;
-            font-size: 15px; font-weight: 800; color: #fff;
-        }
+        .plan-usage-title { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 800; color: #fff; }
         .plan-usage-title .plan-icon {
-            width: 42px; height: 42px;
+            width: 46px; height: 46px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
             box-shadow: 0 6px 15px rgba(79, 70, 229, 0.35);
         }
         .plan-usage-card.vip-mode .plan-usage-title .plan-icon {
             background: linear-gradient(135deg, #f59e0b, #fbbf24);
-            box-shadow: 0 6px 15px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 6px 15px rgba(245, 158, 11, 0.5);
+        }
+        .plan-usage-card.expired-mode .plan-usage-title .plan-icon {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
         .plan-badge {
             font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px;
@@ -362,7 +244,8 @@
         .plan-badge.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
         .plan-badge.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .plan-badge.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
-        .plan-badge.vip { background: linear-gradient(135deg, rgba(245,158,11,0.35), rgba(251,191,36,0.2)); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
+        .plan-badge.vip { background: linear-gradient(135deg, rgba(245,158,11,0.4), rgba(251,191,36,0.25)); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.6); }
+        .plan-badge.expired { background: rgba(239,68,68,0.25); color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); }
 
         .usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .usage-grid { grid-template-columns: 1fr; } }
@@ -373,26 +256,23 @@
             border-radius: 12px;
             padding: 12px 14px;
         }
-        .usage-item-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 8px;
-        }
+        .usage-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .usage-item-label { font-size: 11.5px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.3px; }
         .usage-item-count { font-size: 13px; font-weight: 800; color: #fff; }
-        .usage-bar-bg {
-            width: 100%; height: 6px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px; overflow: hidden;
-        }
-        .usage-bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
+        .usage-bar-bg { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
+        .usage-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
         .usage-bar-fill.safe { background: linear-gradient(90deg, #10b981, #059669); }
         .usage-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
         .usage-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
-        .usage-bar-fill.unlimited { background: linear-gradient(90deg, #f59e0b, #fbbf24); width: 100% !important; }
+        .usage-bar-fill.unlimited { 
+            background: linear-gradient(90deg, #f59e0b, #fbbf24) !important; 
+            width: 100% !important;
+            animation: vipGlow 2s ease-in-out infinite;
+        }
+        @keyframes vipGlow {
+            0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.9); }
+        }
 
         .usage-limit-warning {
             margin-top: 12px;
@@ -400,67 +280,43 @@
             border-radius: 10px;
             font-size: 12.5px;
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: flex; align-items: center; gap: 8px;
         }
-        .usage-limit-warning.danger {
-            background: rgba(239, 68, 68, 0.15);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.35);
-        }
-        .usage-limit-warning.warn {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fcd34d;
-            border: 1px solid rgba(245, 158, 11, 0.35);
-        }
+        .usage-limit-warning.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
+        .usage-limit-warning.warn { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .usage-limit-warning.success { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
 
         .link-selector-card {
-            background: var(--surface-2);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 16px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-bottom: 16px;
+            background: var(--surface-2); border: 1px solid var(--border-subtle);
+            border-radius: 14px; padding: 16px 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 14px; margin-bottom: 16px;
         }
         .link-info-box { display: flex; flex-direction: column; gap: 5px; }
         .link-title-badge { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #fff; }
         .link-id-sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
         .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 12.5px; }
 
-        .timeline-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 16px 20px;
-            margin-bottom: 16px;
-        }
+        .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; }
         .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
         .badge-status { padding: 3px 10px; border-radius: 16px; font-size: 11.5px; font-weight: 700; }
         .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
         .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
         .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
+        .badge-status.lifetime { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.1)); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
 
         .progress-bar-bg { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
         .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
         .progress-bar-fill.active { background: var(--success); }
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
+        .progress-bar-fill.lifetime { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
         .date-filter-box {
-            background: var(--surface-2);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            background: var(--surface-2); border: 1px solid var(--border-subtle);
+            border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+            display: flex; flex-direction: column; gap: 12px;
         }
         .date-filter-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
         .date-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -489,32 +345,47 @@
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
-        /* ============ PROFESSIONAL PLAN CARDS - SCREENSHOT STYLE ============ */
-        .plans-grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+        /* ============ SCREENSHOT-STYLE PLAN CARDS (HORIZONTAL CAROUSEL) ============ */
+        .plans-carousel-wrap {
+            position: relative;
             margin-bottom: 18px;
+            overflow: hidden;
         }
-        @media (max-width: 900px) {
-            .plans-grid-container { grid-template-columns: repeat(2, 1fr); }
+        .plans-carousel {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            padding: 8px 4px 20px 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(99,102,241,0.5) transparent;
         }
-        @media (max-width: 600px) {
-            .plans-grid-container { grid-template-columns: 1fr; }
+        .plans-carousel::-webkit-scrollbar { height: 6px; }
+        .plans-carousel::-webkit-scrollbar-track { background: transparent; }
+        .plans-carousel::-webkit-scrollbar-thumb { 
+            background: rgba(99,102,241,0.4); 
+            border-radius: 6px; 
         }
+        .plans-carousel::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.7); }
 
         .plan-card-screenshot {
+            flex: 0 0 320px;
+            scroll-snap-align: center;
             background: linear-gradient(165deg, #1a1f2e 0%, #141a28 100%);
             border: 2px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
             padding: 24px 22px;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            min-height: 420px;
+            position: relative; overflow: hidden;
+            min-height: 460px;
+        }
+        @media (max-width: 500px) {
+            .plan-card-screenshot { flex: 0 0 85%; min-height: 430px; }
         }
         .plan-card-screenshot:hover {
             transform: translateY(-6px);
@@ -526,166 +397,76 @@
             background: linear-gradient(165deg, #232a40 0%, #1a2033 100%);
             box-shadow: 0 20px 55px rgba(99, 102, 241, 0.35);
         }
-        .plan-card-screenshot.popular-plan {
-            border-color: rgba(139, 92, 246, 0.5);
-        }
-        .plan-card-screenshot.popular-plan.selected {
-            border-color: #a855f7;
-            box-shadow: 0 20px 55px rgba(168, 85, 247, 0.4);
-        }
-        .plan-card-screenshot.best-plan {
-            border-color: rgba(245, 158, 11, 0.5);
-        }
-        .plan-card-screenshot.best-plan.selected {
-            border-color: #f59e0b;
-            box-shadow: 0 20px 55px rgba(245, 158, 11, 0.4);
-        }
+        .plan-card-screenshot.popular-plan { border-color: rgba(139, 92, 246, 0.5); }
+        .plan-card-screenshot.popular-plan.selected { border-color: #a855f7; box-shadow: 0 20px 55px rgba(168, 85, 247, 0.4); }
+        .plan-card-screenshot.best-plan { border-color: rgba(245, 158, 11, 0.5); }
+        .plan-card-screenshot.best-plan.selected { border-color: #f59e0b; box-shadow: 0 20px 55px rgba(245, 158, 11, 0.4); }
         .plan-card-screenshot.selected::before {
             content: '✓';
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+            position: absolute; top: 14px; right: 14px;
+            width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff;
-            font-size: 16px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: #fff; font-size: 16px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
             z-index: 5;
         }
 
         .plan-card-icon-wrap {
-            width: 56px;
-            height: 56px;
+            width: 56px; height: 56px;
             border-radius: 16px;
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(99, 102, 241, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin-bottom: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin-bottom: 16px;
             transition: all 0.3s;
         }
-        .plan-card-screenshot.popular-plan .plan-card-icon-wrap {
-            background: rgba(139, 92, 246, 0.15);
-            border-color: rgba(139, 92, 246, 0.4);
-        }
-        .plan-card-screenshot.best-plan .plan-card-icon-wrap {
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.4);
-        }
+        .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); }
+        .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
 
         .plan-card-name {
-            font-size: 18px;
-            font-weight: 800;
-            color: #fff;
+            font-size: 18px; font-weight: 800; color: #fff;
             margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
         .plan-card-badge-pill {
-            font-size: 9.5px;
-            font-weight: 800;
-            padding: 3px 9px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 9.5px; font-weight: 800; padding: 3px 9px; border-radius: 10px;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .plan-card-badge-pill.popular {
-            background: rgba(168, 85, 247, 0.25);
-            color: #c084fc;
-            border: 1px solid rgba(168, 85, 247, 0.4);
-        }
-        .plan-card-badge-pill.save {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.35);
-        }
-        .plan-card-badge-pill.best {
-            background: rgba(245, 158, 11, 0.22);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
+        .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+        .plan-card-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
 
         .plan-card-price-section {
-            margin-bottom: 18px;
-            padding-bottom: 18px;
+            margin-bottom: 18px; padding-bottom: 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
-        .plan-card-price {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            color: #fff;
-        }
-        .plan-card-price .price-currency {
-            font-size: 20px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .plan-card-price .price-amount {
-            font-size: 36px;
-            font-weight: 900;
-            line-height: 1;
-            letter-spacing: -1px;
-        }
-        .plan-card-price .price-free {
-            font-size: 32px;
-            font-weight: 900;
-            color: #34d399;
-            line-height: 1;
-        }
-        .plan-card-price-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 6px;
-            font-weight: 600;
-        }
+        .plan-card-price { display: flex; align-items: baseline; gap: 4px; color: #fff; }
+        .plan-card-price .price-currency { font-size: 20px; font-weight: 800; color: #fff; }
+        .plan-card-price .price-amount { font-size: 36px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+        .plan-card-price .price-free { font-size: 32px; font-weight: 900; color: #34d399; line-height: 1; }
+        .plan-card-price-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
         .plan-card-duration {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            display: inline-flex; align-items: center; gap: 6px;
             background: rgba(6, 182, 212, 0.12);
             border: 1px solid rgba(6, 182, 212, 0.3);
             color: #38bdf8;
-            font-size: 11.5px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-top: 8px;
+            font-size: 11.5px; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px; margin-top: 8px;
         }
 
         .plan-card-btn {
-            width: 100%;
-            padding: 13px;
-            border-radius: 12px;
+            width: 100%; padding: 13px; border-radius: 12px;
             border: 2px solid rgba(99, 102, 241, 0.4);
-            background: transparent;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.25s;
+            background: transparent; color: #fff;
+            font-size: 14px; font-weight: 800;
+            cursor: pointer; transition: all 0.25s;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            letter-spacing: 0.3px;
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; letter-spacing: 0.3px;
         }
-        .plan-card-btn:hover {
-            background: rgba(99, 102, 241, 0.12);
-            border-color: var(--primary-light);
-        }
+        .plan-card-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: var(--primary-light); }
         .plan-card-screenshot.selected .plan-card-btn {
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-color: var(--primary-light);
@@ -703,48 +484,34 @@
         }
 
         .plan-card-includes-title {
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.7px;
+            font-size: 11px; font-weight: 800; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.7px;
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: flex; align-items: center; gap: 6px;
         }
 
-        .plan-features-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex: 1;
-        }
-        .plan-feature-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 12.5px;
-            color: #cbd5e1;
-            line-height: 1.4;
-        }
+        .plan-features-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .plan-feature-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #cbd5e1; line-height: 1.4; }
         .plan-feature-item .check-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: rgba(16, 185, 129, 0.18);
-            color: #10b981;
-            font-size: 11px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: rgba(16, 185, 129, 0.18); color: #10b981;
+            font-size: 11px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
         }
-        .plan-card-screenshot.selected .plan-feature-item .check-icon {
-            background: rgba(99, 102, 241, 0.25);
-            color: #818cf8;
+        .plan-card-screenshot.selected .plan-feature-item .check-icon { background: rgba(99, 102, 241, 0.25); color: #818cf8; }
+
+        .carousel-hint {
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        .carousel-hint .arrow { color: var(--primary-light); animation: slideHint 1.5s infinite; display: inline-block; }
+        @keyframes slideHint {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(6px); }
         }
 
         /* ============ PAYMENT PANEL ============ */
@@ -754,45 +521,19 @@
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 16px;
-            display: flex;
-            gap: 18px;
-            align-items: center;
-            flex-wrap: wrap;
+            display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
         }
-        .qr-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-        .qr-wrapper img {
-            width: 130px;
-            height: 130px;
-            background: #fff;
-            padding: 8px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-        }
+        .qr-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .qr-wrapper img { width: 130px; height: 130px; background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
         .payment-info { flex: 1; min-width: 220px; }
         .upi-copy-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #080c14;
-            border: 1px solid var(--border-subtle);
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #080c14; border: 1px solid var(--border-subtle);
+            padding: 8px 14px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; color: var(--accent-cyan);
+            margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
         }
-        .upi-copy-chip:hover {
-            border-color: var(--primary-light);
-            background: #0d1119;
-        }
+        .upi-copy-chip:hover { border-color: var(--primary-light); background: #0d1119; }
 
         /* ============ MODAL ============ */
         .app-modal {
@@ -1142,13 +883,19 @@
         </div>
     </div>
 
-    <!-- PLANS MODAL (Screenshot-Style Cards) -->
+    <!-- PLANS MODAL (Horizontal Carousel) -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
             <div class="modal-header-row"><h3>💎 Choose Your Plan</h3><button class="modal-close-btn" onclick="closePlansModal()">✕</button></div>
-            <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px; text-align:center;">Select a plan below and complete your payment. Your plan will be activated after admin approval.</div>
-            <div class="plans-grid-container" id="plansListContainer">
-                <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; grid-column:1/-1;">Loading plans...</p>
+            <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:8px; text-align:center;">Swipe sideways to browse plans. Select your plan and complete payment.</div>
+            
+            <div class="plans-carousel-wrap">
+                <div class="plans-carousel" id="plansCarousel">
+                    <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">Loading plans...</p>
+                </div>
+                <div class="carousel-hint">
+                    <span class="arrow">⟵</span> Swipe / Scroll to see more plans <span class="arrow" style="transform: scaleX(-1);">⟵</span>
+                </div>
             </div>
             <div id="plansModalFooter"></div>
         </div>
@@ -1455,25 +1202,49 @@
             }
         }
 
-        // Plan Usage Card Update
+        // Plan Usage Card Update — VIP / EXPIRED / NORMAL
         function updatePlanUsageUI() {
             if (!currentPlanUsage) return;
             const pu = currentPlanUsage;
             const isVip = pu.lifetimeUnlimited === true;
+            const isExpired = pu.planIsExpired === true;
             
             const cardEl = document.getElementById('planUsageCard');
+            cardEl.classList.remove('vip-mode', 'expired-mode');
             if (isVip) cardEl.classList.add('vip-mode');
-            else cardEl.classList.remove('vip-mode');
+            else if (isExpired) cardEl.classList.add('expired-mode');
             
-            document.getElementById('planIconDisplay').textContent = isVip ? '👑' : (loadedPlans?.[pu.planKey]?.icon || '🎁');
+            // Icon
+            const iconEl = document.getElementById('planIconDisplay');
+            if (isVip) iconEl.textContent = '👑';
+            else if (isExpired) iconEl.textContent = '⚠️';
+            else iconEl.textContent = loadedPlans?.[pu.planKey]?.icon || '🎁';
+            
+            // Plan name
             document.getElementById('currentPlanName').textContent = pu.planName || 'Free Trial';
-            document.getElementById('currentPlanDuration').textContent = isVip ? '∞ Unlimited' : ((pu.durationDays || 0) + ' Days');
             
+            // Duration
+            const durEl = document.getElementById('currentPlanDuration');
+            if (isVip) {
+                durEl.textContent = '∞ Lifetime';
+                durEl.style.color = '#fbbf24';
+            } else if (isExpired) {
+                durEl.textContent = 'Expired';
+                durEl.style.color = '#fca5a5';
+            } else if (pu.planDaysLeft !== null && pu.planDaysLeft !== undefined && pu.planDaysLeft !== 'lifetime') {
+                durEl.textContent = (pu.durationDays || 0) + ' Days (' + pu.planDaysLeft + ' left)';
+                durEl.style.color = pu.planDaysLeft <= 3 ? '#fbbf24' : '#fff';
+            } else {
+                durEl.textContent = (pu.durationDays || 0) + ' Days';
+                durEl.style.color = '#fff';
+            }
+            
+            // Badge
             const badgeEl = document.getElementById('currentPlanBadge');
-            const badgeVal = isVip ? 'VIP' : (pu.badge || '');
+            const badgeVal = isVip ? 'VIP' : (isExpired ? 'EXPIRED' : (pu.badge || ''));
             if (badgeVal) {
                 badgeEl.textContent = badgeVal;
-                const badgeClass = badgeVal === 'POPULAR' ? 'popular' : (badgeVal === 'SAVE 20%' ? 'save' : (badgeVal === 'BEST VALUE' ? 'best' : 'vip'));
+                const badgeClass = badgeVal === 'POPULAR' ? 'popular' : (badgeVal === 'SAVE 20%' ? 'save' : (badgeVal === 'BEST VALUE' ? 'best' : (badgeVal === 'VIP' ? 'vip' : 'expired')));
                 badgeEl.className = 'plan-badge ' + badgeClass;
                 badgeEl.style.display = 'inline-block';
             } else badgeEl.style.display = 'none';
@@ -1487,27 +1258,38 @@
             const visitorsUnlimited = pu.lifetimeUnlimited || visitorLimit === 'unlimited' || visitorLimit === -1;
 
             document.getElementById('linksUsed').textContent = linksUsed;
-            document.getElementById('linksLimit').textContent = linksUnlimited ? '∞' : linksLimit;
+            document.getElementById('linksLimit').textContent = linksUnlimited ? '∞' : (linksLimit || 0);
             document.getElementById('visitorsUsed').textContent = visitorsUsed;
-            document.getElementById('visitorsLimit').textContent = visitorsUnlimited ? '∞' : visitorLimit;
-
-            const linksPct = linksUnlimited ? 100 : Math.min(100, Math.round((linksUsed / linksLimit) * 100));
-            const visitorsPct = visitorsUnlimited ? 100 : Math.min(100, Math.round((visitorsUsed / visitorLimit) * 100));
+            document.getElementById('visitorsLimit').textContent = visitorsUnlimited ? '∞' : (visitorLimit || 0);
 
             const linksBar = document.getElementById('linksBarFill');
             const visitorsBar = document.getElementById('visitorsBarFill');
 
-            if (linksUnlimited) linksBar.className = 'usage-bar-fill unlimited';
-            else { linksBar.style.width = linksPct + '%'; linksBar.className = 'usage-bar-fill ' + (linksPct >= 90 ? 'danger' : (linksPct >= 70 ? 'warn' : 'safe')); }
+            if (linksUnlimited) { linksBar.className = 'usage-bar-fill unlimited'; }
+            else {
+                const linksPct = linksLimit > 0 ? Math.min(100, Math.round((linksUsed / linksLimit) * 100)) : 0;
+                linksBar.style.width = linksPct + '%';
+                linksBar.className = 'usage-bar-fill ' + (linksPct >= 90 ? 'danger' : (linksPct >= 70 ? 'warn' : 'safe'));
+            }
 
-            if (visitorsUnlimited) visitorsBar.className = 'usage-bar-fill unlimited';
-            else { visitorsBar.style.width = visitorsPct + '%'; visitorsBar.className = 'usage-bar-fill ' + (visitorsPct >= 90 ? 'danger' : (visitorsPct >= 70 ? 'warn' : 'safe')); }
+            if (visitorsUnlimited) { visitorsBar.className = 'usage-bar-fill unlimited'; }
+            else {
+                const visitorsPct = visitorLimit > 0 ? Math.min(100, Math.round((visitorsUsed / visitorLimit) * 100)) : 0;
+                visitorsBar.style.width = visitorsPct + '%';
+                visitorsBar.className = 'usage-bar-fill ' + (visitorsPct >= 90 ? 'danger' : (visitorsPct >= 70 ? 'warn' : 'safe'));
+            }
 
+            // Warnings
             const warningsEl = document.getElementById('planUsageWarnings');
             let warnings = '';
             if (isVip) {
-                warnings = `<div class="usage-limit-warning" style="background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.35);">👑 You have LIFETIME UNLIMITED access — no limits on links or visitors!</div>`;
+                warnings = `<div class="usage-limit-warning success">👑 You have LIFETIME UNLIMITED access — no limits on links or visitors!</div>`;
+            } else if (isExpired) {
+                warnings = `<div class="usage-limit-warning danger">⛔ Your plan has EXPIRED! Links are disabled. Please renew now.</div>`;
             } else {
+                const linksPct = linksLimit > 0 && !linksUnlimited ? Math.round((linksUsed / linksLimit) * 100) : 0;
+                const visitorsPct = visitorLimit > 0 && !visitorsUnlimited ? Math.round((visitorsUsed / visitorLimit) * 100) : 0;
+                
                 if (pu.linkLimitReached) warnings += `<div class="usage-limit-warning danger">⛔ Link limit reached! You cannot create more links. Please upgrade or renew.</div>`;
                 else if (!linksUnlimited && linksPct >= 70) warnings += `<div class="usage-limit-warning warn">⚠️ You've used ${linksPct}% of your link limit. Upgrade soon.</div>`;
                 if (pu.visitorLimitReached) warnings += `<div class="usage-limit-warning danger">⛔ Visitor limit reached! Your links are now expired. Please renew.</div>`;
@@ -1521,8 +1303,9 @@
             if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Plan info loading...</p>'; return; }
             const pu = currentPlanUsage;
             const isVip = pu.lifetimeUnlimited === true;
-            const linksLimitText = isVip ? 'Unlimited' : ((pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : pu.linkLimit);
-            const visitorLimitText = isVip ? 'Unlimited' : ((pu.visitorLimit === 'unlimited' || pu.visitorLimit === -1) ? 'Unlimited' : pu.visitorLimit);
+            const isExpired = pu.planIsExpired === true;
+            const linksLimitText = isVip ? 'Unlimited' : ((pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : (pu.linkLimit || 0));
+            const visitorLimitText = isVip ? 'Unlimited' : ((pu.visitorLimit === 'unlimited' || pu.visitorLimit === -1) ? 'Unlimited' : (pu.visitorLimit || 0));
 
             let featuresHtml = '';
             if (Array.isArray(pu.features) && pu.features.length) {
@@ -1531,14 +1314,17 @@
                     `</ul>`;
             }
 
-            const cardBg = isVip ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08))' : 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))';
-            const cardBorder = isVip ? 'rgba(245,158,11,0.5)' : 'rgba(99,102,241,0.35)';
+            let cardBg = 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))';
+            let cardBorder = 'rgba(99,102,241,0.35)';
+            let titlePrefix = '';
+            if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.1))'; cardBorder = 'rgba(245,158,11,0.6)'; titlePrefix = '👑 '; }
+            else if (isExpired) { cardBg = 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(220,38,38,0.08))'; cardBorder = 'rgba(239,68,68,0.5)'; titlePrefix = '⚠️ '; }
 
             el.innerHTML = `
                 <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; margin-bottom:14px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
-                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${isVip ? '👑 ' : ''}${pu.planName || 'Free Trial'}</div>
-                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${isVip ? '∞ Unlimited' : ((pu.durationDays || 0) + ' Days')}</b>${!isVip ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
+                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${titlePrefix}${pu.planName || 'Free Trial'}</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${isVip ? '∞ Lifetime' : (isExpired ? 'Expired' : ((pu.durationDays || 0) + ' Days'))}</b>${!isVip && !isExpired ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
                     ${featuresHtml}
                 </div>
                 <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
@@ -1558,12 +1344,12 @@
             `;
         }
 
-        // 🆕 PROFESSIONAL PLAN CARDS (Screenshot Style)
+        // 🆕 HORIZONTAL CAROUSEL PLAN CARDS
         function renderPlansList() {
-            const container = document.getElementById('plansListContainer');
+            const container = document.getElementById('plansCarousel');
             const footer = document.getElementById('plansModalFooter');
             if (!loadedPlans || !Object.keys(loadedPlans).length) {
-                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; grid-column:1/-1;">No plans available.</p>';
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">No plans available.</p>';
                 footer.innerHTML = '';
                 return;
             }
@@ -1597,7 +1383,7 @@
                 ).join('');
 
                 return `
-                    <div class="plan-card-screenshot ${isSelected ? 'selected' : ''} ${extraClass}" onclick="pickDynamicPlan('${key}')">
+                    <div class="plan-card-screenshot ${isSelected ? 'selected' : ''} ${extraClass}" data-plan-key="${key}" onclick="pickDynamicPlan('${key}')">
                         <div class="plan-card-icon-wrap">${p.icon || '🎁'}</div>
                         <div class="plan-card-name">
                             <span>${escapeHTML(p.name)}</span>
@@ -1621,6 +1407,21 @@
                     </div>
                 `;
             }).join('');
+
+            // Center the selected card
+            setTimeout(() => {
+                const selected = container.querySelector('.plan-card-screenshot.selected');
+                if (selected) {
+                    try {
+                        selected.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    } catch(e) {
+                        const containerWidth = container.offsetWidth;
+                        const cardLeft = selected.offsetLeft;
+                        const cardWidth = selected.offsetWidth;
+                        container.scrollLeft = cardLeft - (containerWidth / 2) + (cardWidth / 2);
+                    }
+                }
+            }, 100);
 
             renderPaymentPanel();
         }
@@ -1661,10 +1462,10 @@
                     <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08)); border:1px solid rgba(16,185,129,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
                         <div style="font-size:32px; margin-bottom:8px;">🎉</div>
                         <div style="font-size:14px; font-weight:800; color:#34d399;">This plan is FREE!</div>
-                        <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to request activation from admin.</div>
+                        <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to activate instantly.</div>
                     </div>
-                    <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
-                        <span>📩 Request Free Plan Activation</span>
+                    <button class="btn-action btn-whatsapp" onclick="activateFreePlan()">
+                        <span>⚡ Activate Free Plan Instantly</span>
                     </button>
                 `;
             } else {
@@ -1686,6 +1487,36 @@
                 </div>
                 ${paymentHtml}
             `;
+        }
+
+        // 🆕 FREE PLAN AUTO-ACTIVATE
+        async function activateFreePlan() {
+            try {
+                if (!activePlan || !activePlan.key) return notify('No plan selected', 'Error', '❌');
+                
+                const p = loadedPlans[activePlan.key];
+                if (!p || p.price !== 0) return notify('This is not a free plan', 'Error', '❌');
+
+                if (!confirm(`Activate "${p.name}" for FREE?\n\nThis will give you:\n✅ ${p.linkLimit === 'unlimited' ? 'Unlimited' : p.linkLimit} Active Links\n✅ ${p.visitorLimit === 'unlimited' ? 'Unlimited' : p.visitorLimit.toLocaleString()} Visitors\n✅ ${p.durationDays} Days Validity`)) return;
+
+                const res = await fetch('/api/user/select-free-plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName: userProfile.name })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    notify('🎉 Free plan activated successfully!', 'Success', '✅');
+                    closePlansModal();
+                    // Refresh user dashboard
+                    setTimeout(() => fetchUserLinkData(), 800);
+                } else {
+                    notify(data.error || 'Failed to activate free plan', 'Error', '❌');
+                }
+            } catch(e) {
+                notify('Server error: ' + e.message, 'Error', '⚠️');
+            }
         }
 
         function pickDynamicPlan(key) {
@@ -1779,9 +1610,16 @@
                 else if (left <= 3) { badge.className = 'badge-status warning'; badge.textContent = `Expiring (${left} Days Left)`; progress.className = 'progress-bar-fill warning'; progress.style.width = `${Math.min(100, left * 33)}%`; }
                 else { badge.className = 'badge-status active'; badge.textContent = `Active (${left} Days Left)`; progress.className = 'progress-bar-fill active'; progress.style.width = '100%'; }
             } else {
-                badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active';
-                progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
-                expText.textContent = 'Lifetime Active';
+                // Lifetime Active
+                if (currentPlanUsage && currentPlanUsage.lifetimeUnlimited) {
+                    badge.className = 'badge-status lifetime'; badge.textContent = '👑 Lifetime Active';
+                    progress.className = 'progress-bar-fill lifetime'; progress.style.width = '100%';
+                    expText.textContent = 'Lifetime (VIP)';
+                } else {
+                    badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active';
+                    progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
+                    expText.textContent = 'Lifetime Active';
+                }
             }
         }
 
@@ -1883,18 +1721,36 @@ Please verify and approve. Thank you!`;
 
         function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
+        // 🆕 Auto-refresh every 8 seconds — picks up admin changes
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 const s = document.getElementById('userLinkSelect');
                 const targetId = s?.value || localStorage.getItem('userActiveLinkId');
                 if (targetId) {
-                    fetch('/api/user/link-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName: userProfile.name, linkInput: targetId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate }) })
+                    fetch('/api/user/link-details', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ 
+                            userName: userProfile.name, 
+                            linkInput: targetId, 
+                            filter: currentDateFilter, 
+                            startDate: currentStartDate, 
+                            endDate: currentEndDate 
+                        }) 
+                    })
                     .then(r => r.json().catch(() => ({})))
-                    .then(data => { if (data && data.success) { currentPlanUsage = data.planUsage || currentPlanUsage; loadedPlans = data.plans || loadedPlans; populateDashboardMetrics(data); updatePlanUsageUI(); } })
+                    .then(data => { 
+                        if (data && data.success) { 
+                            currentPlanUsage = data.planUsage || currentPlanUsage; 
+                            loadedPlans = data.plans || loadedPlans; 
+                            populateDashboardMetrics(data); 
+                            updatePlanUsageUI(); 
+                        } 
+                    })
                     .catch(() => {});
                 }
             }
-        }, 10000);
+        }, 8000);
 
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { if (window.turnstile) renderSignInTurnstile(); }, 500);
