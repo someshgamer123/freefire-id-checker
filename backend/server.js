@@ -133,12 +133,12 @@ const DISPOSABLE_DOMAINS = [
 const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
 
 const DEFAULT_PLANS = {
-    'free-trial': { name: 'Free Trial', icon: '🎁', durationDays: 3, linkLimit: 1, visitorLimit: 150, price: 0, enabled: true, badge: 'FREE', features: ['1 Active Link', '150 Total Visitors', '3 Days Validity', 'Basic Analytics'] },
-    'basic': { name: 'Basic', icon: '📦', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '', features: ['5 Active Links', '5,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
-    'creator': { name: 'Creator', icon: '⭐', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '', features: ['10 Active Links', '15,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
-    'pro': { name: 'Pro', icon: '🚀', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR', features: ['25 Active Links', '50,000 Total Visitors', 'Advanced Analytics', 'Custom Link Names', '30 Days Validity'] },
-    'business': { name: 'Business', icon: '💼', durationDays: 90, linkLimit: 100, visitorLimit: 200000, price: 1999, enabled: true, badge: 'SAVE 20%', features: ['100 Active Links', '2,00,000 Total Visitors', 'Priority Support', 'Custom Link Names', '90 Days Validity'] },
-    'enterprise-vip': { name: 'Enterprise VIP', icon: '👑', durationDays: 365, linkLimit: 'unlimited', visitorLimit: 'unlimited', price: 4999, enabled: true, badge: 'BEST VALUE', features: ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'Custom Everything', '1 Year Validity'] }
+    'free-trial': { name: 'Free Trial', icon: 'gift', durationDays: 3, linkLimit: 1, visitorLimit: 150, price: 0, enabled: true, badge: 'FREE', features: ['1 Active Link', '150 Total Visitors', '3 Days Validity', 'Basic Analytics'] },
+    'basic': { name: 'Basic', icon: 'package', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '', features: ['5 Active Links', '5,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
+    'creator': { name: 'Creator', icon: 'star', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '', features: ['10 Active Links', '15,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
+    'pro': { name: 'Pro', icon: 'rocket', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR', features: ['25 Active Links', '50,000 Total Visitors', 'Advanced Analytics', 'Custom Link Names', '30 Days Validity'] },
+    'business': { name: 'Business', icon: 'briefcase', durationDays: 90, linkLimit: 100, visitorLimit: 200000, price: 1999, enabled: true, badge: 'SAVE 20%', features: ['100 Active Links', '2,00,000 Total Visitors', 'Priority Support', 'Custom Link Names', '90 Days Validity'] },
+    'enterprise-vip': { name: 'Enterprise VIP', icon: 'crown', durationDays: 365, linkLimit: 'unlimited', visitorLimit: 'unlimited', price: 4999, enabled: true, badge: 'BEST VALUE', features: ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'Custom Everything', '1 Year Validity'] }
 };
 
 // ==================== Helper Functions ====================
@@ -379,48 +379,39 @@ function userHasActivePlan(user) {
     } catch(e) { return false; }
 }
 
-// 🆕 STRICT CHECK — user can create a link based on plan limits
-async function canUserCreateLink(user) {
+// 🆕 FIXED: Direct link limit check — no helper complexity
+async function getUserLinkLimit(user) {
     try {
+        if (!user) return { limit: 0, used: 0, unlimited: false };
         if (user.lifetimeUnlimited === true) {
-            return { allowed: true, currentCount: 0, limit: 'unlimited', lifetimeUnlimited: true };
+            return { limit: 'unlimited', used: 0, unlimited: true };
         }
-        if (isPlanExpired(user)) {
-            return { allowed: false, currentCount: 0, limit: 0, reason: 'PLAN_EXPIRED', message: 'Your plan has expired. Please renew to create new links.' };
-        }
-        if (!userHasActivePlan(user)) {
-            return { allowed: false, currentCount: 0, limit: 0, reason: 'NO_ACTIVE_PLAN', message: 'You need an active plan to create links.' };
-        }
-        
         const pricingDoc = await getPricingDoc();
-        const planKey = user.currentPlan || 'free-trial';
-        const plan = getPlanDetails(pricingDoc, planKey);
-        const linkLimit = plan.linkLimit;
+        const currentPlan = user.currentPlan || 'free-trial';
+        const planDetails = (pricingDoc.plans && pricingDoc.plans[currentPlan]) 
+            ? pricingDoc.plans[currentPlan] 
+            : DEFAULT_PLANS[currentPlan] || DEFAULT_PLANS['free-trial'];
+        const linkLimit = planDetails.linkLimit;
         
-        if (isUnlimited(linkLimit)) return { allowed: true, limit: 'unlimited' };
-
         const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-        // 🆕 STRICT: count all links assigned to this user (regardless of status)
-        const currentCount = await Link.countDocuments({
+        const usedCount = await Link.countDocuments({
             $or: [
-                { assignedUser: userRegex }, 
-                { userName: userRegex }, 
-                { creator: userRegex }, 
+                { assignedUser: userRegex },
+                { userName: userRegex },
+                { creator: userRegex },
                 { name: userRegex }
             ]
         });
         
-        if (currentCount >= linkLimit) {
-            return { 
-                allowed: false, 
-                currentCount, 
-                limit: linkLimit, 
-                reason: 'LINK_LIMIT_REACHED',
-                message: `You have reached your plan's link limit (${currentCount}/${linkLimit}). Please upgrade your plan to create more links.`
-            };
-        }
-        return { allowed: true, currentCount, limit: linkLimit };
-    } catch(e) { return { allowed: true }; }
+        return {
+            limit: isUnlimited(linkLimit) ? 'unlimited' : linkLimit,
+            used: usedCount,
+            unlimited: isUnlimited(linkLimit),
+            planKey: currentPlan
+        };
+    } catch(e) { 
+        return { limit: 0, used: 0, unlimited: false, error: e.message }; 
+    }
 }
 
 async function canUserGetVisitor(user) {
@@ -1060,7 +1051,7 @@ app.post('/api/user/select-free-plan', async (req, res) => {
     }
 });
 
-// ==================== USER LINK CREATION (NEW) ====================
+// ==================== USER LINK CREATION — FIXED ====================
 app.post('/api/user/create-link', async (req, res) => {
     try {
         const {
@@ -1077,25 +1068,93 @@ app.post('/api/user/create-link', async (req, res) => {
             popupImage
         } = req.body;
         
-        if (!userName) return res.status(400).json({ error: 'User name required' });
+        console.log(`📥 Create link request for user: ${userName}`);
         
+        if (!userName) {
+            console.log('❌ No user name in request');
+            return res.status(400).json({ error: 'User name required' });
+        }
+        
+        // 🆕 FIX: Find user
         const user = await RenewalUser.findOne({ 
             name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
         });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        if (user.status === 'rejected') return res.status(403).json({ error: 'Your account has been rejected.' });
         
-        // 🆕 STRICT: Check plan + link limit BEFORE creating
-        const limitCheck = await canUserCreateLink(user);
-        if (!limitCheck.allowed) {
-            return res.status(403).json({ 
-                error: limitCheck.message || 'Link limit reached', 
-                reason: limitCheck.reason,
-                currentCount: limitCheck.currentCount,
-                limit: limitCheck.limit
-            });
+        if (!user) {
+            console.log(`❌ User not found: ${userName}`);
+            return res.status(404).json({ error: 'User not found' });
         }
         
+        console.log(`✅ User found: ${user.name}, Plan: ${user.currentPlan}, Status: ${user.status}`);
+        console.log(`   lifetimeUnlimited: ${user.lifetimeUnlimited}, expiryDate: ${user.planExpiryDate}`);
+        
+        if (user.status === 'rejected') {
+            console.log(`❌ User rejected: ${user.name}`);
+            return res.status(403).json({ error: 'Your account has been rejected.' });
+        }
+        
+        // 🆕 FIX: Direct plan active check
+        const isLifetimeUnlimited = user.lifetimeUnlimited === true;
+        const planExpiryDate = user.planExpiryDate ? new Date(user.planExpiryDate) : null;
+        const planIsExpired = planExpiryDate ? (planExpiryDate < new Date()) : false;
+        const currentPlan = user.currentPlan || 'none';
+        
+        console.log(`   Plan active? lifetime=${isLifetimeUnlimited}, expired=${planIsExpired}, planKey=${currentPlan}`);
+        
+        if (!isLifetimeUnlimited) {
+            if (currentPlan === 'none' || currentPlan === 'no-plan') {
+                console.log(`❌ No active plan for user`);
+                return res.status(403).json({ 
+                    error: 'You need an active plan to create links. Please activate a plan.', 
+                    reason: 'NO_ACTIVE_PLAN' 
+                });
+            }
+            if (planIsExpired) {
+                console.log(`❌ Plan expired for user`);
+                return res.status(403).json({ 
+                    error: 'Your plan has expired. Please renew to create links.', 
+                    reason: 'PLAN_EXPIRED' 
+                });
+            }
+        }
+        
+        // 🆕 FIX: Get plan details and link limit
+        let linkLimit = 'unlimited';
+        if (!isLifetimeUnlimited) {
+            const pricingDoc = await getPricingDoc();
+            const planDetails = (pricingDoc.plans && pricingDoc.plans[currentPlan]) 
+                ? pricingDoc.plans[currentPlan] 
+                : DEFAULT_PLANS[currentPlan] || DEFAULT_PLANS['free-trial'];
+            linkLimit = planDetails.linkLimit;
+            console.log(`   Link limit for plan ${currentPlan}: ${linkLimit}`);
+        }
+        
+        // 🆕 FIX: Count existing links
+        const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const currentLinkCount = await Link.countDocuments({
+            $or: [
+                { assignedUser: userRegex },
+                { userName: userRegex },
+                { creator: userRegex },
+                { name: userRegex }
+            ]
+        });
+        
+        console.log(`   Current link count: ${currentLinkCount}, limit: ${linkLimit}`);
+        
+        if (!isLifetimeUnlimited && !isUnlimited(linkLimit)) {
+            if (currentLinkCount >= linkLimit) {
+                console.log(`❌ Link limit reached: ${currentLinkCount}/${linkLimit}`);
+                return res.status(403).json({ 
+                    error: `You have reached your plan's link limit (${currentLinkCount}/${linkLimit}). Please upgrade to create more links.`, 
+                    reason: 'LINK_LIMIT_REACHED',
+                    currentCount: currentLinkCount,
+                    limit: linkLimit
+                });
+            }
+        }
+        
+        // 🆕 Validation
         const cleanLinkName = (linkName || 'My Link').toString().trim().slice(0, 100);
         const cleanVideo = (video || 'https://youtu.be/dQw4w9WgXcQ').toString().trim();
         const cleanClaim = (claim || '#').toString().trim();
@@ -1107,11 +1166,16 @@ app.post('/api/user/create-link', async (req, res) => {
         const cleanPopupButton = (popupButtonText || cleanButtonText).toString().trim().slice(0, 50);
         const cleanPopupImage = popupImage && popupImage.trim().length > 4 ? popupImage.trim() : null;
         
-        // 🆕 Calculate expiry based on user's plan expiry date
-        let linkExpiry = null;
-        if (user.planExpiryDate) {
-            linkExpiry = new Date(user.planExpiryDate);
+        if (!cleanVideo) {
+            return res.status(400).json({ error: 'Video URL is required' });
         }
+        
+        let linkExpiry = null;
+        if (planExpiryDate && !planIsExpired) {
+            linkExpiry = planExpiryDate;
+        }
+        
+        console.log(`📝 Creating link for ${user.name}...`);
         
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
@@ -1146,7 +1210,7 @@ app.post('/api/user/create-link', async (req, res) => {
         
         await newLink.save();
         
-        console.log(`✅ User "${user.name}" created new link: ${newLink.id}`);
+        console.log(`✅ Link created successfully: ${newLink.id}`);
         
         res.json({
             success: true,
@@ -1167,7 +1231,7 @@ app.post('/api/user/create-link', async (req, res) => {
             }
         });
     } catch (e) {
-        console.error('User create link error:', e);
+        console.error('❌ User create link error:', e);
         res.status(500).json({ error: 'Failed to create link: ' + e.message });
     }
 });
@@ -1248,7 +1312,6 @@ app.post('/api/user/link-details', async (req, res) => {
         const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
         const totalUserClaims = allUserLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
 
-        // 🆕 Compute plan days left
         let planDaysLeft = null;
         let planHoursLeft = null;
         let planTotalDays = 0;
@@ -1274,7 +1337,6 @@ app.post('/api/user/link-details', async (req, res) => {
             planHoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
         }
 
-        // 🆕 Compute link limit usage
         const linkLimitRaw = isLifetimeUnlimited ? 'unlimited' : plan.linkLimit;
         const linksUsed = allUserLinks.length;
         const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimitRaw)) ? 'unlimited' : Math.max(0, linkLimitRaw - linksUsed);
@@ -1449,13 +1511,11 @@ app.delete('/api/user/delete-link/:linkId', async (req, res) => {
         const link = await Link.findOne(getLinkQuery(linkId)).lean();
         if (!link) return res.status(404).json({ error: 'Link not found' });
         
-        // Verify ownership
         const ownerName = (link.assignedUser || link.userName || link.creator || '').toLowerCase();
         if (ownerName !== user.name.toLowerCase()) {
             return res.status(403).json({ error: 'You do not own this link' });
         }
         
-        // Delete link + related data
         await RenewalRequest.deleteMany({ linkId }).catch(() => {});
         await VisitorActivity.deleteMany({ linkId }).catch(() => {});
         await Link.deleteOne({ _id: link._id });
@@ -1879,7 +1939,6 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
                         }}
                     );
                     
-                    // Also update all their links' expiry
                     const userRegex = new RegExp('^' + ownerUser.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
                     await Link.updateMany(
                         { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
@@ -2074,7 +2133,6 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 ADMIN CREATE LINK — with STRICT user link limit enforcement
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const cleanUserName = (req.body.name || req.body.userName || req.body.cCampaignName || 'User').trim();
@@ -2096,7 +2154,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             image: finalBanner
         };
         
-        // 🆕 STRICT: Check link limit for assigned user (if user exists)
         let assignedUser = null;
         if (cleanUserName && cleanUserName.toLowerCase() !== 'user') {
             assignedUser = await RenewalUser.findOne({ 
@@ -2105,20 +2162,14 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         }
         
         if (assignedUser) {
-            const limitCheck = await canUserCreateLink(assignedUser);
-            if (!limitCheck.allowed) {
-                console.log(`⛔ Admin tried to create link for "${cleanUserName}" but limit reached: ${limitCheck.currentCount}/${limitCheck.limit}`);
+            const userLimitInfo = await getUserLinkLimit(assignedUser);
+            if (userLimitInfo.limit !== 'unlimited' && userLimitInfo.used >= userLimitInfo.limit) {
                 return res.status(403).json({ 
-                    error: `Cannot create link for "${cleanUserName}". ${limitCheck.message || 'Link limit reached.'}`,
-                    reason: limitCheck.reason,
-                    currentCount: limitCheck.currentCount,
-                    limit: limitCheck.limit
+                    error: `Cannot create link for "${cleanUserName}". ${userLimitInfo.used}/${userLimitInfo.limit} links already created. Upgrade the user's plan first.`,
+                    reason: 'LINK_LIMIT_REACHED',
+                    currentCount: userLimitInfo.used,
+                    limit: userLimitInfo.limit
                 });
-            }
-            
-            // 🆕 Auto-set expiry to user's plan expiry if not provided
-            if (!cleanExpiry && assignedUser.planExpiryDate) {
-                // Use user's plan expiry
             }
         }
         
@@ -2597,94 +2648,20 @@ app.get('/expired.html', (req, res) => {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body {
-            background: #080c16;
-            color: #f8fafc;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            overflow: hidden;
-            position: relative;
-        }
-        .ambient-glow {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.18) 0%, transparent 55%),
-                radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.08) 0%, transparent 50%);
-            z-index: 0; pointer-events: none;
-        }
-        .expired-card {
-            position: relative; z-index: 1;
-            background: rgba(17, 23, 38, 0.85);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: 26px;
-            padding: 42px 30px;
-            max-width: 440px;
-            width: 100%;
-            text-align: center;
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 60px rgba(239, 68, 68, 0.15);
-            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .expired-icon {
-            width: 90px; height: 90px;
-            margin: 0 auto 18px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15));
-            border: 2px solid rgba(239, 68, 68, 0.5);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 44px;
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3); }
-            50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(239, 68, 68, 0.5); }
-        }
-        .expired-title {
-            font-size: 28px;
-            font-weight: 900;
-            color: #ef4444;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
-        }
-        .expired-subtitle {
-            font-size: 14.5px;
-            color: #cbd5e1;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-        .info-box {
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            border-radius: 14px;
-            padding: 16px;
-            text-align: left;
-        }
-        .info-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: #cbd5e1;
-            margin-bottom: 8px;
-        }
+        body { background: #080c16; color: #f8fafc; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; overflow: hidden; position: relative; }
+        .ambient-glow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.18) 0%, transparent 55%), radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.08) 0%, transparent 50%); z-index: 0; pointer-events: none; }
+        .expired-card { position: relative; z-index: 1; background: rgba(17, 23, 38, 0.85); backdrop-filter: blur(24px); border-radius: 26px; padding: 42px 30px; max-width: 440px; width: 100%; text-align: center; border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 60px rgba(239, 68, 68, 0.15); animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .expired-icon { width: 90px; height: 90px; margin: 0 auto 18px; border-radius: 50%; background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15)); border: 2px solid rgba(239, 68, 68, 0.5); display: flex; align-items: center; justify-content: center; font-size: 44px; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3); animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .expired-title { font-size: 28px; font-weight: 900; color: #ef4444; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .expired-subtitle { font-size: 14.5px; color: #cbd5e1; line-height: 1.6; margin-bottom: 24px; }
+        .info-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 14px; padding: 16px; text-align: left; }
+        .info-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cbd5e1; margin-bottom: 8px; }
         .info-row:last-child { margin-bottom: 0; }
         .info-row .emoji { font-size: 16px; }
         .info-row strong { color: #fff; font-weight: 700; margin-left: auto; }
-        @media (max-width: 480px) {
-            .expired-card { padding: 32px 22px; }
-            .expired-title { font-size: 24px; }
-            .expired-icon { width: 76px; height: 76px; font-size: 36px; }
-            .expired-subtitle { font-size: 13.5px; }
-        }
+        @media (max-width: 480px) { .expired-card { padding: 32px 22px; } .expired-title { font-size: 24px; } .expired-icon { width: 76px; height: 76px; font-size: 36px; } }
     </style>
 </head>
 <body>
@@ -2692,25 +2669,11 @@ app.get('/expired.html', (req, res) => {
     <div class="expired-card">
         <div class="expired-icon">⏰</div>
         <div class="expired-title">Link Expired</div>
-        <div class="expired-subtitle">
-            This link is no longer active. Its validity period has ended, or the owner's plan has expired.
-        </div>
+        <div class="expired-subtitle">This link is no longer active. Its validity period has ended, or the owner's plan has expired.</div>
         <div class="info-box">
-            <div class="info-row">
-                <span class="emoji">📌</span>
-                <span>Status</span>
-                <strong style="color:#f87171;">Expired</strong>
-            </div>
-            <div class="info-row">
-                <span class="emoji">🔒</span>
-                <span>Access</span>
-                <strong>Blocked</strong>
-            </div>
-            <div class="info-row">
-                <span class="emoji">💬</span>
-                <span>Support</span>
-                <strong>Contact Owner</strong>
-            </div>
+            <div class="info-row"><span class="emoji">📌</span><span>Status</span><strong style="color:#f87171;">Expired</strong></div>
+            <div class="info-row"><span class="emoji">🔒</span><span>Access</span><strong>Blocked</strong></div>
+            <div class="info-row"><span class="emoji">💬</span><span>Support</span><strong>Contact Owner</strong></div>
         </div>
     </div>
 </body>
