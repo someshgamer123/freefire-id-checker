@@ -19,9 +19,11 @@ const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
-// 🆕 48 HOURS in milliseconds
-const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;  // 48 hours
-const UNIQUE_WINDOW_DAYS = 2;
+// 🆕 48 HOURS — for unique visit/claim counting
+const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+// 🆕 5 MINUTES — for "Active Watching/Claiming" (real-time)
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -108,7 +110,7 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
-// 🆕 VisitorActivity — 48h unique window
+// 🆕 VisitorActivity — 48h unique window + active real-time tracking
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -119,6 +121,7 @@ const VisitorActivitySchema = new mongoose.Schema({
 }, { timestamps: true, strict: false });
 
 VisitorActivitySchema.index({ linkId: 1, visitorKey: 1, type: 1, lastSeen: -1 });
+VisitorActivitySchema.index({ type: 1, lastSeen: -1 }); // 🆕 For active watching queries
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', VisitorActivitySchema);
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
@@ -629,7 +632,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Owner plan check
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             try {
@@ -656,7 +658,6 @@ app.get('/api/link/:id', async (req, res) => {
         const visitorKey = deviceKey || ip;
         const today = getISTDate();
         
-        // Check if this visitor visited in last 48 hours
         const uniqueWindowStart = new Date(Date.now() - UNIQUE_WINDOW_MS);
         const recentUniqueVisit = await VisitorActivity.findOne({
             linkId: { $in: [link.id, String(link._id), rawId] },
@@ -665,7 +666,6 @@ app.get('/api/link/:id', async (req, res) => {
             lastSeen: { $gte: uniqueWindowStart }
         }).maxTimeMS(1500).catch(() => null);
 
-        // 🆕 Only increment count if NOT already visited in 48h
         if (!recentUniqueVisit) {
             await Link.collection.updateOne({ _id: link._id },
                 { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
@@ -675,11 +675,9 @@ app.get('/api/link/:id', async (req, res) => {
                 { upsert: true }
             ).catch(err => console.error('Stats visit update error:', err));
             console.log(`✅ NEW unique visit counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
-        } else {
-            console.log(`⏭️ Duplicate visit skipped (within 48h) for ${visitorKey.substring(0, 12)}...`);
         }
 
-        // Always update lastSeen so 48h window resets
+        // 🆕 Always update lastSeen for ACTIVE WATCHING tracking
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } }, 
@@ -743,7 +741,6 @@ async function executeClaimTracking(rawLinkId, req) {
 
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     
-    // 🆕 STRICT: Only source=video counts. Popup claims are DUMMY.
     if (sourceParam !== 'video') {
         return { success: true, ignored: true, reason: 'Only main video claim button counts' };
     }
@@ -756,7 +753,6 @@ async function executeClaimTracking(rawLinkId, req) {
     const today = getISTDate();
     const uniqueWindowStart = new Date(Date.now() - UNIQUE_WINDOW_MS);
 
-    // 🆕 Check if this visitor claimed in last 48 hours
     const recentUniqueClaim = await VisitorActivity.findOne({
         linkId: { $in: [link.id, String(link._id), cleanId] },
         visitorKey: visitorKey,
@@ -765,7 +761,6 @@ async function executeClaimTracking(rawLinkId, req) {
         lastSeen: { $gte: uniqueWindowStart }
     }).maxTimeMS(1500).catch(() => null);
 
-    // 🆕 Only increment claim if NOT already claimed in 48h
     if (!recentUniqueClaim) {
         await Link.collection.updateOne({ _id: link._id },
             { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
@@ -775,11 +770,9 @@ async function executeClaimTracking(rawLinkId, req) {
             { upsert: true }
         ).catch(err => console.error('Stats claim update error:', err));
         console.log(`✅ NEW unique claim counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
-    } else {
-        console.log(`⏭️ Duplicate claim skipped (within 48h) for ${visitorKey.substring(0, 12)}...`);
     }
 
-    // Always update lastSeen so 48h window resets
+    // 🆕 Always update lastSeen for ACTIVE CLAIMING tracking
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
@@ -1113,12 +1106,20 @@ app.post('/api/user/link-details', async (req, res) => {
         const v30d = sumDailyMapBetween(dailyVisitsObj, thirtyDaysAgo, today);
         const c30d = sumDailyMapBetween(dailyClaimsObj, thirtyDaysAgo, today);
 
-        let daysLeft = 'Lifetime Active';
+        // 🆕 Compute proper daysLeft + expired status
+        let daysLeft = null;
         let isEligibleForRenewal = false;
+        let linkIsExpired = false;
+        
         if (link.expiryDate) {
             const diffTime = new Date(link.expiryDate) - new Date();
             daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 0) linkIsExpired = true;
             if (daysLeft <= 3) isEligibleForRenewal = true;
+        }
+        // 🆕 If no expiryDate but owner's plan is expired → link is effectively expired
+        if (!link.expiryDate && planIsExpired) {
+            linkIsExpired = true;
         }
 
         const lName = link.linkName || link.title || link.name || 'Untitled Campaign';
@@ -1138,7 +1139,8 @@ app.post('/api/user/link-details', async (req, res) => {
             link: {
                 id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
                 userName: link.userName || link.assignedUser || cleanUser,
-                created: link.created, expiryDate: link.expiryDate, daysLeft, isEligibleForRenewal,
+                created: link.created, expiryDate: link.expiryDate, daysLeft: (daysLeft === null ? 'Lifetime Active' : daysLeft),
+                isEligibleForRenewal, isExpired: linkIsExpired,
                 totalVisits: link.visits || 0, visits: link.visits || 0,
                 totalClaims: link.claims || 0, claims: link.claims || 0,
                 todayVisits: vToday, todayClaims: cToday,
@@ -1268,7 +1270,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Lifetime Unlimited toggle
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
@@ -1830,7 +1831,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS — 48h unique window ====================
+// ==================== ADMIN ALL STATS — CORRECTED ACTIVE WATCHING ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1867,17 +1868,19 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
-        // 🆕 Active Watching — 48 HOURS unique window (using visitorKey dedup)
+        // 🆕 FIXED: Active Watching = visitors in last 5 MINUTES (not 48 hours)
+        const activeWindow = new Date(Date.now() - ACTIVE_WINDOW_MS);
+        
         const activeWatchingAgg = await VisitorActivity.aggregate([
-            { $match: { type: 'visit', lastSeen: { $gte: new Date(Date.now() - UNIQUE_WINDOW_MS) } } },
+            { $match: { type: 'visit', lastSeen: { $gte: activeWindow } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
         const activeWatching = activeWatchingAgg[0]?.count || 0;
 
-        // 🆕 Active Claiming — 48 HOURS unique window
+        // 🆕 FIXED: Active Claiming = claims in last 5 MINUTES (not 48 hours)
         const activeClaimingAgg = await VisitorActivity.aggregate([
-            { $match: { type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - UNIQUE_WINDOW_MS) } } },
+            { $match: { type: 'claim', source: 'video', lastSeen: { $gte: activeWindow } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
@@ -2119,7 +2122,6 @@ app.get('/admin/login.html', async (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-// 🆕 EXPIRED PAGE — "Return to Home" button REMOVED
 app.get('/expired.html', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
