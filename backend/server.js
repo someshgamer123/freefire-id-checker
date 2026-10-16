@@ -78,6 +78,7 @@ const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0
 const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
 const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
 
+// 🆕 RenewalUser — with freeTrialUsed flag
 const RenewalUser = safeLoadModel('RenewalUser', {
     name: String, email: String, phone: String, googleId: String,
     authMethod: { type: String, default: 'email' },
@@ -86,6 +87,8 @@ const RenewalUser = safeLoadModel('RenewalUser', {
     planStartDate: Date,
     planExpiryDate: Date,
     lifetimeUnlimited: { type: Boolean, default: false },
+    freeTrialUsed: { type: Boolean, default: false },   // 🆕 Track if user already used free trial
+    freeTrialActivatedAt: Date,                          // 🆕 When free trial was activated
     linksCreatedThisCycle: { type: Number, default: 0 },
     visitorsThisCycle: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
@@ -102,7 +105,6 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
-// 🆕 VisitorActivity — track unique per 24h for both visit and claim
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -126,7 +128,7 @@ const DISPOSABLE_DOMAINS = [
 ];
 
 const DEFAULT_PLANS = {
-    'free-trial': { name: 'Free Trial', icon: '🎁', durationDays: 7, linkLimit: 1, visitorLimit: 1000, price: 0, enabled: true, badge: '', features: ['1 Active Link', '1,000 Total Visitors', 'Basic Analytics', '7 Days Validity'] },
+    'free-trial': { name: 'Free Trial', icon: '🎁', durationDays: 3, linkLimit: 1, visitorLimit: 150, price: 0, enabled: true, badge: 'FREE', features: ['1 Active Link', '150 Total Visitors', '3 Days Validity', 'Basic Analytics'] },
     'basic': { name: 'Basic', icon: '📦', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '', features: ['5 Active Links', '5,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
     'creator': { name: 'Creator', icon: '⭐', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '', features: ['10 Active Links', '15,000 Total Visitors', 'Detailed Analytics', '14 Days Validity'] },
     'pro': { name: 'Pro', icon: '🚀', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR', features: ['25 Active Links', '50,000 Total Visitors', 'Advanced Analytics', 'Custom Link Names', '30 Days Validity'] },
@@ -230,7 +232,7 @@ function getLinkQuery(rawId) {
     return { $or: orConditions };
 }
 
-// 🆕 Link expired check — returns true if link is expired OR owner plan is expired
+// 🆕 Link expired check
 function isLinkExpired(link) {
     if (!link) return true;
     if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') return true;
@@ -329,6 +331,16 @@ function isPlanExpired(user) {
     if (!user.planExpiryDate) return false;
     try {
         return new Date(user.planExpiryDate) < new Date();
+    } catch(e) { return false; }
+}
+
+// 🆕 Check if user has an active plan (not expired, and not just "no-plan" state)
+function userHasActivePlan(user) {
+    if (!user) return false;
+    if (user.lifetimeUnlimited === true) return true;
+    if (!user.planExpiryDate) return false;
+    try {
+        return new Date(user.planExpiryDate) >= new Date();
     } catch(e) { return false; }
 }
 
@@ -587,7 +599,7 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER — returns expiry flag ====================
+// ==================== VISITOR LINK RESOLVER ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -603,26 +615,15 @@ app.get('/api/link/:id', async (req, res) => {
             const allActive = await Link.find({ status: 'active' }).sort({ created: -1 }).limit(1).lean();
             link = allActive[0];
         }
-        if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
+        if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found', expired: true });
 
-        // 🆕 Check expired/suspended/disabled FIRST — return expired flag, don't serve video
         if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
-            return res.status(403).json({ 
-                error: link.status, 
-                message: `This link has been ${link.status}`, 
-                status: link.status,
-                expired: true 
-            });
+            return res.status(403).json({ error: link.status, message: `This link has been ${link.status}`, status: link.status, expired: true });
         }
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
-                return res.status(403).json({ 
-                    error: 'expired', 
-                    message: 'This link has expired', 
-                    status: 'expired',
-                    expired: true 
-                });
+                return res.status(403).json({ error: 'expired', message: 'This link has expired', status: 'expired', expired: true });
             }
         }
 
@@ -636,34 +637,22 @@ app.get('/api/link/:id', async (req, res) => {
                 
                 if (ownerUser) {
                     if (isPlanExpired(ownerUser)) {
-                        return res.status(403).json({ 
-                            error: 'plan_expired', 
-                            message: 'Your plan has expired. Please renew.', 
-                            status: 'expired',
-                            expired: true 
-                        });
+                        return res.status(403).json({ error: 'plan_expired', message: 'Your plan has expired. Please renew.', status: 'expired', expired: true });
                     }
                     if (ownerUser.lifetimeUnlimited !== true) {
                         const visitorCheck = await canUserGetVisitor(ownerUser);
                         if (!visitorCheck.allowed) {
-                            return res.status(403).json({ 
-                                error: 'visitor_limit_reached', 
-                                message: 'This link has reached its visitor limit.', 
-                                status: 'expired',
-                                expired: true 
-                            });
+                            return res.status(403).json({ error: 'visitor_limit_reached', message: 'This link has reached its visitor limit.', status: 'expired', expired: true });
                         }
                     }
                 }
             } catch(e) { console.error('Plan/Visitor check error:', e.message); }
         }
 
-        // 🆕 VISITOR COUNTING — har visit count hoga (non-unique in link)
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const today = getISTDate();
 
-        // Increment total visits on link (every click counts)
         await Link.collection.updateOne({ _id: link._id },
             { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
         ).catch(err => console.error('Link visit update error:', err));
@@ -672,7 +661,6 @@ app.get('/api/link/:id', async (req, res) => {
             { upsert: true }
         ).catch(err => console.error('Stats visit update error:', err));
 
-        // 🆕 Track unique visitor for active watching (upsert, no increment)
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } }, 
@@ -694,13 +682,8 @@ app.get('/api/link/:id', async (req, res) => {
         res.json({
             id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.name || '',
-            video: videoUrl,
-            claim: claimUrl,
-            buttonText: buttonTxt,
-            headline: headlineTxt,
-            status: link.status || 'active',
-            expiryDate: link.expiryDate || null,
-            expired: false,
+            video: videoUrl, claim: claimUrl, buttonText: buttonTxt, headline: headlineTxt,
+            status: link.status || 'active', expiryDate: link.expiryDate || null, expired: false,
             uidChecking: isUidOn,
             image: bannerImage, popupImage: bannerImage, popupImageUrl: bannerImage, banner: bannerImage,
             popupSettings: {
@@ -734,15 +717,13 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING — only main video claim button counts ====================
+// ==================== CLAIM TRACKING ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
-    // 🆕 STRICT: Only accept source=video. Popup claims are DUMMY, never counted.
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     
-    // Reject anything that isn't explicitly "video"
     if (sourceParam !== 'video') {
         return { success: true, ignored: true, reason: 'Only main video claim button counts' };
     }
@@ -754,7 +735,6 @@ async function executeClaimTracking(rawLinkId, req) {
     const visitorKey = deviceKey || ip;
     const today = getISTDate();
 
-    // 🆕 CLAIM COUNT — every click counts (non-unique in link)
     await Link.collection.updateOne({ _id: link._id },
         { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
     ).catch(err => console.error('Link claim update error:', err));
@@ -763,7 +743,6 @@ async function executeClaimTracking(rawLinkId, req) {
         { upsert: true }
     ).catch(err => console.error('Stats claim update error:', err));
 
-    // 🆕 Track unique claim for active claiming (upsert, no increment)
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
@@ -836,7 +815,18 @@ app.post('/api/user/signup', authLimiter, async (req, res) => {
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
         if (phoneExists) return res.status(400).json({ error: 'Phone already registered.' });
 
-        await RenewalUser.create({ name: cleanName, email: cleanEmail, phone: cleanPhone, authMethod: 'email', status: 'pending', currentPlan: 'free-trial', createdAt: new Date() });
+        // 🆕 Create user with NO plan — planExpiryDate null so they can't access until they activate
+        await RenewalUser.create({ 
+            name: cleanName, 
+            email: cleanEmail, 
+            phone: cleanPhone, 
+            authMethod: 'email', 
+            status: 'pending', 
+            currentPlan: 'none',    // 🆕 No plan yet
+            planExpiryDate: null,    // 🆕 No expiry
+            freeTrialUsed: false,
+            createdAt: new Date() 
+        });
         res.json({ success: true, message: 'Signup submitted!' });
     } catch (e) { res.status(500).json({ error: 'Registration failed' }); }
 });
@@ -869,15 +859,19 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
         let user = await RenewalUser.findOne({ email: cleanEmail });
         if (!user) {
             if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
-            const freePlan = await getPricingDoc();
-            const ftPlan = getPlanDetails(freePlan, 'free-trial');
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 7));
+            // 🆕 Create with NO plan
             user = await RenewalUser.create({
-                name: payload.name || 'Google User', email: cleanEmail, phone: '',
-                googleId: payload.sub, authMethod: 'google', status: 'approved',
-                currentPlan: 'free-trial', planStartDate: new Date(), planExpiryDate: expiry,
-                createdAt: new Date(), approvedAt: new Date()
+                name: payload.name || 'Google User', 
+                email: cleanEmail, 
+                phone: '',
+                googleId: payload.sub, 
+                authMethod: 'google', 
+                status: 'approved',
+                currentPlan: 'none',      // 🆕 No plan
+                planExpiryDate: null,      // 🆕 No expiry
+                freeTrialUsed: false,
+                createdAt: new Date(), 
+                approvedAt: new Date()
             });
         }
         if (user.status === 'rejected') return res.status(403).json({ error: 'Your account has been rejected.' });
@@ -885,22 +879,38 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     } catch (e) { res.status(401).json({ error: 'Google authentication failed' }); }
 });
 
+// 🆕 FREE PLAN ACTIVATION — user must click "Activate", and only ONCE
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
         if (!userName) return res.status(400).json({ error: 'User name required' });
         const user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
         if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        // 🆕 Check if free trial already used
+        if (user.freeTrialUsed === true) {
+            return res.status(403).json({ error: 'Free trial already used. Please purchase a paid plan.' });
+        }
+        
         const pricingDoc = await getPricingDoc();
         const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
+        
         user.currentPlan = 'free-trial';
         user.planStartDate = new Date();
         const expiry = new Date();
-        expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 7));
+        expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 3));
         user.planExpiryDate = expiry;
         user.lifetimeUnlimited = false;
+        user.freeTrialUsed = true;                 // 🆕 Mark as used
+        user.freeTrialActivatedAt = new Date();    // 🆕 Track activation time
         if (user.status === 'pending') { user.status = 'approved'; user.approvedAt = new Date(); }
+        
+        user.markModified('freeTrialUsed');
+        user.markModified('freeTrialActivatedAt');
+        user.markModified('currentPlan');
+        user.markModified('planExpiryDate');
         await user.save();
+        
         res.json({ success: true, message: 'Free plan activated!', user: { id: user._id, name: user.name, currentPlan: user.currentPlan, planExpiryDate: user.planExpiryDate } });
     } catch (e) { res.status(500).json({ error: 'Failed to activate free plan' }); }
 });
@@ -916,8 +926,13 @@ app.post('/api/user/link-details', async (req, res) => {
         let rawInput = linkInput || linkId || id || dashboardId || '';
         let searchId = extractCleanId(rawInput);
 
+        // 🆕 STRICT: Only fetch links where the user is the OWNER
         const allUserLinks = await Link.find({
-            $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }]
+            $or: [
+                { assignedUser: userRegex },
+                { userName: userRegex },
+                { creator: userRegex }
+            ]
         }).sort({ created: -1 }).lean();
 
         const formattedUserLinks = allUserLinks.map(l => {
@@ -925,19 +940,41 @@ app.post('/api/user/link-details', async (req, res) => {
             return { id: l.id, name: lTitle, title: lTitle, linkName: lTitle, status: l.status || 'active', expiryDate: l.expiryDate || null, visits: l.visits || 0, claims: l.claims || 0 };
         });
 
+        // 🆕 STRICT: Only allow selecting one of the user's own links
         let link = null;
-        if (searchId && searchId !== cleanUser) link = await Link.findOne(getLinkQuery(searchId));
-        if (!link && allUserLinks.length > 0) link = await allUserLinks[0];
-        if (!link && cleanUser) link = await Link.findOne({ $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] }).sort({ created: -1 });
-        if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
+        if (searchId && searchId !== cleanUser) {
+            // Find the link, then verify it belongs to this user
+            const candidateLink = await Link.findOne(getLinkQuery(searchId)).lean();
+            if (candidateLink) {
+                const candidateOwner = (candidateLink.assignedUser || candidateLink.userName || candidateLink.creator || '').toLowerCase().trim();
+                const requestedOwner = cleanUser.toLowerCase().trim();
+                if (candidateOwner === requestedOwner) {
+                    link = candidateLink;
+                }
+            }
+        }
+        if (!link && allUserLinks.length > 0) link = allUserLinks[0];
+        // 🚫 NO fallback to any random active link — if user has no links, return empty
 
+        // Get owner user record
         const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
         const pricingDoc = await getPricingDoc();
-        const planKey = ownerUser?.currentPlan || 'free-trial';
-        const plan = getPlanDetails(pricingDoc, planKey);
-        const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
-        const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
+        
+        // 🆕 Determine plan state — "no-plan" if user has no expiry or plan = none
+        const hasPlan = ownerUser ? userHasActivePlan(ownerUser) : false;
         const planIsExpired = ownerUser ? isPlanExpired(ownerUser) : false;
+        const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
+        const freeTrialUsed = ownerUser?.freeTrialUsed === true;
+        const userCurrentPlan = ownerUser?.currentPlan || 'none';
+        
+        // 🆕 Plan key for display: 'no-plan' if user has no plan
+        let effectivePlanKey = userCurrentPlan;
+        if (isLifetimeUnlimited) effectivePlanKey = 'lifetime-unlimited';
+        else if (!hasPlan && !planIsExpired) effectivePlanKey = 'no-plan';  // Never had a plan
+        else if (planIsExpired) effectivePlanKey = 'no-plan';                // Plan expired
+        
+        const plan = getPlanDetails(pricingDoc, hasPlan ? userCurrentPlan : 'free-trial');
+        const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
 
         let planDaysLeft = null;
         if (isLifetimeUnlimited) planDaysLeft = 'lifetime';
@@ -946,37 +983,65 @@ app.post('/api/user/link-details', async (req, res) => {
             planDaysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
-        const planUsage = {
-            planKey: isLifetimeUnlimited ? 'lifetime-unlimited' : (planIsExpired ? 'no-plan' : planKey),
-            planName: isLifetimeUnlimited ? 'Lifetime Unlimited' : (planIsExpired ? 'No Plan' : plan.name),
-            durationDays: isLifetimeUnlimited ? '∞' : (planIsExpired ? 0 : (plan.durationDays || 0)),
-            price: isLifetimeUnlimited ? 0 : (planIsExpired ? 0 : plan.price),
-            badge: isLifetimeUnlimited ? 'VIP' : (planIsExpired ? '' : (plan.badge || '')),
-            features: isLifetimeUnlimited ? ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'No Expiry', 'All Features'] : (planIsExpired ? ['Plan Expired - Please Renew'] : (plan.features || [])),
-            linkLimit: isLifetimeUnlimited ? 'unlimited' : (planIsExpired ? 0 : plan.linkLimit),
-            visitorLimit: isLifetimeUnlimited ? 'unlimited' : (planIsExpired ? 0 : plan.visitorLimit),
+        // 🆕 Plan Usage object
+        const planUsage = hasPlan ? {
+            planKey: isLifetimeUnlimited ? 'lifetime-unlimited' : userCurrentPlan,
+            planName: isLifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
+            durationDays: isLifetimeUnlimited ? '∞' : (plan.durationDays || 0),
+            price: isLifetimeUnlimited ? 0 : plan.price,
+            badge: isLifetimeUnlimited ? 'VIP' : (plan.badge || ''),
+            features: isLifetimeUnlimited ? ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'No Expiry', 'All Features'] : (plan.features || []),
+            linkLimit: isLifetimeUnlimited ? 'unlimited' : plan.linkLimit,
+            visitorLimit: isLifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
             linksUsed: allUserLinks.length,
             visitorsUsed: totalUserVisits,
             linksRemaining: (isLifetimeUnlimited || isUnlimited(plan.linkLimit)) ? 'unlimited' : Math.max(0, plan.linkLimit - allUserLinks.length),
             visitorsRemaining: (isLifetimeUnlimited || isUnlimited(plan.visitorLimit)) ? 'unlimited' : Math.max(0, plan.visitorLimit - totalUserVisits),
-            linkLimitReached: isLifetimeUnlimited ? false : (planIsExpired ? true : (!isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit)),
-            visitorLimitReached: isLifetimeUnlimited ? false : (planIsExpired ? true : (!isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit)),
+            linkLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit),
+            visitorLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit),
             lifetimeUnlimited: isLifetimeUnlimited,
             planExpiryDate: ownerUser?.planExpiryDate || null,
-            planIsExpired: planIsExpired,
+            planIsExpired: false,
             planDaysLeft: planDaysLeft
+        } : {
+            // 🆕 No plan state
+            planKey: 'no-plan',
+            planName: planIsExpired ? 'Plan Expired' : 'No Plan',
+            durationDays: 0,
+            price: 0,
+            badge: '',
+            features: [],
+            linkLimit: 0,
+            visitorLimit: 0,
+            linksUsed: allUserLinks.length,
+            visitorsUsed: totalUserVisits,
+            linksRemaining: 0,
+            visitorsRemaining: 0,
+            linkLimitReached: true,
+            visitorLimitReached: true,
+            lifetimeUnlimited: false,
+            planExpiryDate: ownerUser?.planExpiryDate || null,
+            planIsExpired: planIsExpired,
+            planDaysLeft: 0,
+            freeTrialUsed: freeTrialUsed,
+            freeTrialAvailable: !freeTrialUsed
         };
 
+        // 🆕 If no link owned by user — return empty state
         if (!link) {
             return res.status(404).json({
+                success: false,
                 error: `No active link found for user "${cleanUser}".`,
-                userLinks: formattedUserLinks, planUsage,
+                userLinks: [],           // 🆕 Empty — no random link!
+                planUsage,
                 plans: pricingDoc?.plans || DEFAULT_PLANS,
                 paymentSettings: { method: pricingDoc?.paymentSettings?.method || 'UPI', showUpi: pricingDoc?.paymentSettings?.showUpi !== false, details: pricingDoc?.paymentSettings?.details || { upiId: 'admin@upi' } },
-                whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
+                whatsappNumber: pricingDoc?.whatsappNumber || '916372923348',
+                hasAnyLink: false
             });
         }
 
+        // Auto-assign user if link has no owner
         if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
             await Link.collection.updateOne({ _id: link._id }, { $set: { assignedUser: cleanUser, userName: cleanUser } });
         }
@@ -1013,6 +1078,7 @@ app.post('/api/user/link-details', async (req, res) => {
 
         res.json({
             success: true,
+            hasAnyLink: true,
             id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
             userName: link.userName || link.assignedUser || cleanUser,
             totalVisits: link.visits || 0, visits: link.visits || 0,
@@ -1176,13 +1242,15 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
         } else {
             $set.lifetimeUnlimited = false;
             if (user.currentPlan === 'lifetime-unlimited') {
-                $set.currentPlan = 'free-trial';
-                const pricingDoc = await getPricingDoc();
-                const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
-                const expiry = new Date();
-                expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 7));
-                $set.planStartDate = new Date();
-                $set.planExpiryDate = expiry;
+                $set.currentPlan = user.freeTrialUsed ? 'none' : 'free-trial';
+                if (!user.freeTrialUsed) {
+                    const pricingDoc = await getPricingDoc();
+                    const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
+                    const expiry = new Date();
+                    expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 3));
+                    $set.planStartDate = new Date();
+                    $set.planExpiryDate = expiry;
+                }
             }
         }
         
@@ -1242,14 +1310,11 @@ const handleUserApprovalAction = async (req, res) => {
         user.status = targetAction;
         if (targetAction === 'approved') {
             user.approvedAt = new Date();
-            if (!user.currentPlan || user.currentPlan === 'lifetime-unlimited') {
-                user.currentPlan = 'free-trial';
-                user.planStartDate = new Date();
-                const pricingDoc = await getPricingDoc();
-                const planDetails = pricingDoc.plans['free-trial'];
-                const expiry = new Date();
-                expiry.setDate(expiry.getDate() + (planDetails.durationDays || 7));
-                user.planExpiryDate = expiry;
+            // 🆕 Do NOT auto-assign free-trial plan. User must click "Activate Free Plan" themselves.
+            if (!user.currentPlan || user.currentPlan === 'none' || user.currentPlan === 'lifetime-unlimited') {
+                if (user.lifetimeUnlimited !== true && !user.currentPlan) {
+                    user.currentPlan = 'none';
+                }
             }
         }
         user.markModified('currentPlan');
@@ -1580,7 +1645,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
-// 🆕 FIXED: Lifetime Active now properly sets expiryDate to null
+// 🆕 COMPLETELY REWRITTEN: Lifetime Active properly handled
 async function handleLinkUpdate(req, res) {
     try {
         let rawId = req.params.id;
@@ -1632,21 +1697,22 @@ async function handleLinkUpdate(req, res) {
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         if (incomingUidVal !== undefined) $set.uidChecking = !isUidCheckDisabled(incomingUidVal);
 
-        // 🆕 FIXED: Lifetime Active handling
-        // If `makeLifetime` flag or empty expiryDate string, force null (lifetime)
-        if (req.body.makeLifetime === true || req.body.lifetimeActive === true) {
+        // 🆕 CRITICAL: Make Lifetime Active handling — strict
+        // If makeLifetime is true OR expiryDate is null/empty/null-string → set to null (lifetime)
+        const makeLifetimeFlag = req.body.makeLifetime === true || req.body.lifetimeActive === true;
+        const hasExpiryField = ('expiryDate' in req.body) || ('expiry' in req.body) || ('expDate' in req.body);
+        
+        if (makeLifetimeFlag) {
             $set.expiryDate = null;
-        } else {
+            console.log(`✅ Link ${cleanId} set to Lifetime Active`);
+        } else if (hasExpiryField) {
             const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
-            if (incomingExpiry !== undefined) {
-                // Empty string or null → lifetime
-                if (incomingExpiry === null || incomingExpiry === '' || incomingExpiry === 'null') {
-                    $set.expiryDate = null;
-                } else if (!isNaN(new Date(incomingExpiry).getTime())) {
-                    $set.expiryDate = new Date(incomingExpiry);
-                } else {
-                    $set.expiryDate = null;
-                }
+            if (incomingExpiry === null || incomingExpiry === '' || incomingExpiry === 'null' || incomingExpiry === undefined) {
+                $set.expiryDate = null;
+            } else if (!isNaN(new Date(incomingExpiry).getTime())) {
+                $set.expiryDate = new Date(incomingExpiry);
+            } else {
+                $set.expiryDate = null;
             }
         }
 
@@ -1694,6 +1760,7 @@ async function handleLinkUpdate(req, res) {
             linkName: effectiveLinkName, title: effectiveLinkName,
             claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
             uidChecking: finalUidState,
+            expiryDate: updatedDoc.expiryDate || null,
             image: updatedDoc.popupSettings?.image || null,
             popupImage: updatedDoc.popupSettings?.image || null,
             popupImageUrl: updatedDoc.popupSettings?.image || null,
@@ -1722,7 +1789,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS — UNIQUE VISITORS + UNIQUE CLAIMS ====================
+// ==================== ADMIN ALL STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1759,28 +1826,15 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
-        // 🆕 Active Watching — UNIQUE visitors in last 5 min
         const activeWatchingAgg = await VisitorActivity.aggregate([
-            { 
-                $match: { 
-                    type: 'visit',
-                    lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-                } 
-            },
+            { $match: { type: 'visit', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
         const activeWatching = activeWatchingAgg[0]?.count || 0;
 
-        // 🆕 Active Claiming — UNIQUE claims in last 5 min
         const activeClaimingAgg = await VisitorActivity.aggregate([
-            { 
-                $match: { 
-                    type: 'claim',
-                    source: 'video',
-                    lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-                } 
-            },
+            { $match: { type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
@@ -1928,7 +1982,6 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(', ')}`);
 }
 
-// 🆕 UID Checker — injects expired-check script
 function sendUidCheckerFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['uid-checker.html', 'uid.html'];
@@ -1946,12 +1999,13 @@ function sendUidCheckerFile(res, targetLinkId) {
         var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
         if (!lid) { var parts = window.location.pathname.split('/'); var last = parts[parts.length - 1]; if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last; }
         if (lid) { 
-            fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { return r.json(); }).then(function(d) { 
-                if (d && d.expired === true) { 
-                    window.location.replace('/expired.html'); 
-                    return;
-                }
-                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) { 
+            fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { 
+                if (r.status === 403 || r.status === 404) { window.location.replace('/expired.html'); return; }
+                return r.json(); 
+            }).then(function(d) { 
+                if (!d) return;
+                if (d.expired === true) { window.location.replace('/expired.html'); return; }
+                if (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0) { 
                     window.location.replace('/v/' + encodeURIComponent(d.id || lid)); 
                 } 
             }).catch(function(){}); 
@@ -1973,7 +2027,6 @@ function sendUidCheckerFile(res, targetLinkId) {
     res.status(404).send('File not found: uid-checker.html');
 }
 
-// 🆕 Video Lock — injects expired-check script
 function sendVideoLockFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['video-lock.html'];
@@ -1992,16 +2045,10 @@ try { sessionStorage.setItem('player_uid', 'verified'); sessionStorage.setItem('
 (function() {
     try {
         var lid = ${JSON.stringify(targetLinkId || '')};
-        if (!lid) { 
-            var parts = window.location.pathname.split('/'); 
-            var last = parts[parts.length - 1]; 
-            if (last && last !== 'v') lid = last; 
-        }
+        if (!lid) { var parts = window.location.pathname.split('/'); var last = parts[parts.length - 1]; if (last && last !== 'v') lid = last; }
         if (lid) {
             fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { 
-                if (r.status === 403 || r.status === 404) { 
-                    window.location.replace('/expired.html'); 
-                } 
+                if (r.status === 403 || r.status === 404) { window.location.replace('/expired.html'); } 
             }).catch(function(){});
         }
     } catch(e) {}
@@ -2029,7 +2076,6 @@ app.get('/admin/login.html', async (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
-// 🆕 Expired Page
 app.get('/expired.html', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -2105,10 +2151,6 @@ app.get('/expired.html', (req, res) => {
             color: #cbd5e1;
             line-height: 1.6;
             margin-bottom: 24px;
-        }
-        .expired-subtitle strong {
-            color: #f87171;
-            font-weight: 700;
         }
         .info-box {
             background: rgba(239, 68, 68, 0.08);
@@ -2223,7 +2265,6 @@ app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res)
         let link = cleanId ? await Link.findOne(getLinkQuery(cleanId)).lean() : null;
         if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
         
-        // 🆕 Check expired FIRST
         if (link && isLinkExpired(link)) return res.redirect('/expired.html');
         
         const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
@@ -2241,13 +2282,11 @@ app.get('/v/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const cleanId = extractCleanId(req.params.id);
     
-    // 🆕 Check expired FIRST
     try {
         const link = await Link.findOne(getLinkQuery(cleanId)).lean();
         if (!link) return res.redirect('/expired.html');
         if (isLinkExpired(link)) return res.redirect('/expired.html');
         
-        // Check owner plan
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             const ownerUser = await RenewalUser.findOne({ 
