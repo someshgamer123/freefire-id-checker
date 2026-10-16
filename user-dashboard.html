@@ -345,7 +345,7 @@
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
-        /* ============ SCREENSHOT-STYLE PLAN CARDS (HORIZONTAL CAROUSEL) ============ */
+        /* ============ PLAN CARDS — 4:5 RATIO ============ */
         .plans-carousel-wrap {
             position: relative;
             margin-bottom: 18px;
@@ -353,12 +353,12 @@
         }
         .plans-carousel {
             display: flex;
-            gap: 16px;
+            gap: 14px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-behavior: smooth;
             scroll-snap-type: x mandatory;
-            padding: 8px 4px 20px 4px;
+            padding: 8px 4px 12px 4px;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
             scrollbar-color: rgba(99,102,241,0.5) transparent;
@@ -372,20 +372,34 @@
         .plans-carousel::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.7); }
 
         .plan-card-screenshot {
-            flex: 0 0 320px;
+            flex: 0 0 300px;
             scroll-snap-align: center;
             background: linear-gradient(165deg, #1a1f2e 0%, #141a28 100%);
             border: 2px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
-            padding: 24px 22px;
+            padding: 22px 20px;
             display: flex; flex-direction: column;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; overflow: hidden;
-            min-height: 460px;
+            aspect-ratio: 4 / 5;
+            min-height: auto;
+            max-height: 500px;
         }
         @media (max-width: 500px) {
-            .plan-card-screenshot { flex: 0 0 85%; min-height: 430px; }
+            .plan-card-screenshot { 
+                flex: 0 0 78%; 
+                aspect-ratio: 4 / 5;
+                padding: 18px 16px;
+                max-height: 420px;
+            }
+        }
+        @media (max-width: 380px) {
+            .plan-card-screenshot {
+                flex: 0 0 82%;
+                aspect-ratio: 4 / 5;
+                max-height: 380px;
+            }
         }
         .plan-card-screenshot:hover {
             transform: translateY(-6px);
@@ -413,25 +427,26 @@
         }
 
         .plan-card-icon-wrap {
-            width: 56px; height: 56px;
-            border-radius: 16px;
+            width: 52px; height: 52px;
+            border-radius: 14px;
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(99, 102, 241, 0.3);
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px; margin-bottom: 16px;
+            font-size: 26px; margin-bottom: 12px;
             transition: all 0.3s;
+            flex-shrink: 0;
         }
         .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); }
         .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
 
         .plan-card-name {
-            font-size: 18px; font-weight: 800; color: #fff;
-            margin-bottom: 6px;
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            font-size: 16px; font-weight: 800; color: #fff;
+            margin-bottom: 4px;
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
         }
 
         .plan-card-badge-pill {
-            font-size: 9.5px; font-weight: 800; padding: 3px 9px; border-radius: 10px;
+            font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 10px;
             text-transform: uppercase; letter-spacing: 0.5px;
         }
         .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
@@ -439,32 +454,34 @@
         .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
 
         .plan-card-price-section {
-            margin-bottom: 18px; padding-bottom: 18px;
+            margin-bottom: 12px; padding-bottom: 12px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
         }
         .plan-card-price { display: flex; align-items: baseline; gap: 4px; color: #fff; }
-        .plan-card-price .price-currency { font-size: 20px; font-weight: 800; color: #fff; }
-        .plan-card-price .price-amount { font-size: 36px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
-        .plan-card-price .price-free { font-size: 32px; font-weight: 900; color: #34d399; line-height: 1; }
-        .plan-card-price-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+        .plan-card-price .price-currency { font-size: 18px; font-weight: 800; color: #fff; }
+        .plan-card-price .price-amount { font-size: 32px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+        .plan-card-price .price-free { font-size: 28px; font-weight: 900; color: #34d399; line-height: 1; }
+        .plan-card-price-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
         .plan-card-duration {
-            display: inline-flex; align-items: center; gap: 6px;
+            display: inline-flex; align-items: center; gap: 5px;
             background: rgba(6, 182, 212, 0.12);
             border: 1px solid rgba(6, 182, 212, 0.3);
             color: #38bdf8;
-            font-size: 11.5px; font-weight: 700;
-            padding: 4px 10px; border-radius: 20px; margin-top: 8px;
+            font-size: 10.5px; font-weight: 700;
+            padding: 3px 9px; border-radius: 20px; margin-top: 6px;
         }
 
         .plan-card-btn {
-            width: 100%; padding: 13px; border-radius: 12px;
+            width: 100%; padding: 11px; border-radius: 11px;
             border: 2px solid rgba(99, 102, 241, 0.4);
             background: transparent; color: #fff;
-            font-size: 14px; font-weight: 800;
+            font-size: 13px; font-weight: 800;
             cursor: pointer; transition: all 0.25s;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             display: flex; align-items: center; justify-content: center;
             gap: 6px; letter-spacing: 0.3px;
+            flex-shrink: 0;
         }
         .plan-card-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: var(--primary-light); }
         .plan-card-screenshot.selected .plan-card-btn {
@@ -484,35 +501,38 @@
         }
 
         .plan-card-includes-title {
-            font-size: 11px; font-weight: 800; color: var(--text-muted);
+            font-size: 10px; font-weight: 800; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 0.7px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0;
         }
 
-        .plan-features-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-        .plan-feature-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #cbd5e1; line-height: 1.4; }
+        /* 🆕 Features scroll inside 4:5 card */
+        .plan-features-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 7px; 
+            flex: 1; 
+            overflow-y: auto;
+            padding-right: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(99,102,241,0.4) transparent;
+            min-height: 0;
+        }
+        .plan-features-list::-webkit-scrollbar { width: 4px; }
+        .plan-features-list::-webkit-scrollbar-track { background: transparent; }
+        .plan-features-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 4px; }
+        
+        .plan-feature-item { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; color: #cbd5e1; line-height: 1.35; }
         .plan-feature-item .check-icon {
-            width: 18px; height: 18px; border-radius: 50%;
+            width: 17px; height: 17px; border-radius: 50%;
             background: rgba(16, 185, 129, 0.18); color: #10b981;
-            font-size: 11px; font-weight: 800;
+            font-size: 10px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; margin-top: 1px;
         }
         .plan-card-screenshot.selected .plan-feature-item .check-icon { background: rgba(99, 102, 241, 0.25); color: #818cf8; }
-
-        .carousel-hint {
-            text-align: center;
-            font-size: 11.5px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            font-weight: 600;
-        }
-        .carousel-hint .arrow { color: var(--primary-light); animation: slideHint 1.5s infinite; display: inline-block; }
-        @keyframes slideHint {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(6px); }
-        }
 
         /* ============ PAYMENT PANEL ============ */
         .payment-panel-screenshot {
@@ -606,8 +626,10 @@
             .form-input { font-size: 13px; padding: 11px 12px; }
             .btn-action { font-size: 13.5px; padding: 12px; }
             .form-group { margin-bottom: 12px; }
-            .plan-card-screenshot { padding: 18px 16px; min-height: auto; }
-            .plan-card-price .price-amount { font-size: 30px; }
+            .plan-card-screenshot { padding: 16px 14px; }
+            .plan-card-price .price-amount { font-size: 28px; }
+            .plan-card-name { font-size: 15px; }
+            .plan-card-btn { font-size: 12px; padding: 10px; }
         }
     </style>
 </head>
@@ -892,9 +914,6 @@
             <div class="plans-carousel-wrap">
                 <div class="plans-carousel" id="plansCarousel">
                     <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">Loading plans...</p>
-                </div>
-                <div class="carousel-hint">
-                    <span class="arrow">⟵</span> Swipe / Scroll to see more plans <span class="arrow" style="transform: scaleX(-1);">⟵</span>
                 </div>
             </div>
             <div id="plansModalFooter"></div>
@@ -1214,16 +1233,13 @@
             if (isVip) cardEl.classList.add('vip-mode');
             else if (isExpired) cardEl.classList.add('expired-mode');
             
-            // Icon
             const iconEl = document.getElementById('planIconDisplay');
             if (isVip) iconEl.textContent = '👑';
             else if (isExpired) iconEl.textContent = '⚠️';
             else iconEl.textContent = loadedPlans?.[pu.planKey]?.icon || '🎁';
             
-            // Plan name
             document.getElementById('currentPlanName').textContent = pu.planName || 'Free Trial';
             
-            // Duration
             const durEl = document.getElementById('currentPlanDuration');
             if (isVip) {
                 durEl.textContent = '∞ Lifetime';
@@ -1239,7 +1255,6 @@
                 durEl.style.color = '#fff';
             }
             
-            // Badge
             const badgeEl = document.getElementById('currentPlanBadge');
             const badgeVal = isVip ? 'VIP' : (isExpired ? 'EXPIRED' : (pu.badge || ''));
             if (badgeVal) {
@@ -1279,7 +1294,6 @@
                 visitorsBar.className = 'usage-bar-fill ' + (visitorsPct >= 90 ? 'danger' : (visitorsPct >= 70 ? 'warn' : 'safe'));
             }
 
-            // Warnings
             const warningsEl = document.getElementById('planUsageWarnings');
             let warnings = '';
             if (isVip) {
@@ -1344,7 +1358,7 @@
             `;
         }
 
-        // 🆕 HORIZONTAL CAROUSEL PLAN CARDS
+        // 🆕 HORIZONTAL CAROUSEL PLAN CARDS — 4:5 RATIO
         function renderPlansList() {
             const container = document.getElementById('plansCarousel');
             const footer = document.getElementById('plansModalFooter');
@@ -1509,7 +1523,6 @@
                 if (res.ok && data.success) {
                     notify('🎉 Free plan activated successfully!', 'Success', '✅');
                     closePlansModal();
-                    // Refresh user dashboard
                     setTimeout(() => fetchUserLinkData(), 800);
                 } else {
                     notify(data.error || 'Failed to activate free plan', 'Error', '❌');
@@ -1610,7 +1623,6 @@
                 else if (left <= 3) { badge.className = 'badge-status warning'; badge.textContent = `Expiring (${left} Days Left)`; progress.className = 'progress-bar-fill warning'; progress.style.width = `${Math.min(100, left * 33)}%`; }
                 else { badge.className = 'badge-status active'; badge.textContent = `Active (${left} Days Left)`; progress.className = 'progress-bar-fill active'; progress.style.width = '100%'; }
             } else {
-                // Lifetime Active
                 if (currentPlanUsage && currentPlanUsage.lifetimeUnlimited) {
                     badge.className = 'badge-status lifetime'; badge.textContent = '👑 Lifetime Active';
                     progress.className = 'progress-bar-fill lifetime'; progress.style.width = '100%';
@@ -1721,7 +1733,7 @@ Please verify and approve. Thank you!`;
 
         function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
-        // 🆕 Auto-refresh every 8 seconds — picks up admin changes
+        // 🆕 Auto-refresh every 8 seconds
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 const s = document.getElementById('userLinkSelect');
