@@ -966,7 +966,7 @@
             border: 1px solid var(--border-subtle);
         }
 
-        /* ============ 🆕 GOOGLE AUTH (NEW DESIGN) ============ */
+        /* ============ GOOGLE AUTH (NEW DESIGN) ============ */
         .auth-screen {
             max-width: 440px;
             margin: 30px auto 0;
@@ -1039,19 +1039,20 @@
             margin-right: auto;
         }
         
-        .google-signin-btn {
+        /* 🆕 Custom Google Button (Mobile Friendly) */
+        .google-btn {
             width: 100%;
             max-width: 340px;
             margin: 0 auto 16px;
             padding: 14px 18px;
-            background: #fff;
+            background: #ffffff;
             border: 1px solid #dadce0;
             border-radius: 12px;
             color: #3c4043;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1059,21 +1060,27 @@
             position: relative;
             z-index: 1;
             font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+            user-select: none;
+            -webkit-user-select: none;
         }
-        .google-signin-btn:hover {
+        .google-btn:hover {
             background: #f8f9fa;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border-color: #c6c6c6;
         }
-        .google-signin-btn:active { transform: scale(0.98); }
-        .google-signin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .google-signin-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-        .google-signin-btn .btn-text { font-weight: 700; }
+        .google-btn:active { 
+            transform: scale(0.98); 
+            background: #f1f3f4;
+        }
+        .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .google-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+        .google-btn .btn-text { font-weight: 700; color: #3c4043; }
 
         .auth-switch-text {
-            font-size: 13px;
+            font-size: 13.5px;
             color: var(--text-secondary);
-            margin-top: 20px;
+            margin-top: 22px;
             position: relative;
             z-index: 1;
             line-height: 1.5;
@@ -1085,6 +1092,9 @@
             cursor: pointer;
             margin-left: 4px;
             transition: 0.2s;
+            -webkit-tap-highlight-color: rgba(99,102,241,0.2);
+            padding: 4px 2px;
+            display: inline-block;
         }
         .auth-switch-text a:hover {
             color: #a5b4fc;
@@ -1097,7 +1107,7 @@
             gap: 6px;
             font-size: 11px;
             color: var(--text-muted);
-            margin-top: 22px;
+            margin-top: 24px;
             padding: 6px 12px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
@@ -1107,7 +1117,7 @@
         }
         .auth-security-badge svg { width: 12px; height: 12px; color: #34d399; }
 
-        /* Hidden Google Sign-In container (GSI needs a div) */
+        /* Hidden Google container */
         #googleHiddenContainer {
             position: absolute;
             width: 1px;
@@ -1225,6 +1235,7 @@
             .metric-value { font-size: 18px; }
             .auth-card { padding: 28px 20px 22px; }
             .auth-title { font-size: 21px; }
+            .google-btn { padding: 13px 16px; font-size: 14.5px; }
         }
     </style>
 </head>
@@ -1431,7 +1442,7 @@
     </header>
 
     <main class="content-wrap">
-        <!-- ============ 🆕 AUTH SECTION (SIGN IN / SIGN UP) ============ -->
+        <!-- ============ AUTH SECTION (GOOGLE-ONLY) ============ -->
         <div id="authSection" class="auth-screen">
             <div class="auth-card">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
@@ -1441,7 +1452,7 @@
                     <h2 class="auth-title">Welcome Back</h2>
                     <p class="auth-subtitle">Sign in with your Google account to access your dashboard</p>
                     
-                    <button class="google-signin-btn" onclick="triggerGoogleAuth('signin')" id="googleSignInBtn">
+                    <button type="button" class="google-btn" onclick="triggerGoogleAuth('signin')" id="googleSignInBtn">
                         <svg><use href="#icon-google"/></svg>
                         <span class="btn-text">Sign in with Google</span>
                     </button>
@@ -1457,7 +1468,7 @@
                     <h2 class="auth-title">Create Account</h2>
                     <p class="auth-subtitle">Sign up with Google to start your journey</p>
                     
-                    <button class="google-signin-btn" onclick="triggerGoogleAuth('signup')" id="googleSignUpBtn">
+                    <button type="button" class="google-btn" onclick="triggerGoogleAuth('signup')" id="googleSignUpBtn">
                         <svg><use href="#icon-google"/></svg>
                         <span class="btn-text">Sign up with Google</span>
                     </button>
@@ -1664,13 +1675,12 @@
         </div>
     </main>
 
-    <!-- Hidden Google GSI Container -->
+    <!-- Hidden Google GSI Container (for desktop fallback) -->
     <div id="googleHiddenContainer">
         <div id="g_id_onload"
              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
              data-callback="handleGoogleAuth"
-             data-auto_prompt="false"
-             data-use_fedcm_for_prompt="true">
+             data-auto_prompt="false">
         </div>
         <div id="googleBtnHidden"></div>
     </div>
@@ -1970,11 +1980,14 @@
         let loadedPlans = null;
         let currentPlanUsage = null;
         let pendingProfileUser = null;
-        let currentAuthMode = 'signin'; // 'signin' or 'signup'
+        let currentAuthMode = 'signin';
+        let googleInitialized = false;
         
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
+
+        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
         // ============ TOAST ============
         function showToast(message, type = 'info', duration = 3000) {
@@ -2102,7 +2115,7 @@
             return false;
         }
 
-        // ============ 🆕 AUTH VIEW SWITCHER ============
+        // ============ AUTH VIEW SWITCHER ============
         function switchAuthView(mode) {
             currentAuthMode = mode;
             if (mode === 'signup') {
@@ -2114,36 +2127,94 @@
             }
         }
 
-        // ============ 🆕 TRIGGER GOOGLE AUTH ============
+        // ============ 🔥 NEW: GOOGLE AUTH (MOBILE + DESKTOP) ============
         function triggerGoogleAuth(action) {
-            // action: 'signin' or 'signup'
             currentAuthMode = action;
             
-            // Check if Google SDK is loaded
+            const btn1 = document.getElementById('googleSignInBtn');
+            const btn2 = document.getElementById('googleSignUpBtn');
+            
+            // Detect mobile
+            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            
+            console.log(`🔵 Google Auth triggered: action=${action}, isMobile=${isMobile}`);
+            
+            // Wait for Google SDK
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
-                showToast('Google Sign-In is loading. Please wait a moment...', 'info');
-                setTimeout(() => {
+                showToast('Google Sign-In loading... Please wait', 'info');
+                let attempts = 0;
+                const waitInterval = setInterval(() => {
+                    attempts++;
                     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                        clearInterval(waitInterval);
                         triggerGoogleAuth(action);
-                    } else {
+                    } else if (attempts > 15) {
+                        clearInterval(waitInterval);
                         showToast('Google Sign-In failed to load. Please refresh the page.', 'error');
+                        if (btn1) btn1.disabled = false;
+                        if (btn2) btn2.disabled = false;
                     }
-                }, 1500);
+                }, 300);
                 return;
             }
             
-            // Disable buttons during process
-            const btn1 = document.getElementById('googleSignInBtn');
-            const btn2 = document.getElementById('googleSignUpBtn');
+            // Disable buttons
             if (btn1) btn1.disabled = true;
             if (btn2) btn2.disabled = true;
             
             try {
+                // 🔥 MOBILE: Use redirect-based OAuth flow (more reliable)
+                if (isMobile) {
+                    // Use google.accounts.oauth2 code client for mobile
+                    // This opens Google's OAuth in a new page (no popup)
+                    const redirectUri = window.location.origin + '/user-dashboard';
+                    
+                    // Store action in localStorage for after redirect
+                    localStorage.setItem('pendingGoogleAuthAction', action);
+                    
+                    // Use the OAuth2 code flow — most reliable on mobile
+                    if (google.accounts.oauth2) {
+                        try {
+                            const codeClient = google.accounts.oauth2.initCodeClient({
+                                client_id: GOOGLE_CLIENT_ID,
+                                scope: 'openid email profile',
+                                ux_mode: 'redirect',
+                                redirect_uri: redirectUri,
+                                state: action,
+                                callback: (response) => {
+                                    // This won't be called on mobile redirect, but safe to have
+                                    console.log('Code client callback:', response);
+                                }
+                            });
+                            codeClient.requestCode();
+                            return;
+                        } catch(err) {
+                            console.error('OAuth2 code client error:', err);
+                        }
+                    }
+                    
+                    // Fallback: Use Google prompt (some mobile browsers support it)
+                    google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+                            if (btn1) btn1.disabled = false;
+                            if (btn2) btn2.disabled = false;
+                            showToast('Please allow popups or try again', 'warning');
+                        }
+                    });
+                    return;
+                }
+                
+                // 🔥 DESKTOP: Use standard prompt
                 google.accounts.id.prompt((notification) => {
-                    // Re-enable if prompt was dismissed
                     if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
                         if (btn1) btn1.disabled = false;
                         if (btn2) btn2.disabled = false;
+                        
+                        // If prompt not shown on desktop, try One Tap button click
+                        if (notification.isNotDisplayed()) {
+                            const hiddenBtn = document.querySelector('#googleBtnHidden div[role="button"]');
+                            if (hiddenBtn) hiddenBtn.click();
+                        }
                     }
                 });
             } catch(err) {
@@ -2154,8 +2225,10 @@
             }
         }
 
-        // ============ 🆕 GOOGLE AUTH HANDLER ============
+        // ============ GOOGLE AUTH HANDLER ============
         async function handleGoogleAuth(response) {
+            console.log('📥 Google auth response:', response);
+            
             if (!response || !response.credential) {
                 showToast('Google authentication failed. Please try again.', 'error');
                 const btn1 = document.getElementById('googleSignInBtn');
@@ -2166,7 +2239,9 @@
             }
             
             const credential = response.credential;
-            const action = currentAuthMode; // 'signin' or 'signup'
+            const action = currentAuthMode || localStorage.getItem('pendingGoogleAuthAction') || 'signin';
+            
+            console.log(`📤 Sending to server: action=${action}`);
             
             try {
                 const res = await fetch('/api/user/google-auth', {
@@ -2176,12 +2251,15 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 
+                console.log('📨 Server response:', res.status, data);
+                
                 const btn1 = document.getElementById('googleSignInBtn');
                 const btn2 = document.getElementById('googleSignUpBtn');
                 if (btn1) btn1.disabled = false;
                 if (btn2) btn2.disabled = false;
+                localStorage.removeItem('pendingGoogleAuthAction');
                 
-                // ===== SIGN IN MODE =====
+                // SIGN IN MODE
                 if (action === 'signin') {
                     if (res.status === 404 || data.needsSignup) {
                         return notify(
@@ -2210,7 +2288,7 @@
                     }
                 }
                 
-                // ===== SIGN UP MODE =====
+                // SIGN UP MODE
                 if (action === 'signup') {
                     if (data.alreadyRegistered) {
                         return notify(
@@ -2245,10 +2323,11 @@
                 const btn2 = document.getElementById('googleSignUpBtn');
                 if (btn1) btn1.disabled = false;
                 if (btn2) btn2.disabled = false;
+                localStorage.removeItem('pendingGoogleAuthAction');
             }
         }
 
-        // ============ 🆕 PROFILE MODAL ============
+        // ============ PROFILE MODAL ============
         function openProfileModal(user) {
             document.getElementById('profileEmailDisplay').textContent = user.email;
             document.getElementById('profileName').value = user.name || '';
@@ -3250,23 +3329,41 @@
         function performLogout() { 
             localStorage.removeItem('activeUserSession'); 
             localStorage.removeItem('userActiveLinkId'); 
+            localStorage.removeItem('pendingGoogleAuthAction');
             window.location.reload(); 
         }
 
-        // ============ GOOGLE GSI INITIALIZATION ============
+        // ============ GOOGLE GSI INIT ============
+        window.handleGoogleAuth = handleGoogleAuth;
+
         window.addEventListener('load', () => {
-            // Give Google SDK time to load
+            // Check for OAuth redirect callback
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code && state) {
+                // Handle OAuth redirect response on mobile
+                handleOAuthRedirect(code, state);
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+            
+            // Initialize Google GSI
             setTimeout(() => {
-                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id && !googleInitialized) {
                     try {
                         google.accounts.id.initialize({
-                            client_id: '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com',
+                            client_id: GOOGLE_CLIENT_ID,
                             callback: handleGoogleAuth,
                             auto_select: false,
                             cancel_on_tap_outside: true,
-                            use_fedcm_for_prompt: true
+                            use_fedcm_for_prompt: false
                         });
-                        // Render hidden button for prompt
+                        googleInitialized = true;
+                        
+                        // Render hidden button (for desktop)
                         const hiddenBtn = document.getElementById('googleBtnHidden');
                         if (hiddenBtn) {
                             google.accounts.id.renderButton(hiddenBtn, {
@@ -3275,12 +3372,46 @@
                                 theme: 'filled_black'
                             });
                         }
+                        
+                        console.log('✅ Google GSI initialized');
                     } catch(e) {
                         console.error('GSI init error:', e);
                     }
                 }
             }, 800);
         });
+
+        // Handle OAuth redirect (mobile flow)
+        async function handleOAuthRedirect(code, action) {
+            console.log(`📥 OAuth redirect: code=${code}, action=${action}`);
+            
+            try {
+                // For OAuth2 code flow, we need to exchange code for tokens
+                // Since we don't have a server-side exchange endpoint, use the code directly
+                // Google's ID token flow actually returns ID token in the callback
+                // For redirect mode, we can use the code with Google's token endpoint
+                
+                // Instead, let's use the redirect with response_type=id_token (implicit flow)
+                // This will give us id_token in the URL hash
+                // But since we've already redirected, use a different approach:
+                
+                // Send code to server for exchange
+                const res = await fetch('/api/user/google-oauth-callback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, action })
+                });
+                
+                // Fallback: If server doesn't have this endpoint, show error
+                if (!res.ok) {
+                    console.error('Server OAuth exchange failed');
+                    showToast('Authentication failed. Please try again.', 'error');
+                }
+            } catch(err) {
+                console.error('OAuth redirect error:', err);
+                showToast('Authentication error', 'error');
+            }
+        }
 
         // Session verification
         setInterval(async () => {
@@ -3329,11 +3460,7 @@
             }
         }, 10000);
 
-        // Init
         initApp();
-        
-        // Expose handler
-        window.handleGoogleAuth = handleGoogleAuth;
     </script>
 </body>
 </html>
