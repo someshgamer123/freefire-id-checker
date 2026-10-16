@@ -55,49 +55,25 @@
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
 
-        .btn-hamburger {
-            width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border);
-            border-radius: 10px; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; gap: 5px; cursor: pointer; transition: 0.2s; flex-shrink: 0;
-        }
+        .btn-hamburger { width: 40px; height: 40px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
         .btn-hamburger:hover { background: rgba(99,102,241,0.15); border-color: var(--primary); }
         .btn-hamburger span { display: block; width: 20px; height: 2.2px; background: var(--text); border-radius: 3px; }
 
-        .top-nav-bar {
-            display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px;
-            background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
-            margin-bottom: 20px; scrollbar-width: none;
-        }
+        .top-nav-bar { display: flex; gap: 8px; align-items: center; overflow-x: auto; padding: 10px 14px; background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 20px; scrollbar-width: none; }
         .top-nav-bar::-webkit-scrollbar { display: none; }
-        .top-nav-btn {
-            display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 10px;
-            background: transparent; color: var(--text-light); font-size: 13px; font-weight: 700;
-            border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.2s;
-        }
+        .top-nav-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 10px; background: transparent; color: var(--text-light); font-size: 13px; font-weight: 700; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .top-nav-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
         .top-nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
 
-        .sidebar-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
-            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-        }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
-        .sidebar {
-            position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg);
-            border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column;
-            padding: 24px 18px; box-shadow: 10px 0 40px rgba(0,0,0,0.8);
-        }
+        .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; padding: 24px 18px; box-shadow: 10px 0 40px rgba(0,0,0,0.8); }
         .sidebar.show { transform: translateX(0); }
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .sidebar-header h2 { font-size: 16px; font-weight: 800; color: #fff; }
         .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-light); cursor: pointer; }
         .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
-        .sidebar-btn {
-            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
-            background: transparent; color: var(--text-light); font-size: 14px; font-weight: 700;
-            border: 1px solid transparent; cursor: pointer; transition: 0.2s; text-align: left; width: 100%;
-        }
+        .sidebar-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: transparent; color: var(--text-light); font-size: 14px; font-weight: 700; border: 1px solid transparent; cursor: pointer; transition: 0.2s; text-align: left; width: 100%; }
         .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #fff; }
         .sidebar-btn.active { background: var(--primary); color: #fff; }
 
@@ -200,217 +176,49 @@
         .toast.error { background: #dc2626; }
         .toast.info { background: #4f46e5; }
 
-        /* 🆕 NEW: Copy-able URL input wrapper */
-        .copyable-input-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-        .copyable-input-wrap input {
-            padding-right: 44px !important;
-            margin: 0 !important;
-            cursor: pointer;
-            width: 100%;
-        }
-        .copyable-input-wrap .copy-icon-btn {
-            position: absolute;
-            right: 6px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            color: #818cf8;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: all 0.2s;
-            z-index: 2;
-        }
-        .copyable-input-wrap .copy-icon-btn:hover {
-            background: rgba(99, 102, 241, 0.3);
-            color: #fff;
-            transform: translateY(-50%) scale(1.05);
-        }
-        .copyable-input-wrap .copy-icon-btn:active {
-            transform: translateY(-50%) scale(0.95);
-        }
-        .copyable-input-wrap .copy-icon-btn.copied {
-            background: rgba(34, 197, 94, 0.25);
-            border-color: rgba(34, 197, 94, 0.5);
-            color: #22c55e;
-        }
-        .copyable-input-wrap input[readonly]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-        }
+        .copyable-input-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+        .copyable-input-wrap input { padding-right: 44px !important; margin: 0 !important; cursor: pointer; width: 100%; }
+        .copyable-input-wrap .copy-icon-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #818cf8; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.2s; z-index: 2; }
+        .copyable-input-wrap .copy-icon-btn:hover { background: rgba(99, 102, 241, 0.3); color: #fff; transform: translateY(-50%) scale(1.05); }
+        .copyable-input-wrap .copy-icon-btn.copied { background: rgba(34, 197, 94, 0.25); border-color: rgba(34, 197, 94, 0.5); color: #22c55e; }
+        .copyable-input-wrap input[readonly]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
 
-        /* 🆕 NEW: Lifetime active button */
-        .lifetime-btn-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-        }
-        .btn-lifetime {
-            padding: 8px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            background: rgba(34, 197, 94, 0.15);
-            color: #4ade80;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-lifetime:hover {
-            background: rgba(34, 197, 94, 0.3);
-            color: #fff;
-            transform: translateY(-1px);
-        }
-        .btn-lifetime:active {
-            transform: scale(0.97);
-        }
-        .lifetime-active-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            background: rgba(34, 197, 94, 0.15);
-            color: #4ade80;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
+        .lifetime-btn-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .btn-lifetime { padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.15); color: #4ade80; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-lifetime:hover { background: rgba(34, 197, 94, 0.3); color: #fff; transform: translateY(-1px); }
+        .lifetime-active-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: rgba(34, 197, 94, 0.15); color: #4ade80; font-size: 12px; font-weight: 700; border: 1px solid rgba(34, 197, 94, 0.3); }
 
-        /* 🆕 NEW: Secret Key / UID card in edit modal */
-        .uid-card {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
-            border: 1px solid rgba(99, 102, 241, 0.35);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .uid-card .uid-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #a5b4fc;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .uid-card .uid-value-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .uid-card .uid-value {
-            flex: 1;
-            min-width: 180px;
-            background: #090a0f;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 8px;
-            padding: 10px 14px;
-            color: #38bdf8;
-            font-family: monospace;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            user-select: all;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .uid-card .uid-value:hover {
-            border-color: var(--primary);
-            background: #0d1119;
-        }
-        .uid-card .uid-copy-btn {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
+        .uid-card { background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08)); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+        .uid-card .uid-label { font-size: 11px; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .uid-card .uid-value-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .uid-card .uid-value { flex: 1; min-width: 180px; background: #090a0f; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 10px 14px; color: #38bdf8; font-family: monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; user-select: all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .uid-card .uid-value:hover { border-color: var(--primary); background: #0d1119; }
+        .uid-card .uid-copy-btn { padding: 10px 16px; border-radius: 8px; border: none; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
         .uid-card .uid-copy-btn:hover { transform: translateY(-1px); opacity: 0.95; }
-        .uid-card .uid-copy-btn:active { transform: scale(0.97); }
 
-        /* 🆕 NEW: Paste UID box in create form */
-        .paste-uid-card {
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.08));
-            border: 1px dashed rgba(6, 182, 212, 0.45);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .paste-uid-card .paste-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #38bdf8;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .paste-uid-card .paste-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .paste-uid-card input {
-            flex: 1;
-            min-width: 180px;
-            margin: 0 !important;
-            font-family: monospace;
-            letter-spacing: 0.5px;
-        }
-        .paste-uid-card .paste-btn {
-            padding: 11px 18px;
-            border-radius: 10px;
-            border: none;
-            background: linear-gradient(135deg, #06b6d4, #0891b2);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
+        .paste-uid-card { background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.08)); border: 1px dashed rgba(6, 182, 212, 0.45); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+        .paste-uid-card .paste-label { font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .paste-uid-card .paste-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .paste-uid-card input { flex: 1; min-width: 180px; margin: 0 !important; font-family: monospace; letter-spacing: 0.5px; }
+        .paste-uid-card .paste-btn { padding: 11px 18px; border-radius: 10px; border: none; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
         .paste-uid-card .paste-btn:hover { transform: translateY(-1px); opacity: 0.95; }
-        .paste-uid-card .paste-btn:active { transform: scale(0.97); }
-        .paste-uid-card .paste-hint {
-            font-size: 11px;
-            color: var(--text-light);
-            margin-top: 8px;
-            line-height: 1.4;
-        }
+        .paste-uid-card .paste-hint { font-size: 11px; color: var(--text-light); margin-top: 8px; line-height: 1.4; }
+
+        /* 🆕 Plan Editor Cards */
+        .plan-editor-card { background: #090a0f; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .plan-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+        .plan-editor-name { font-size: 15px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .plan-editor-badge { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; }
+        .plan-editor-badge.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .plan-editor-badge.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-editor-badge.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+        .plan-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .plan-editor-grid .plan-field { display: flex; flex-direction: column; }
+        .plan-editor-grid .plan-field label { font-size: 10.5px; color: var(--text-light); font-weight: 600; margin-bottom: 4px; }
+        .plan-editor-grid .plan-field input { padding: 9px 12px; font-size: 12.5px; margin: 0; }
+        .plan-toggle-enable { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-light); }
+        .plan-toggle-enable input { width: auto !important; margin: 0 !important; }
+        .plan-disabled { opacity: 0.5; pointer-events: none; }
 
         @media (max-width: 768px) {
             body { padding: 12px; }
@@ -473,6 +281,7 @@
             <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')"><span>⚙️</span> Settings</button>
         </nav>
 
+        <!-- 1. DASHBOARD -->
         <div class="section active" id="sec-dashboard">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
@@ -540,6 +349,7 @@
             </div>
         </div>
 
+        <!-- 2. LINKS MANAGER -->
         <div class="section" id="sec-links">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -557,11 +367,11 @@
             </div>
         </div>
 
+        <!-- 3. CREATE LINK -->
         <div class="section" id="sec-create">
             <div class="card">
                 <h3>➕ Create Rewarded Tracking Link</h3>
 
-                <!-- 🆕 NEW: Paste UID to Duplicate Link Settings -->
                 <div class="paste-uid-card">
                     <div class="paste-label">📋 Quick Duplicate — Paste Existing UID</div>
                     <div class="paste-row">
@@ -644,6 +454,7 @@
             </div>
         </div>
 
+        <!-- 4. MANAGE USERS -->
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
@@ -663,6 +474,7 @@
             </div>
         </div>
 
+        <!-- 5. USERS & RENEWAL -->
         <div class="section" id="sec-renewals">
             <div class="share-box">
                 <div class="share-title">🔗 Customer Portal & Signup Link:</div>
@@ -685,24 +497,41 @@
                 </div>
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
+
+            <!-- 🆕 6 PLANS EDITOR -->
             <div class="card">
-                <h3>⚙️ Renewal & Payment Settings</h3>
-                <div class="grid-2">
-                    <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID (for QR):</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
-                    <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number (for Screenshots):</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                    <h3 style="margin:0;padding:0;border:none;">💰 Plans & Pricing Settings</h3>
+                    <button class="btn btn-sm btn-success" onclick="saveRenewalSettings()">💾 Save All Settings</button>
                 </div>
-                <h4 style="font-size:13px;color:var(--primary);margin:14px 0 6px;">💰 Renewal Plan Prices (₹):</h4>
-                <div class="grid-2">
-                    <div><label style="font-size:11px;color:var(--text-light);">7 Days (₹):</label><input type="number" id="p7d" value="100"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">15 Days (₹):</label><input type="number" id="p15d" value="200"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">30 Days (₹):</label><input type="number" id="p30d" value="400"></div>
-                    <div><label style="font-size:11px;color:var(--text-light);">90 Days (₹):</label><input type="number" id="p90d" value="1000"></div>
+                <div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Configure all 6 plans — Duration, Active Links, Visitor Limit, and Price. Use "unlimited" for no limit.</div>
+
+                <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:10px;">💳 Payment Settings</h4>
+                    <div class="grid-2">
+                        <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID:</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
+                        <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number:</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:10px;padding:12px;">
+                        <div>
+                            <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                                <span>🔒 Show UPI to User:</span>
+                                <span id="upiToggleBadge" class="status-badge status-active">VISIBLE</span>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-light);margin-top:4px;">If OFF, users won't see the UPI ID/QR on the renewal page.</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="showUpiToggle" onchange="toggleUpiVisibility()" checked>
+                            <span></span>
+                        </label>
+                    </div>
                 </div>
-                <div style="margin-top:6px;"><label style="font-size:11px;color:var(--text-light);">1 Year (₹):</label><input type="number" id="p1y" value="3000"></div>
-                <button class="btn btn-primary btn-sm" style="margin-top:14px;width:auto;" onclick="saveRenewalSettings()">💾 Save Renewal Settings</button>
+
+                <div id="plansEditorsContainer"></div>
             </div>
         </div>
 
+        <!-- 6. URL SHORTENER -->
         <div class="section" id="sec-shortener">
             <div class="card">
                 <h3>🔗 URL Shortener</h3>
@@ -727,6 +556,7 @@
             </div>
         </div>
 
+        <!-- 7. SETTINGS & DEVICES -->
         <div class="section" id="sec-settings">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
@@ -774,6 +604,7 @@
         </div>
     </div>
 
+    <!-- EDIT MODAL -->
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -802,6 +633,7 @@
         let customAdminStart = '';
         let customAdminEnd = '';
         let __csrfToken = null;
+        let loadedPricingData = null;
 
         function getCookie(name) {
             try {
@@ -841,18 +673,14 @@
         function showToast(msg, type = 'info') {
             try {
                 let t = document.getElementById('toast');
-                if (!t) {
-                    t = document.createElement('div');
-                    t.id = 'toast';
-                    document.body.appendChild(t);
-                }
+                if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
                 t.textContent = msg;
                 t.className = `toast ${type} show`;
                 setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
             } catch(e) {}
         }
 
-        function copyText(text, successMsg = 'Copied to clipboard!') {
+        function copyText(text, successMsg = 'Copied!') {
             if (!text) return;
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -865,16 +693,12 @@
             try {
                 const ta = document.createElement('textarea');
                 ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.top = '0';
-                ta.style.left = '0';
-                ta.style.opacity = '0';
+                ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0'; ta.style.opacity = '0';
                 document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
+                ta.focus(); ta.select();
                 const ok = document.execCommand('copy');
                 if (ok) showToast('✅ ' + successMsg, 'success');
-                else prompt('Copy text manually:', text);
+                else prompt('Copy manually:', text);
                 document.body.removeChild(ta);
             } catch(e) {}
         }
@@ -922,23 +746,18 @@
             } catch(e) { console.error('showSection error:', e); }
         }
 
-        // 🆕 NEW: Copy URL on click (for copyable inputs in edit modal)
         function copyFromInput(inputId, msg) {
             try {
                 const input = document.getElementById(inputId);
                 if (!input) return;
                 copyText(input.value, msg || 'Copied!');
-                // Visual feedback
                 const wrap = input.closest('.copyable-input-wrap');
                 if (wrap) {
                     const btn = wrap.querySelector('.copy-icon-btn');
                     if (btn) {
                         btn.classList.add('copied');
                         btn.innerHTML = '✓';
-                        setTimeout(() => {
-                            btn.classList.remove('copied');
-                            btn.innerHTML = '📋';
-                        }, 1500);
+                        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋'; }, 1500);
                     }
                 }
             } catch(e) {}
@@ -1032,8 +851,7 @@
                 box.style.display = isOpen ? 'none' : 'flex';
                 if (!isOpen) {
                     const todayStr = new Date().toISOString().split('T')[0];
-                    const s = document.getElementById('adminStartDate');
-                    const e = document.getElementById('adminEndDate');
+                    const s = document.getElementById('adminStartDate'); const e = document.getElementById('adminEndDate');
                     if (s && !s.value) s.value = todayStr;
                     if (e && !e.value) e.value = todayStr;
                 }
@@ -1047,8 +865,7 @@
                 if (!s || !e) return showToast('Please select both Start and End dates!', 'error');
                 if (s > e) return showToast('Start Date cannot be greater than End Date!', 'error');
                 activeAdminFilter = 'custom';
-                customAdminStart = s;
-                customAdminEnd = e;
+                customAdminStart = s; customAdminEnd = e;
                 const l = document.getElementById('activeFilterLabel');
                 if (l) l.textContent = `Showing: Range (${s} to ${e})`;
                 loadStats();
@@ -1118,19 +935,14 @@
             try {
                 const q = (document.getElementById('searchLinksInput')?.value || '').toLowerCase().trim();
                 const filtered = q ? allLinks.filter(l => l && (
-                    (l.name || '').toLowerCase().includes(q) || 
-                    (l.linkName || '').toLowerCase().includes(q) || 
-                    (l.title || '').toLowerCase().includes(q) || 
-                    String(l.id || l._id || '').toLowerCase().includes(q)
+                    (l.name || '').toLowerCase().includes(q) || (l.linkName || '').toLowerCase().includes(q) ||
+                    (l.title || '').toLowerCase().includes(q) || String(l.id || l._id || '').toLowerCase().includes(q)
                 )) : allLinks;
                 const list = document.getElementById('linksList');
                 const countEl = document.getElementById('searchResultsCount');
                 if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allLinks.length} links`;
                 if (!list) return;
-                if (!filtered.length) {
-                    list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No tracking links found.</p>';
-                    return;
-                }
+                if (!filtered.length) { list.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No tracking links found.</p>'; return; }
                 const isFiltered = activeAdminFilter !== 'all';
                 list.innerHTML = filtered.map(l => {
                     if (!l) return '';
@@ -1139,9 +951,7 @@
                     const claims = isFiltered ? (l.rangeClaims !== undefined ? l.rangeClaims : l.todayClaims || 0) : (l.claims || 0);
                     const status = l.status || 'active';
                     const isUidOn = l.uidChecking !== false;
-                    const uidBadge = isUidOn 
-                        ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' 
-                        : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
+                    const uidBadge = isUidOn ? '<span class="status-badge status-active" style="font-size:10px;">UID: ON</span>' : '<span class="status-badge status-disabled" style="font-size:10px;">UID: OFF</span>';
                     const userName = l.name || l.userName || 'User';
                     const linkName = l.linkName || l.title || 'Link';
                     const filterTag = isFiltered ? `<span style="color:#fbbf24;font-size:11px;">[Filtered]</span>` : '';
@@ -1190,7 +1000,6 @@
             } catch(e) { showToast('Failed to delete link', 'error'); }
         }
 
-        // 🆕 NEW: Edit modal with copyable inputs + UID card + Lifetime button
         function openEditModal(id) {
             try {
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
@@ -1205,7 +1014,6 @@
 
                 const b = document.getElementById('editModalBody');
                 b.innerHTML = `
-                    <!-- 🆕 UID Card with Copy button -->
                     <div class="uid-card">
                         <div class="uid-label">🔑 <span>Link UID (Secret Key)</span></div>
                         <div class="uid-value-row">
@@ -1216,13 +1024,10 @@
                             💡 Copy this UID to duplicate this link's settings in the Create Link page.
                         </div>
                     </div>
-
                     <div class="form-row-2">
                         <div class="form-group"><label>👤 User Name (Client)</label><input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name"></div>
                         <div class="form-group"><label style="color:#38bdf8;">🏷️ Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
                     </div>
-
-                    <!-- 🆕 Copyable Video URL -->
                     <div class="form-row-2">
                         <div class="form-group">
                             <label>🎬 Video URL <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label>
@@ -1239,7 +1044,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="form-row-2">
                         <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
                         <div class="form-group"><label>Headline</label><input type="text" id="eHead" value="${escapeHTML(link.headline || '')}"></div>
@@ -1255,7 +1059,6 @@
                         <div class="form-group">
                             <label style="color:var(--warning);">📅 Expiry Date</label>
                             <input type="datetime-local" id="eExpiry" value="${expiryVal}">
-                            <!-- 🆕 Lifetime Active Button -->
                             <div class="lifetime-btn-wrap">
                                 ${isLifetime 
                                     ? `<span class="lifetime-active-badge">♾️ Lifetime Active</span>` 
@@ -1263,7 +1066,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                         <div>
                             <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
@@ -1274,7 +1076,6 @@
                         </div>
                         <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}</button>
                     </div>
-
                     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
                         <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
                         <div class="form-row-2">
@@ -1298,25 +1099,13 @@
             } catch(e) { console.error('openEditModal error:', e); }
         }
 
-        // 🆕 NEW: Set lifetime active (clear expiry date)
         function setLifetimeActive() {
             try {
                 const expiryInput = document.getElementById('eExpiry');
                 if (expiryInput) expiryInput.value = '';
                 showToast('♾️ Link will be set to Lifetime Active on save', 'success');
-                // Visual feedback
                 const wrap = document.querySelector('.lifetime-btn-wrap');
-                if (wrap) {
-                    wrap.innerHTML = '<span class="lifetime-active-badge">♾️ Lifetime Active (will be saved)</span>';
-                }
-            } catch(e) {}
-        }
-
-        function updateEditPopupPreview(url) {
-            try {
-                const box = document.getElementById('editPreviewBox');
-                if (!box) return;
-                box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
+                if (wrap) wrap.innerHTML = '<span class="lifetime-active-badge">♾️ Lifetime Active (will be saved)</span>';
             } catch(e) {}
         }
 
@@ -1338,7 +1127,6 @@
                 const headline = document.getElementById('eHead')?.value.trim();
                 const status = document.getElementById('eStatus')?.value;
                 const expiryInput = document.getElementById('eExpiry')?.value;
-                // 🆕 Empty expiry = lifetime active
                 const expiryDate = expiryInput ? new Date(expiryInput).toISOString() : null;
                 const uidChecking = editUidChecking;
                 const popupSettings = {
@@ -1376,34 +1164,25 @@
             } catch(e) {}
         }
 
-        // ==================== 🆕 PASTE UID FEATURE ====================
         async function pasteAndLoadUid() {
             try {
                 const input = document.getElementById('pasteUidInput');
                 const uid = (input?.value || '').trim();
                 if (!uid) return showToast('Please paste a UID first', 'error');
 
-                // Find the link by ID in allLinks
                 let sourceLink = allLinks.find(l => l && (String(l.id || l._id) === uid));
                 
-                // If not in memory, fetch from server
                 if (!sourceLink) {
                     showToast('Looking up UID on server...', 'info');
                     try {
                         const res = await fetchWithAuth('/api/links/' + encodeURIComponent(uid));
-                        if (res && res.ok) {
-                            sourceLink = await res.json();
-                        }
+                        if (res && res.ok) sourceLink = await res.json();
                     } catch(e) {}
                 }
 
-                if (!sourceLink) {
-                    return showToast('❌ No link found with this UID', 'error');
-                }
+                if (!sourceLink) return showToast('❌ No link found with this UID', 'error');
 
-                // Auto-fill all fields
                 const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-
                 setVal('cVideo', sourceLink.video || '');
                 setVal('cClaim', sourceLink.claim || sourceLink.url || '');
                 setVal('cButtonText', sourceLink.buttonText || '');
@@ -1413,57 +1192,39 @@
                 setVal('cPopSub', sourceLink.popupSettings?.subtitle || '');
                 setVal('cPopImg', sourceLink.popupSettings?.image || '');
 
-                // Update preview
                 updateCreatePopupPreview(sourceLink.popupSettings?.image || '');
 
-                // Set UID checking status
                 if (sourceLink.uidChecking === false) {
                     createUidChecking = true;
                     toggleCreateUidChecking();
                     createUidChecking = false;
                     toggleCreateUidChecking();
                 } else {
-                    if (!createUidChecking) {
-                        createUidChecking = false;
-                        toggleCreateUidChecking();
-                    }
+                    if (!createUidChecking) { createUidChecking = false; toggleCreateUidChecking(); }
                 }
 
-                // Clear the paste input
                 input.value = '';
-
                 showToast('✅ Settings loaded! Now fill User Name & Link Name to create new link', 'success');
 
-                // Scroll to top of create form
                 setTimeout(() => {
                     const campInput = document.getElementById('cCampaignName');
                     if (campInput) campInput.focus();
                 }, 300);
-
             } catch(e) {
                 console.error('pasteAndLoadUid error:', e);
                 showToast('Failed to load UID settings', 'error');
             }
         }
 
-        // 🆕 NEW: Paste from clipboard
         async function pasteFromClipboard() {
             try {
                 if (navigator.clipboard && navigator.clipboard.readText) {
                     const text = await navigator.clipboard.readText();
                     const input = document.getElementById('pasteUidInput');
-                    if (input && text) {
-                        input.value = text.trim();
-                        showToast('Pasted from clipboard!', 'info');
-                    } else {
-                        showToast('Clipboard empty or permission denied', 'error');
-                    }
-                } else {
-                    showToast('Clipboard access not supported. Please paste manually.', 'error');
-                }
-            } catch(e) {
-                showToast('Please paste manually (Ctrl+V)', 'error');
-            }
+                    if (input && text) { input.value = text.trim(); showToast('Pasted from clipboard!', 'info'); }
+                    else showToast('Clipboard empty or permission denied', 'error');
+                } else showToast('Clipboard access not supported. Please paste manually.', 'error');
+            } catch(e) { showToast('Please paste manually (Ctrl+V)', 'error'); }
         }
 
         async function loadCreateUserDropdown() {
@@ -1570,10 +1331,7 @@
                     allUsers = Array.isArray(data) ? data : (data.users || data.data || []);
                 } else {
                     const res2 = await fetchWithAuth('/api/admin/renewal-users');
-                    if (res2 && res2.ok) {
-                        const d2 = await res2.json();
-                        allUsers = d2.users || [];
-                    }
+                    if (res2 && res2.ok) { const d2 = await res2.json(); allUsers = d2.users || []; }
                 }
             } catch(e) { allUsers = []; }
             const st = document.getElementById('statTotUsers'); if (st) st.textContent = allUsers.length;
@@ -1587,25 +1345,18 @@
             try {
                 const q = (document.getElementById('searchUsersInput')?.value || '').toLowerCase().trim();
                 const filtered = q ? allUsers.filter(u => u && (
-                    (u.name || '').toLowerCase().includes(q) || 
-                    (u.email || '').toLowerCase().includes(q) || 
-                    (u.phone || '').toLowerCase().includes(q)
+                    (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.phone || '').toLowerCase().includes(q)
                 )) : allUsers;
                 const countEl = document.getElementById('usersSearchCount');
                 if (countEl) countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} users`;
                 const container = document.getElementById('usersFullList');
                 if (!container) return;
-                if (!filtered.length) {
-                    container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>';
-                    return;
-                }
+                if (!filtered.length) { container.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No users found.</p>'; return; }
                 container.innerHTML = filtered.map(u => {
                     if (!u) return '';
                     const uid = u._id || u.id || '';
                     const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-                    const statusBadge = u.status === 'approved' 
-                        ? '<span class="status-badge status-active">APPROVED</span>' 
-                        : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
+                    const statusBadge = u.status === 'approved' ? '<span class="status-badge status-active">APPROVED</span>' : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING APPROVAL</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
                     let actionButtons = '';
                     if (u.status === 'pending') {
                         actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Approve</button>
@@ -1622,6 +1373,7 @@
                             <div>
                                 <div class="name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                     <span>👤 ${escapeHTML(u.name || 'User')}</span>${statusBadge}
+                                    <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${escapeHTML(u.currentPlanName || 'Free Trial')}</span>
                                 </div>
                                 <div class="details">
                                     <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
@@ -1694,6 +1446,122 @@
             } catch(e) { showToast('Failed to update status', 'error'); }
         }
 
+        // ==================== 🆕 6 PLANS EDITOR ====================
+        const PLAN_KEYS_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
+        const PLAN_LABELS = {
+            'free-trial': { icon: '🎁', name: 'Free Trial' },
+            'basic': { icon: '📦', name: 'Basic' },
+            'creator': { icon: '⭐', name: 'Creator' },
+            'pro': { icon: '🚀', name: 'Pro' },
+            'business': { icon: '💼', name: 'Business' },
+            'enterprise-vip': { icon: '👑', name: 'Enterprise VIP' }
+        };
+
+        function renderPlansEditors(plans) {
+            try {
+                const container = document.getElementById('plansEditorsContainer');
+                if (!container) return;
+                
+                container.innerHTML = PLAN_KEYS_ORDER.map(key => {
+                    const plan = plans[key] || {};
+                    const meta = PLAN_LABELS[key];
+                    const badgeClass = plan.badge === 'POPULAR' ? 'popular' : (plan.badge === 'SAVE 20%' ? 'save' : (plan.badge === 'BEST VALUE' ? 'best' : ''));
+                    const isEnabled = plan.enabled !== false;
+                    
+                    return `
+                        <div class="plan-editor-card" data-plan-key="${key}">
+                            <div class="plan-editor-header">
+                                <div class="plan-editor-name">
+                                    <span>${meta.icon}</span>
+                                    <span>${meta.name}</span>
+                                    ${plan.badge ? `<span class="plan-editor-badge ${badgeClass}">${escapeHTML(plan.badge)}</span>` : ''}
+                                </div>
+                                <label class="plan-toggle-enable">
+                                    <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="togglePlanEnabled('${key}', this.checked)">
+                                    <span>Enabled</span>
+                                </label>
+                            </div>
+                            <div class="plan-editor-grid ${isEnabled ? '' : 'plan-disabled'}" id="plan-grid-${key}">
+                                <div class="plan-field">
+                                    <label>Duration (Days)</label>
+                                    <input type="number" id="plan-${key}-duration" value="${plan.durationDays || 0}" min="1">
+                                </div>
+                                <div class="plan-field">
+                                    <label>Active Links (or "unlimited")</label>
+                                    <input type="text" id="plan-${key}-links" value="${plan.linkLimit !== undefined ? plan.linkLimit : 1}">
+                                </div>
+                                <div class="plan-field">
+                                    <label>Visitor Limit (or "unlimited")</label>
+                                    <input type="text" id="plan-${key}-visitors" value="${plan.visitorLimit !== undefined ? plan.visitorLimit : 1000}">
+                                </div>
+                                <div class="plan-field">
+                                    <label>Price (₹)</label>
+                                    <input type="number" id="plan-${key}-price" value="${plan.price || 0}" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) { console.error('renderPlansEditors error:', e); }
+        }
+
+        function togglePlanEnabled(key, enabled) {
+            try {
+                const grid = document.getElementById('plan-grid-' + key);
+                if (grid) {
+                    if (enabled) grid.classList.remove('plan-disabled');
+                    else grid.classList.add('plan-disabled');
+                }
+            } catch(e) {}
+        }
+
+        function collectPlansData() {
+            const plans = {};
+            for (const key of PLAN_KEYS_ORDER) {
+                const durationEl = document.getElementById(`plan-${key}-duration`);
+                const linksEl = document.getElementById(`plan-${key}-links`);
+                const visitorsEl = document.getElementById(`plan-${key}-visitors`);
+                const priceEl = document.getElementById(`plan-${key}-price`);
+                const enabledEl = document.querySelector(`.plan-editor-card[data-plan-key="${key}"] input[type="checkbox"]`);
+                const nameEl = PLAN_LABELS[key].name;
+                const iconEl = PLAN_LABELS[key].icon;
+                
+                let linksVal = linksEl ? linksEl.value.trim() : '1';
+                let visitorsVal = visitorsEl ? visitorsEl.value.trim() : '1000';
+                
+                // Parse "unlimited" or numbers
+                const parseLimit = (val) => {
+                    if (!val || val.toLowerCase() === 'unlimited') return 'unlimited';
+                    const num = parseInt(val, 10);
+                    return isNaN(num) ? 'unlimited' : num;
+                };
+                
+                plans[key] = {
+                    name: nameEl,
+                    icon: iconEl,
+                    durationDays: parseInt(durationEl?.value || '1', 10) || 1,
+                    linkLimit: parseLimit(linksVal),
+                    visitorLimit: parseLimit(visitorsVal),
+                    price: parseInt(priceEl?.value || '0', 10) || 0,
+                    enabled: enabledEl ? enabledEl.checked : true,
+                    badge: loadedPricingData?.plans?.[key]?.badge || '',
+                    features: loadedPricingData?.plans?.[key]?.features || []
+                };
+            }
+            return plans;
+        }
+
+        function toggleUpiVisibility() {
+            try {
+                const toggle = document.getElementById('showUpiToggle');
+                const badge = document.getElementById('upiToggleBadge');
+                if (toggle && badge) {
+                    if (toggle.checked) { badge.className = 'status-badge status-active'; badge.textContent = 'VISIBLE'; }
+                    else { badge.className = 'status-badge status-disabled'; badge.textContent = 'HIDDEN'; }
+                }
+            } catch(e) {}
+        }
+
         async function loadRenewalSystem() {
             const portalUrl = window.location.origin + '/user-dashboard';
             const dInput = document.getElementById('dashUserPortalUrl'); if (dInput) dInput.value = portalUrl;
@@ -1728,6 +1596,8 @@
                 const sRes = await fetchWithAuth('/api/admin/renewal-settings');
                 if (sRes && sRes.ok) {
                     const sData = await sRes.json();
+                    loadedPricingData = sData.pricing || {};
+                    
                     const rList = document.getElementById('renewalReqsList');
                     const pendingReqs = (sData.requests || []).filter(r => r && r.status === 'pending');
                     if (!pendingReqs.length) {
@@ -1746,20 +1616,27 @@
                             </div>
                         `).join('');
                     }
-                    if (sData.pricing) {
-                        const pr = sData.pricing.pricing || sData.pricing || {};
-                        if (pr['7days']) { const e = document.getElementById('p7d'); if(e) e.value = pr['7days']; }
-                        if (pr['15days']) { const e = document.getElementById('p15d'); if(e) e.value = pr['15days']; }
-                        if (pr['30days']) { const e = document.getElementById('p30d'); if(e) e.value = pr['30days']; }
-                        if (pr['90days']) { const e = document.getElementById('p90d'); if(e) e.value = pr['90days']; }
-                        if (pr['1year']) { const e = document.getElementById('p1y'); if(e) e.value = pr['1year']; }
-                        const si = document.getElementById('setUpiId');
-                        if (si) si.value = sData.pricing.paymentSettings?.details?.upiId || sData.pricing.upiId || '';
-                        const sw = document.getElementById('setWaNumber');
-                        if (sw) sw.value = sData.pricing.whatsappNumber || '';
+
+                    // Load plans into editors
+                    if (sData.plans) {
+                        renderPlansEditors(sData.plans);
+                    }
+
+                    // Load payment settings
+                    const si = document.getElementById('setUpiId');
+                    if (si) si.value = sData.paymentSettings?.details?.upiId || sData.pricing?.paymentSettings?.details?.upiId || '';
+                    const sw = document.getElementById('setWaNumber');
+                    if (sw) sw.value = sData.paymentSettings?.whatsappNumber || sData.pricing?.whatsappNumber || '';
+                    
+                    // UPI toggle
+                    const showUpi = sData.paymentSettings?.showUpi !== false;
+                    const toggle = document.getElementById('showUpiToggle');
+                    if (toggle) {
+                        toggle.checked = showUpi;
+                        toggleUpiVisibility();
                     }
                 }
-            } catch(err) {}
+            } catch(err) { console.error('loadRenewalSystem error:', err); }
         }
 
         async function approveRenewal(id) {
@@ -1783,22 +1660,27 @@
 
         async function saveRenewalSettings() {
             try {
-                const pricing = {
-                    '7days': parseInt(document.getElementById('p7d')?.value || 100, 10),
-                    '15days': parseInt(document.getElementById('p15d')?.value || 200, 10),
-                    '30days': parseInt(document.getElementById('p30d')?.value || 400, 10),
-                    '90days': parseInt(document.getElementById('p90d')?.value || 1000, 10),
-                    '1year': parseInt(document.getElementById('p1y')?.value || 3000, 10)
-                };
+                const plans = collectPlansData();
                 const upiId = document.getElementById('setUpiId')?.value.trim();
                 const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
-                await fetchWithAuth('/api/admin/renewal-settings', {
+                const showUpi = document.getElementById('showUpiToggle')?.checked !== false;
+
+                const res = await fetchWithAuth('/api/admin/renewal-settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pricing, autoPaymentEnabled: false, upiId, whatsappNumber })
+                    body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, showUpi })
                 });
-                showToast('✅ Renewal settings saved!', 'success');
-            } catch(e) { showToast('Failed to save settings', 'error'); }
+                
+                if (res && res.ok) {
+                    showToast('✅ All plans & settings saved!', 'success');
+                    loadRenewalSystem();
+                } else {
+                    showToast('❌ Failed to save settings', 'error');
+                }
+            } catch(e) { 
+                console.error('saveRenewalSettings error:', e);
+                showToast('Failed to save settings', 'error'); 
+            }
         }
 
         function toggleDeviceTab(tab) {
@@ -1856,19 +1738,15 @@
                         `;
                     }).join('');
                 }
-            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
+            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
         }
 
         async function unblockDev(id) {
             if (!confirm('Unblock this device? It will be able to login again.')) return;
             try {
                 const res = await fetchWithAuth('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST' });
-                if (res && res.ok) {
-                    showToast('✅ Device unblocked!', 'success');
-                    loadBlockedDevices();
-                } else {
-                    showToast('Failed to unblock', 'error');
-                }
+                if (res && res.ok) { showToast('✅ Device unblocked!', 'success'); loadBlockedDevices(); }
+                else showToast('Failed to unblock', 'error');
             } catch(e) { showToast('Failed to unblock', 'error'); }
         }
 
@@ -1880,9 +1758,7 @@
                 if (res && res.ok) {
                     const d = await res.json();
                     const sessions = d.sessions || d.data || (Array.isArray(d) ? d : []);
-                    if (!sessions.length) {
-                        return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No login sessions found.</p>';
-                    }
+                    if (!sessions.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No login sessions found.</p>';
                     list.innerHTML = sessions.map(s => {
                         const loginTime = s.createdAt ? new Date(s.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
                         const lastActive = s.lastActivity ? new Date(s.lastActivity).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now';
@@ -1895,11 +1771,7 @@
                         return `
                             <div class="device-card-item ${cardClass}">
                                 <div>
-                                    <div class="device-title">
-                                        ${statusIcon} ${escapeHTML(s.deviceName || 'Admin Device')} 
-                                        <span style="font-size:11px;color:#94a3b8;">(${escapeHTML(s.deviceType || 'Browser')})</span>
-                                        <span style="font-size:10px;font-weight:800;color:${statusColor};">• ${statusText}</span>
-                                    </div>
+                                    <div class="device-title">${statusIcon} ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#94a3b8;">(${escapeHTML(s.deviceType || 'Browser')})</span> <span style="font-size:10px;font-weight:800;color:${statusColor};">• ${statusText}</span></div>
                                     <div class="device-meta">
                                         <span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span>
                                         <span>🕒 Logged In: <b>${loginTime}</b></span>
@@ -1907,20 +1779,18 @@
                                     </div>
                                 </div>
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                    ${isActiveNow ? `
-                                        <button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🚪 Logout</button>
-                                    ` : ''}
+                                    ${isActiveNow ? `<button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🚪 Logout</button>` : ''}
                                     <button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block Device</button>
                                 </div>
                             </div>
                         `;
                     }).join('');
                 }
-            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
+            } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
         }
 
         async function deleteActiveSession(id) {
-            if (!confirm('Logout this session? The device will need to login again.')) return;
+            if (!confirm('Logout this session?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
                 showToast('Session terminated!', 'info');
@@ -1929,10 +1799,10 @@
         }
 
         async function blockActiveSession(id) {
-            if (!confirm('Permanently block this device? It won\'t be able to login again until manually unblocked.')) return;
+            if (!confirm('Permanently block this device?')) return;
             try {
                 await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' });
-                showToast('✅ Device permanently blocked!', 'success');
+                showToast('✅ Device blocked!', 'success');
                 loadActiveDevices();
             } catch(e) { showToast('Failed', 'error'); }
         }
@@ -1965,32 +1835,21 @@
                     body: JSON.stringify({ email, phone })
                 });
                 showToast('✅ Contact saved!', 'success');
-            } catch(e) { showToast('Failed to save', 'error'); }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function saveBackground() {
             const bg = document.getElementById('bgImgUrl')?.value.trim();
             try {
-                await fetchWithAuth('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ background: bg }) 
-                });
-                if (bg) {
-                    const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = bg;
-                    const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.add('show');
-                }
+                await fetchWithAuth('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: bg }) });
+                if (bg) { const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = bg; const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.add('show'); }
                 showToast('✅ Background updated!', 'success');
-            } catch(e) { showToast('Failed to update', 'error'); }
+            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function removeBackground() {
             try {
-                await fetchWithAuth('/api/admin/background', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ background: null }) 
-                });
+                await fetchWithAuth('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: null }) });
                 const bi = document.getElementById('bgImgUrl'); if (bi) bi.value = '';
                 const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.remove('show');
                 showToast('Background removed', 'info');
@@ -2002,11 +1861,7 @@
             const newP = document.getElementById('newPasscode')?.value.trim();
             if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
             try {
-                const res = await fetchWithAuth('/api/admin/passcode', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) 
-                });
+                const res = await fetchWithAuth('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
                 const d = await res.json();
                 if (d.success) showToast('✅ Passcode updated!', 'success');
                 else showToast('❌ ' + (d.error || 'Failed'), 'error');
@@ -2044,10 +1899,7 @@
             } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
         }
 
-        function copyShortLink(code) {
-            const u = window.location.origin + '/s/' + code;
-            copyText(u, 'Short Link Copied!');
-        }
+        function copyShortLink(code) { copyText(window.location.origin + '/s/' + code, 'Short Link Copied!'); }
 
         async function deleteShortLink(id) {
             if (!confirm('Delete this short link?')) return;
@@ -2065,11 +1917,7 @@
             const appOpen = document.getElementById('shortAppOpen')?.checked;
             if (!originalUrl) return showToast('Enter URL', 'error');
             try {
-                const res = await fetchWithAuth('/api/short-links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme })
-                });
+                const res = await fetchWithAuth('/api/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme }) });
                 if (res && res.ok) {
                     showToast('✅ Short link created!', 'success');
                     const su = document.getElementById('sUrl'); if(su) su.value = '';
@@ -2095,25 +1943,17 @@
             window.location.href = '/admin/login.html';
         }
 
-        function installApp() {
-            showToast('Use browser menu -> Add to Home screen', 'info');
-        }
+        function installApp() { showToast('Use browser menu -> Add to Home screen', 'info'); }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const savedTheme = localStorage.getItem('adminTheme') || 'dark';
-                setTheme(savedTheme);
-            } catch(e) {}
-
+            try { const savedTheme = localStorage.getItem('adminTheme') || 'dark'; setTheme(savedTheme); } catch(e) {}
             await fetchCsrfToken();
-
-            try { loadStats(); } catch(e) { console.error('loadStats failed:', e); }
-            try { loadLinks(); } catch(e) { console.error('loadLinks failed:', e); }
-            try { loadAllUsers(); } catch(e) { console.error('loadAllUsers failed:', e); }
-            try { loadRenewalSystem(); } catch(e) { console.error('loadRenewalSystem failed:', e); }
-            try { loadContactInfo(); } catch(e) { console.error('loadContactInfo failed:', e); }
-            try { loadBlockedDevices(); } catch(e) { console.error('loadBlockedDevices failed:', e); }
-
+            try { loadStats(); } catch(e) {}
+            try { loadLinks(); } catch(e) {}
+            try { loadAllUsers(); } catch(e) {}
+            try { loadRenewalSystem(); } catch(e) {}
+            try { loadContactInfo(); } catch(e) {}
+            try { loadBlockedDevices(); } catch(e) {}
             setInterval(() => { try { loadStats(); } catch(e) {} }, 6000);
         });
     </script>
