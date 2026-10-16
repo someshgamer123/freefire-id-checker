@@ -55,7 +55,7 @@ const Link = safeLoadModel('Link', { id: String, name: String, title: String, li
 const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0 }, totalClaims: { type: Number, default: 0 }, dailyVisitors: { type: Object, default: {} }, dailyClaims: { type: Object, default: {} } });
 const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
 const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
-const RenewalUser = safeLoadModel('RenewalUser', { name: String, email: String, phone: String, googleId: String, authMethod: { type: String, default: 'email' }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, currentPlan: { type: String, default: 'free-trial' }, planStartDate: Date, planExpiryDate: Date, linksCreatedThisCycle: { type: Number, default: 0 }, visitorsThisCycle: { type: Number, default: 0 }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
+const RenewalUser = safeLoadModel('RenewalUser', { name: String, email: String, phone: String, googleId: String, authMethod: { type: String, default: 'email' }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, currentPlan: { type: String, default: 'free-trial' }, planStartDate: Date, planExpiryDate: Date, lifetimeUnlimited: { type: Boolean, default: false }, linksCreatedThisCycle: { type: Number, default: 0 }, visitorsThisCycle: { type: Number, default: 0 }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
 const Pricing = safeLoadModel('Pricing', {});
 const Session = safeLoadModel('Session', { userId: { type: String, default: 'admin' }, deviceKey: String, fingerprint: String, ip: String, userAgent: String, deviceName: String, deviceType: String, isActive: { type: Boolean, default: true }, lastActivity: { type: Date, default: Date.now }, createdAt: { type: Date, default: Date.now }, expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) } });
 const AdminLog = safeLoadModel('AdminLog', { action: String, details: Object, timestamp: { type: Date, default: Date.now } });
@@ -91,27 +91,27 @@ const DISPOSABLE_DOMAINS = [
 // ==================== DEFAULT PLANS ====================
 const DEFAULT_PLANS = {
     'free-trial': {
-        name: 'Free Trial', durationDays: 7, linkLimit: 1, visitorLimit: 1000, price: 0, enabled: true, badge: '',
+        name: 'Free Trial', icon: '🎁', durationDays: 7, linkLimit: 1, visitorLimit: 1000, price: 0, enabled: true, badge: '',
         features: ['1 Active Link', '1,000 Total Visitors', 'Basic Analytics', '7 Days Validity']
     },
     'basic': {
-        name: 'Basic', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '',
+        name: 'Basic', icon: '📦', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '',
         features: ['5 Active Links', '5,000 Total Visitors', 'Detailed Analytics', '14 Days Validity']
     },
     'creator': {
-        name: 'Creator', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '',
+        name: 'Creator', icon: '⭐', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '',
         features: ['10 Active Links', '15,000 Total Visitors', 'Detailed Analytics', '14 Days Validity']
     },
     'pro': {
-        name: 'Pro', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR',
+        name: 'Pro', icon: '🚀', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR',
         features: ['25 Active Links', '50,000 Total Visitors', 'Advanced Analytics', 'Custom Link Names', '30 Days Validity']
     },
     'business': {
-        name: 'Business', durationDays: 90, linkLimit: 100, visitorLimit: 200000, price: 1999, enabled: true, badge: 'SAVE 20%',
+        name: 'Business', icon: '💼', durationDays: 90, linkLimit: 100, visitorLimit: 200000, price: 1999, enabled: true, badge: 'SAVE 20%',
         features: ['100 Active Links', '2,00,000 Total Visitors', 'Priority Support', 'Custom Link Names', '90 Days Validity']
     },
     'enterprise-vip': {
-        name: 'Enterprise VIP', durationDays: 365, linkLimit: 'unlimited', visitorLimit: 'unlimited', price: 4999, enabled: true, badge: 'BEST VALUE',
+        name: 'Enterprise VIP', icon: '👑', durationDays: 365, linkLimit: 'unlimited', visitorLimit: 'unlimited', price: 4999, enabled: true, badge: 'BEST VALUE',
         features: ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'Custom Everything', '1 Year Validity']
     }
 };
@@ -251,9 +251,7 @@ function isValidMobile(mobile, countryCode = 'IN') {
 
 async function verifyTurnstile(token, remoteIp) {
     if (!token) return { success: false, error: 'No captcha token' };
-    if (!process.env.TURNSTILE_SECRET_KEY) {
-        return { success: true, skipped: true };
-    }
+    if (!process.env.TURNSTILE_SECRET_KEY) return { success: true, skipped: true };
     try {
         const verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
         const verifyRes = await fetch(verifyUrl, {
@@ -269,7 +267,7 @@ async function verifyTurnstile(token, remoteIp) {
     }
 }
 
-// ==================== 🆕 PLAN HELPERS ====================
+// ==================== PLAN HELPERS ====================
 async function getPricingDoc() {
     let pricingDoc = await Pricing.findOne();
     if (!pricingDoc) {
@@ -280,7 +278,6 @@ async function getPricingDoc() {
             autoPaymentEnabled: false
         });
     }
-    // Merge missing plans with defaults
     const currentPlans = pricingDoc.plans || {};
     let needsSave = false;
     for (const key of Object.keys(DEFAULT_PLANS)) {
@@ -303,19 +300,23 @@ function getPlanDetails(pricingDoc, planKey) {
 }
 
 function isUnlimited(val) {
-    return val === 'unlimited' || val === -1 || val === 'null' || val === null;
+    return val === 'unlimited' || val === -1 || val === 'null' || val === null || val === 'Unlimited';
 }
 
 // 🆕 Check if user can create a new link
 async function canUserCreateLink(user) {
     try {
+        // 🆕 Lifetime Unlimited bypass
+        if (user.lifetimeUnlimited === true) {
+            return { allowed: true, currentCount: 0, limit: 'unlimited', lifetimeUnlimited: true };
+        }
+        
         const pricingDoc = await getPricingDoc();
         const planKey = user.currentPlan || 'free-trial';
         const plan = getPlanDetails(pricingDoc, planKey);
         
-        // Check link limit
         const linkLimit = plan.linkLimit;
-        if (isUnlimited(linkLimit)) return { allowed: true };
+        if (isUnlimited(linkLimit)) return { allowed: true, limit: 'unlimited' };
         
         const currentCount = await Link.countDocuments({
             $or: [
@@ -338,14 +339,18 @@ async function canUserCreateLink(user) {
 // 🆕 Check if user has enough visitor limit
 async function canUserGetVisitor(user) {
     try {
+        // 🆕 Lifetime Unlimited bypass
+        if (user.lifetimeUnlimited === true) {
+            return { allowed: true, totalVisitors: 0, limit: 'unlimited', lifetimeUnlimited: true };
+        }
+        
         const pricingDoc = await getPricingDoc();
         const planKey = user.currentPlan || 'free-trial';
         const plan = getPlanDetails(pricingDoc, planKey);
         
         const visitorLimit = plan.visitorLimit;
-        if (isUnlimited(visitorLimit)) return { allowed: true };
+        if (isUnlimited(visitorLimit)) return { allowed: true, limit: 'unlimited' };
         
-        // Total visitors across all user's links
         const userLinks = await Link.find({
             $or: [
                 { assignedUser: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
@@ -468,7 +473,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ==================== CSRF PROTECTION ====================
+// ==================== CSRF ====================
 const csrfSecret = process.env.CSRF_SECRET || 'change-this-csrf-secret-32-chars-minimum-xyz-123';
 
 const { generateToken: generateCsrfToken } = doubleCsrf({
@@ -594,25 +599,14 @@ async function authMiddleware(req, res, next) {
 
 // ==================== ROUTES ====================
 app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
-    res.status(403).send(`
-        <!DOCTYPE html><html><head><title>Forbidden</title>
-        <style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
-        .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
-        h1{color:#ef4444;font-size:22px;margin-bottom:10px;}
-        p{color:#94a3b8;font-size:14px;line-height:1.6;}
-        </style></head>
-        <body><div class="card"><h1>⛔ ACCESS DENIED</h1>
-        <p>Only an authorized administrator can unblock devices from the Admin Panel.</p></div></body></html>
-    `);
+    res.status(403).send(`<!DOCTYPE html><html><head><title>Forbidden</title><style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:22px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head><body><div class="card"><h1>⛔ ACCESS DENIED</h1><p>Only an authorized administrator can unblock devices.</p></div></body></html>`);
 });
 
-// ==================== 🆕 PUBLIC PRICING ROUTE (for user dashboard) ====================
 app.get('/api/pricing', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const pricingDoc = await getPricingDoc();
         
-        // Only return enabled plans for user dashboard
         const publicPlans = {};
         for (const [key, plan] of Object.entries(pricingDoc.plans || {})) {
             if (plan && plan.enabled !== false) {
@@ -624,7 +618,7 @@ app.get('/api/pricing', async (req, res) => {
             plans: publicPlans,
             paymentSettings: {
                 method: pricingDoc.paymentSettings?.method || 'UPI',
-                showUpi: pricingDoc.paymentSettings?.showUpi !== false, // Default true
+                showUpi: pricingDoc.paymentSettings?.showUpi !== false,
                 details: pricingDoc.paymentSettings?.details || { upiId: 'admin@upi' }
             },
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
@@ -633,7 +627,6 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN PRICING UPDATE ====================
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
         const { plans, paymentSettings, showUpi, upiId, whatsappNumber } = req.body;
@@ -644,38 +637,27 @@ app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
             pricingDoc.plans = { ...pricingDoc.plans, ...plans };
             pricingDoc.markModified('plans');
         }
-
         if (paymentSettings && typeof paymentSettings === 'object') {
             if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
             Object.assign(pricingDoc.paymentSettings, paymentSettings);
         }
-
-        // 🆕 UPI show/hide toggle
         if (showUpi !== undefined) {
             if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
             pricingDoc.paymentSettings.showUpi = showUpi !== false;
             pricingDoc.markModified('paymentSettings');
         }
-
         if (upiId !== undefined) {
             if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
             if (!pricingDoc.paymentSettings.details) pricingDoc.paymentSettings.details = {};
             pricingDoc.paymentSettings.details.upiId = upiId.toString().trim();
             pricingDoc.markModified('paymentSettings');
         }
-
-        if (whatsappNumber !== undefined) {
-            pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
-        }
+        if (whatsappNumber !== undefined) pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
 
         pricingDoc.autoPaymentEnabled = false;
         await pricingDoc.save();
-
         res.json({ success: true, message: 'Settings saved', pricing: pricingDoc.toObject() });
-    } catch (error) { 
-        console.error('Admin pricing update error:', error);
-        res.status(500).json({ error: 'Failed' }); 
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 // ==================== VISITOR LINK RESOLVER ====================
@@ -699,7 +681,7 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // 🆕 Check the OWNER user's visitor limit
+        // 🆕 Check owner's visitor limit + lifetime unlimited
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             try {
@@ -707,7 +689,7 @@ app.get('/api/link/:id', async (req, res) => {
                     name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
                 }).lean();
                 
-                if (ownerUser) {
+                if (ownerUser && ownerUser.lifetimeUnlimited !== true) {
                     const visitorCheck = await canUserGetVisitor(ownerUser);
                     if (!visitorCheck.allowed) {
                         return res.status(403).json({ 
@@ -987,7 +969,7 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     }
 });
 
-// ==================== 🆕 USER LINK DETAILS (with plan usage) ====================
+// 🆕 USER LINK DETAILS (with plan usage)
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1021,25 +1003,27 @@ app.post('/api/user/link-details', async (req, res) => {
         const planKey = ownerUser?.currentPlan || 'free-trial';
         const plan = getPlanDetails(pricingDoc, planKey);
         
-        // Compute total visitors for user
         const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
 
-        // Compute plan usage
+        const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
+
         const planUsage = {
-            planKey: planKey,
-            planName: plan.name,
-            durationDays: plan.durationDays,
-            price: plan.price,
-            badge: plan.badge || '',
-            features: plan.features || [],
-            linkLimit: plan.linkLimit,
-            visitorLimit: plan.visitorLimit,
+            planKey: isLifetimeUnlimited ? 'lifetime-unlimited' : planKey,
+            planName: isLifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
+            durationDays: isLifetimeUnlimited ? '∞' : plan.durationDays,
+            price: isLifetimeUnlimited ? 0 : plan.price,
+            badge: isLifetimeUnlimited ? 'VIP' : (plan.badge || ''),
+            features: isLifetimeUnlimited ? ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'No Expiry', 'All Features'] : (plan.features || []),
+            linkLimit: isLifetimeUnlimited ? 'unlimited' : plan.linkLimit,
+            visitorLimit: isLifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
             linksUsed: allUserLinks.length,
             visitorsUsed: totalUserVisits,
-            linksRemaining: isUnlimited(plan.linkLimit) ? 'unlimited' : Math.max(0, plan.linkLimit - allUserLinks.length),
-            visitorsRemaining: isUnlimited(plan.visitorLimit) ? 'unlimited' : Math.max(0, plan.visitorLimit - totalUserVisits),
-            linkLimitReached: !isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit,
-            visitorLimitReached: !isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit
+            linksRemaining: (isLifetimeUnlimited || isUnlimited(plan.linkLimit)) ? 'unlimited' : Math.max(0, plan.linkLimit - allUserLinks.length),
+            visitorsRemaining: (isLifetimeUnlimited || isUnlimited(plan.visitorLimit)) ? 'unlimited' : Math.max(0, plan.visitorLimit - totalUserVisits),
+            linkLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit),
+            visitorLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit),
+            lifetimeUnlimited: isLifetimeUnlimited,
+            planExpiryDate: ownerUser?.planExpiryDate || null
         };
 
         if (!link) {
@@ -1126,7 +1110,6 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// 🆕 Check if user can create a new link
 app.post('/api/user/can-create-link', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -1211,9 +1194,9 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 totalLinks: userLinks.length,
                 totalVisits,
                 totalClaims,
-                currentPlanName: plan.name,
-                planLimit: plan.linkLimit,
-                visitorLimit: plan.visitorLimit,
+                currentPlanName: u.lifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
+                planLimit: u.lifetimeUnlimited ? 'unlimited' : plan.linkLimit,
+                visitorLimit: u.lifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
                 whatsappMessage: waData.message,
                 whatsappUrl: waData.whatsappUrl,
                 portalLoginUrl: waData.loginUrl
@@ -1259,7 +1242,43 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// 🆕 Update user's plan
+// 🆕 Toggle Lifetime Unlimited
+app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
+    try {
+        const { enable } = req.body;
+        const userId = req.params.id;
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        const user = await RenewalUser.findOne(userQuery);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (enable === true) {
+            user.lifetimeUnlimited = true;
+            user.currentPlan = 'lifetime-unlimited';
+            user.status = 'approved';
+            if (!user.approvedAt) user.approvedAt = new Date();
+            
+            // Un-expire all their links
+            const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+            await Link.updateMany(
+                { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
+                { $set: { expiryDate: null, status: 'active' } }
+            );
+        } else {
+            user.lifetimeUnlimited = false;
+            if (user.currentPlan === 'lifetime-unlimited') {
+                user.currentPlan = 'free-trial';
+            }
+        }
+
+        await user.save();
+        res.json({ success: true, message: enable ? 'User set to Lifetime Unlimited' : 'Lifetime Unlimited removed', user });
+    } catch (e) { 
+        console.error('Lifetime unlimited toggle error:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
+});
+
+// 🆕 Set user plan manually
 app.post('/api/admin/users/:id/set-plan', authMiddleware, async (req, res) => {
     try {
         const { plan } = req.body;
@@ -1279,6 +1298,7 @@ app.post('/api/admin/users/:id/set-plan', authMiddleware, async (req, res) => {
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + (planDetails.durationDays || 30));
         user.planExpiryDate = expiry;
+        user.lifetimeUnlimited = false;
         await user.save();
         
         res.json({ success: true, message: 'Plan updated', user });
@@ -1304,7 +1324,6 @@ const handleUserApprovalAction = async (req, res) => {
         user.status = targetAction;
         if (targetAction === 'approved') {
             user.approvedAt = new Date();
-            // 🆕 Assign free trial if no plan
             if (!user.currentPlan) {
                 user.currentPlan = 'free-trial';
                 user.planStartDate = new Date();
@@ -1361,7 +1380,6 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
             Object.assign(pricingDoc.paymentSettings, paymentSettings);
             pricingDoc.markModified('paymentSettings');
         }
-        // 🆕 UPI show/hide toggle
         if (showUpi !== undefined) {
             if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
             pricingDoc.paymentSettings.showUpi = showUpi !== false;
@@ -1385,10 +1403,13 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     }
 });
 
+// 🆕 Approve renewal + Auto-update user's plan
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
         if (!reqDoc) return res.status(404).json({ error: 'Request not found' });
+        
+        // Update the link expiry
         const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
         if (link) {
             const curExpiry = link.expiryDate && new Date(link.expiryDate) > new Date() ? new Date(link.expiryDate) : new Date();
@@ -1397,11 +1418,38 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
             link.status = 'active';
             await link.save();
         }
+
+        // 🆕 Auto-update the user's plan
+        const ownerName = link ? (link.assignedUser || link.userName || link.name || link.creator) : null;
+        if (ownerName && reqDoc.plan) {
+            const ownerUser = await RenewalUser.findOne({ 
+                name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+            });
+            
+            if (ownerUser) {
+                const pricingDoc = await getPricingDoc();
+                if (pricingDoc.plans && pricingDoc.plans[reqDoc.plan]) {
+                    ownerUser.currentPlan = reqDoc.plan;
+                    ownerUser.planStartDate = new Date();
+                    const planDetails = pricingDoc.plans[reqDoc.plan];
+                    const expiry = new Date();
+                    expiry.setDate(expiry.getDate() + (planDetails.durationDays || reqDoc.days || 30));
+                    ownerUser.planExpiryDate = expiry;
+                    ownerUser.lifetimeUnlimited = false;
+                    await ownerUser.save();
+                    console.log(`✅ User "${ownerUser.name}" plan updated to: ${reqDoc.plan}`);
+                }
+            }
+        }
+
         reqDoc.status = 'approved';
         reqDoc.approvedAt = new Date();
         await reqDoc.save();
-        res.json({ success: true, message: 'Renewal approved!' });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        res.json({ success: true, message: 'Renewal approved & user plan updated!' });
+    } catch (e) { 
+        console.error('Approve renewal error:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 app.get('/api/renewal/requests', authMiddleware, async (req, res) => {
@@ -1422,6 +1470,27 @@ app.post('/api/renewal/approve/:requestId', authMiddleware, async (req, res) => 
             link.expiryDate = curExpiry;
             link.status = 'active';
             await link.save();
+
+            // Update user's plan
+            const ownerName = link.assignedUser || link.userName || link.name || link.creator;
+            if (ownerName && request.plan) {
+                const ownerUser = await RenewalUser.findOne({ 
+                    name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+                });
+                if (ownerUser) {
+                    const pricingDoc = await getPricingDoc();
+                    if (pricingDoc.plans && pricingDoc.plans[request.plan]) {
+                        ownerUser.currentPlan = request.plan;
+                        ownerUser.planStartDate = new Date();
+                        const planDetails = pricingDoc.plans[request.plan];
+                        const expiry = new Date();
+                        expiry.setDate(expiry.getDate() + (planDetails.durationDays || request.days || 30));
+                        ownerUser.planExpiryDate = expiry;
+                        ownerUser.lifetimeUnlimited = false;
+                        await ownerUser.save();
+                    }
+                }
+            }
         }
         request.status = 'approved';
         request.approvedAt = new Date();
@@ -2001,12 +2070,8 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
 // ==================== FILE SERVING ====================
 function sendAppFile(res, ...fileNames) {
     const searchDirs = [
-        path.join(__dirname, 'admin'),
-        path.join(__dirname, 'public'),
-        __dirname,
-        path.join(__dirname, '..'),
-        path.join(__dirname, '..', 'admin'),
-        path.join(__dirname, '..', 'public')
+        path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname,
+        path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')
     ];
     for (const name of fileNames) {
         for (const dir of searchDirs) {
@@ -2033,20 +2098,8 @@ function sendUidCheckerFile(res, targetLinkId) {
     try {
         var p = new URLSearchParams(window.location.search);
         var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
-        if (!lid) {
-            var parts = window.location.pathname.split('/');
-            var last = parts[parts.length - 1];
-            if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last;
-        }
-        if (lid) {
-            fetch('/api/link/' + encodeURIComponent(lid))
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) {
-                    window.location.replace('/v/' + encodeURIComponent(d.id || lid));
-                }
-            }).catch(function(){});
-        }
+        if (!lid) { var parts = window.location.pathname.split('/'); var last = parts[parts.length - 1]; if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last; }
+        if (lid) { fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { return r.json(); }).then(function(d) { if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) { window.location.replace('/v/' + encodeURIComponent(d.id || lid)); } }).catch(function(){}); }
     } catch(e) {}
 })();
 </script>
@@ -2076,12 +2129,7 @@ function sendVideoLockFile(res, targetLinkId) {
                     const preVerifyScript = `
 <script>
 window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
-try {
-    sessionStorage.setItem('player_uid', 'verified');
-    sessionStorage.setItem('uid_verified', 'true');
-    localStorage.setItem('player_uid', 'verified');
-    localStorage.setItem('uid_verified', 'true');
-} catch(e) {}
+try { sessionStorage.setItem('player_uid', 'verified'); sessionStorage.setItem('uid_verified', 'true'); localStorage.setItem('player_uid', 'verified'); localStorage.setItem('uid_verified', 'true'); } catch(e) {}
 </script>
 `;
                     if (content.includes('<head>')) content = content.replace('<head>', '<head>' + preVerifyScript);
@@ -2101,22 +2149,8 @@ app.get('/admin/login.html', async (req, res) => {
     if (blocked) {
         return res.send(`<!DOCTYPE html><html><head><title>Access Blocked</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;text-align:center;padding:20px;margin:0;}
-            .card{background:#131722;padding:40px 30px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
-            .icon{font-size:56px;margin-bottom:12px;display:block;}
-            h1{color:#ef4444;font-size:22px;margin-bottom:14px;font-weight:800;}
-            p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px;}
-            .note{color:#64748b;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);}
-            strong{color:#f87171;}
-        </style></head>
-        <body><div class="card">
-            <span class="icon">⛔</span>
-            <h1>DEVICE PERMANENTLY BLOCKED</h1>
-            <p>Your device has been <strong>permanently blocked</strong> due to repeated failed login attempts.</p>
-            <p>This ban cannot be removed automatically.</p>
-            <p class="note">Only an authorized administrator can unblock this device from the Admin Panel.</p>
-        </div></body></html>`);
+        <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px 30px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}.icon{font-size:56px;margin-bottom:12px;display:block;}h1{color:#ef4444;font-size:22px;margin-bottom:14px;font-weight:800;}p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px;}.note{color:#64748b;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);}strong{color:#f87171;}</style></head>
+        <body><div class="card"><span class="icon">⛔</span><h1>DEVICE PERMANENTLY BLOCKED</h1><p>Your device has been <strong>permanently blocked</strong> due to repeated failed login attempts.</p><p>This ban cannot be removed automatically.</p><p class="note">Only an authorized administrator can unblock this device from the Admin Panel.</p></div></body></html>`);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
@@ -2172,12 +2206,8 @@ app.get(['/user-dashboard', '/user-dashboard/:id?'], (req, res) => sendAppFile(r
 app.get('/manifest.json', (req, res) => sendAppFile(res, 'manifest.json'));
 app.get('/sw.js', (req, res) => sendAppFile(res, 'sw.js'));
 
-process.on('uncaughtException', (err) => {
-    console.error('❌ Uncaught Exception:', err.message);
-});
-process.on('unhandledRejection', (reason) => {
-    console.error('❌ Unhandled Rejection:', reason);
-});
+process.on('uncaughtException', (err) => { console.error('❌ Uncaught Exception:', err.message); });
+process.on('unhandledRejection', (reason) => { console.error('❌ Unhandled Rejection:', reason); });
 
 setInterval(async () => {
     try {
