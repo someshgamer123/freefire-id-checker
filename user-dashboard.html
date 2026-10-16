@@ -1115,7 +1115,7 @@
                 </div>
             </div>
 
-            <!-- ONLY 4 METRIC CARDS (Today/24h/7d REMOVED) -->
+            <!-- ONLY 4 METRIC CARDS -->
             <div class="stats-row">
                 <div class="metric-card highlight">
                     <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
@@ -1653,7 +1653,6 @@
         }
 
         function displayEmptyState() {
-            // 🆕 Only 4 metric cards now
             ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => { 
                 const e = document.getElementById(id); 
                 if (e) e.textContent = '0'; 
@@ -2042,7 +2041,6 @@
         function onSelectUserLink(selectedId) { if (!selectedId) return; localStorage.setItem('userActiveLinkId', selectedId); fetchUserLinkData(selectedId); }
         function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
 
-        // 🆕 populateDashboardMetrics — Only 4 metrics now (Today/24h/7d removed)
         function populateDashboardMetrics(data) {
             const l = data.link || data;
             const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
@@ -2090,7 +2088,14 @@
             const progress = document.getElementById('barExpiryProgress');
             const expText = document.getElementById('txtExpiryDate');
 
-            if (l.expiryDate) {
+            // 🆕 Handle expired link properly (via link.isExpired flag OR daysLeft <= 0)
+            if (l.isExpired === true) {
+                badge.className = 'badge-status expired';
+                badge.textContent = 'Expired';
+                progress.className = 'progress-bar-fill expired';
+                progress.style.width = '100%';
+                expText.textContent = l.expiryDate ? new Date(l.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Expired';
+            } else if (l.expiryDate) {
                 const d = new Date(l.expiryDate);
                 expText.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const left = typeof l.daysLeft === 'number' ? l.daysLeft : 0;
