@@ -537,7 +537,7 @@ app.get('/api/csrf-token', (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Failed to generate token' }); }
 });
 
-// ========== RATE LIMITERS (ATTACK PROTECTION) ==========
+// ========== RATE LIMITERS ==========
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 500,
@@ -546,7 +546,6 @@ const globalLimiter = rateLimit({
     message: { error: 'Too many requests. Please try again later.' }
 });
 
-// Auth endpoints — strict limit (login/signup)
 const authLimiter = rateLimit({ 
     windowMs: 15 * 60 * 1000, 
     max: 8, 
@@ -554,14 +553,12 @@ const authLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
-// Google login — medium limit
 const googleAuthLimiter = rateLimit({ 
     windowMs: 15 * 60 * 1000, 
     max: 20, 
     message: { error: 'Too many Google sign-in attempts. Please wait.' }
 });
 
-// Link creation — user-specific friendly limit
 const createLinkLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
@@ -569,7 +566,6 @@ const createLinkLimiter = rateLimit({
     message: { error: 'Too many link creations. Please wait a moment.' }
 });
 
-// General API for users
 const userApiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 60,
@@ -901,9 +897,7 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== 🆕 GOOGLE-ONLY AUTH ====================
-
-// 🆕 Step 1: Google Sign-In / Sign-Up (creates pending user without name/phone)
+// ==================== GOOGLE-ONLY AUTH (WITH AUTO-LINK) ====================
 app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
     try {
         const { credential, action } = req.body; // action: 'signin' | 'signup'
@@ -916,12 +910,40 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
         if (!payload.email_verified) return res.status(400).json({ error: 'Google email is not verified' });
         
         const cleanEmail = payload.email.toLowerCase();
+        const googleSub = payload.sub;
+        
         if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
         
-        let user = await RenewalUser.findOne({ email: cleanEmail });
+        // 🔍 STEP 1: Search by googleId first
+        let user = await RenewalUser.findOne({ googleId: googleSub });
         
+        // 🔥 STEP 2: If not found by googleId, search by EMAIL (for legacy accounts)
+        if (!user) {
+            user = await RenewalUser.findOne({ email: cleanEmail });
+            
+            if (user) {
+                // ✅ AUTO-LINK: Existing email account found — update googleId
+                console.log(`🔗 Auto-linking Google to existing account: ${user.email} (${user.name})`);
+                const autoLinkUpdate = { 
+                    googleId: googleSub, 
+                    authMethod: 'google'
+                };
+                // If user has name + phone already, mark profile as complete
+                if (user.name && user.phone && user.name.trim().length > 0 && user.phone.trim().length > 0) {
+                    autoLinkUpdate.profileCompleted = true;
+                }
+                await RenewalUser.collection.updateOne(
+                    { _id: user._id },
+                    { $set: autoLinkUpdate }
+                );
+                // Refresh user data
+                user = await RenewalUser.findById(user._id);
+                console.log(`   ✅ Linked to: ${user.name} (${user.email})`);
+            }
+        }
+        
+        // ---------- ACTION: SIGN IN ----------
         if (action === 'signin') {
-            // Login attempt — user must exist
             if (!user) {
                 return res.status(404).json({ 
                     error: 'No account found. Please Sign Up first.', 
@@ -931,11 +953,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
             if (user.status === 'rejected') {
                 return res.status(403).json({ error: 'Your account has been rejected.' });
             }
-            // Update googleId if missing
-            if (!user.googleId) {
-                await RenewalUser.collection.updateOne({ _id: user._id }, { $set: { googleId: payload.sub } });
-            }
-            // If profile not completed (missing name/phone) — ask for details
+            // If profile is incomplete (no name/phone), ask for details
             if (!user.profileCompleted || !user.name || !user.phone) {
                 return res.json({
                     success: true,
@@ -945,35 +963,41 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                         email: user.email,
                         name: user.name || '',
                         phone: user.phone || '',
-                        googleId: payload.sub
+                        googleId: googleSub
                     }
                 });
             }
             if (user.status === 'pending') {
-                return res.status(403).json({ error: 'Pending admin approval.' });
+                return res.status(403).json({ error: 'Pending admin approval. Please wait.' });
             }
             // ✅ Successful login
+            console.log(`✅ Google sign-in success: ${user.name} (${user.email})`);
             return res.json({
                 success: true,
                 needsProfile: false,
-                user: { id: user._id, name: user.name, email: user.email, phone: user.phone, authMethod: 'google' }
+                user: { 
+                    id: user._id, 
+                    name: user.name, 
+                    email: user.email, 
+                    phone: user.phone, 
+                    authMethod: 'google',
+                    currentPlan: user.currentPlan,
+                    lifetimeUnlimited: user.lifetimeUnlimited === true,
+                    status: user.status
+                }
             });
         }
         
-        // action === 'signup'
+        // ---------- ACTION: SIGN UP ----------
         if (user) {
-            // User already exists
-            if (user.profileCompleted && user.name && user.phone) {
+            // User exists — check if profile is complete
+            if (user.name && user.phone && user.profileCompleted === true) {
                 return res.status(400).json({ 
-                    error: 'This Google account is already registered. Please Sign In.', 
+                    error: 'This Google account is already registered. Please Sign In instead.', 
                     alreadyRegistered: true 
                 });
             }
             // Incomplete profile — resume
-            await RenewalUser.collection.updateOne(
-                { _id: user._id }, 
-                { $set: { googleId: payload.sub, authMethod: 'google' } }
-            );
             return res.json({
                 success: true,
                 needsProfile: true,
@@ -982,7 +1006,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                     email: user.email,
                     name: user.name || '',
                     phone: user.phone || '',
-                    googleId: payload.sub
+                    googleId: googleSub
                 }
             });
         }
@@ -992,7 +1016,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
             name: '',
             email: cleanEmail,
             phone: '',
-            googleId: payload.sub,
+            googleId: googleSub,
             authMethod: 'google',
             status: 'pending',
             currentPlan: 'none',
@@ -1011,7 +1035,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                 email: newUser.email,
                 name: '',
                 phone: '',
-                googleId: payload.sub
+                googleId: googleSub
             }
         });
     } catch (e) {
@@ -1020,7 +1044,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
     }
 });
 
-// 🆕 Step 2: Complete Profile (Name + Phone)
+// Complete Profile (Name + Phone)
 app.post('/api/user/complete-profile', userApiLimiter, async (req, res) => {
     try {
         const { userId, googleId, name, phone } = req.body;
@@ -1063,7 +1087,7 @@ app.post('/api/user/complete-profile', userApiLimiter, async (req, res) => {
                 name: cleanName,
                 phone: cleanPhone,
                 profileCompleted: true,
-                status: 'pending' // Will need admin approval
+                status: 'pending'
             }}
         );
         
@@ -1086,48 +1110,7 @@ app.post('/api/user/complete-profile', userApiLimiter, async (req, res) => {
     }
 });
 
-// 🆕 Step 3: Check Session (for auto-login)
-app.post('/api/user/check-session', userApiLimiter, async (req, res) => {
-    try {
-        const { userId, email } = req.body;
-        if (!userId && !email) return res.status(400).json({ error: 'User identifier required' });
-        
-        let user = null;
-        if (userId && mongoose.Types.ObjectId.isValid(userId)) {
-            user = await RenewalUser.findById(userId).lean();
-        }
-        if (!user && email) {
-            user = await RenewalUser.findOne({ email: email.toLowerCase() }).lean();
-        }
-        
-        if (!user) {
-            return res.status(404).json({ success: false, deleted: true, error: 'Account not found.' });
-        }
-        if (user.status === 'rejected') {
-            return res.status(403).json({ success: false, deleted: true, error: 'Your account has been rejected.' });
-        }
-        if (!user.profileCompleted || !user.name || !user.phone) {
-            return res.json({ 
-                success: false, 
-                needsProfile: true,
-                user: { id: user._id, email: user.email, name: user.name || '', phone: user.phone || '' }
-            });
-        }
-        
-        res.json({ 
-            success: true, 
-            needsProfile: false,
-            user: { 
-                id: user._id, name: user.name, email: user.email, phone: user.phone,
-                status: user.status,
-                currentPlan: user.currentPlan,
-                lifetimeUnlimited: user.lifetimeUnlimited === true
-            } 
-        });
-    } catch(e) { res.status(500).json({ error: 'Verification failed' }); }
-});
-
-// 🔒 OLD SIGNIN/SIGNUP DISABLED — Returns error
+// Old endpoints disabled
 app.post('/api/user/signup', authLimiter, (req, res) => {
     res.status(410).json({ error: 'Email signup is disabled. Please use Google Sign Up.', useGoogle: true });
 });
@@ -1135,7 +1118,7 @@ app.post('/api/user/signin', authLimiter, (req, res) => {
     res.status(410).json({ error: 'Email signin is disabled. Please use Google Sign In.', useGoogle: true });
 });
 
-// Legacy google-login — redirect to new flow
+// Legacy google-login redirect
 app.post('/api/user/google-login', googleAuthLimiter, async (req, res) => {
     try {
         const { credential } = req.body;
@@ -1150,7 +1133,6 @@ app.post('/api/user/google-login', googleAuthLimiter, async (req, res) => {
         let user = await RenewalUser.findOne({ email: cleanEmail });
         
         if (!user) {
-            // Create new with profile pending
             user = await RenewalUser.create({
                 name: '', email: cleanEmail, phone: '',
                 googleId: payload.sub, authMethod: 'google',
@@ -1158,6 +1140,11 @@ app.post('/api/user/google-login', googleAuthLimiter, async (req, res) => {
                 profileCompleted: false, createdAt: new Date()
             });
             return res.json({ success: true, needsProfile: true, user: { id: user._id, email: user.email, name: '', phone: '' } });
+        }
+        
+        // Auto-link
+        if (!user.googleId) {
+            await RenewalUser.collection.updateOne({ _id: user._id }, { $set: { googleId: payload.sub, authMethod: 'google' } });
         }
         
         if (!user.profileCompleted || !user.name || !user.phone) {
@@ -1258,7 +1245,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
     }
 });
 
-// ==================== 🆕 USER LINK CREATION (FULLY FIXED) ====================
+// ==================== USER LINK CREATION (FIXED) ====================
 app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
     try {
         const {
@@ -1280,13 +1267,12 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         }
         
         console.log(`✅ User found: ${user.name}, Plan: ${user.currentPlan}, Status: ${user.status}`);
-        console.log(`   lifetimeUnlimited: ${user.lifetimeUnlimited}, expiryDate: ${user.planExpiryDate}`);
         
         if (user.status === 'rejected') {
             return res.status(403).json({ error: 'Your account has been rejected.' });
         }
         
-        // 🔥 CORE FIX: Plan validation
+        // 🔥 Plan validation
         const isLifetimeUnlimited = user.lifetimeUnlimited === true;
         const planExpiryDate = user.planExpiryDate ? new Date(user.planExpiryDate) : null;
         const planIsExpired = planExpiryDate ? (planExpiryDate < new Date()) : true;
@@ -1296,7 +1282,6 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         
         console.log(`   Plan check: lifetime=${isLifetimeUnlimited}, hasPlanKey=${hasPlanKey}, expired=${planIsExpired}, active=${planIsActive}`);
         
-        // ❌ BLOCK: No plan at all
         if (!planIsActive) {
             let errorMsg = 'You need an active plan to create links.';
             let reason = 'NO_ACTIVE_PLAN';
@@ -1319,7 +1304,7 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
             });
         }
         
-        // ✅ Plan is active — check link limit
+        // ✅ Check link limit
         let linkLimit = 'unlimited';
         if (!isLifetimeUnlimited) {
             const pricingDoc = await getPricingDoc();
