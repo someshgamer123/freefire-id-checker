@@ -39,7 +39,6 @@ try {
     };
 }
 
-// 🆕 GLOBAL Mongoose strict mode DISABLE
 mongoose.set('strictQuery', false);
 
 function safeLoadModel(modelName, defaultSchema) {
@@ -103,6 +102,7 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
+// 🆕 VisitorActivity — track unique per 24h for both visit and claim
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -228,6 +228,17 @@ function getLinkQuery(rawId) {
         orConditions.push({ _id: cleanId });
     }
     return { $or: orConditions };
+}
+
+// 🆕 Link expired check — returns true if link is expired OR owner plan is expired
+function isLinkExpired(link) {
+    if (!link) return true;
+    if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') return true;
+    if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
+        const expTime = new Date(link.expiryDate).getTime();
+        if (expTime > 1000000000000 && Date.now() > expTime) return true;
+    }
+    return false;
 }
 
 function generateWhatsAppApprovalData(user, req) {
@@ -576,7 +587,7 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER — FIXED ====================
+// ==================== VISITOR LINK RESOLVER — returns expiry flag ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -586,7 +597,6 @@ app.get('/api/link/:id', async (req, res) => {
         
         let rawId = extractCleanId(req.params.id);
         
-        // 🆕 FRESH QUERY — bypass Mongoose cache
         let link = await Link.collection.findOne(getLinkQuery(rawId));
 
         if (!link && (rawId === 'default' || !rawId)) {
@@ -594,16 +604,29 @@ app.get('/api/link/:id', async (req, res) => {
             link = allActive[0];
         }
         if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
+
+        // 🆕 Check expired/suspended/disabled FIRST — return expired flag, don't serve video
         if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
-            return res.status(403).json({ error: link.status, message: `Link ${link.status}`, status: link.status });
+            return res.status(403).json({ 
+                error: link.status, 
+                message: `This link has been ${link.status}`, 
+                status: link.status,
+                expired: true 
+            });
         }
         if (link.expiryDate && !isNaN(new Date(link.expiryDate).getTime())) {
             const expTime = new Date(link.expiryDate).getTime();
             if (expTime > 1000000000000 && Date.now() > expTime) {
-                return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
+                return res.status(403).json({ 
+                    error: 'expired', 
+                    message: 'This link has expired', 
+                    status: 'expired',
+                    expired: true 
+                });
             }
         }
 
+        // Owner plan check
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             try {
@@ -613,47 +636,49 @@ app.get('/api/link/:id', async (req, res) => {
                 
                 if (ownerUser) {
                     if (isPlanExpired(ownerUser)) {
-                        return res.status(403).json({ error: 'plan_expired', message: 'Your plan has expired. Please renew.', status: 'expired' });
+                        return res.status(403).json({ 
+                            error: 'plan_expired', 
+                            message: 'Your plan has expired. Please renew.', 
+                            status: 'expired',
+                            expired: true 
+                        });
                     }
                     if (ownerUser.lifetimeUnlimited !== true) {
                         const visitorCheck = await canUserGetVisitor(ownerUser);
                         if (!visitorCheck.allowed) {
-                            return res.status(403).json({ error: 'visitor_limit_reached', message: 'This link has reached its visitor limit.', status: 'expired' });
+                            return res.status(403).json({ 
+                                error: 'visitor_limit_reached', 
+                                message: 'This link has reached its visitor limit.', 
+                                status: 'expired',
+                                expired: true 
+                            });
                         }
                     }
                 }
             } catch(e) { console.error('Plan/Visitor check error:', e.message); }
         }
 
+        // 🆕 VISITOR COUNTING — har visit count hoga (non-unique in link)
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const today = getISTDate();
 
-        const recentVisit = await VisitorActivity.findOne({
-            linkId: { $in: [link.id, String(link._id), rawId] },
-            visitorKey: visitorKey, type: 'visit',
-            lastSeen: { $gte: twentyFourHoursAgo }
-        }).maxTimeMS(1500).catch(() => null);
+        // Increment total visits on link (every click counts)
+        await Link.collection.updateOne({ _id: link._id },
+            { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
+        ).catch(err => console.error('Link visit update error:', err));
+        await Stats.collection.updateOne({},
+            { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
+            { upsert: true }
+        ).catch(err => console.error('Stats visit update error:', err));
 
-        if (!recentVisit) {
-            await Link.collection.updateOne({ _id: link._id },
-                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
-            ).catch(err => console.error('Link update error:', err));
-            await Stats.collection.updateOne({},
-                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
-                { upsert: true }
-            ).catch(err => console.error('Stats update error:', err));
-        }
-
-        // 🆕 ALWAYS update lastSeen so active watching works
+        // 🆕 Track unique visitor for active watching (upsert, no increment)
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } }, 
             { upsert: true }
         ).catch(() => {});
 
-        // 🆕 Read ALL possible field names for old data compatibility
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
         const videoUrl = link.video || link.videoUrl || link.videoURL || link.youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ';
@@ -675,6 +700,7 @@ app.get('/api/link/:id', async (req, res) => {
             headline: headlineTxt,
             status: link.status || 'active',
             expiryDate: link.expiryDate || null,
+            expired: false,
             uidChecking: isUidOn,
             image: bannerImage, popupImage: bannerImage, popupImageUrl: bannerImage, banner: bannerImage,
             popupSettings: {
@@ -708,45 +734,43 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING ====================
+// ==================== CLAIM TRACKING — only main video claim button counts ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
+
+    // 🆕 STRICT: Only accept source=video. Popup claims are DUMMY, never counted.
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
-    if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal' || sourceParam === 'entrance') return { success: true, ignored: true };
-    if (sourceParam !== 'video') return { success: true, ignored: true };
+    
+    // Reject anything that isn't explicitly "video"
+    if (sourceParam !== 'video') {
+        return { success: true, ignored: true, reason: 'Only main video claim button counts' };
+    }
 
     const link = await Link.findOne(getLinkQuery(cleanId));
     if (!link) return { success: false, error: 'Link not found' };
 
     const { ip, deviceKey } = getDeviceId(req);
     const visitorKey = deviceKey || ip;
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const today = getISTDate();
 
-    const recentClaim = await VisitorActivity.findOne({
-        linkId: { $in: [link.id, String(link._id), cleanId] },
-        visitorKey: visitorKey, type: 'claim', source: 'video',
-        lastSeen: { $gte: twentyFourHoursAgo }
-    }).maxTimeMS(1500).catch(() => null);
+    // 🆕 CLAIM COUNT — every click counts (non-unique in link)
+    await Link.collection.updateOne({ _id: link._id },
+        { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
+    ).catch(err => console.error('Link claim update error:', err));
+    await Stats.collection.updateOne({},
+        { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
+        { upsert: true }
+    ).catch(err => console.error('Stats claim update error:', err));
 
-    if (!recentClaim) {
-        await Link.collection.updateOne({ _id: link._id },
-            { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
-        ).catch(err => console.error('Link claim update error:', err));
-        await Stats.collection.updateOne({},
-            { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
-            { upsert: true }
-        ).catch(err => console.error('Stats claim update error:', err));
-    }
-
+    // 🆕 Track unique claim for active claiming (upsert, no increment)
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
         { upsert: true }
     ).catch(() => {});
 
-    return { success: true, linkId: link.id, counted: !recentClaim };
+    return { success: true, linkId: link.id, counted: true };
 }
 
 const handleClaimTrackingRequest = async (req, res) => {
@@ -1130,7 +1154,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 FIXED: Lifetime Unlimited toggle with DIRECT MongoDB write
+// Lifetime Unlimited toggle
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
@@ -1142,7 +1166,6 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
         const user = await RenewalUser.findOne(userQuery).lean();
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        // 🔄 Build $set object
         const $set = {};
         
         if (enable === true) {
@@ -1163,7 +1186,6 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
             }
         }
         
-        // 🚀 DIRECT MongoDB UPDATE — no Mongoose strict, no markModified
         const updateResult = await RenewalUser.collection.updateOne(
             { _id: user._id },
             { $set: $set }
@@ -1173,7 +1195,6 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
             return res.status(404).json({ error: 'User not found during update' });
         }
         
-        // 🆕 If enabling, un-expire all user's links
         if (enable === true) {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             await Link.collection.updateMany(
@@ -1182,7 +1203,6 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
             );
         }
         
-        // 🆕 Fresh fetch
         const updatedUser = await RenewalUser.findOne({ _id: user._id }).lean();
         
         console.log(`✅ Lifetime Unlimited ${enable ? 'ENABLED' : 'DISABLED'} for: ${user.name}`);
@@ -1560,7 +1580,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
-// 🆕 COMPLETELY REWRITTEN: Uses direct MongoDB updateOne — bypasses Mongoose strict
+// 🆕 FIXED: Lifetime Active now properly sets expiryDate to null
 async function handleLinkUpdate(req, res) {
     try {
         let rawId = req.params.id;
@@ -1573,14 +1593,12 @@ async function handleLinkUpdate(req, res) {
         const existingLink = await Link.findOne(query).lean();
         if (!existingLink) return res.status(404).json({ error: 'Link not found' });
 
-        // Handle toggle-uid special case
         if (req.path.includes('toggle') || req.body.action === 'toggle' || req.body.toggle === true) {
             const newVal = !(!isUidCheckDisabled(existingLink.uidChecking));
             await Link.collection.updateOne({ _id: existingLink._id }, { $set: { uidChecking: newVal } });
             return res.json({ success: true, uidChecking: newVal });
         }
 
-        // 🔄 Build $set object — direct MongoDB write, no strict issues
         const $set = {};
 
         if (req.body.name && req.body.name.toString().trim()) {
@@ -1614,12 +1632,24 @@ async function handleLinkUpdate(req, res) {
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         if (incomingUidVal !== undefined) $set.uidChecking = !isUidCheckDisabled(incomingUidVal);
 
-        const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
-        if (incomingExpiry !== undefined) {
-            $set.expiryDate = (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) ? new Date(incomingExpiry) : null;
+        // 🆕 FIXED: Lifetime Active handling
+        // If `makeLifetime` flag or empty expiryDate string, force null (lifetime)
+        if (req.body.makeLifetime === true || req.body.lifetimeActive === true) {
+            $set.expiryDate = null;
+        } else {
+            const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
+            if (incomingExpiry !== undefined) {
+                // Empty string or null → lifetime
+                if (incomingExpiry === null || incomingExpiry === '' || incomingExpiry === 'null') {
+                    $set.expiryDate = null;
+                } else if (!isNaN(new Date(incomingExpiry).getTime())) {
+                    $set.expiryDate = new Date(incomingExpiry);
+                } else {
+                    $set.expiryDate = null;
+                }
+            }
         }
 
-        // Popup settings
         const currentPopup = existingLink.popupSettings || {};
         const newPopup = {
             title: req.body.popupSettings?.title || req.body.popupTitle || currentPopup.title || '🎁 Claim Your Reward',
@@ -1640,7 +1670,6 @@ async function handleLinkUpdate(req, res) {
         }
         $set.popupSettings = newPopup;
 
-        // 🚀 DIRECT MONGODB UPDATE
         const updateResult = await Link.collection.updateOne(
             { _id: existingLink._id },
             { $set: $set }
@@ -1654,7 +1683,6 @@ async function handleLinkUpdate(req, res) {
             await RenewalRequest.updateMany({ linkId: existingLink.id }, { $set: { linkName: $set.linkName } }).catch(() => {});
         }
 
-        // 🆕 Fresh fetch
         const updatedDoc = await Link.findOne({ _id: existingLink._id }).lean();
         const effectiveUserName = updatedDoc.name || updatedDoc.userName || 'User';
         const effectiveLinkName = updatedDoc.linkName || updatedDoc.title || 'Link';
@@ -1694,7 +1722,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS — FIXED ACTIVE WATCHING ====================
+// ==================== ADMIN ALL STATS — UNIQUE VISITORS + UNIQUE CLAIMS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1731,7 +1759,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
-        // 🆕 FIXED: Active Watching — 5 min window, deduplicated
+        // 🆕 Active Watching — UNIQUE visitors in last 5 min
         const activeWatchingAgg = await VisitorActivity.aggregate([
             { 
                 $match: { 
@@ -1744,7 +1772,7 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         ]).catch(() => []);
         const activeWatching = activeWatchingAgg[0]?.count || 0;
 
-        // 🆕 FIXED: Active Claiming — 5 min window
+        // 🆕 Active Claiming — UNIQUE claims in last 5 min
         const activeClaimingAgg = await VisitorActivity.aggregate([
             { 
                 $match: { 
@@ -1900,6 +1928,7 @@ function sendAppFile(res, ...fileNames) {
     res.status(404).send(`File not found: ${fileNames.join(', ')}`);
 }
 
+// 🆕 UID Checker — injects expired-check script
 function sendUidCheckerFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['uid-checker.html', 'uid.html'];
@@ -1916,7 +1945,17 @@ function sendUidCheckerFile(res, targetLinkId) {
         var p = new URLSearchParams(window.location.search);
         var lid = p.get('link') || p.get('id') || p.get('l') || ${JSON.stringify(targetLinkId || '')};
         if (!lid) { var parts = window.location.pathname.split('/'); var last = parts[parts.length - 1]; if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') lid = last; }
-        if (lid) { fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { return r.json(); }).then(function(d) { if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) { window.location.replace('/v/' + encodeURIComponent(d.id || lid)); } }).catch(function(){}); }
+        if (lid) { 
+            fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { return r.json(); }).then(function(d) { 
+                if (d && d.expired === true) { 
+                    window.location.replace('/expired.html'); 
+                    return;
+                }
+                if (d && (d.uidChecking === false || d.uidChecking === 'false' || d.uidChecking === 'off' || d.uidChecking === 0)) { 
+                    window.location.replace('/v/' + encodeURIComponent(d.id || lid)); 
+                } 
+            }).catch(function(){}); 
+        }
     } catch(e) {}
 })();
 </script>
@@ -1934,6 +1973,7 @@ function sendUidCheckerFile(res, targetLinkId) {
     res.status(404).send('File not found: uid-checker.html');
 }
 
+// 🆕 Video Lock — injects expired-check script
 function sendVideoLockFile(res, targetLinkId) {
     const searchDirs = [path.join(__dirname, 'admin'), path.join(__dirname, 'public'), __dirname, path.join(__dirname, '..'), path.join(__dirname, '..', 'admin'), path.join(__dirname, '..', 'public')];
     const fileNames = ['video-lock.html'];
@@ -1947,6 +1987,25 @@ function sendVideoLockFile(res, targetLinkId) {
 <script>
 window.__LINK_ID__ = ${JSON.stringify(targetLinkId || '')};
 try { sessionStorage.setItem('player_uid', 'verified'); sessionStorage.setItem('uid_verified', 'true'); localStorage.setItem('player_uid', 'verified'); localStorage.setItem('uid_verified', 'true'); } catch(e) {}
+</script>
+<script>
+(function() {
+    try {
+        var lid = ${JSON.stringify(targetLinkId || '')};
+        if (!lid) { 
+            var parts = window.location.pathname.split('/'); 
+            var last = parts[parts.length - 1]; 
+            if (last && last !== 'v') lid = last; 
+        }
+        if (lid) {
+            fetch('/api/link/' + encodeURIComponent(lid)).then(function(r) { 
+                if (r.status === 403 || r.status === 404) { 
+                    window.location.replace('/expired.html'); 
+                } 
+            }).catch(function(){});
+        }
+    } catch(e) {}
+})();
 </script>
 `;
                     if (content.includes('<head>')) content = content.replace('<head>', '<head>' + preVerifyScript);
@@ -1970,12 +2029,177 @@ app.get('/admin/login.html', async (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
+// 🆕 Expired Page
+app.get('/expired.html', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Link Expired</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            background: #080c16;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .ambient-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.18) 0%, transparent 55%),
+                radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.08) 0%, transparent 50%);
+            z-index: 0; pointer-events: none;
+        }
+        .expired-card {
+            position: relative; z-index: 1;
+            background: rgba(17, 23, 38, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 26px;
+            padding: 42px 30px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 60px rgba(239, 68, 68, 0.15);
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .expired-icon {
+            width: 90px; height: 90px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.15));
+            border: 2px solid rgba(239, 68, 68, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 44px;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(239, 68, 68, 0.5); }
+        }
+        .expired-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #ef4444;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        .expired-subtitle {
+            font-size: 14.5px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .expired-subtitle strong {
+            color: #f87171;
+            font-weight: 700;
+        }
+        .info-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-row .emoji { font-size: 16px; }
+        .info-row strong { color: #fff; font-weight: 700; margin-left: auto; }
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
+            transition: all 0.25s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px rgba(79, 70, 229, 0.55);
+        }
+        .action-btn:active { transform: scale(0.98); }
+        @media (max-width: 480px) {
+            .expired-card { padding: 32px 22px; }
+            .expired-title { font-size: 24px; }
+            .expired-icon { width: 76px; height: 76px; font-size: 36px; }
+            .expired-subtitle { font-size: 13.5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="expired-card">
+        <div class="expired-icon">⏰</div>
+        <div class="expired-title">Link Expired</div>
+        <div class="expired-subtitle">
+            This link is no longer active. Its validity period has ended, or the owner's plan has expired.
+        </div>
+        <div class="info-box">
+            <div class="info-row">
+                <span class="emoji">📌</span>
+                <span>Status</span>
+                <strong style="color:#f87171;">Expired</strong>
+            </div>
+            <div class="info-row">
+                <span class="emoji">🔒</span>
+                <span>Access</span>
+                <strong>Blocked</strong>
+            </div>
+            <div class="info-row">
+                <span class="emoji">💬</span>
+                <span>Support</span>
+                <strong>Contact Owner</strong>
+            </div>
+        </div>
+        <button class="action-btn" onclick="window.location.href='/'">
+            <span>🏠</span> Return to Home
+        </button>
+    </div>
+</body>
+</html>`);
+});
+
 app.get('/', async (req, res) => {
     let rawParam = (req.query.link || req.query.id || req.query.l || '').toString().trim();
     if (rawParam) {
         let cleanId = extractCleanId(rawParam);
         if (cleanId) {
             const link = await Link.findOne(getLinkQuery(cleanId)).lean();
+            if (link && isLinkExpired(link)) return res.redirect('/expired.html');
             if (link && isUidCheckDisabled(link.uidChecking)) return res.redirect('/v/' + encodeURIComponent(link.id || cleanId));
             else if (link) return res.redirect('/uid?link=' + encodeURIComponent(link.id || cleanId));
         }
@@ -1998,6 +2222,10 @@ app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res)
         cleanId = extractCleanId(rawParam);
         let link = cleanId ? await Link.findOne(getLinkQuery(cleanId)).lean() : null;
         if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+        
+        // 🆕 Check expired FIRST
+        if (link && isLinkExpired(link)) return res.redirect('/expired.html');
+        
         const globalPopup = await PopupSettings.findOne().lean().catch(() => null);
         const isGlobalOff = globalPopup && isUidCheckDisabled(globalPopup.uidChecking);
         const isLinkOff = link && isUidCheckDisabled(link.uidChecking);
@@ -2012,6 +2240,23 @@ app.get(['/uid', '/uid.html', '/uid-checker.html', '/uid/:id'], async (req, res)
 app.get('/v/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const cleanId = extractCleanId(req.params.id);
+    
+    // 🆕 Check expired FIRST
+    try {
+        const link = await Link.findOne(getLinkQuery(cleanId)).lean();
+        if (!link) return res.redirect('/expired.html');
+        if (isLinkExpired(link)) return res.redirect('/expired.html');
+        
+        // Check owner plan
+        const ownerName = link.assignedUser || link.userName || link.name || link.creator;
+        if (ownerName) {
+            const ownerUser = await RenewalUser.findOne({ 
+                name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+            }).lean();
+            if (ownerUser && isPlanExpired(ownerUser)) return res.redirect('/expired.html');
+        }
+    } catch(err) {}
+    
     sendVideoLockFile(res, cleanId);
 });
 
