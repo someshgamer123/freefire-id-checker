@@ -193,7 +193,7 @@
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
-        /* ============ NO PLAN / ACTIVATE BANNER ============ */
+        /* ============ ACTIVATE BANNER ============ */
         .activate-banner {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.10));
             border: 2px solid rgba(99, 102, 241, 0.5);
@@ -252,10 +252,6 @@
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.08));
             border-color: rgba(239, 68, 68, 0.5);
         }
-        .plan-usage-card.no-plan-mode {
-            background: linear-gradient(135deg, rgba(100, 116, 139, 0.15), rgba(71, 85, 105, 0.08));
-            border-color: rgba(100, 116, 139, 0.35);
-        }
 
         .plan-usage-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -276,9 +272,6 @@
         }
         .plan-usage-card.expired-mode .plan-usage-title .plan-icon {
             background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        .plan-usage-card.no-plan-mode .plan-usage-title .plan-icon {
-            background: linear-gradient(135deg, #64748b, #475569);
         }
         .plan-badge {
             font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px;
@@ -388,7 +381,6 @@
         }
         .metric-card.highlight { border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1)); }
         .metric-card.highlight-success { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1)); }
-        .metric-card.disabled { opacity: 0.4; }
         .metric-value { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
@@ -419,7 +411,6 @@
         }
         .plans-carousel::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.7); }
 
-        /* 🆕 FIXED HEIGHT (Not 4:5 aspect ratio) */
         .plan-card-screenshot {
             flex: 0 0 320px;
             scroll-snap-align: center;
@@ -564,7 +555,6 @@
             flex-shrink: 0;
         }
 
-        /* 🆕 Features List with scroll inside fixed-height card */
         .plan-features-list { 
             display: flex; 
             flex-direction: column; 
@@ -668,19 +658,224 @@
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
+        /* ============ ACTIVATE POPUP (Premium) ============ */
+        .activate-popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(4, 7, 15, 0.92); backdrop-filter: blur(16px); z-index: 25000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+            overflow-y: auto;
+        }
+        .activate-popup-overlay.active { display: flex; }
+        
+        .activate-popup-card {
+            background: linear-gradient(165deg, #1a2033 0%, #0f1420 100%);
+            border: 2px solid rgba(16, 185, 129, 0.4);
+            border-radius: 26px;
+            max-width: 480px; width: 100%;
+            padding: 32px 26px 26px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 60px rgba(16, 185, 129, 0.2);
+            animation: activatePopupIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+        }
+        @keyframes activatePopupIn {
+            0% { opacity: 0; transform: scale(0.85) translateY(30px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .activate-popup-card::before {
+            content: '';
+            position: absolute; top: -80px; right: -80px;
+            width: 250px; height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .activate-popup-card::after {
+            content: '';
+            position: absolute; bottom: -100px; left: -80px;
+            width: 250px; height: 250px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .activate-popup-close {
+            position: absolute; top: 14px; right: 14px;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted); font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; z-index: 10;
+        }
+        .activate-popup-close:hover { background: rgba(239, 68, 68, 0.2); color: #fff; border-color: rgba(239, 68, 68, 0.4); }
+        
+        .activate-popup-icon {
+            width: 80px; height: 80px; margin: 0 auto 16px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px;
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+            animation: bounceIcon 2s ease-in-out infinite;
+            position: relative; z-index: 1;
+        }
+        @keyframes bounceIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        .activate-popup-title {
+            font-size: 24px; font-weight: 900; color: #fff;
+            margin-bottom: 8px; letter-spacing: -0.3px;
+            position: relative; z-index: 1;
+        }
+        .activate-popup-subtitle {
+            font-size: 13.5px; color: var(--text-secondary);
+            line-height: 1.6; margin-bottom: 22px;
+            position: relative; z-index: 1;
+        }
+        .activate-popup-subtitle strong { color: #34d399; font-weight: 800; }
+        
+        .activate-plan-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.12));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 11px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 16px;
+            position: relative; z-index: 1;
+        }
+        
+        .activate-features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 22px;
+            position: relative; z-index: 1;
+        }
+        @media (max-width: 420px) {
+            .activate-features-grid { grid-template-columns: 1fr; }
+        }
+        
+        .activate-feature-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex; align-items: center; gap: 10px;
+            text-align: left;
+        }
+        .activate-feature-item .af-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+        }
+        .activate-feature-item .af-content { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .activate-feature-item .af-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .activate-feature-item .af-value { font-size: 13.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .activate-popup-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px dashed rgba(245, 158, 11, 0.4);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 12px; font-weight: 600;
+            color: #fcd34d;
+            display: flex; align-items: center; gap: 8px;
+            text-align: left;
+            position: relative; z-index: 1;
+        }
+        .activate-popup-notice .notice-icon { font-size: 18px; flex-shrink: 0; }
+        
+        .activate-popup-actions {
+            display: flex; flex-direction: column; gap: 10px;
+            position: relative; z-index: 1;
+        }
+        
+        .activate-popup-btn {
+            padding: 15px;
+            border: none; border-radius: 14px;
+            font-size: 15px; font-weight: 800;
+            cursor: pointer; transition: all 0.25s ease;
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+        .activate-popup-btn.primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
+        }
+        .activate-popup-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(16, 185, 129, 0.55); }
+        .activate-popup-btn.primary:active { transform: scale(0.98); }
+        .activate-popup-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .activate-popup-btn.secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+            padding: 11px;
+        }
+        .activate-popup-btn.secondary:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+        /* ============ CUSTOM DIALOG ============ */
         .custom-dialog-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(10px); z-index: 20000;
+            background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(12px); z-index: 26000;
             display: none; justify-content: center; align-items: center; padding: 20px;
         }
         .custom-dialog-overlay.active { display: flex; }
         .custom-dialog-card {
-            background: var(--surface-1); border: 1px solid var(--border-subtle);
-            border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center;
+            background: linear-gradient(165deg, #1a2033 0%, #0f1420 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 22px; 
+            padding: 28px 24px 22px; 
+            max-width: 400px; width: 100%; 
+            text-align: center;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85);
+            animation: fadeInUp 0.35s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .dialog-icon { font-size: 34px; margin-bottom: 8px; }
-        .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-        .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
+        .custom-dialog-card::before {
+            content: '';
+            position: absolute; top: -60px; right: -60px;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .custom-dialog-icon-wrap {
+            width: 70px; height: 70px;
+            margin: 0 auto 14px;
+            border-radius: 20px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px;
+            position: relative; z-index: 1;
+        }
+        .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); }
+        .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); }
+        .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
+        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); }
+        
+        .custom-dialog-title { 
+            font-size: 19px; font-weight: 800; color: #fff; 
+            margin-bottom: 8px; 
+            position: relative; z-index: 1;
+        }
+        .custom-dialog-message { 
+            font-size: 13.5px; color: var(--text-secondary); 
+            line-height: 1.6; margin-bottom: 22px; 
+            position: relative; z-index: 1;
+        }
+        .custom-dialog-message strong { color: #fff; font-weight: 700; }
 
         /* ============ TURNSTILE ============ */
         .turnstile-wrapper { display: flex; justify-content: center; align-items: center; margin: 12px auto 14px; width: 100%; max-width: 100%; overflow: hidden; min-height: 65px; }
@@ -713,6 +908,9 @@
             .plan-card-name { font-size: 14px; }
             .plan-card-btn { font-size: 11.5px; padding: 9px; }
             .plan-card-icon-wrap { width: 44px; height: 44px; font-size: 22px; }
+            .activate-popup-card { padding: 26px 20px 20px; }
+            .activate-popup-title { font-size: 20px; }
+            .activate-popup-icon { width: 68px; height: 68px; font-size: 34px; }
         }
     </style>
 </head>
@@ -822,14 +1020,14 @@
                 </div>
             </div>
 
-            <!-- 🆕 ACTIVATE BANNER (shown only when no plan) -->
+            <!-- ACTIVATE BANNER (shown only when no plan) -->
             <div class="activate-banner" id="activateBanner" style="display:none;">
                 <span class="activate-icon">🎁</span>
                 <div class="activate-title" id="activateTitle">Activate Your Plan</div>
                 <div class="activate-subtitle" id="activateSubtitle">
                     You don't have an active plan yet. Start with a <strong style="color:#34d399;">Free Trial</strong> (3 days) or choose a paid plan to get started!
                 </div>
-                <button class="activate-btn" onclick="openPlansModal()">
+                <button class="activate-btn" onclick="openActivateFreePlan()">
                     <span>⚡</span> Activate Your Plan Now
                 </button>
             </div>
@@ -959,6 +1157,69 @@
         </div>
     </main>
 
+    <!-- ACTIVATE FREE PLAN POPUP (Premium) -->
+    <div class="activate-popup-overlay" id="activatePopup">
+        <div class="activate-popup-card">
+            <button class="activate-popup-close" onclick="closeActivatePopup()" aria-label="Close">✕</button>
+            
+            <div class="activate-popup-icon">🎁</div>
+            
+            <div class="activate-plan-badge">
+                <span>⚡</span> Limited Time Offer
+            </div>
+            
+            <div class="activate-popup-title">Activate Your Free Trial</div>
+            <div class="activate-popup-subtitle">
+                Get started with our <strong>3-day FREE trial</strong> — no payment required. Perfect to explore all the features!
+            </div>
+            
+            <div class="activate-features-grid">
+                <div class="activate-feature-item">
+                    <div class="af-icon">🔗</div>
+                    <div class="af-content">
+                        <div class="af-label">Active Links</div>
+                        <div class="af-value" id="apLinksLimit">1 Link</div>
+                    </div>
+                </div>
+                <div class="activate-feature-item">
+                    <div class="af-icon">👁️</div>
+                    <div class="af-content">
+                        <div class="af-label">Total Visitors</div>
+                        <div class="af-value" id="apVisitorsLimit">150 Visitors</div>
+                    </div>
+                </div>
+                <div class="activate-feature-item">
+                    <div class="af-icon">📅</div>
+                    <div class="af-content">
+                        <div class="af-label">Validity</div>
+                        <div class="af-value" id="apDuration">3 Days</div>
+                    </div>
+                </div>
+                <div class="activate-feature-item">
+                    <div class="af-icon">💰</div>
+                    <div class="af-content">
+                        <div class="af-label">Price</div>
+                        <div class="af-value" style="color:#34d399;">FREE</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="activate-popup-notice">
+                <span class="notice-icon">⚠️</span>
+                <span><strong>One-time offer:</strong> Free trial can only be activated <strong>once per account</strong>. Choose wisely!</span>
+            </div>
+            
+            <div class="activate-popup-actions">
+                <button class="activate-popup-btn primary" id="btnActivateNow" onclick="confirmActivateFreePlan()">
+                    <span>⚡</span> Activate Free Trial Now
+                </button>
+                <button class="activate-popup-btn secondary" onclick="closeActivatePopup()">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SHORTENER MODAL -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card" style="max-width:520px;">
@@ -1039,12 +1300,15 @@
         </div>
     </div>
 
+    <!-- CUSTOM DIALOG (Improved UI) -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
-            <div class="dialog-icon" id="dialogIcon">🔔</div>
-            <div class="dialog-title" id="dialogTitle">Notification</div>
-            <div class="dialog-message" id="dialogMessage">Alert message goes here.</div>
-            <button class="btn-action" onclick="closeCustomDialog()">OK</button>
+            <div class="custom-dialog-icon-wrap info" id="dialogIconWrap">
+                <span id="dialogIcon">🔔</span>
+            </div>
+            <div class="custom-dialog-title" id="dialogTitle">Notification</div>
+            <div class="custom-dialog-message" id="dialogMessage">Alert message goes here.</div>
+            <button class="btn-action" onclick="closeCustomDialog()">Got it</button>
         </div>
     </div>
 
@@ -1104,7 +1368,18 @@
 
         function getTurnstileToken() { return currentTurnstileToken || ''; }
 
-        function notify(message, title = 'Notification', icon = 'ℹ️') {
+        // 🆕 Improved notify with better UI
+        function notify(message, title = 'Notification', icon = 'ℹ️', type = null) {
+            // Auto-detect type from icon
+            let detectedType = type;
+            if (!detectedType) {
+                if (icon === '✅' || icon === '🎉') detectedType = 'success';
+                else if (icon === '❌' || icon === '⛔') detectedType = 'error';
+                else if (icon === '⚠️' || icon === '🔒') detectedType = 'warning';
+                else detectedType = 'info';
+            }
+            const wrap = document.getElementById('dialogIconWrap');
+            wrap.className = 'custom-dialog-icon-wrap ' + detectedType;
             document.getElementById('dialogIcon').textContent = icon;
             document.getElementById('dialogTitle').textContent = title;
             document.getElementById('dialogMessage').textContent = message;
@@ -1155,6 +1430,78 @@
         }
         function closeLockModal() { document.getElementById('lockModal').classList.remove('active'); }
 
+        // 🆕 OPEN ACTIVATE POPUP (Free Trial only)
+        function openActivateFreePlan() {
+            if (!loadedPlans || !loadedPlans['free-trial']) {
+                return notify('Free trial plan not available at the moment.', 'Not Available', '⚠️');
+            }
+            
+            // 🆕 Check if free trial already used
+            if (currentPlanUsage?.freeTrialUsed === true) {
+                return notify('You have already used your Free Trial. Please purchase a paid plan to continue.', 'Free Trial Already Used', '⛔', 'warning');
+            }
+            
+            const ftPlan = loadedPlans['free-trial'];
+            
+            // Populate popup with plan details
+            document.getElementById('apLinksLimit').textContent = (ftPlan.linkLimit === 'unlimited' || ftPlan.linkLimit === -1) ? 'Unlimited' : `${ftPlan.linkLimit} Link${ftPlan.linkLimit > 1 ? 's' : ''}`;
+            document.getElementById('apVisitorsLimit').textContent = (ftPlan.visitorLimit === 'unlimited' || ftPlan.visitorLimit === -1) ? 'Unlimited' : `${(ftPlan.visitorLimit || 0).toLocaleString()} Visitors`;
+            document.getElementById('apDuration').textContent = `${ftPlan.durationDays} Days`;
+            
+            document.getElementById('activatePopup').classList.add('active');
+        }
+        
+        function closeActivatePopup() {
+            document.getElementById('activatePopup').classList.remove('active');
+        }
+        
+        // 🆕 CONFIRM FREE PLAN ACTIVATION
+        async function confirmActivateFreePlan() {
+            const btn = document.getElementById('btnActivateNow');
+            if (!userProfile || !userProfile.name) {
+                return notify('Session expired. Please login again.', 'Session Error', '❌', 'error');
+            }
+            
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span> Activating...';
+            
+            try {
+                const res = await fetch('/api/user/select-free-plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName: userProfile.name })
+                });
+                const data = await res.json().catch(() => ({}));
+                
+                if (res.ok && data.success) {
+                    // Success — close popup, show success, refresh
+                    closeActivatePopup();
+                    notify('Your Free Trial has been activated successfully! Enjoy 3 days of access.', 'Free Trial Activated', '🎉', 'success');
+                    
+                    // 🆕 Immediately refresh user data
+                    setTimeout(() => {
+                        fetchUserLinkData().then(() => {
+                            // Update the UI
+                            updatePlanUsageUI();
+                        });
+                    }, 600);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    notify(data.error || 'Failed to activate free plan. Please try again.', 'Activation Failed', '❌', 'error');
+                    // If free trial used, refresh to hide it
+                    if (data.error && data.error.toLowerCase().includes('already used')) {
+                        setTimeout(() => fetchUserLinkData(), 800);
+                    }
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                notify('Server error: ' + err.message, 'Connection Error', '⚠️', 'warning');
+            }
+        }
+
         function switchAuth(mode) {
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
@@ -1181,14 +1528,14 @@
             const phone = document.getElementById('inPhone').value.trim();
             const btn = document.getElementById('btnSubmitLogin');
             const turnstileToken = getTurnstileToken();
-            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
+            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️', 'warning');
             btn.disabled = true; btn.innerHTML = '<span>Verifying...</span>';
             try {
                 const res = await fetch('/api/user/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); }
-                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', '❌'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️'); }
+                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', '❌', 'error'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️', 'warning'); }
             finally { btn.disabled = false; btn.innerHTML = '<span>Sign In</span>'; }
         }
 
@@ -1199,30 +1546,30 @@
             const phone = document.getElementById('upPhone').value.trim();
             const termsAgreed = document.getElementById('upTermsCheck').checked;
             const turnstileToken = getTurnstileToken();
-            if (!termsAgreed) return notify('Please accept the Terms & Conditions.', 'Terms Required', '⚠️');
+            if (!termsAgreed) return notify('Please accept the Terms & Conditions.', 'Terms Required', '⚠️', 'warning');
             const emailCheck = validateEmailFormat(email);
-            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', '⚠️');
-            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', '⚠️');
-            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
+            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', '⚠️', 'warning');
+            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', '⚠️', 'warning');
+            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️', 'warning');
             const btn = document.getElementById('btnSubmitRegister');
             btn.disabled = true; btn.innerHTML = '<span>Submitting...</span>';
             try {
                 const res = await fetch('/api/user/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', '🎉'); resetTurnstile(); switchAuth('login'); }
-                else { notify(data.error || 'Registration failed.', 'Error', '⚠️'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️'); }
+                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', '🎉', 'success'); resetTurnstile(); switchAuth('login'); }
+                else { notify(data.error || 'Registration failed.', 'Error', '❌', 'error'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️', 'warning'); }
             finally { btn.disabled = false; btn.innerHTML = '<span>Create Account</span>'; }
         }
 
         async function handleGoogleLogin(response) {
-            if (!response || !response.credential) return notify('Google login failed.', 'Error', '⚠️');
+            if (!response || !response.credential) return notify('Google login failed.', 'Error', '❌', 'error');
             try {
                 const res = await fetch('/api/user/google-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: response.credential }) });
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', '✅'); }
-                else notify(data.error || 'Google login failed', 'Error', '❌');
-            } catch (err) { notify('Unable to connect to server', 'Connection Error', '⚠️'); }
+                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', '✅', 'success'); }
+                else notify(data.error || 'Google login failed', 'Error', '❌', 'error');
+            } catch (err) { notify('Unable to connect to server', 'Connection Error', '⚠️', 'warning'); }
         }
 
         function showDashboardView() {
@@ -1269,7 +1616,7 @@
         function applyCustomDateRange() {
             const s = document.getElementById('customDateInput').value;
             const e = document.getElementById('customEndDateInput').value || s;
-            if (!s) return notify('Please select a date.', 'Date Required', '⚠️');
+            if (!s) return notify('Please select a date.', 'Date Required', '⚠️', 'warning');
             currentDateFilter = 'custom'; currentStartDate = s; currentEndDate = e;
             const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -1288,7 +1635,6 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 
-                // Store plan/pricing info regardless
                 if (data.planUsage) {
                     currentPlanUsage = data.planUsage;
                     updatePlanUsageUI();
@@ -1301,7 +1647,6 @@
                 if (data.whatsappNumber) adminPhone = data.whatsappNumber;
                 const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
                 
-                // 🆕 HAS LINK case
                 if (res.ok && data.success && data.hasAnyLink === true && data.link) {
                     activeLinkRecord = data.link;
                     myLinksList = data.userLinks || [];
@@ -1309,9 +1654,7 @@
                     populateUserLinksDropdown(myLinksList, activeLinkRecord.id);
                     populateDashboardMetrics(data);
                     fetchHistoryRecords(activeLinkRecord.id);
-                } 
-                // 🆕 NO LINK case
-                else {
+                } else {
                     activeLinkRecord = null;
                     myLinksList = data.userLinks || [];
                     displayEmptyState();
@@ -1325,7 +1668,6 @@
             }
         }
 
-        // 🆕 Display empty state - no link, no plan
         function displayEmptyState() {
             ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims','metricToday','metricTodayClaims','metric24h','metric7d'].forEach(id => { 
                 const e = document.getElementById(id); 
@@ -1345,23 +1687,31 @@
             if (tc) tc.textContent = '--';
         }
 
+        // 🆕 Plan usage UI — critical logic for showing banner vs card
         function updatePlanUsageUI() {
             if (!currentPlanUsage) return;
             const pu = currentPlanUsage;
             
-            // 🆕 NO PLAN state
-            const isNoPlan = pu.planKey === 'no-plan' || (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0));
+            // Determine if user has NO active plan
+            const hasNoPlan = pu.planKey === 'no-plan' || 
+                              (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0)) ||
+                              (pu.planKey === 'none');
             
             const cardEl = document.getElementById('planUsageCard');
             const bannerEl = document.getElementById('activateBanner');
             
-            if (isNoPlan) {
-                // Show banner, hide usage card
+            if (hasNoPlan) {
+                // 🆕 NO PLAN — hide card, show banner
                 cardEl.style.display = 'none';
                 bannerEl.style.display = 'block';
+                
+                // Update banner text based on expiry state
                 if (pu.planIsExpired) {
                     document.getElementById('activateTitle').textContent = 'Plan Expired — Renew Now';
                     document.getElementById('activateSubtitle').innerHTML = 'Your previous plan has expired. Choose a new plan below to continue using your dashboard.';
+                } else if (pu.freeTrialUsed) {
+                    document.getElementById('activateTitle').textContent = 'Choose Your Plan';
+                    document.getElementById('activateSubtitle').innerHTML = 'You\'ve already used your Free Trial. Choose a paid plan to activate your dashboard.';
                 } else {
                     document.getElementById('activateTitle').textContent = 'Activate Your Plan';
                     document.getElementById('activateSubtitle').innerHTML = 'You don\'t have an active plan yet. Start with a <strong style="color:#34d399;">Free Trial</strong> (3 days) or choose a paid plan to get started!';
@@ -1369,14 +1719,14 @@
                 return;
             }
             
-            // Has plan — show card, hide banner
+            // 🆕 HAS PLAN — show card, hide banner
             cardEl.style.display = 'block';
             bannerEl.style.display = 'none';
             
             const isVip = pu.lifetimeUnlimited === true;
             const isExpired = pu.planIsExpired === true;
             
-            cardEl.classList.remove('vip-mode', 'expired-mode', 'no-plan-mode');
+            cardEl.classList.remove('vip-mode', 'expired-mode');
             if (isVip) cardEl.classList.add('vip-mode');
             else if (isExpired) cardEl.classList.add('expired-mode');
             
@@ -1464,13 +1814,16 @@
             if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Plan info loading...</p>'; return; }
             const pu = currentPlanUsage;
             
-            // No plan state
-            if (pu.planKey === 'no-plan' || (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0))) {
+            const hasNoPlan = pu.planKey === 'no-plan' || 
+                              (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0)) ||
+                              (pu.planKey === 'none');
+            
+            if (hasNoPlan) {
                 el.innerHTML = `
-                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:14px; padding:20px; margin-bottom:14px; text-align:center;">
-                        <div style="font-size:42px; margin-bottom:8px;">🎁</div>
-                        <div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:6px;">No Active Plan</div>
-                        <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">You don't have an active plan yet. Choose a plan below to get started!</div>
+                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:24px; margin-bottom:14px; text-align:center;">
+                        <div style="font-size:48px; margin-bottom:10px;">🎁</div>
+                        <div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
+                        <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:18px;">You don't have an active plan yet. Choose a plan below to get started!</div>
                         <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>⚡ Activate Your Plan Now</span></button>
                     </div>
                 `;
@@ -1531,15 +1884,22 @@
             const planOrder = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
             const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
             
-            // 🆕 Hide Free Trial if already used
             const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
             const plansToShow = availablePlans.filter(k => {
                 if (k === 'free-trial' && freeTrialUsed) return false;
                 return true;
             });
 
+            // 🆕 Auto-select free-trial if user has no plan and hasn't used it
             if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || (activePlan.key === 'free-trial' && freeTrialUsed)) {
-                const defKey = plansToShow.find(k => loadedPlans[k].badge === 'POPULAR') || plansToShow[0];
+                let defKey = null;
+                // Priority 1: Free trial if available and user has no plan
+                if (!freeTrialUsed && plansToShow.includes('free-trial')) {
+                    defKey = 'free-trial';
+                } else {
+                    // Priority 2: POPULAR badge or first
+                    defKey = plansToShow.find(k => loadedPlans[k].badge === 'POPULAR') || plansToShow[0];
+                }
                 if (defKey) {
                     const p = loadedPlans[defKey];
                     activePlan = { key: defKey, days: p.durationDays, cost: p.price };
@@ -1606,7 +1966,6 @@
             renderPaymentPanel();
         }
 
-        // 🆕 Payment panel — QR centered, UPI below
         function renderPaymentPanel() {
             const footer = document.getElementById('plansModalFooter');
             if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
@@ -1638,8 +1997,7 @@
                         </div>
                     </div>
                 `;
-            } else if (showUpiToUser && p.price === 0) {
-                // 🆕 Free plan — but check if already used
+            } else if (p.price === 0) {
                 const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
                 if (freeTrialUsed) {
                     paymentHtml = `
@@ -1654,10 +2012,10 @@
                         <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08)); border:1px solid rgba(16,185,129,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
                             <div style="font-size:32px; margin-bottom:8px;">🎉</div>
                             <div style="font-size:14px; font-weight:800; color:#34d399;">This plan is FREE!</div>
-                            <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to activate instantly (One-time only).</div>
+                            <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to see activation details.</div>
                         </div>
-                        <button class="btn-action btn-whatsapp" onclick="activateFreePlan()">
-                            <span>⚡ Activate Free Plan Instantly</span>
+                        <button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();">
+                            <span>⚡ Activate Free Trial</span>
                         </button>
                     `;
                 }
@@ -1682,38 +2040,6 @@
             `;
         }
 
-        async function activateFreePlan() {
-            try {
-                if (!activePlan || !activePlan.key) return notify('No plan selected', 'Error', '❌');
-                
-                if (currentPlanUsage?.freeTrialUsed === true) {
-                    return notify('You have already used your free trial. Please purchase a paid plan.', 'Free Trial Used', '⚠️');
-                }
-                
-                const p = loadedPlans[activePlan.key];
-                if (!p || p.price !== 0) return notify('This is not a free plan', 'Error', '❌');
-
-                if (!confirm(`Activate "${p.name}" for FREE?\n\nThis will give you:\n✅ ${p.linkLimit === 'unlimited' ? 'Unlimited' : p.linkLimit} Active Links\n✅ ${p.visitorLimit === 'unlimited' ? 'Unlimited' : p.visitorLimit.toLocaleString()} Visitors\n✅ ${p.durationDays} Days Validity\n\n⚠️ This can be used ONLY ONCE per account.`)) return;
-
-                const res = await fetch('/api/user/select-free-plan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name })
-                });
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    notify('🎉 Free plan activated successfully!', 'Success', '✅');
-                    closePlansModal();
-                    setTimeout(() => fetchUserLinkData(), 800);
-                } else {
-                    notify(data.error || 'Failed to activate free plan', 'Error', '❌');
-                }
-            } catch(e) {
-                notify('Server error: ' + e.message, 'Error', '⚠️');
-            }
-        }
-
         function pickDynamicPlan(key) {
             const p = loadedPlans[key];
             if (!p) return;
@@ -1722,7 +2048,7 @@
         }
 
         function copyUpiText() {
-            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋'));
+            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋', 'success'));
         }
 
         function populateUserLinksDropdown(links, currentActiveId) {
@@ -1812,7 +2138,7 @@
 
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-            if (!currentId) return notify('Please select your Link ID before renewal.', 'Link Required', '⚠️');
+            if (!currentId) return notify('Please select your Link ID before renewal.', 'Link Required', '⚠️', 'warning');
             const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
             const p = loadedPlans ? loadedPlans[activePlan.key] : null;
             const planName = p ? p.name : activePlan.key;
@@ -1876,7 +2202,7 @@ Please verify and approve. Thank you!`;
                             <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
                         </div>
                         <div style="display:flex;gap:6px;">
-                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','📋'))" style="width:auto;padding:5px 10px;font-size:11px;">📋</button>
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','📋','success'))" style="width:auto;padding:5px 10px;font-size:11px;">📋</button>
                             <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">🗑️</button>
                         </div>
                     </div>
@@ -1887,18 +2213,18 @@ Please verify and approve. Thank you!`;
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-            if (!originalUrl) return notify('Please enter a destination URL', 'URL Required', '⚠️');
+            if (!originalUrl) return notify('Please enter a destination URL', 'URL Required', '⚠️', 'warning');
             try {
                 const res = await fetch('/api/user/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title, userName: userProfile.name }) });
                 const data = await res.json().catch(() => ({}));
-                if (data.success) { notify('Short link created!', 'Success', '🎉'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
-                else notify(data.error || 'Failed', 'Error', '❌');
-            } catch(e) { notify('Server error', 'Error', '⚠️'); }
+                if (data.success) { notify('Short link created!', 'Success', '🎉', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
+                else notify(data.error || 'Failed', 'Error', '❌', 'error');
+            } catch(e) { notify('Server error', 'Error', '⚠️', 'warning'); }
         }
 
         async function deleteUserShortLink(id) {
             if (!confirm('Delete this short link?')) return;
-            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', '🗑️'); loadUserShortLinks(); } catch(e) {}
+            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', '🗑️', 'info'); loadUserShortLinks(); } catch(e) {}
         }
 
         function escapeHTML(str) {
@@ -1908,8 +2234,12 @@ Please verify and approve. Thank you!`;
 
         function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
+        // Auto-refresh every 8 seconds — but not while popup is open
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
+                // Skip if activate popup is open
+                if (document.getElementById('activatePopup').classList.contains('active')) return;
+                
                 const s = document.getElementById('userLinkSelect');
                 const targetId = s?.value || localStorage.getItem('userActiveLinkId');
                 if (targetId) {
@@ -1931,7 +2261,28 @@ Please verify and approve. Thank you!`;
                             loadedPlans = data.plans || loadedPlans; 
                             populateDashboardMetrics(data); 
                             updatePlanUsageUI(); 
-                        } 
+                        } else if (data && data.planUsage) {
+                            // No link but has plan update
+                            currentPlanUsage = data.planUsage;
+                            loadedPlans = data.plans || loadedPlans;
+                            updatePlanUsageUI();
+                        }
+                    })
+                    .catch(() => {});
+                } else {
+                    // No link selected — just refresh plan info
+                    fetch('/api/user/link-details', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ userName: userProfile.name })
+                    })
+                    .then(r => r.json().catch(() => ({})))
+                    .then(data => { 
+                        if (data && data.planUsage) {
+                            currentPlanUsage = data.planUsage;
+                            loadedPlans = data.plans || loadedPlans;
+                            updatePlanUsageUI();
+                        }
                     })
                     .catch(() => {});
                 }
