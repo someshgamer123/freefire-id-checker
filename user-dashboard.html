@@ -3,29 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0e17">
     
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- F12 / DEVTOOLS / RIGHT-CLICK LOCK -->
     <script>
         (function() {
             document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
             window.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) { e.preventDefault(); e.stopPropagation(); return false; }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) { e.preventDefault(); e.stopPropagation(); return false; }
+                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) { e.preventDefault(); return false; }
             }, true);
-            try {
-                const noop = function() {};
-                const methods = ['log','debug','info','warn','error','table','trace','dir','dirxml','group','groupEnd','clear','count','assert'];
-                methods.forEach(function(m) { try { window.console[m] = noop; } catch(e) {} });
-            } catch(e) {}
         })();
     </script>
     
@@ -35,7 +29,6 @@
             --surface-1: #111726;
             --surface-2: #161f33;
             --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-hover: rgba(99, 102, 241, 0.35);
             --primary: #4f46e5;
             --primary-light: #6366f1;
             --primary-glow: rgba(79, 70, 229, 0.25);
@@ -54,12 +47,18 @@
             -webkit-tap-highlight-color: transparent; 
         }
 
+        html, body {
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
         body {
             background-color: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
-            padding-bottom: 50px;
+            padding-bottom: 30px;
         }
 
         .ambient-layer {
@@ -80,56 +79,61 @@
             position: sticky; top: 0; z-index: 100;
             background: rgba(10, 14, 23, 0.94);
             backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 14px 18px;
+            padding: 12px 16px;
+            padding-top: max(12px, env(safe-area-inset-top));
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .nav-left { display: flex; align-items: center; gap: 10px; }
 
         .btn-menu-toggle {
-            width: 42px; height: 42px;
+            width: 40px; height: 40px;
             background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 11px;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            gap: 5px; cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+            gap: 4px; cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+            padding: 0;
         }
-        .btn-menu-toggle:hover { background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2)); border-color: var(--primary-light); }
-        .btn-menu-toggle .line { display: block; height: 2px; background: #fff; border-radius: 3px; transition: 0.3s; }
-        .btn-menu-toggle .line.l1 { width: 18px; }
-        .btn-menu-toggle .line.l2 { width: 14px; }
-        .btn-menu-toggle .line.l3 { width: 18px; }
+        .btn-menu-toggle:active { transform: scale(0.95); }
+        .btn-menu-toggle .line { display: block; height: 2px; background: #fff; border-radius: 3px; }
+        .btn-menu-toggle .line.l1 { width: 17px; }
+        .btn-menu-toggle .line.l2 { width: 13px; }
+        .btn-menu-toggle .line.l3 { width: 17px; }
 
         .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 
         .brand-badge-icon {
-            width: 38px; height: 38px;
+            width: 36px; height: 36px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
             box-shadow: 0 4px 14px var(--primary-glow);
         }
-        .brand-badge-icon svg { width: 20px; height: 20px; }
+        .brand-badge-icon svg { width: 18px; height: 18px; }
 
-        .brand-title { font-size: 15px; font-weight: 800; letter-spacing: 0.3px; color: #fff; }
-        .brand-subtitle { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; margin-top: 1px; }
+        .brand-title { font-size: 14px; font-weight: 800; letter-spacing: 0.3px; color: #fff; line-height: 1.1; }
+        .brand-subtitle { font-size: 9.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; margin-top: 1px; }
 
-        .navbar-right { display: flex; align-items: center; gap: 10px; }
+        .navbar-right { display: flex; align-items: center; gap: 8px; }
 
         .user-pill {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
-            padding: 6px 13px; border-radius: 20px;
-            font-size: 12px; font-weight: 700;
+            padding: 5px 11px; border-radius: 20px;
+            font-size: 11px; font-weight: 700;
             display: flex; align-items: center; gap: 6px;
+            max-width: 130px;
         }
         .user-pill .live-indicator { 
             width: 6px; height: 6px; border-radius: 50%; 
-            background: #34d399; animation: pulseDot 1.5s infinite; 
+            background: #34d399; animation: pulseDot 1.5s infinite; flex-shrink: 0;
         }
+        .user-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         /* ============ SIDEBAR ============ */
@@ -142,7 +146,8 @@
 
         .sidebar-drawer {
             position: fixed; top: 0; left: 0;
-            width: 300px; height: 100vh;
+            width: 290px; max-width: 85vw; height: 100vh;
+            height: 100dvh;
             background: linear-gradient(165deg, #111726 0%, #0a0e17 100%);
             border-right: 1px solid var(--border-subtle);
             z-index: 9999; transform: translateX(-100%);
@@ -154,48 +159,48 @@
 
         .sidebar-head {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 22px 20px;
+            padding: 20px 18px;
+            padding-top: max(20px, env(safe-area-inset-top));
             border-bottom: 1px solid var(--border-subtle);
             background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(139,92,246,0.05));
         }
         .sidebar-head .sb-logo { display: flex; align-items: center; gap: 10px; }
         .sidebar-head .sb-logo-icon {
-            width: 40px; height: 40px;
+            width: 38px; height: 38px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
             box-shadow: 0 4px 14px var(--primary-glow);
         }
-        .sidebar-head .sb-logo-icon svg { width: 20px; height: 20px; }
-        .sidebar-head h2 { font-size: 15px; font-weight: 800; color: #fff; line-height: 1; }
-        .sidebar-head p { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .sidebar-head .sb-logo-icon svg { width: 18px; height: 18px; }
+        .sidebar-head h2 { font-size: 14px; font-weight: 800; color: #fff; line-height: 1; }
+        .sidebar-head p { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
         .sidebar-close { 
             background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); 
-            width: 34px; height: 34px; border-radius: 10px; color: var(--text-muted); 
+            width: 32px; height: 32px; border-radius: 10px; color: var(--text-muted); 
             cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s; 
+            transition: 0.2s; padding: 0;
         }
-        .sidebar-close:hover { background: rgba(239,68,68,0.15); color: #fff; border-color: rgba(239,68,68,0.3); }
-        .sidebar-close svg { width: 16px; height: 16px; }
+        .sidebar-close:active { background: rgba(239,68,68,0.15); color: #fff; }
+        .sidebar-close svg { width: 14px; height: 14px; }
 
-        .sidebar-links-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; padding: 16px 14px; }
+        .sidebar-links-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; padding: 14px 12px; }
         .drawer-item {
             display: flex; align-items: center; gap: 12px;
-            padding: 13px 15px; border-radius: 11px;
-            color: var(--text-secondary); font-size: 14px; font-weight: 600;
+            padding: 12px 14px; border-radius: 11px;
+            color: var(--text-secondary); font-size: 13.5px; font-weight: 600;
             cursor: pointer; transition: all 0.2s; text-decoration: none;
             border-left: 3px solid transparent;
         }
-        .drawer-item:hover { background: rgba(99, 102, 241, 0.1); color: #fff; border-left-color: var(--primary-light); }
+        .drawer-item:active { background: rgba(99, 102, 241, 0.15); color: #fff; }
         .drawer-item .drawer-icon {
-            width: 22px; height: 22px;
+            width: 20px; height: 20px;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
         }
-        .drawer-item .drawer-icon svg { width: 18px; height: 18px; }
+        .drawer-item .drawer-icon svg { width: 17px; height: 17px; }
         .drawer-item.danger { color: #f87171; }
-        .drawer-item.danger:hover { background: rgba(239, 68, 68, 0.12); border-left-color: #ef4444; }
         .drawer-item .drawer-badge { 
             margin-left: auto; font-size: 10px; font-weight: 800; 
             padding: 2px 8px; border-radius: 10px; 
@@ -207,36 +212,45 @@
         }
 
         .sidebar-footer {
-            padding: 16px 20px;
+            padding: 14px 18px;
+            padding-bottom: max(14px, env(safe-area-inset-bottom));
             border-top: 1px solid var(--border-subtle);
             background: rgba(0,0,0,0.2);
         }
-        .sidebar-footer .sb-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .sidebar-footer .sb-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .sidebar-footer .sb-user-avatar {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px; font-weight: 800; color: #fff;
+            font-size: 14px; font-weight: 800; color: #fff;
+            flex-shrink: 0;
         }
-        .sidebar-footer .sb-user-name { font-size: 13px; font-weight: 700; color: #fff; }
-        .sidebar-footer .sb-user-status { font-size: 10.5px; color: #34d399; font-weight: 600; }
+        .sidebar-footer .sb-user-name { font-size: 12.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-footer .sb-user-status { font-size: 10px; color: #34d399; font-weight: 600; }
 
         /* ============ CONTENT ============ */
-        .content-wrap { max-width: 960px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; }
+        .content-wrap { 
+            max-width: 900px; 
+            margin: 18px auto 0; 
+            padding: 0 14px; 
+            position: relative; 
+            z-index: 1;
+        }
 
         .pro-card {
             background: var(--surface-1); border: 1px solid var(--border-subtle);
-            border-radius: 16px; padding: 22px; margin-bottom: 18px;
+            border-radius: 16px; padding: 20px; margin-bottom: 16px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
-        .form-group { margin-bottom: 14px; }
-        .form-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
         .form-input {
             width: 100%; padding: 12px 14px;
             background: #080c14; border: 1px solid var(--border-subtle);
-            border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600;
+            border-radius: 10px; color: #fff; font-size: 15px; font-weight: 600;
             outline: none; transition: all 0.2s;
+            -webkit-appearance: none;
         }
         .form-input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-glow); }
         .form-input:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -247,83 +261,67 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             color: #fff; transition: all 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 8px;
+            -webkit-tap-highlight-color: transparent;
         }
-        .btn-action:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 10px 25px rgba(79,70,229,0.35); }
-        .btn-action:active { transform: scale(0.99); }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-action:active:not(:disabled) { transform: scale(0.98); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-action svg { width: 18px; height: 18px; }
 
         .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
-
-        .btn-whatsapp {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
-        }
-
-        .checkbox-container { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; cursor: pointer; }
-        .checkbox-container input[type="checkbox"] {
-            width: 18px; height: 18px; border-radius: 5px;
-            border: 1px solid var(--border-subtle); background: #080c14;
-            cursor: pointer; flex-shrink: 0; margin-top: 2px;
-        }
-        .checkbox-label { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
-        .checkbox-label a { color: var(--primary-light); text-decoration: underline; font-weight: 600; }
+        .btn-whatsapp { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
 
         #dashboardSection { display: none; }
 
         .welcome-header {
             display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 14px; margin-bottom: 18px;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
         }
-        .welcome-title h2 { font-size: 22px; font-weight: 800; color: #fff; }
-        .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+        .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
+        .welcome-title h2 span { color: var(--primary-light); }
+        .welcome-title p { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
 
         /* HERO CARD */
         .hero-card {
             background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(139,92,246,0.08));
             border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 20px;
-            padding: 22px;
-            margin-bottom: 18px;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 16px;
             position: relative;
             overflow: hidden;
         }
         .hero-card::before {
             content: ''; position: absolute; top: -50px; right: -50px;
-            width: 180px; height: 180px; border-radius: 50%;
+            width: 160px; height: 160px; border-radius: 50%;
             background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
             pointer-events: none;
         }
-        .hero-card-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; position: relative; z-index: 1; }
+        .hero-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; position: relative; z-index: 1; }
         .hero-icon {
-            width: 54px; height: 54px;
+            width: 50px; height: 50px;
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            border-radius: 16px;
+            border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
             box-shadow: 0 8px 22px rgba(79,70,229,0.4);
             flex-shrink: 0;
         }
-        .hero-icon svg { width: 26px; height: 26px; }
+        .hero-icon svg { width: 24px; height: 24px; }
         .hero-text { flex: 1; min-width: 0; }
-        .hero-text h3 { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-        .hero-text p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+        .hero-text h3 { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .hero-text p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
         
         .hero-create-btn {
-            width: 100%; padding: 15px;
-            border: none; border-radius: 14px;
+            width: 100%; padding: 14px;
+            border: none; border-radius: 13px;
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            color: #fff; font-size: 15px; font-weight: 800;
+            color: #fff; font-size: 14.5px; font-weight: 800;
             cursor: pointer; transition: all 0.25s;
             display: flex; align-items: center; justify-content: center;
-            gap: 10px;
+            gap: 8px;
             box-shadow: 0 10px 28px rgba(79,70,229,0.4);
             position: relative; z-index: 1;
-            letter-spacing: 0.3px;
         }
-        .hero-create-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 38px rgba(79,70,229,0.55); }
         .hero-create-btn:active:not(:disabled) { transform: scale(0.98); }
         .hero-create-btn:disabled { background: linear-gradient(135deg, #4b5563, #374151); cursor: not-allowed; opacity: 0.7; box-shadow: none; }
         .hero-create-btn svg { width: 18px; height: 18px; }
@@ -339,6 +337,7 @@
             text-align: center; margin-top: 10px;
             position: relative; z-index: 1;
             font-weight: 600;
+            line-height: 1.4;
         }
         .hero-limit-info strong { color: #a5b4fc; font-weight: 800; }
 
@@ -348,7 +347,7 @@
             border: 1px solid rgba(16,185,129,0.25);
             border-radius: 14px;
             padding: 14px 16px;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
         .plan-days-card.warn { background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.04)); border-color: rgba(245,158,11,0.3); }
         .plan-days-card.danger { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.04)); border-color: rgba(239,68,68,0.3); }
@@ -356,45 +355,43 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
         }
-        .plan-days-label { font-size: 11.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
-        .plan-days-label svg { width: 14px; height: 14px; }
+        .plan-days-label { font-size: 11px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+        .plan-days-label svg { width: 13px; height: 13px; }
         .plan-days-card.warn .plan-days-label { color: #fbbf24; }
         .plan-days-card.danger .plan-days-label { color: #f87171; }
-        .plan-days-value { font-size: 15px; font-weight: 800; color: #fff; }
-        .plan-days-bar {
-            width: 100%; height: 6px; background: rgba(255,255,255,0.08);
-            border-radius: 10px; overflow: hidden; margin-bottom: 8px;
-        }
-        .plan-days-bar-fill {
-            height: 100%; border-radius: 10px;
-            background: linear-gradient(90deg, #10b981, #059669);
-            transition: width 0.5s ease;
-        }
+        .plan-days-value { font-size: 14px; font-weight: 800; color: #fff; }
+        .plan-days-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+        .plan-days-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.5s ease; }
         .plan-days-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
         .plan-days-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
-        .plan-days-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+        .plan-days-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600; gap: 8px; flex-wrap: wrap; }
         .plan-days-meta strong { color: #fff; font-weight: 700; }
 
         /* LINK SELECTOR */
         .link-selector-card {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
-            border-radius: 14px; padding: 16px 18px;
-            display: flex; align-items: center; justify-content: space-between;
-            flex-wrap: wrap; gap: 14px; margin-bottom: 16px;
+            border-radius: 14px; padding: 14px 16px;
+            display: flex; flex-direction: column;
+            gap: 12px; margin-bottom: 16px;
         }
-        .link-info-box { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 200px; }
-        .link-title-badge { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; color: #fff; }
-        .link-title-badge svg { width: 16px; height: 16px; color: var(--primary-light); }
-        .link-id-sub { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
-        .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 12px; }
+        @media (min-width: 640px) {
+            .link-selector-card { flex-direction: row; align-items: center; justify-content: space-between; }
+        }
+        .link-info-box { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+        .link-title-badge { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #fff; min-width: 0; }
+        .link-title-badge svg { width: 16px; height: 16px; color: var(--primary-light); flex-shrink: 0; }
+        .link-title-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .link-id-sub { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+        .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 11px; }
 
         .link-actions-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .link-actions-row select {
+            flex: 1; min-width: 140px;
             padding: 9px 12px; font-size: 12.5px;
             background: #080c14; border: 1px solid var(--border-subtle);
             border-radius: 10px; color: #fff;
             cursor: pointer; font-weight: 600;
-            min-width: 180px;
+            -webkit-appearance: none;
         }
         .link-actions-row select:focus { outline: none; border-color: var(--primary-light); }
         .icon-btn {
@@ -405,22 +402,22 @@
             color: var(--text-secondary);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
+            flex-shrink: 0;
+            padding: 0;
         }
         .icon-btn svg { width: 16px; height: 16px; }
-        .icon-btn:hover { background: rgba(99,102,241,0.15); color: #fff; border-color: var(--primary-light); }
-        .icon-btn.danger:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
+        .icon-btn:active { background: rgba(99,102,241,0.15); color: #fff; border-color: var(--primary-light); }
+        .icon-btn.danger:active { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
         .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .icon-btn:disabled:hover { background: #080c14; color: var(--text-secondary); border-color: var(--border-subtle); }
 
         /* TIMELINE */
-        .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; }
-        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
-        .badge-status { padding: 3px 10px; border-radius: 16px; font-size: 11.5px; font-weight: 700; }
+        .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+        .timeline-label { font-size: 12.5px; font-weight: 700; color: #fff; }
+        .badge-status { padding: 3px 10px; border-radius: 16px; font-size: 11px; font-weight: 700; }
         .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
         .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
         .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
-        .badge-status.lifetime { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.1)); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
         .badge-status.none { background: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
 
         .progress-bar-bg { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
@@ -428,120 +425,223 @@
         .progress-bar-fill.active { background: var(--success); }
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
-        .progress-bar-fill.lifetime { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
         .progress-bar-fill.none { background: rgba(100, 116, 139, 0.3); width: 0%; }
 
-        /* DATE FILTER */
+        /* ============ 🆕 DATE FILTER DROPDOWN ============ */
         .date-filter-box {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
-            border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
-            display: flex; flex-direction: column; gap: 12px;
+            border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;
         }
-        .date-filter-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-        .date-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .pill-btn {
-            padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border-subtle);
-            background: #080c14; color: var(--text-secondary); font-size: 12px; font-weight: 700;
-            cursor: pointer; transition: all 0.2s ease;
+        .date-filter-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px;
         }
-        .pill-btn:hover { color: #fff; border-color: var(--primary-light); }
-        .pill-btn.active { background: var(--primary); border-color: var(--primary-light); color: #fff; box-shadow: 0 2px 10px var(--primary-glow); }
+        .date-filter-label {
+            font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .date-filter-label svg { width: 14px; height: 14px; color: var(--primary-light); }
+        .date-filter-dropdown {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+        }
+        .date-filter-trigger {
+            width: 100%;
+            padding: 9px 12px;
+            background: #080c14;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: 0.2s;
+            -webkit-appearance: none;
+        }
+        .date-filter-trigger:active { border-color: var(--primary-light); }
+        .date-filter-trigger .trigger-label { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .date-filter-trigger .trigger-label svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--primary-light); }
+        .date-filter-trigger .chevron { width: 14px; height: 14px; transition: transform 0.2s; flex-shrink: 0; color: var(--text-muted); }
+        .date-filter-dropdown.open .chevron { transform: rotate(180deg); }
+        .date-filter-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #0d1119;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 6px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            display: none;
+            animation: fadeInDown 0.2s ease;
+        }
+        .date-filter-dropdown.open .date-filter-menu { display: block; }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .date-filter-option {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.15s;
+        }
+        .date-filter-option:active { background: rgba(99,102,241,0.15); color: #fff; }
+        .date-filter-option.active { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; }
+        .date-filter-option svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .date-filter-option .check { margin-left: auto; width: 14px; height: 14px; opacity: 0; }
+        .date-filter-option.active .check { opacity: 1; }
 
-        .custom-date-container { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px dashed var(--border-subtle); }
-        .date-input { background: #080c14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; }
-        .date-input:focus { border-color: var(--primary-light); }
+        .custom-date-panel {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-subtle);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .custom-date-panel.show { display: flex; }
+        .custom-date-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .custom-date-row label { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }
+        .custom-date-row input[type="date"] {
+            flex: 1; min-width: 120px;
+            background: #080c14; border: 1px solid var(--border-subtle);
+            border-radius: 8px; padding: 8px 10px; color: #fff; font-size: 12.5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .custom-date-row input[type="date"]:focus { border-color: var(--primary-light); }
+        .custom-date-apply-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 9px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .custom-date-apply-btn svg { width: 14px; height: 14px; }
 
         /* STATS */
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
-        @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+        @media (min-width: 640px) { .stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
 
         .metric-card {
             background: var(--surface-1); border: 1px solid var(--border-subtle);
-            border-radius: 12px; padding: 14px; position: relative; overflow: hidden;
+            border-radius: 12px; padding: 12px; position: relative; overflow: hidden;
         }
         .metric-card.highlight { border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1)); }
         .metric-card.highlight-success { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1)); }
-        .metric-value { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 2px; }
-        .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
-        .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
+        .metric-value { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; line-height: 1.1; }
+        .metric-title { font-size: 10.5px; font-weight: 600; color: var(--text-muted); line-height: 1.3; }
+        .metric-subtitle { font-size: 9.5px; color: var(--accent-cyan); margin-top: 3px; font-weight: 600; }
 
         /* MODALS */
         .app-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(14px); z-index: 10000;
-            display: none; justify-content: center; align-items: center; padding: 20px;
+            height: 100dvh;
+            background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 10000;
+            display: none; justify-content: center; align-items: flex-start; padding: 16px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .app-modal.active { display: flex; }
         .modal-body-card {
             background: var(--surface-1); border: 1px solid var(--border-subtle);
-            border-radius: 22px; max-width: 640px; width: 100%; padding: 26px;
-            max-height: 92vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+            border-radius: 20px; max-width: 620px; width: 100%; padding: 20px;
+            margin: auto 0;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
             animation: fadeInUp 0.3s ease;
+            -webkit-overflow-scrolling: touch;
         }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .modal-body-card.wide { max-width: 1100px; }
+        .modal-body-card.wide { max-width: 1000px; }
         .modal-header-row {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;
+            margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;
+            gap: 10px;
         }
-        .modal-header-row h3 { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
-        .modal-header-row h3 svg { width: 20px; height: 20px; color: var(--primary-light); }
+        .modal-header-row h3 { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .modal-header-row h3 svg { width: 18px; height: 18px; color: var(--primary-light); }
         .modal-close-btn { 
-            background: transparent; border: none; color: var(--text-muted); 
-            font-size: 22px; cursor: pointer; transition: 0.2s; 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); 
+            color: var(--text-muted); 
+            font-size: 18px; cursor: pointer; transition: 0.2s; 
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-            border-radius: 8px;
+            border-radius: 8px; flex-shrink: 0; padding: 0;
         }
-        .modal-close-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .modal-close-btn:active { color: #fff; background: rgba(239,68,68,0.15); }
 
-        .guide-item { margin-bottom: 14px; }
-        .guide-item h4 { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-        .guide-item p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+        .guide-item { margin-bottom: 12px; }
+        .guide-item h4 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+        .guide-item p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 
         .short-item {
-            background: #080c14; padding: 12px 14px; margin: 8px 0; border-radius: 10px;
+            background: #080c14; padding: 12px; margin: 8px 0; border-radius: 10px;
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
         /* CREATE FORM */
-        .create-link-form { display: flex; flex-direction: column; gap: 14px; }
+        .create-link-form { display: flex; flex-direction: column; gap: 12px; }
         .create-form-section {
             background: rgba(0,0,0,0.2);
             border: 1px solid var(--border-subtle);
             border-radius: 14px;
-            padding: 16px;
+            padding: 14px;
         }
         .create-form-section-title {
-            font-size: 12px; font-weight: 800; color: #a5b4fc;
+            font-size: 11.5px; font-weight: 800; color: #a5b4fc;
             text-transform: uppercase; letter-spacing: 0.5px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex; align-items: center; gap: 8px;
         }
-        .create-form-section-title svg { width: 14px; height: 14px; }
-        .create-form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 600px) { .create-form-grid-2 { grid-template-columns: 1fr; } }
+        .create-form-section-title svg { width: 13px; height: 13px; }
+        .create-form-grid-2 { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 560px) { .create-form-grid-2 { grid-template-columns: 1fr 1fr; } }
 
         .uid-toggle-box {
             background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05));
             border: 1px solid rgba(99,102,241,0.3);
             border-radius: 12px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
-        .uid-toggle-info { flex: 1; min-width: 200px; }
-        .uid-toggle-info .uid-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
-        .uid-toggle-info .uid-title svg { width: 14px; height: 14px; color: var(--primary-light); }
-        .uid-toggle-info .uid-desc { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; }
+        .uid-toggle-info { flex: 1; min-width: 180px; }
+        .uid-toggle-info .uid-title { font-size: 12.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .uid-toggle-info .uid-title svg { width: 13px; height: 13px; color: var(--primary-light); }
+        .uid-toggle-info .uid-desc { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
-        .switch-toggle { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .switch-toggle { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
         .switch-toggle input { opacity: 0; width: 0; height: 0; }
         .switch-toggle span {
             position: absolute; cursor: pointer; inset: 0;
@@ -553,82 +653,75 @@
             background: white; transition: 0.3s; border-radius: 50%;
         }
         .switch-toggle input:checked + span { background: linear-gradient(135deg, #10b981, #059669); }
-        .switch-toggle input:checked + span:before { transform: translateX(22px); }
+        .switch-toggle input:checked + span:before { transform: translateX(20px); }
 
         /* PLANS */
-        .plans-carousel-wrap { position: relative; margin-bottom: 18px; overflow: hidden; }
+        .plans-carousel-wrap { position: relative; margin-bottom: 16px; overflow: hidden; }
         .plans-carousel {
             display: flex;
-            gap: 14px;
+            gap: 12px;
             overflow-x: auto;
             overflow-y: hidden;
             scroll-behavior: smooth;
             scroll-snap-type: x mandatory;
-            padding: 8px 4px 12px 4px;
+            padding: 6px 4px 12px 4px;
             scrollbar-width: thin;
             scrollbar-color: rgba(99,102,241,0.5) transparent;
+            -webkit-overflow-scrolling: touch;
         }
-        .plans-carousel::-webkit-scrollbar { height: 6px; }
+        .plans-carousel::-webkit-scrollbar { height: 5px; }
         .plans-carousel::-webkit-scrollbar-track { background: transparent; }
         .plans-carousel::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 6px; }
 
         .plan-card-screenshot {
-            flex: 0 0 300px;
+            flex: 0 0 280px;
             scroll-snap-align: center;
             background: linear-gradient(165deg, #1a1f2e 0%, #141a28 100%);
             border: 2px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 22px 20px;
+            border-radius: 18px;
+            padding: 20px 18px;
             display: flex;
             flex-direction: column;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            height: 500px;
-            min-height: 500px;
-            max-height: 500px;
+            height: 480px;
+            min-height: 480px;
+            max-height: 480px;
         }
         @media (max-width: 500px) {
-            .plan-card-screenshot { flex: 0 0 82%; padding: 18px 16px; height: 460px; min-height: 460px; max-height: 460px; }
+            .plan-card-screenshot { flex: 0 0 85%; padding: 16px 14px; height: 450px; min-height: 450px; max-height: 450px; }
         }
-        .plan-card-screenshot:hover { transform: translateY(-6px); border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
         .plan-card-screenshot.selected { border-color: var(--primary-light); background: linear-gradient(165deg, #232a40 0%, #1a2033 100%); box-shadow: 0 20px 55px rgba(99, 102, 241, 0.35); }
-        .plan-card-screenshot.popular-plan { border-color: rgba(139, 92, 246, 0.5); }
-        .plan-card-screenshot.popular-plan.selected { border-color: #a855f7; box-shadow: 0 20px 55px rgba(168, 85, 247, 0.4); }
-        .plan-card-screenshot.best-plan { border-color: rgba(245, 158, 11, 0.5); }
-        .plan-card-screenshot.best-plan.selected { border-color: #f59e0b; box-shadow: 0 20px 55px rgba(245, 158, 11, 0.4); }
         .plan-card-screenshot.owned-plan {
             border-color: rgba(16, 185, 129, 0.6) !important;
             background: linear-gradient(165deg, #1a2e28 0%, #0f1f1a 100%) !important;
-            box-shadow: 0 15px 45px rgba(16, 185, 129, 0.3) !important;
             cursor: not-allowed;
         }
-        .plan-card-screenshot.owned-plan:hover { transform: none; }
         .plan-card-screenshot.selected::before {
             content: '✓';
-            position: absolute; top: 14px; right: 14px;
-            width: 32px; height: 32px; border-radius: 50%;
+            position: absolute; top: 12px; right: 12px;
+            width: 30px; height: 30px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff; font-size: 16px; font-weight: 800;
+            color: #fff; font-size: 15px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
             z-index: 5;
         }
         .plan-card-screenshot.owned-plan::before {
             content: '★';
-            position: absolute; top: 14px; right: 14px;
-            width: 36px; height: 36px; border-radius: 50%;
+            position: absolute; top: 12px; right: 12px;
+            width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff; font-size: 18px; font-weight: 800;
+            color: #fff; font-size: 16px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.6);
             z-index: 5;
         }
 
         .plan-card-icon-wrap {
-            width: 50px; height: 50px;
-            border-radius: 14px;
+            width: 46px; height: 46px;
+            border-radius: 13px;
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(99, 102, 241, 0.3);
             display: flex; align-items: center; justify-content: center;
@@ -636,12 +729,9 @@
             margin-bottom: 10px;
             flex-shrink: 0;
         }
-        .plan-card-icon-wrap svg { width: 24px; height: 24px; }
-        .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; }
-        .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
-        .plan-card-screenshot.owned-plan .plan-card-icon-wrap { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #34d399; }
+        .plan-card-icon-wrap svg { width: 22px; height: 22px; }
 
-        .plan-card-name { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+        .plan-card-name { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 
         .plan-card-badge-pill { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
@@ -652,10 +742,10 @@
 
         .plan-card-price-section { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; }
         .plan-card-price { display: flex; align-items: baseline; gap: 4px; color: #fff; }
-        .plan-card-price .price-currency { font-size: 18px; font-weight: 800; color: #fff; }
-        .plan-card-price .price-amount { font-size: 30px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
-        .plan-card-price .price-free { font-size: 26px; font-weight: 900; color: #34d399; line-height: 1; }
-        .plan-card-price-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .plan-card-price .price-currency { font-size: 16px; font-weight: 800; color: #fff; }
+        .plan-card-price .price-amount { font-size: 28px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+        .plan-card-price .price-free { font-size: 24px; font-weight: 900; color: #34d399; line-height: 1; }
+        .plan-card-price-sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
         .plan-card-duration {
             display: inline-flex; align-items: center; gap: 5px;
             background: rgba(6, 182, 212, 0.12);
@@ -669,37 +759,35 @@
             width: 100%; padding: 10px; border-radius: 11px;
             border: 2px solid rgba(99, 102, 241, 0.4);
             background: transparent; color: #fff;
-            font-size: 12.5px; font-weight: 800;
+            font-size: 12px; font-weight: 800;
             cursor: pointer; transition: all 0.25s;
             margin-bottom: 10px;
             display: flex; align-items: center; justify-content: center;
-            gap: 6px; letter-spacing: 0.3px;
+            gap: 6px;
             flex-shrink: 0;
         }
-        .plan-card-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: var(--primary-light); }
-        .plan-card-screenshot.selected .plan-card-btn { background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-color: var(--primary-light); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
+        .plan-card-screenshot.selected .plan-card-btn { background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-color: var(--primary-light); }
         .plan-card-screenshot.owned-plan .plan-card-btn { background: linear-gradient(135deg, #10b981, #059669) !important; border-color: #10b981 !important; cursor: not-allowed; opacity: 0.9; }
 
         .plan-card-includes-title {
-            font-size: 10px; font-weight: 800; color: var(--text-muted);
+            font-size: 9.5px; font-weight: 800; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 0.7px;
             margin-bottom: 8px;
-            display: flex; align-items: center; gap: 6px;
             flex-shrink: 0;
         }
 
         .plan-features-list {
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            gap: 6px;
             flex: 1 1 auto;
             overflow-y: auto;
             padding-right: 3px;
             min-height: 0;
         }
-        .plan-feature-item { display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px; color: #cbd5e1; line-height: 1.35; }
+        .plan-feature-item { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: #cbd5e1; line-height: 1.35; }
         .plan-feature-item .check-icon {
-            width: 16px; height: 16px; border-radius: 50%;
+            width: 15px; height: 15px; border-radius: 50%;
             background: rgba(16, 185, 129, 0.18); color: #10b981;
             font-size: 9px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
@@ -711,172 +799,354 @@
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
             text-align: center;
         }
         .qr-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 0 auto; }
-        .qr-wrapper img { width: 160px; height: 160px; background: #fff; padding: 10px; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.45); display: block; }
-        .payment-info { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 480px; }
+        .qr-wrapper img { width: 150px; height: 150px; background: #fff; padding: 10px; border-radius: 14px; display: block; }
+        .payment-info { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 460px; }
         .upi-copy-chip {
             display: inline-flex; align-items: center; gap: 8px;
             background: #080c14; border: 1px solid var(--border-subtle);
-            padding: 9px 16px; border-radius: 10px;
-            font-size: 13px; font-weight: 700; color: var(--accent-cyan);
+            padding: 9px 14px; border-radius: 10px;
+            font-size: 12.5px; font-weight: 700; color: var(--accent-cyan);
             margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
             max-width: 100%; word-break: break-all;
         }
-        .upi-copy-chip:hover { border-color: var(--primary-light); background: #0d1119; }
+        .upi-copy-chip:active { border-color: var(--primary-light); }
 
         /* ACTIVATE POPUP */
         .activate-popup-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.92); backdrop-filter: blur(16px); z-index: 25000;
-            display: none; justify-content: center; align-items: center; padding: 20px;
+            height: 100dvh;
+            background: rgba(4, 7, 15, 0.92); backdrop-filter: blur(16px);
+            z-index: 25000;
+            display: none; justify-content: center; align-items: center; padding: 16px;
             overflow-y: auto;
         }
         .activate-popup-overlay.active { display: flex; }
         .activate-popup-card {
             background: linear-gradient(165deg, #1a2033 0%, #0f1420 100%);
             border: 2px solid rgba(16, 185, 129, 0.4);
-            border-radius: 26px;
-            max-width: 480px; width: 100%;
-            padding: 32px 26px 26px;
+            border-radius: 22px;
+            max-width: 460px; width: 100%;
+            padding: 28px 22px 22px;
             position: relative;
             text-align: center;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 60px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9);
             animation: activatePopupIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: hidden;
+            margin: auto 0;
         }
         @keyframes activatePopupIn {
             0% { opacity: 0; transform: scale(0.85) translateY(30px); }
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
         .activate-popup-close {
-            position: absolute; top: 14px; right: 14px;
-            width: 36px; height: 36px; border-radius: 50%;
+            position: absolute; top: 12px; right: 12px;
+            width: 34px; height: 34px; border-radius: 50%;
             background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-muted); font-size: 18px; cursor: pointer;
+            color: var(--text-muted); font-size: 16px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; z-index: 10;
+            transition: all 0.2s; z-index: 10; padding: 0;
         }
-        .activate-popup-close:hover { background: rgba(239, 68, 68, 0.2); color: #fff; }
         .activate-popup-icon {
-            width: 80px; height: 80px; margin: 0 auto 16px;
-            border-radius: 24px;
+            width: 70px; height: 70px; margin: 0 auto 14px;
+            border-radius: 20px;
             background: linear-gradient(135deg, #10b981, #059669);
             display: flex; align-items: center; justify-content: center;
             color: #fff;
             box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
         }
-        .activate-popup-icon svg { width: 40px; height: 40px; }
-        .activate-popup-title { font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 8px; }
-        .activate-popup-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
+        .activate-popup-icon svg { width: 34px; height: 34px; }
+        .activate-popup-title { font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+        .activate-popup-subtitle { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px; }
         .activate-popup-subtitle strong { color: #34d399; font-weight: 800; }
-        .activate-features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+        .activate-features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
         @media (max-width: 420px) { .activate-features-grid { grid-template-columns: 1fr; } }
         .activate-feature-item {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 10px 12px;
             display: flex; align-items: center; gap: 10px;
             text-align: left;
         }
         .activate-feature-item .af-icon { 
-            width: 34px; height: 34px; border-radius: 10px; 
+            width: 32px; height: 32px; border-radius: 9px; 
             background: rgba(16, 185, 129, 0.15); 
             display: flex; align-items: center; justify-content: center; 
             color: #34d399;
             flex-shrink: 0; 
         }
-        .activate-feature-item .af-icon svg { width: 16px; height: 16px; }
+        .activate-feature-item .af-icon svg { width: 15px; height: 15px; }
         .activate-feature-item .af-content { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-        .activate-feature-item .af-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .activate-feature-item .af-value { font-size: 13.5px; font-weight: 800; color: #fff; }
+        .activate-feature-item .af-label { font-size: 9.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .activate-feature-item .af-value { font-size: 12.5px; font-weight: 800; color: #fff; }
         .activate-popup-notice {
             background: rgba(245, 158, 11, 0.1);
             border: 1px dashed rgba(245, 158, 11, 0.4);
             border-radius: 12px;
-            padding: 12px 14px;
-            margin-bottom: 20px;
-            font-size: 12px; font-weight: 600;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            font-size: 11.5px; font-weight: 600;
             color: #fcd34d;
             display: flex; align-items: center; gap: 8px;
             text-align: left;
         }
-        .activate-popup-actions { display: flex; flex-direction: column; gap: 10px; }
+        .activate-popup-actions { display: flex; flex-direction: column; gap: 8px; }
         .activate-popup-btn {
-            padding: 15px;
-            border: none; border-radius: 14px;
-            font-size: 15px; font-weight: 800;
+            padding: 14px;
+            border: none; border-radius: 13px;
+            font-size: 14px; font-weight: 800;
             cursor: pointer; transition: all 0.25s ease;
             display: flex; align-items: center; justify-content: center;
             gap: 8px;
         }
         .activate-popup-btn.primary { background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4); }
-        .activate-popup-btn.primary:hover { transform: translateY(-2px); }
         .activate-popup-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .activate-popup-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; padding: 11px; }
+        .activate-popup-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 12.5px; padding: 10px; }
 
-        /* CUSTOM DIALOG */
+        /* ============ 🆕 CUSTOM DIALOG (Beautiful Popup) ============ */
         .custom-dialog-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(12px); z-index: 26000;
-            display: none; justify-content: center; align-items: center; padding: 20px;
+            height: 100dvh;
+            background: rgba(4, 7, 15, 0.9); backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 26000;
+            display: none; justify-content: center; align-items: center; padding: 18px;
         }
         .custom-dialog-overlay.active { display: flex; }
         .custom-dialog-card {
             background: linear-gradient(165deg, #1a2033 0%, #0f1420 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 22px;
-            padding: 28px 24px 22px;
-            max-width: 400px; width: 100%;
+            padding: 26px 22px 22px;
+            max-width: 380px; width: 100%;
             text-align: center;
             box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85);
-            animation: fadeInUp 0.35s ease;
+            animation: dialogPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
         }
+        @keyframes dialogPopIn {
+            0% { opacity: 0; transform: scale(0.85) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .custom-dialog-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+        }
+        .custom-dialog-card.success::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .custom-dialog-card.error::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .custom-dialog-card.warning::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .custom-dialog-card.info::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .custom-dialog-card.confirm::before { background: linear-gradient(90deg, #ef4444, #f97316); }
+
         .custom-dialog-icon-wrap {
-            width: 70px; height: 70px;
+            width: 68px; height: 68px;
             margin: 0 auto 14px;
             border-radius: 20px;
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
             display: flex; align-items: center; justify-content: center;
-            color: #818cf8;
+            position: relative;
+            animation: iconPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes iconPopIn {
+            0% { transform: scale(0.4); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
         .custom-dialog-icon-wrap svg { width: 32px; height: 32px; }
-        .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981; }
-        .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #ef4444; }
-        .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; }
-        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; }
-        .custom-dialog-title { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; }
-        .custom-dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
+        .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; }
+        .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; }
+        .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #f59e0b; }
+        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.4); color: #818cf8; }
+        .custom-dialog-icon-wrap.confirm { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; }
+
+        .custom-dialog-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .custom-dialog-message { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
         .custom-dialog-message strong { color: #fff; font-weight: 700; }
 
-        /* TURNSTILE */
-        .turnstile-wrapper { display: flex; justify-content: center; align-items: center; margin: 12px auto 14px; width: 100%; min-height: 65px; }
-        .google-btn-wrapper { display: flex; justify-content: center; align-items: center; margin-top: 4px; width: 100%; }
-        .google-btn-wrapper .g_id_signin { display: flex; justify-content: center; width: 100% !important; max-width: 340px !important; margin: 0 auto; }
-        .auth-divider { text-align: center; margin: 16px 0 12px; color: var(--text-muted); font-size: 12px; display: flex; align-items: center; gap: 10px; }
-        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
-
-        @media (max-width: 500px) {
-            .top-navbar { padding: 12px 14px; }
-            .brand-title { font-size: 14px; }
-            .user-pill { font-size: 11px; padding: 5px 10px; }
+        .custom-dialog-actions { display: flex; gap: 8px; }
+        .custom-dialog-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
+        .custom-dialog-btn:active { transform: scale(0.97); }
+        .custom-dialog-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff;
+        }
+        .custom-dialog-btn.primary.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .custom-dialog-btn.secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* ============ 🆕 GOOGLE AUTH ============ */
+        .auth-screen {
+            max-width: 420px;
+            margin: 20px auto 0;
+        }
+        .auth-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 30px 22px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+        .auth-logo {
+            width: 70px; height: 70px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff;
+            box-shadow: 0 10px 30px var(--primary-glow);
+        }
+        .auth-logo svg { width: 34px; height: 34px; }
+        .auth-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+        .auth-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 26px; line-height: 1.5; }
+        
+        .google-btn-wrap {
+            display: flex;
+            justify-content: center;
+            margin: 12px 0;
+        }
+        .google-btn-wrap .g_id_signin { display: flex; justify-content: center; width: 100% !important; max-width: 320px !important; margin: 0 auto; }
+
+        .auth-divider {
+            text-align: center;
+            margin: 16px 0;
+            color: var(--text-muted);
+            font-size: 11.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        /* ============ PROFILE MODAL (Name + Phone) ============ */
+        .profile-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            height: 100dvh;
+            background: rgba(4, 7, 15, 0.94);
+            backdrop-filter: blur(16px);
+            z-index: 27000;
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 18px;
+            overflow-y: auto;
+        }
+        .profile-overlay.active { display: flex; }
+        .profile-card {
+            background: linear-gradient(165deg, #1a2033 0%, #0f1420 100%);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: 22px;
+            padding: 26px 22px;
+            max-width: 420px;
+            width: 100%;
+            margin: auto 0;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.85);
+            animation: dialogPopIn 0.4s ease;
+        }
+        .profile-icon {
+            width: 70px; height: 70px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff;
+            box-shadow: 0 12px 30px var(--primary-glow);
+        }
+        .profile-icon svg { width: 32px; height: 32px; }
+        .profile-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px; text-align: center; }
+        .profile-subtitle { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 20px; text-align: center; line-height: 1.5; }
+        .profile-email-badge {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            color: #a5b4fc;
+            font-weight: 600;
+            margin-bottom: 18px;
+            word-break: break-all;
+        }
+        .profile-email-badge svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        /* ============ RATE LIMIT / TOAST ============ */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: linear-gradient(135deg, #1a2033, #0f1420);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            z-index: 30000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 90vw;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast-notification.error { border-color: rgba(239, 68, 68, 0.4); }
+        .toast-notification.success { border-color: rgba(16, 185, 129, 0.4); }
+        .toast-notification.warning { border-color: rgba(245, 158, 11, 0.4); }
+        .toast-notification svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .toast-notification.error svg { color: #f87171; }
+        .toast-notification.success svg { color: #34d399; }
+        .toast-notification.warning svg { color: #fbbf24; }
+
+        /* RESPONSIVE */
         @media (max-width: 400px) {
-            .pro-card { padding: 18px 14px; }
-            .hero-card { padding: 18px; }
-            .hero-text h3 { font-size: 15px; }
-            .hero-create-btn { font-size: 14px; padding: 13px; }
-            .form-input { font-size: 13px; padding: 11px 12px; }
-            .btn-action { font-size: 13.5px; padding: 12px; }
+            .pro-card { padding: 16px 14px; }
+            .hero-card { padding: 16px; }
+            .modal-body-card { padding: 16px; border-radius: 18px; }
+            .stats-row { gap: 8px; }
+            .metric-card { padding: 10px; }
+            .metric-value { font-size: 18px; }
+        }
+
+        /* Hide some elements on very small screens for cleaner look */
+        @media (max-width: 360px) {
+            .brand-subtitle { display: none; }
+            .user-pill { padding: 4px 9px; font-size: 10.5px; }
         }
     </style>
 </head>
@@ -889,8 +1159,7 @@
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/>
         </symbol>
         <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </symbol>
         <symbol id="icon-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 18h18l-2-11-5 5-2-7-2 7-5-5z" fill="currentColor" stroke="none"/>
@@ -911,41 +1180,31 @@
         <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
         </symbol>
         <symbol id="icon-log-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
         </symbol>
         <symbol id="icon-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
             <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
         </symbol>
         <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </symbol>
         <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
         </symbol>
         <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 12 20 22 4 22 4 12"/>
-            <rect x="2" y="7" width="20" height="5"/>
+            <polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/>
             <line x1="12" y1="22" x2="12" y2="7"/>
-            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
         </symbol>
         <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/>
-            <polyline points="1 20 1 14 7 14"/>
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </symbol>
         <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -955,60 +1214,54 @@
         <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            <line x1="10" y1="11" x2="10" y2="17"/>
-            <line x1="14" y1="11" x2="14" y2="17"/>
+            <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
         </symbol>
         <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </symbol>
         <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
         </symbol>
         <symbol id="icon-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7"/>
-            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-        </symbol>
-        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
         </symbol>
         <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-        </symbol>
-        <symbol id="icon-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-            <line x1="7" y1="7" x2="7.01" y2="7"/>
-        </symbol>
-        <symbol id="icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="6"/>
-            <circle cx="12" cy="12" r="2"/>
-        </symbol>
-        <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-        </symbol>
-        <symbol id="icon-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </symbol>
-        <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-        </symbol>
-        <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
         </symbol>
         <symbol id="icon-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </symbol>
+        <symbol id="icon-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </symbol>
+        <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </symbol>
+        <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </symbol>
+        <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+        </symbol>
+        <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </symbol>
+        <symbol id="icon-google" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
         </symbol>
     </svg>
 
@@ -1017,9 +1270,7 @@
     <aside class="sidebar-drawer" id="sidebarDrawer">
         <div class="sidebar-head">
             <div class="sb-logo">
-                <div class="sb-logo-icon">
-                    <svg><use href="#icon-flash"/></svg>
-                </div>
+                <div class="sb-logo-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
                     <h2>DASHBOARD</h2>
                     <p>User Control Center</p>
@@ -1063,7 +1314,7 @@
         <div class="sidebar-footer">
             <div class="sb-user">
                 <div class="sb-user-avatar" id="sbUserAvatar">U</div>
-                <div>
+                <div style="min-width:0;flex:1;">
                     <div class="sb-user-name" id="sbUserName">User</div>
                     <div class="sb-user-status">● Online</div>
                 </div>
@@ -1079,14 +1330,10 @@
     <header class="top-navbar">
         <div class="nav-left">
             <button class="btn-menu-toggle" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
-                <span class="line l1"></span>
-                <span class="line l2"></span>
-                <span class="line l3"></span>
+                <span class="line l1"></span><span class="line l2"></span><span class="line l3"></span>
             </button>
             <a href="#" class="navbar-brand">
-                <div class="brand-badge-icon">
-                    <svg><use href="#icon-flash"/></svg>
-                </div>
+                <div class="brand-badge-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
                     <div class="brand-title">DASHBOARD</div>
                     <div class="brand-subtitle">Control Center</div>
@@ -1102,64 +1349,58 @@
     </header>
 
     <main class="content-wrap">
-        <!-- AUTH SECTION -->
-        <div id="authSection" style="max-width:420px; margin:30px auto 0;">
-            <div class="pro-card">
-                <form id="formSignIn" onsubmit="submitSignIn(event)">
-                    <div style="text-align:center; margin-bottom:18px;">
-                        <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
-                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Enter your credentials to access your dashboard</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email Address</label>
-                        <input type="email" id="inEmail" class="form-input" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
-                    </div>
-                    <div class="turnstile-wrapper"><div id="signin-turnstile"></div></div>
-                    <button type="submit" class="btn-action" id="btnSubmitLogin"><span>Sign In</span></button>
-                    <div class="auth-divider"><span>OR</span></div>
-                    <div class="google-btn-wrapper">
-                        <div id="g_id_onload" data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com" data-callback="handleGoogleLogin" data-auto_prompt="false"></div>
-                        <div class="g_id_signin" data-type="standard" data-size="medium" data-theme="filled_black" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="280"></div>
-                    </div>
-                    <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
-                        Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
-                    </div>
-                </form>
+        <!-- ============ AUTH SECTION (GOOGLE-ONLY) ============ -->
+        <div id="authSection" class="auth-screen">
+            <div class="auth-card">
+                <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
+                <h2 class="auth-title">Welcome</h2>
+                <p class="auth-subtitle">Sign in with your Google account to access your dashboard</p>
 
-                <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
-                    <div style="text-align:center; margin-bottom:18px;">
-                        <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
-                        <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to start managing your links</p>
+                <!-- GOOGLE SIGN IN -->
+                <div class="google-btn-wrap" id="googleSignInWrap">
+                    <div id="g_id_onload"
+                         data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
+                         data-callback="handleGoogleAuth"
+                         data-auto_prompt="false"
+                         data-context="signin">
                     </div>
-                    <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="upName" class="form-input" placeholder="Enter your full name" required></div>
-                    <div class="form-group"><label class="form-label">Email Address</label><input type="email" id="upEmail" class="form-input" placeholder="Enter your email" required></div>
-                    <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" id="upPhone" class="form-input" placeholder="Enter your 10-digit number" required></div>
-                    <label class="checkbox-container">
-                        <input type="checkbox" id="upTermsCheck" required>
-                        <span class="checkbox-label">I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a>.</span>
-                    </label>
-                    <div class="turnstile-wrapper"><div id="signup-turnstile"></div></div>
-                    <button type="submit" class="btn-action" id="btnSubmitRegister"><span>Create Account</span></button>
-                    <div class="auth-divider"><span>OR</span></div>
-                    <div class="google-btn-wrapper">
-                        <div class="g_id_signin" data-type="standard" data-size="medium" data-theme="filled_black" data-text="signup_with" data-shape="rectangular" data-logo_alignment="left" data-width="280"></div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-size="large"
+                         data-theme="filled_black"
+                         data-text="signin_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left"
+                         data-width="300">
                     </div>
-                    <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
-                        Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
+                </div>
+
+                <div class="auth-divider"><span>OR</span></div>
+
+                <!-- GOOGLE SIGN UP -->
+                <div class="google-btn-wrap" id="googleSignUpWrap">
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-size="large"
+                         data-theme="filled_black"
+                         data-text="signup_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left"
+                         data-width="300">
                     </div>
-                </form>
+                </div>
+
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:20px;line-height:1.5;">
+                    By continuing, you agree to our Terms & Privacy Policy
+                </div>
             </div>
         </div>
 
-        <!-- DASHBOARD SECTION -->
+        <!-- ============ DASHBOARD SECTION ============ -->
         <div id="dashboardSection">
             <div class="welcome-header">
                 <div class="welcome-title">
-                    <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span></h2>
+                    <h2>Welcome, <span id="labelUserName">User</span></h2>
                     <p>Manage your links, track performance, and grow your reach</p>
                 </div>
             </div>
@@ -1167,9 +1408,7 @@
             <!-- HERO CARD -->
             <div class="hero-card">
                 <div class="hero-card-top">
-                    <div class="hero-icon">
-                        <svg><use href="#icon-rocket"/></svg>
-                    </div>
+                    <div class="hero-icon"><svg><use href="#icon-rocket"/></svg></div>
                     <div class="hero-text">
                         <h3 id="heroTitle">Create New Link</h3>
                         <p id="heroSubtitle">Generate a fresh rewarded tracking link and start earning</p>
@@ -1177,7 +1416,7 @@
                 </div>
                 <button class="hero-create-btn" id="heroCreateBtn" onclick="openCreateLinkModal()">
                     <svg><use href="#icon-plus"/></svg>
-                    <span>Create New Link</span>
+                    <span id="heroBtnText">Create New Link</span>
                     <span class="btn-badge" id="heroLinkBadge">0 / 0</span>
                 </button>
                 <div class="hero-limit-info" id="heroLimitInfo">Loading limit info...</div>
@@ -1186,9 +1425,7 @@
             <!-- PLAN DAYS PROGRESS -->
             <div class="plan-days-card" id="planDaysCard" style="display:none;">
                 <div class="plan-days-header">
-                    <div class="plan-days-label">
-                        <svg><use href="#icon-calendar"/></svg> Plan Validity
-                    </div>
+                    <div class="plan-days-label"><svg><use href="#icon-calendar"/></svg> Plan Validity</div>
                     <div class="plan-days-value" id="planDaysValue">-- Days Left</div>
                 </div>
                 <div class="plan-days-bar">
@@ -1205,7 +1442,7 @@
                 <div class="link-info-box">
                     <div class="link-title-badge">
                         <svg><use href="#icon-link"/></svg>
-                        <span id="displayLinkName" style="color:#fff;">No link selected</span>
+                        <span id="displayLinkName">No link selected</span>
                     </div>
                     <div class="link-id-sub"><span>ID:</span><strong id="displayLinkId">--</strong></div>
                 </div>
@@ -1232,31 +1469,73 @@
                     <span class="badge-status none" id="badgeExpiry">No Link</span>
                 </div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill none" id="barExpiryProgress" style="width:0%;"></div></div>
-                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11.5px; color:var(--text-muted); gap:8px; flex-wrap:wrap;">
                     <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
                     <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">No link yet</strong></span>
                 </div>
             </div>
 
-            <!-- DATE FILTER -->
+            <!-- 🆕 DATE FILTER — DROPDOWN -->
             <div class="date-filter-box">
-                <div class="date-filter-top">
-                    <div class="date-pills">
-                        <span style="font-size:12.5px; font-weight:700; color:var(--text-secondary);">Filter:</span>
-                        <button class="pill-btn active" onclick="selectDateFilter('today', this)">Today</button>
-                        <button class="pill-btn" onclick="selectDateFilter('yesterday', this)">Yesterday</button>
-                        <button class="pill-btn" onclick="selectDateFilter('7days', this)">Last 7 Days</button>
-                        <button class="pill-btn" onclick="selectDateFilter('all', this)">All Time</button>
-                        <button class="pill-btn" onclick="toggleCustomDateUI(this)">Custom</button>
+                <div class="date-filter-header">
+                    <div class="date-filter-label">
+                        <svg><use href="#icon-filter"/></svg>
+                        <span>Filter Data:</span>
                     </div>
-                    <span id="activeDateLabel" style="font-size:12px; color:var(--accent-cyan); font-weight:700;">Showing: Today</span>
+                    <div class="date-filter-dropdown" id="dateFilterDropdown">
+                        <button class="date-filter-trigger" onclick="toggleDateDropdown(event)">
+                            <span class="trigger-label">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span id="dateFilterTriggerText">Today</span>
+                            </span>
+                            <svg class="chevron"><use href="#icon-chevron-down"/></svg>
+                        </button>
+                        <div class="date-filter-menu" id="dateFilterMenu">
+                            <div class="date-filter-option active" data-filter="today" onclick="selectDateFilter('today')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>Today</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                            <div class="date-filter-option" data-filter="yesterday" onclick="selectDateFilter('yesterday')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>Yesterday</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                            <div class="date-filter-option" data-filter="7days" onclick="selectDateFilter('7days')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>Last 7 Days</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                            <div class="date-filter-option" data-filter="30days" onclick="selectDateFilter('30days')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>Last 30 Days</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                            <div class="date-filter-option" data-filter="all" onclick="selectDateFilter('all')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>All Time</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                            <div class="date-filter-option" data-filter="custom" onclick="selectDateFilter('custom')">
+                                <svg><use href="#icon-calendar"/></svg>
+                                <span>Custom Range</span>
+                                <svg class="check"><use href="#icon-check"/></svg>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="custom-date-container" id="customDateSection">
-                    <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">From:</span>
-                    <input type="date" id="customDateInput" class="date-input" onchange="onSingleDatePicked(this.value)">
-                    <span style="font-size:12px; color:var(--text-muted);">To:</span>
-                    <input type="date" id="customEndDateInput" class="date-input">
-                    <button class="btn-action" onclick="applyCustomDateRange()" style="width:auto; padding:7px 14px; font-size:12px;">Apply</button>
+                <div class="custom-date-panel" id="customDatePanel">
+                    <div class="custom-date-row">
+                        <label>From:</label>
+                        <input type="date" id="customDateInput">
+                    </div>
+                    <div class="custom-date-row">
+                        <label>To:</label>
+                        <input type="date" id="customEndDateInput">
+                    </div>
+                    <button class="custom-date-apply-btn" onclick="applyCustomDateRange()">
+                        <svg><use href="#icon-check"/></svg> Apply Custom Range
+                    </button>
                 </div>
             </div>
 
@@ -1274,30 +1553,70 @@
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricFilteredVisits">0</div>
-                    <div class="metric-title" id="lblFilteredVisits">Selected Date Visits</div>
+                    <div class="metric-title" id="lblFilteredVisits">Today Visits</div>
                     <div class="metric-subtitle" id="subFilteredVisits">Unique IP/Device</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricFilteredClaims" style="color:var(--success);">0</div>
-                    <div class="metric-title" id="lblFilteredClaims">Selected Date Claims</div>
+                    <div class="metric-title" id="lblFilteredClaims">Today Claims</div>
                     <div class="metric-subtitle">Video Claims Only</div>
                 </div>
             </div>
 
             <!-- HISTORY -->
             <div class="pro-card">
-                <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Renewal History</h3>
+                <h3 style="font-size:14px; font-weight:800; margin-bottom:12px;">Recent Renewal History</h3>
                 <div style="width:100%; overflow-x:auto; border-radius:10px; border:1px solid var(--border-subtle);">
-                    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-                        <thead><tr style="background:#080c14;"><th style="padding:11px 14px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11.5px;">Date</th><th style="padding:11px 14px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11.5px;">Plan</th><th style="padding:11px 14px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11.5px;">Amount</th><th style="padding:11px 14px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11.5px;">Status</th></tr></thead>
-                        <tbody id="historyTableRows"><tr><td colspan="4" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr></tbody>
+                    <table style="width:100%; border-collapse:collapse; font-size:12.5px; min-width:360px;">
+                        <thead>
+                            <tr style="background:#080c14;">
+                                <th style="padding:10px 12px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11px;">Date</th>
+                                <th style="padding:10px 12px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11px;">Plan</th>
+                                <th style="padding:10px 12px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11px;">Amount</th>
+                                <th style="padding:10px 12px; color:var(--text-muted); font-weight:700; text-align:left; font-size:11px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableRows">
+                            <tr><td colspan="4" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- CREATE LINK MODAL -->
+    <!-- ============ PROFILE COMPLETION MODAL (Name + Phone) ============ -->
+    <div class="profile-overlay" id="profileOverlay">
+        <div class="profile-card">
+            <div class="profile-icon"><svg><use href="#icon-user"/></svg></div>
+            <div class="profile-title">Complete Your Profile</div>
+            <div class="profile-subtitle">Just one more step to activate your account</div>
+            
+            <div class="profile-email-badge">
+                <svg><use href="#icon-check-circle"/></svg>
+                <span id="profileEmailDisplay">user@example.com</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Your Full Name</label>
+                <input type="text" id="profileName" class="form-input" placeholder="Enter your full name" maxlength="50">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number (10 digits)</label>
+                <input type="tel" id="profilePhone" class="form-input" placeholder="Enter your 10-digit mobile number" maxlength="10" inputmode="numeric">
+            </div>
+
+            <button class="btn-action" id="btnCompleteProfile" onclick="submitProfile()" style="margin-top:8px;">
+                <svg><use href="#icon-check-circle"/></svg>
+                <span>Complete Registration</span>
+            </button>
+            <button class="btn-action btn-secondary" onclick="cancelProfile()" style="margin-top:8px;">
+                <span>Cancel</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============ CREATE LINK MODAL ============ -->
     <div class="app-modal" id="createLinkModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1383,7 +1702,7 @@
         </div>
     </div>
 
-    <!-- MY PLAN MODAL -->
+    <!-- ============ MY PLAN MODAL ============ -->
     <div class="app-modal" id="myPlanModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1394,14 +1713,14 @@
         </div>
     </div>
 
-    <!-- PLANS MODAL -->
+    <!-- ============ PLANS MODAL ============ -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card wide">
             <div class="modal-header-row">
                 <h3><svg><use href="#icon-dollar"/></svg> Choose Your Plan</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
-            <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:8px; text-align:center;">Swipe sideways to browse plans.</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px; text-align:center;">Swipe sideways to browse plans.</div>
             <div class="plans-carousel-wrap">
                 <div class="plans-carousel" id="plansCarousel">
                     <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">Loading plans...</p>
@@ -1411,7 +1730,7 @@
         </div>
     </div>
 
-    <!-- SHORTENER MODAL -->
+    <!-- ============ SHORTENER MODAL ============ -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
@@ -1421,23 +1740,23 @@
             <div class="form-group"><label class="form-label">Destination URL</label><input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com"></div>
             <div class="form-group"><label class="form-label">Title / Label</label><input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link"></div>
             <button class="btn-action" onclick="createUserShortLink()"><span>Create Short Link</span></button>
-            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle);">
-                <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);">
+                <h4 style="font-size:12.5px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading...</div>
             </div>
         </div>
     </div>
 
-    <!-- LOCK MODAL -->
+    <!-- ============ LOCK MODAL ============ -->
     <div class="app-modal" id="lockModal">
-        <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
-            <div style="width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 16px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
-                <svg style="width:32px;height:32px;"><use href="#icon-shield"/></svg>
+        <div class="modal-body-card" style="text-align:center; max-width:380px; padding:28px 20px;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 16px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+                <svg style="width:28px;height:28px;"><use href="#icon-shield"/></svg>
             </div>
-            <h3 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">Feature Locked</h3>
-            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">You need at least <strong>3 active links</strong> to unlock the URL Shortener feature.</p>
-            <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:14px; margin-bottom:20px; text-align:left;">
-                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">
+            <h3 style="font-size:17px; font-weight:800; color:#fff; margin-bottom:8px;">Feature Locked</h3>
+            <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:18px;">You need at least <strong>3 active links</strong> to unlock the URL Shortener feature.</p>
+            <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:12px; margin-bottom:18px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">
                     <span>Active Links</span><span id="lockCountDisplay">0 / 3</span>
                 </div>
                 <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:10px; overflow:hidden;">
@@ -1448,49 +1767,44 @@
         </div>
     </div>
 
-    <!-- GUIDE MODAL -->
+    <!-- ============ GUIDE MODAL ============ -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
                 <h3><svg><use href="#icon-book"/></svg> How to Use</h3>
                 <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
             </div>
-            <div class="guide-item"><h4>1. Create Your Own Links</h4><p>Click "Create New Link" from the menu or hero button. Fill in the details and generate your tracking link instantly.</p></div>
-            <div class="guide-item"><h4>2. Link Limit</h4><p>Your plan determines how many active links you can create. When limit is reached, upgrade your plan to create more.</p></div>
-            <div class="guide-item"><h4>3. UID Checking</h4><p>Enable UID checking to require visitors to enter their player UID before watching the reward video.</p></div>
-            <div class="guide-item"><h4>4. Popup Settings</h4><p>Customize the entrance popup title, subtitle, button text, and image that visitors see before the video.</p></div>
-            <div class="guide-item"><h4>5. Traffic Analytics (48h Unique)</h4><p>Visitors and video claims are counted on strict 48-hour unique basis. Duplicate clicks within 48 hours are excluded.</p></div>
-            <div class="guide-item"><h4>6. URL Shortener</h4><p>Requires 3+ active links. Create short, clean links for your campaigns.</p></div>
-            <div class="guide-item"><h4>7. Plan Validity</h4><p>Your plan duration decreases daily. Track remaining days from the home screen progress bar.</p></div>
-            <div class="guide-item"><h4>8. Renewal Plans</h4><p>Open the menu and click "Renewal Plans" to view, compare, and purchase any plan. Your current plan cannot be re-purchased — only higher tiers are available.</p></div>
-            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;"><span>Got it</span></button>
+            <div class="guide-item"><h4>1. Create Your Links</h4><p>Your plan determines how many links you can create. Fill details and generate tracking link instantly.</p></div>
+            <div class="guide-item"><h4>2. Plan Validity</h4><p>Links are active as long as your plan is active. When plan expires, links stop working.</p></div>
+            <div class="guide-item"><h4>3. UID Checking</h4><p>Enable UID to require visitors to enter player UID before watching the video.</p></div>
+            <div class="guide-item"><h4>4. Popup Settings</h4><p>Customize entrance popup title, subtitle, button text, and image.</p></div>
+            <div class="guide-item"><h4>5. Analytics (48h Unique)</h4><p>Visits and claims are counted on strict 48-hour unique basis.</p></div>
+            <div class="guide-item"><h4>6. URL Shortener</h4><p>Requires 3+ active links. Create short, clean links for campaigns.</p></div>
+            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:8px;"><span>Got it</span></button>
         </div>
     </div>
 
-    <!-- TERMS MODAL -->
+    <!-- ============ TERMS MODAL ============ -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
                 <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
                 <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
             </div>
-            <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register with legitimate credentials. Each link is private and exclusively managed by its owner.</p></div>
-            <div class="guide-item"><h4>2. Link Ownership</h4><p>All links you create are permanently associated with your account and cannot be transferred.</p></div>
-            <div class="guide-item"><h4>3. Plan Expiry</h4><p>Your plan duration decreases daily. When expired, all your links become inactive immediately. Renew to continue.</p></div>
-            <div class="guide-item"><h4>4. Content Policy</h4><p>Do not create links for illegal, harmful, or misleading content. Violation leads to immediate account termination.</p></div>
-            <div class="guide-item"><h4>5. Data Privacy</h4><p>Your visitor analytics are computed using IP + device fingerprint. We don't store personal visitor data beyond 48 hours.</p></div>
-            <div class="guide-item"><h4>6. Support</h4><p>For any issues, contact support via WhatsApp with your account details.</p></div>
-            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;"><span>I Understand & Agree</span></button>
+            <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register via Google. Each link is private and exclusively managed by its owner.</p></div>
+            <div class="guide-item"><h4>2. Link Ownership</h4><p>All links you create are permanently associated with your account.</p></div>
+            <div class="guide-item"><h4>3. Plan Expiry</h4><p>When plan expires, all your links become inactive immediately. Renew to continue.</p></div>
+            <div class="guide-item"><h4>4. Content Policy</h4><p>Do not create links for illegal or misleading content. Violation leads to account termination.</p></div>
+            <div class="guide-item"><h4>5. Data Privacy</h4><p>Your visitor analytics are computed using IP + device fingerprint.</p></div>
+            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:8px;"><span>I Understand</span></button>
         </div>
     </div>
 
-    <!-- ACTIVATE FREE PLAN POPUP -->
+    <!-- ============ ACTIVATE FREE PLAN POPUP ============ -->
     <div class="activate-popup-overlay" id="activatePopup">
         <div class="activate-popup-card">
             <button class="activate-popup-close" onclick="closeActivatePopup()" aria-label="Close">✕</button>
-            <div class="activate-popup-icon">
-                <svg><use href="#icon-gift"/></svg>
-            </div>
+            <div class="activate-popup-icon"><svg><use href="#icon-gift"/></svg></div>
             <div class="activate-popup-title">Activate Your Free Trial</div>
             <div class="activate-popup-subtitle">Get started with our <strong>3-day FREE trial</strong> — no payment required.</div>
             <div class="activate-features-grid">
@@ -1524,7 +1838,7 @@
                 </div>
             </div>
             <div class="activate-popup-notice">
-                <svg style="width:18px;height:18px;flex-shrink:0;"><use href="#icon-alert-circle"/></svg>
+                <svg style="width:16px;height:16px;flex-shrink:0;"><use href="#icon-alert-circle"/></svg>
                 <span><strong>One-time offer:</strong> Free trial can only be activated <strong>once per account</strong>.</span>
             </div>
             <div class="activate-popup-actions">
@@ -1536,16 +1850,24 @@
         </div>
     </div>
 
-    <!-- CUSTOM DIALOG -->
+    <!-- ============ 🆕 CUSTOM DIALOG (Beautiful Popup) ============ -->
     <div class="custom-dialog-overlay" id="customDialog">
-        <div class="custom-dialog-card">
+        <div class="custom-dialog-card info" id="dialogCard">
             <div class="custom-dialog-icon-wrap info" id="dialogIconWrap">
                 <svg id="dialogIconSvg"><use href="#icon-info"/></svg>
             </div>
             <div class="custom-dialog-title" id="dialogTitle">Notification</div>
             <div class="custom-dialog-message" id="dialogMessage">Alert message goes here.</div>
-            <button class="btn-action" onclick="closeCustomDialog()">Got it</button>
+            <div class="custom-dialog-actions" id="dialogActions">
+                <button class="custom-dialog-btn primary" onclick="closeCustomDialog()">Got it</button>
+            </div>
         </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-notification" id="toastNotification">
+        <svg id="toastIcon"><use href="#icon-info"/></svg>
+        <span id="toastText">Message</span>
     </div>
 
     <script>
@@ -1558,88 +1880,88 @@
         let showUpiToUser = true;
         let loadedPlans = null;
         let currentPlanUsage = null;
-
-        const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
-
+        let pendingProfileUser = null; // For Google signup flow
+        
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
 
-        const TURNSTILE_SITE_KEY = '0x4AAAAAAFWuPkWZgks7bCLe';
-        let signinWidgetId = null;
-        let signupWidgetId = null;
-        let currentTurnstileToken = '';
+        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
-        window.onTurnstileLoad = function() { renderSignInTurnstile(); };
-
-        function renderSignInTurnstile() {
+        // ============ TOAST NOTIFICATION ============
+        function showToast(message, type = 'info', duration = 3000) {
             try {
-                const container = document.getElementById('signin-turnstile');
-                if (!container || !window.turnstile) return;
-                if (signinWidgetId !== null) { try { window.turnstile.reset(signinWidgetId); } catch(e) {} return; }
-                signinWidgetId = window.turnstile.render('#signin-turnstile', {
-                    sitekey: TURNSTILE_SITE_KEY, theme: 'dark', size: 'normal',
-                    callback: function(token) { currentTurnstileToken = token; }
-                });
+                const toast = document.getElementById('toastNotification');
+                const icon = document.getElementById('toastIcon');
+                const text = document.getElementById('toastText');
+                if (!toast) return;
+                
+                const iconMap = { success: 'icon-check-circle', error: 'icon-x-circle', warning: 'icon-alert-circle', info: 'icon-info' };
+                icon.innerHTML = '<use href="#' + (iconMap[type] || 'icon-info') + '"/>';
+                text.textContent = message;
+                toast.className = 'toast-notification ' + type;
+                setTimeout(() => toast.classList.add('show'), 50);
+                setTimeout(() => toast.classList.remove('show'), duration);
             } catch(e) {}
         }
 
-        function renderSignUpTurnstile() {
-            try {
-                const container = document.getElementById('signup-turnstile');
-                if (!container || !window.turnstile) return;
-                if (signupWidgetId !== null) { try { window.turnstile.reset(signupWidgetId); } catch(e) {} return; }
-                signupWidgetId = window.turnstile.render('#signup-turnstile', {
-                    sitekey: TURNSTILE_SITE_KEY, theme: 'dark', size: 'normal',
-                    callback: function(token) { currentTurnstileToken = token; }
-                });
-            } catch(e) {}
-        }
-
-        function resetTurnstile() {
-            try {
-                currentTurnstileToken = '';
-                if (signinWidgetId !== null && window.turnstile) try { window.turnstile.reset(signinWidgetId); } catch(e) {}
-                if (signupWidgetId !== null && window.turnstile) try { window.turnstile.reset(signupWidgetId); } catch(e) {}
-            } catch(e) {}
-        }
-
-        function getTurnstileToken() { return currentTurnstileToken || ''; }
-
-        function notify(message, title = 'Notification', icon = 'info', type = null) {
+        // ============ CUSTOM DIALOG (Beautiful Popup) ============
+        function notify(message, title = 'Notification', icon = 'info', type = null, onConfirm = null, confirmText = 'Got it', showCancel = false) {
             const typeMap = {
                 'success': { cls: 'success', svg: 'icon-check-circle' },
                 'error': { cls: 'error', svg: 'icon-x-circle' },
                 'warning': { cls: 'warning', svg: 'icon-alert-circle' },
-                'info': { cls: 'info', svg: 'icon-info' }
+                'info': { cls: 'info', svg: 'icon-info' },
+                'confirm': { cls: 'confirm', svg: 'icon-alert-circle' }
             };
             let detectedType = type || icon;
             if (!typeMap[detectedType]) detectedType = 'info';
+            
+            const card = document.getElementById('dialogCard');
+            card.className = 'custom-dialog-card ' + typeMap[detectedType].cls;
+            
             const wrap = document.getElementById('dialogIconWrap');
             wrap.className = 'custom-dialog-icon-wrap ' + typeMap[detectedType].cls;
+            
             const iconSvg = document.getElementById('dialogIconSvg');
             iconSvg.innerHTML = '<use href="#' + typeMap[detectedType].svg + '"/>';
+            
             document.getElementById('dialogTitle').textContent = title;
-            document.getElementById('dialogMessage').textContent = message;
+            document.getElementById('dialogMessage').innerHTML = message;
+            
+            // Build action buttons
+            const actions = document.getElementById('dialogActions');
+            if (detectedType === 'confirm') {
+                actions.innerHTML = `
+                    <button class="custom-dialog-btn secondary" onclick="closeCustomDialog()">Cancel</button>
+                    <button class="custom-dialog-btn primary danger" id="dialogConfirmBtn">${confirmText}</button>
+                `;
+                setTimeout(() => {
+                    const btn = document.getElementById('dialogConfirmBtn');
+                    if (btn && onConfirm) btn.onclick = () => { closeCustomDialog(); onConfirm(); };
+                }, 10);
+            } else {
+                actions.innerHTML = `<button class="custom-dialog-btn primary" onclick="closeCustomDialog()">${confirmText}</button>`;
+            }
+            
             document.getElementById('customDialog').classList.add('active');
         }
-        function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
+        
+        function closeCustomDialog() {
+            document.getElementById('customDialog').classList.remove('active');
+        }
 
         function showAccountDeletedScreen() {
             localStorage.removeItem('activeUserSession');
             localStorage.removeItem('userActiveLinkId');
             document.body.innerHTML = `
                 <div style="position:fixed; inset:0; background:#080c16; display:flex; align-items:center; justify-content:center; padding:20px; z-index:99999; font-family:'Plus Jakarta Sans',sans-serif;">
-                    <div style="background:rgba(17,23,38,0.95); border:1px solid rgba(239,68,68,0.35); border-radius:24px; padding:36px 28px; max-width:400px; width:100%; text-align:center;">
-                        <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(220,38,38,0.15)); border:2px solid rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; color:#f87171;">
-                            <svg style="width:40px;height:40px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="15" y1="9" x2="9" y2="15"/>
-                                <line x1="9" y1="9" x2="15" y2="15"/>
-                            </svg>
+                    <div style="background:rgba(17,23,38,0.95); border:1px solid rgba(239,68,68,0.35); border-radius:24px; padding:32px 24px; max-width:400px; width:100%; text-align:center;">
+                        <div style="width:70px; height:70px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(220,38,38,0.15)); border:2px solid rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; color:#f87171;">
+                            <svg style="width:34px;height:34px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         </div>
-                        <div style="font-size:20px; font-weight:800; color:#ef4444; margin-bottom:10px;">Account Removed</div>
-                        <div style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:20px;">Your account has been removed by the administrator. All your links and data have been permanently deleted.</div>
+                        <div style="font-size:19px; font-weight:800; color:#ef4444; margin-bottom:10px;">Account Removed</div>
+                        <div style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:20px;">Your account has been removed by the administrator.</div>
                         <button onclick="localStorage.clear(); window.location.reload();" style="padding:12px 28px; border:none; border-radius:10px; background:linear-gradient(135deg, #4f46e5, #6366f1); color:#fff; font-size:14px; font-weight:700; cursor:pointer; width:100%;">Return to Login</button>
                     </div>
                 </div>
@@ -1649,9 +1971,18 @@
         function initApp() {
             const cached = localStorage.getItem('activeUserSession');
             if (cached) {
-                try { userProfile = JSON.parse(cached); showDashboardView(); }
-                catch(e) { localStorage.removeItem('activeUserSession'); hideHamburger(); }
-            } else hideHamburger();
+                try {
+                    userProfile = JSON.parse(cached);
+                    if (userProfile && userProfile.name && userProfile.id) {
+                        showDashboardView();
+                        return;
+                    }
+                } catch(e) { localStorage.removeItem('activeUserSession'); }
+            }
+            hideHamburger();
+            // Ensure auth section visible
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('dashboardSection').style.display = 'none';
         }
 
         function hideHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'none'; toggleSidebar(false); }
@@ -1666,7 +1997,7 @@
         async function refreshPricingData() {
             try {
                 const res = await fetch('/api/pricing?nocache=' + Date.now(), {
-                    method: 'GET', headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                    method: 'GET', headers: { 'Cache-Control': 'no-cache' }
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -1685,36 +2016,272 @@
             return false;
         }
 
+        // ============ 🆕 GOOGLE AUTH HANDLER ============
+        async function handleGoogleAuth(response) {
+            if (!response || !response.credential) {
+                return showToast('Google authentication failed. Please try again.', 'error');
+            }
+            
+            const credential = response.credential;
+            let action = 'signin';
+            
+            // Detect action based on which button was used
+            // Default is signin — but if user clicks Sign Up, we need to know
+            // Since Google doesn't distinguish, we'll try signin first, then fallback to signup
+            try {
+                // Step 1: Try sign-in
+                let res = await fetch('/api/user/google-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential, action: 'signin' })
+                });
+                let data = await res.json().catch(() => ({}));
+                
+                // If user not found → try signup
+                if (res.status === 404 && data.needsSignup) {
+                    res = await fetch('/api/user/google-auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ credential, action: 'signup' })
+                    });
+                    data = await res.json().catch(() => ({}));
+                }
+                
+                if (!res.ok) {
+                    return showToast(data.error || 'Authentication failed', 'error');
+                }
+                
+                // Needs profile (name + phone)
+                if (data.needsProfile) {
+                    pendingProfileUser = data.user;
+                    openProfileModal(data.user);
+                    return;
+                }
+                
+                // Successful login
+                if (data.success && data.user && data.user.name && data.user.phone) {
+                    userProfile = data.user;
+                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                    showDashboardView();
+                    showToast(`Welcome back, ${userProfile.name}!`, 'success');
+                }
+            } catch(err) {
+                console.error('Google auth error:', err);
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // ============ 🆕 PROFILE MODAL ============
+        function openProfileModal(user) {
+            document.getElementById('profileEmailDisplay').textContent = user.email;
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profilePhone').value = user.phone || '';
+            document.getElementById('profileOverlay').classList.add('active');
+        }
+
+        function cancelProfile() {
+            pendingProfileUser = null;
+            document.getElementById('profileOverlay').classList.remove('active');
+        }
+
+        async function submitProfile() {
+            if (!pendingProfileUser) return;
+            
+            const name = document.getElementById('profileName').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            
+            if (!name || name.length < 2) {
+                return showToast('Please enter your full name', 'warning');
+            }
+            if (!/^[6-9]\d{9}$/.test(phone)) {
+                return showToast('Please enter a valid 10-digit mobile number', 'warning');
+            }
+            
+            const btn = document.getElementById('btnCompleteProfile');
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>Completing...</span>';
+            
+            try {
+                const res = await fetch('/api/user/complete-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: pendingProfileUser.id,
+                        googleId: pendingProfileUser.googleId,
+                        name: name,
+                        phone: phone
+                    })
+                });
+                
+                const data = await res.json().catch(() => ({}));
+                
+                if (res.ok && data.success) {
+                    document.getElementById('profileOverlay').classList.remove('active');
+                    
+                    // Save session — user needs admin approval
+                    userProfile = {
+                        id: data.user.id,
+                        name: data.user.name,
+                        email: data.user.email,
+                        phone: data.user.phone
+                    };
+                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                    pendingProfileUser = null;
+                    
+                    notify(
+                        'Your registration is complete!<br><br>Please wait for <strong>admin approval</strong>. You will be notified on WhatsApp once approved.',
+                        'Registration Complete',
+                        'success'
+                    );
+                    
+                    // Show dashboard but with pending state
+                    showDashboardView();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    showToast(data.error || 'Failed to complete profile', 'error');
+                }
+            } catch(err) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+
+        function showDashboardView() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('navUserBadge').style.display = 'flex';
+            showHamburger();
+            document.getElementById('navUserName').textContent = userProfile.name || 'User';
+            document.getElementById('labelUserName').textContent = userProfile.name || 'User';
+            document.getElementById('sbUserName').textContent = userProfile.name || 'User';
+            document.getElementById('sbUserAvatar').textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
+            fetchUserLinkData();
+        }
+
+        // ============ 🆕 DATE FILTER — DROPDOWN ============
+        function toggleDateDropdown(event) {
+            if (event) event.stopPropagation();
+            const dd = document.getElementById('dateFilterDropdown');
+            dd.classList.toggle('open');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('dateFilterDropdown');
+            if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+        });
+
+        function selectDateFilter(filterType) {
+            document.querySelectorAll('.date-filter-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.filter === filterType);
+            });
+            
+            const triggerText = document.getElementById('dateFilterTriggerText');
+            const filterLabels = {
+                'today': 'Today',
+                'yesterday': 'Yesterday',
+                '7days': 'Last 7 Days',
+                '30days': 'Last 30 Days',
+                'all': 'All Time',
+                'custom': 'Custom Range'
+            };
+            triggerText.textContent = filterLabels[filterType] || 'Select';
+            
+            document.getElementById('dateFilterDropdown').classList.remove('open');
+            
+            if (filterType === 'custom') {
+                document.getElementById('customDatePanel').classList.add('show');
+                const today = new Date().toISOString().split('T')[0];
+                const input1 = document.getElementById('customDateInput');
+                const input2 = document.getElementById('customEndDateInput');
+                if (!input1.value) input1.value = today;
+                if (!input2.value) input2.value = today;
+                return;
+            }
+            
+            document.getElementById('customDatePanel').classList.remove('show');
+            
+            currentDateFilter = filterType;
+            currentStartDate = '';
+            currentEndDate = '';
+            fetchUserLinkData();
+        }
+
+        function applyCustomDateRange() {
+            const s = document.getElementById('customDateInput').value;
+            const e = document.getElementById('customEndDateInput').value || s;
+            
+            if (!s) return showToast('Please select a start date', 'warning');
+            if (s > e) return showToast('Start date cannot be greater than end date', 'warning');
+            
+            currentDateFilter = 'custom';
+            currentStartDate = s;
+            currentEndDate = e;
+            
+            const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('dateFilterTriggerText').textContent = `${sF} - ${eF}`;
+            
+            document.getElementById('customDatePanel').classList.remove('show');
+            document.getElementById('dateFilterDropdown').classList.remove('open');
+            fetchUserLinkData();
+        }
+
         // ============ CREATE LINK MODAL ============
         async function openCreateLinkModal() {
             toggleSidebar(false);
 
             if (!currentPlanUsage) {
-                notify('Loading plan information. Please wait a moment and try again.', 'Please Wait', 'info');
+                showToast('Loading plan info. Please wait...', 'info');
                 return;
             }
             
             const planKey = currentPlanUsage.planKey;
             const planIsExpired = currentPlanUsage.planIsExpired;
             const lifetimeUnlimited = currentPlanUsage.lifetimeUnlimited;
+            const canCreate = currentPlanUsage.canCreateMoreLinks;
             
-            if (planKey === 'no-plan' || planKey === 'none') {
-                notify('You need an active plan to create links. Please activate or renew your plan.', 'No Active Plan', 'warning');
-                setTimeout(() => openPlansModal(), 800);
+            // 🔥 MAIN FIX: Plan validation
+            if (planKey === 'no-plan' || planKey === 'none' || !planKey) {
+                notify(
+                    'You need an active plan to create links.<br><br>Please activate the <strong>Free Trial</strong> or purchase a plan to get started.',
+                    'No Active Plan',
+                    'warning',
+                    null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'View Plans'
+                );
                 return;
             }
             
             if (planIsExpired && !lifetimeUnlimited) {
-                notify('Your plan has expired. Please renew to create new links.', 'Plan Expired', 'warning');
-                setTimeout(() => openPlansModal(), 800);
+                notify(
+                    'Your plan has expired.<br><br>Please renew your plan to continue creating links.',
+                    'Plan Expired',
+                    'warning',
+                    null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'Renew Now'
+                );
                 return;
             }
 
             if (currentPlanUsage.linkLimitReached && !lifetimeUnlimited) {
-                notify(`You have reached your plan's link limit (${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}). Please upgrade to create more links.`, 'Link Limit Reached', 'error');
+                notify(
+                    `You have reached your plan's link limit (<strong>${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}</strong>).<br><br>Please upgrade your plan to create more links.`,
+                    'Link Limit Reached',
+                    'error',
+                    null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'Upgrade Plan'
+                );
                 return;
             }
 
+            // Reset form
             document.getElementById('clClientName').value = userProfile.name || '';
             document.getElementById('clLinkName').value = '';
             document.getElementById('clVideo').value = '';
@@ -1745,8 +2312,8 @@
             const linkName = document.getElementById('clLinkName').value.trim();
             const video = document.getElementById('clVideo').value.trim();
 
-            if (!linkName) return notify('Please enter a link name.', 'Missing Field', 'warning');
-            if (!video) return notify('Please enter a video URL.', 'Missing Field', 'warning');
+            if (!linkName) return showToast('Please enter a link name', 'warning');
+            if (!video) return showToast('Please enter a video URL', 'warning');
 
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
@@ -1777,20 +2344,27 @@
 
                 if (res.ok && data.success) {
                     closeCreateLinkModal();
-                    notify(`Link "${data.link.linkName}" created successfully!`, 'Link Created', 'success');
+                    notify(`Link "<strong>${data.link.linkName}</strong>" created successfully!`, 'Link Created', 'success');
                     setTimeout(() => fetchUserLinkData(data.link.id), 500);
                 } else {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                     const errMsg = data.error || 'Failed to create link.';
-                    if (data.reason === 'LINK_LIMIT_REACHED') notify(errMsg, 'Link Limit Reached', 'error');
-                    else if (data.reason === 'PLAN_EXPIRED' || data.reason === 'NO_ACTIVE_PLAN') notify(errMsg, 'Plan Issue', 'warning');
-                    else notify(errMsg, 'Create Failed', 'error');
+                    
+                    if (data.reason === 'LINK_LIMIT_REACHED') {
+                        notify(errMsg, 'Link Limit Reached', 'error');
+                    } else if (data.reason === 'PLAN_EXPIRED') {
+                        notify(errMsg, 'Plan Expired', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'Renew Now');
+                    } else if (data.reason === 'NO_ACTIVE_PLAN' || data.reason === 'NO_PLAN') {
+                        notify(errMsg, 'No Active Plan', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'View Plans');
+                    } else {
+                        notify(errMsg, 'Create Failed', 'error');
+                    }
                 }
             } catch (err) {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
-                notify('Server error: ' + err.message, 'Connection Error', 'warning');
+                showToast('Server error: ' + err.message, 'error');
             }
         }
 
@@ -1816,7 +2390,7 @@
         function closeShortenerModal() { document.getElementById('shortenerModal').classList.remove('active'); }
 
         function openLockModal(count) {
-            const needed = Math.max(0, 3 - count); const pct = Math.min(100, Math.round((count / 3) * 100));
+            const pct = Math.min(100, Math.round((count / 3) * 100));
             document.getElementById('lockCountDisplay').textContent = `${count} / 3`;
             document.getElementById('lockBarFill').style.width = `${pct}%`;
             document.getElementById('lockModal').classList.add('active');
@@ -1830,8 +2404,8 @@
 
         async function openActivateFreePlan() {
             await refreshPricingData();
-            if (!loadedPlans || !loadedPlans['free-trial']) return notify('Free trial not available.', 'Not Available', 'warning');
-            if (currentPlanUsage?.freeTrialUsed === true) return notify('You have already used your Free Trial.', 'Already Used', 'error');
+            if (!loadedPlans || !loadedPlans['free-trial']) return showToast('Free trial not available', 'warning');
+            if (currentPlanUsage?.freeTrialUsed === true) return showToast('You have already used your Free Trial', 'error');
             const ftPlan = loadedPlans['free-trial'];
             document.getElementById('apLinksLimit').textContent = (ftPlan.linkLimit === 'unlimited' || ftPlan.linkLimit === -1) ? 'Unlimited' : `${ftPlan.linkLimit} Link${ftPlan.linkLimit > 1 ? 's' : ''}`;
             document.getElementById('apVisitorsLimit').textContent = (ftPlan.visitorLimit === 'unlimited' || ftPlan.visitorLimit === -1) ? 'Unlimited' : `${(ftPlan.visitorLimit || 0).toLocaleString()} Visitors`;
@@ -1842,7 +2416,7 @@
 
         async function confirmActivateFreePlan() {
             const btn = document.getElementById('btnActivateNow');
-            if (!userProfile || !userProfile.name) return notify('Session expired.', 'Error', 'error');
+            if (!userProfile || !userProfile.name) return showToast('Session expired', 'error');
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span>Activating...</span>';
@@ -1854,142 +2428,19 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) {
                     closeActivatePopup();
-                    notify('Free Trial activated successfully!', 'Activated', 'success');
+                    notify('Free Trial activated successfully! You can now create links.', 'Activated', 'success');
                     setTimeout(() => fetchUserLinkData(), 500);
                 } else {
                     btn.disabled = false; btn.innerHTML = originalHtml;
-                    notify(data.error || 'Failed to activate.', 'Activation Failed', 'error');
+                    showToast(data.error || 'Failed to activate', 'error');
                 }
             } catch (err) {
                 btn.disabled = false; btn.innerHTML = originalHtml;
-                notify('Server error: ' + err.message, 'Error', 'warning');
+                showToast('Server error', 'error');
             }
         }
 
-        function switchAuth(mode) {
-            const isLogin = mode === 'login';
-            document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
-            document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
-            currentTurnstileToken = '';
-            if (isLogin) setTimeout(() => renderSignInTurnstile(), 100);
-            else setTimeout(() => renderSignUpTurnstile(), 100);
-        }
-
-        function validateEmailFormat(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) return { valid: false, error: 'Please enter a valid email format' };
-            const typoMap = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'yahooo.com': 'yahoo.com', 'hotmial.com': 'hotmail.com', 'outlok.com': 'outlook.com' };
-            const domain = email.split('@')[1].toLowerCase();
-            if (typoMap[domain]) return { valid: false, error: `Did you mean ${email.replace(domain, typoMap[domain])}?` };
-            return { valid: true };
-        }
-
-        function isValidMobile(mobile) { return /^[6-9]\d{9}$/.test(mobile.replace(/[\s\-\(\)\+]/g, '')); }
-
-        async function submitSignIn(e) {
-            e.preventDefault();
-            const email = document.getElementById('inEmail').value.trim();
-            const phone = document.getElementById('inPhone').value.trim();
-            const btn = document.getElementById('btnSubmitLogin');
-            const turnstileToken = getTurnstileToken();
-            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', 'warning');
-            btn.disabled = true; btn.innerHTML = '<span>Verifying...</span>';
-            try {
-                const res = await fetch('/api/user/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone, turnstileToken }) });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); }
-                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', 'error'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', 'warning'); }
-            finally { btn.disabled = false; btn.innerHTML = '<span>Sign In</span>'; }
-        }
-
-        async function submitSignUp(e) {
-            e.preventDefault();
-            const name = document.getElementById('upName').value.trim();
-            const email = document.getElementById('upEmail').value.trim();
-            const phone = document.getElementById('upPhone').value.trim();
-            const termsAgreed = document.getElementById('upTermsCheck').checked;
-            const turnstileToken = getTurnstileToken();
-            if (!termsAgreed) return notify('Please accept the Terms.', 'Terms Required', 'warning');
-            const emailCheck = validateEmailFormat(email);
-            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', 'warning');
-            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', 'warning');
-            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', 'warning');
-            const btn = document.getElementById('btnSubmitRegister');
-            btn.disabled = true; btn.innerHTML = '<span>Submitting...</span>';
-            try {
-                const res = await fetch('/api/user/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone, turnstileToken }) });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', 'success'); resetTurnstile(); switchAuth('login'); }
-                else { notify(data.error || 'Registration failed.', 'Error', 'error'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', 'warning'); }
-            finally { btn.disabled = false; btn.innerHTML = '<span>Create Account</span>'; }
-        }
-
-        async function handleGoogleLogin(response) {
-            if (!response || !response.credential) return notify('Google login failed.', 'Error', 'error');
-            try {
-                const res = await fetch('/api/user/google-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: response.credential }) });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', 'success'); }
-                else notify(data.error || 'Google login failed', 'Error', 'error');
-            } catch (err) { notify('Unable to connect', 'Connection Error', 'warning'); }
-        }
-
-        function showDashboardView() {
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('dashboardSection').style.display = 'block';
-            document.getElementById('navUserBadge').style.display = 'flex';
-            showHamburger();
-            document.getElementById('navUserName').textContent = userProfile.name;
-            document.getElementById('labelUserName').textContent = userProfile.name;
-            document.getElementById('sbUserName').textContent = userProfile.name;
-            document.getElementById('sbUserAvatar').textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
-            fetchUserLinkData();
-        }
-
-        function selectDateFilter(filterType, element) {
-            document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
-            if (element) element.classList.add('active');
-            document.getElementById('customDateSection').style.display = 'none';
-            currentDateFilter = filterType; currentStartDate = ''; currentEndDate = '';
-            const label = document.getElementById('activeDateLabel');
-            if (filterType === 'today') label.textContent = "Showing: Today";
-            else if (filterType === 'yesterday') label.textContent = "Showing: Yesterday";
-            else if (filterType === '7days') label.textContent = "Showing: Last 7 Days";
-            else if (filterType === 'all') label.textContent = "Showing: All Time";
-            fetchUserLinkData();
-        }
-
-        function toggleCustomDateUI(element) {
-            document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
-            if (element) element.classList.add('active');
-            const box = document.getElementById('customDateSection');
-            const isOpen = box.style.display === 'flex';
-            box.style.display = isOpen ? 'none' : 'flex';
-            if (!isOpen) { const t = new Date().toISOString().split('T')[0]; if (!document.getElementById('customDateInput').value) document.getElementById('customDateInput').value = t; }
-        }
-
-        function onSingleDatePicked(dateVal) {
-            if (!dateVal) return;
-            currentDateFilter = 'custom'; currentStartDate = dateVal;
-            currentEndDate = document.getElementById('customEndDateInput').value || dateVal;
-            const f = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('activeDateLabel').textContent = `Showing: ${f}`;
-            fetchUserLinkData();
-        }
-
-        function applyCustomDateRange() {
-            const s = document.getElementById('customDateInput').value;
-            const e = document.getElementById('customEndDateInput').value || s;
-            if (!s) return notify('Please select a date.', 'Date Required', 'warning');
-            currentDateFilter = 'custom'; currentStartDate = s; currentEndDate = e;
-            const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('activeDateLabel').textContent = `Showing: ${sF} - ${eF}`;
-            fetchUserLinkData();
-        }
-
+        // ============ FETCH DATA ============
         async function fetchUserLinkData(explicitLinkId) {
             document.getElementById('displayLinkId').textContent = 'Fetching...';
             document.getElementById('displayLinkName').textContent = 'Loading...';
@@ -2050,25 +2501,37 @@
             const btn = document.getElementById('heroCreateBtn');
             const heroTitle = document.getElementById('heroTitle');
             const heroSubtitle = document.getElementById('heroSubtitle');
+            const btnText = document.getElementById('heroBtnText');
             
             const noPlan = !pu.planKey || pu.planKey === 'no-plan' || pu.planKey === 'none';
             const expired = pu.planIsExpired === true;
             const limitHit = pu.linkLimitReached && !pu.lifetimeUnlimited;
+            const canCreate = pu.canCreateMoreLinks;
             
-            if (noPlan || expired) {
-                if (btn) btn.disabled = true;
-                if (heroTitle) heroTitle.textContent = 'Plan Required';
+            // 🔥 SHOW/HIDE Create button based on plan state
+            if (noPlan) {
+                if (btn) { btn.disabled = false; } // Still clickable to show "activate plan" popup
+                if (heroTitle) heroTitle.textContent = 'No Active Plan';
                 if (heroSubtitle) heroSubtitle.textContent = 'Activate a plan to start creating links';
-                if (info) info.innerHTML = '<strong>No active plan</strong> — Please activate or renew your plan.';
+                if (btnText) btnText.textContent = 'Activate Plan Now';
+                if (info) info.innerHTML = '<strong>No active plan.</strong> Activate Free Trial or purchase a plan to create links.';
+            } else if (expired && !pu.lifetimeUnlimited) {
+                if (btn) { btn.disabled = false; }
+                if (heroTitle) heroTitle.textContent = 'Plan Expired';
+                if (heroSubtitle) heroSubtitle.textContent = 'Renew your plan to continue creating links';
+                if (btnText) btnText.textContent = 'Renew Plan Now';
+                if (info) info.innerHTML = '<strong>Your plan expired.</strong> Please renew to create new links.';
             } else if (limitHit) {
-                if (btn) btn.disabled = true;
+                if (btn) { btn.disabled = false; }
                 if (heroTitle) heroTitle.textContent = 'Link Limit Reached';
                 if (heroSubtitle) heroSubtitle.textContent = 'Upgrade your plan to create more links';
+                if (btnText) btnText.textContent = 'Upgrade Plan';
                 if (info) info.innerHTML = `You've used all <strong>${linksLimit}</strong> link${linksLimit > 1 ? 's' : ''}. Upgrade to create more.`;
             } else {
-                if (btn) btn.disabled = false;
+                if (btn) { btn.disabled = false; }
                 if (heroTitle) heroTitle.textContent = 'Create New Link';
                 if (heroSubtitle) heroSubtitle.textContent = 'Generate a fresh rewarded tracking link and start earning';
+                if (btnText) btnText.textContent = 'Create New Link';
                 const remaining = pu.lifetimeUnlimited ? 'Unlimited' : (pu.linksRemaining || 0);
                 if (info) info.innerHTML = `You can create <strong>${remaining}</strong> more link${remaining === 1 ? '' : 's'} in your current plan.`;
             }
@@ -2127,9 +2590,9 @@
             
             if (hasNoPlan) {
                 el.innerHTML = `
-                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:24px; margin-bottom:14px; text-align:center;">
-                        <div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
-                        <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:18px;">Activate a plan to start creating links.</div>
+                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:22px; margin-bottom:14px; text-align:center;">
+                        <div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
+                        <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">Activate a plan to start creating links.</div>
                         <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>Activate Plan</span></button>
                     </div>
                 `;
@@ -2143,7 +2606,7 @@
             let featuresHtml = '';
             if (Array.isArray(pu.features) && pu.features.length) {
                 featuresHtml = '<ul style="list-style:none; padding:0; margin:12px 0 0;">' +
-                    pu.features.map(f => `<li style="padding:6px 0; color:#cbd5e1; font-size:12.5px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">•</span> <span>${f}</span></li>`).join('') +
+                    pu.features.map(f => `<li style="padding:5px 0; color:#cbd5e1; font-size:12px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">•</span> <span>${f}</span></li>`).join('') +
                     '</ul>';
             }
 
@@ -2156,29 +2619,29 @@
             el.innerHTML = `
                 <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; margin-bottom:14px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
-                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${pu.planName || 'Free Trial'}</div>
-                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${daysLeftText}</b>${!isVip ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
+                    <div style="font-size:20px; font-weight:800; color:#fff; margin-top:4px;">${pu.planName || 'Free Trial'}</div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${daysLeftText}</b>${!isVip ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
                     ${featuresHtml}
                 </div>
                 <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Usage Summary</div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
-                        <span style="color:var(--text-secondary); font-size:13px;">Links Used</span>
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Links Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.linksUsed || 0} / ${linksLimitText}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
-                        <span style="color:var(--text-secondary); font-size:13px;">Visitors Used</span>
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Visitors Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.visitorsUsed || 0} / ${visitorLimitText}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                        <span style="color:var(--text-secondary); font-size:13px;">Claims Used</span>
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Claims Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.claimsUsed || 0}</span>
                     </div>
                 </div>
                 ${isVip ? `
                     <div style="margin-top:14px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; text-align:center;">
                         <div style="font-size:13px; font-weight:700; color:#fbbf24;">Lifetime Unlimited access!</div>
-                        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div>
                     </div>
                 ` : `
                     <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
@@ -2223,8 +2686,8 @@
             if (isLifetimeUnlimited || plansToShow.length === 0) {
                 container.innerHTML = `
                     <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
-                        <div style="font-size: 22px; font-weight: 800; color: #fbbf24; margin-bottom: 8px;">Lifetime Unlimited Active</div>
-                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">
+                        <div style="font-size: 20px; font-weight: 800; color: #fbbf24; margin-bottom: 8px;">Lifetime Unlimited Active</div>
+                        <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">
                             You have the highest plan available. No upgrade or renewal needed.
                         </div>
                     </div>
@@ -2243,8 +2706,8 @@
 
             const iconMap = {
                 'free-trial': 'icon-gift',
-                'basic': 'icon-tag',
-                'creator': 'icon-target',
+                'basic': 'icon-link',
+                'creator': 'icon-eye',
                 'pro': 'icon-rocket',
                 'business': 'icon-shield',
                 'enterprise-vip': 'icon-crown'
@@ -2267,10 +2730,8 @@
                 const featuresHtml = features.map(f => `<div class="plan-feature-item"><span class="check-icon">•</span><span>${escapeHTML(f)}</span></div>`).join('');
 
                 return `
-                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `notify('This is your current plan.', 'Already Owned', 'info')` : `pickDynamicPlan('${key}')`}">
-                        <div class="plan-card-icon-wrap">
-                            <svg><use href="#${iconName}"/></svg>
-                        </div>
+                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
+                        <div class="plan-card-icon-wrap"><svg><use href="#${iconName}"/></svg></div>
                         <div class="plan-card-name">
                             <span>${escapeHTML(p.name)}</span>
                             ${isOwned ? `<span class="plan-card-badge-pill owned">OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
@@ -2284,7 +2745,7 @@
                             <div class="plan-card-duration">${p.durationDays} Days Validity</div>
                         </div>
 
-                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `notify('This is your current plan.', 'Already Owned', 'info')` : `pickDynamicPlan('${key}')`}">
+                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
                             ${isOwned ? 'Current Plan' : (isSelected ? 'Selected' : 'Choose Plan')}
                         </button>
 
@@ -2315,8 +2776,8 @@
             if (isOwned) {
                 footer.innerHTML = `
                     <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1px dashed rgba(16,185,129,0.4); border-radius:12px; padding:16px; text-align:center;">
-                        <div style="font-size:14px; font-weight:800; color:#34d399;">This is your Current Plan</div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Choose a higher plan to upgrade.</div>
+                        <div style="font-size:13.5px; font-weight:800; color:#34d399;">This is your Current Plan</div>
+                        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">Choose a higher plan to upgrade.</div>
                     </div>
                 `;
                 return;
@@ -2333,11 +2794,11 @@
                             <span style="font-size:11px; color:var(--text-muted); font-weight:600;">Scan to Pay ₹${p.price}</span>
                         </div>
                         <div class="payment-info">
-                            <div style="font-size:14px; font-weight:800; color:#fff; margin-bottom:10px;">Complete Your Payment</div>
+                            <div style="font-size:13.5px; font-weight:800; color:#fff; margin-bottom:10px;">Complete Your Payment</div>
                             <div class="upi-copy-chip" onclick="copyUpiText()">
                                 <span>UPI: <strong>${activeAdminUpi}</strong></span>
                             </div>
-                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">
+                            <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">
                                 Pay <strong style="color:#38bdf8;">₹${p.price}</strong> then send screenshot on WhatsApp.
                             </div>
                             <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;">
@@ -2349,7 +2810,7 @@
             } else if (p.price === 0) {
                 const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
                 if (freeTrialUsed) {
-                    paymentHtml = `<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:13px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>`;
+                    paymentHtml = `<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:12.5px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>`;
                 } else {
                     paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();"><span>Activate Free Trial</span></button>`;
                 }
@@ -2358,7 +2819,7 @@
             }
 
             footer.innerHTML = `
-                <div style="background:rgba(99,102,241,0.08); border:1px dashed rgba(99,102,241,0.4); border-radius:12px; padding:12px; margin-bottom:14px; text-align:center; font-size:12px; color:var(--text-secondary);">
+                <div style="background:rgba(99,102,241,0.08); border:1px dashed rgba(99,102,241,0.4); border-radius:12px; padding:12px; margin-bottom:14px; text-align:center; font-size:11.5px; color:var(--text-secondary);">
                     Selected: <strong style="color:#fff;">${p.name} - ${p.durationDays} Days</strong> • Amount: <strong style="color:#38bdf8;">₹${p.price}</strong>
                 </div>
                 ${paymentHtml}
@@ -2373,7 +2834,7 @@
         }
 
         function copyUpiText() {
-            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI copied: ${activeAdminUpi}`, 'Copied', 'success'));
+            navigator.clipboard.writeText(activeAdminUpi).then(() => showToast('UPI copied: ' + activeAdminUpi, 'success'));
         }
 
         function populateUserLinksDropdown(links, currentActiveId) {
@@ -2390,32 +2851,43 @@
         function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
 
         function copyCurrentLink() {
-            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link to copy', 'Error', 'warning');
+            if (!activeLinkRecord || !activeLinkRecord.id) return showToast('No link to copy', 'warning');
             const url = window.location.origin + '/uid?link=' + encodeURIComponent(activeLinkRecord.id);
-            navigator.clipboard.writeText(url).then(() => notify('Link URL copied!', 'Copied', 'success'));
+            navigator.clipboard.writeText(url).then(() => showToast('Link URL copied!', 'success'));
         }
 
+        // 🆕 DELETE LINK — Custom Beautiful Popup
         async function deleteCurrentLink() {
-            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link selected', 'Error', 'warning');
-            if (!confirm(`Delete link "${activeLinkRecord.name || activeLinkRecord.title}"?\n\nThis cannot be undone.`)) return;
+            if (!activeLinkRecord || !activeLinkRecord.id) return showToast('No link selected', 'warning');
             
-            try {
-                const res = await fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) {
-                    notify('Link deleted successfully!', 'Deleted', 'success');
-                    localStorage.removeItem('userActiveLinkId');
-                    setTimeout(() => fetchUserLinkData(), 500);
-                } else {
-                    notify(data.error || 'Failed to delete link.', 'Error', 'error');
-                }
-            } catch (err) {
-                notify('Server error: ' + err.message, 'Error', 'warning');
-            }
+            const linkName = activeLinkRecord.name || activeLinkRecord.title || 'Untitled';
+            
+            notify(
+                `Are you sure you want to delete this link?<br><br><strong>"${linkName}"</strong><br><br>This action cannot be undone.`,
+                'Delete Link?',
+                'warning',
+                'confirm',
+                async () => {
+                    try {
+                        const res = await fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userName: userProfile.name })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok && data.success) {
+                            showToast('Link deleted successfully', 'success');
+                            localStorage.removeItem('userActiveLinkId');
+                            setTimeout(() => fetchUserLinkData(), 500);
+                        } else {
+                            showToast(data.error || 'Failed to delete link', 'error');
+                        }
+                    } catch (err) {
+                        showToast('Server error: ' + err.message, 'error');
+                    }
+                },
+                'Delete Link'
+            );
         }
 
         function populateDashboardMetrics(data) {
@@ -2427,7 +2899,7 @@
             document.getElementById('btnCopyLink').disabled = false;
 
             const totalVisitsVal = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || data.visits || 0);
-            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : ((l.claims !== undefined) ? l.claims : ((data.totalClaims !== undefined) ? data.totalClaims : ((data.claims !== undefined) ? data.claims : 0)));
+            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : ((l.claims !== undefined) ? l.claims : ((data.totalClaims !== undefined) ? data.totalClaims : 0));
             document.getElementById('metricTotalVisits').textContent = totalVisitsVal;
             document.getElementById('metricTotalClaims').textContent = totalClaimsVal;
 
@@ -2450,6 +2922,10 @@
             } else if (currentDateFilter === '7days') {
                 filterLabel.textContent = "Last 7 Days Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Last 7 Days Claims";
+                subFilterLabel.textContent = "Aggregate";
+            } else if (currentDateFilter === '30days') {
+                filterLabel.textContent = "Last 30 Days Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Last 30 Days Claims";
                 subFilterLabel.textContent = "Aggregate";
             } else if (currentDateFilter === 'all') {
                 filterLabel.textContent = "All Time Visits";
@@ -2487,14 +2963,12 @@
             }
         }
 
-        // ✅ FIXED: Renewal request works WITHOUT any link
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId') || null;
             const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || null;
             const p = loadedPlans ? loadedPlans[activePlan.key] : null;
             const planName = p ? p.name : activePlan.key;
 
-            // Send renewal request to admin — works with or without link
             try {
                 const res = await fetch('/api/user/renew-payment', {
                     method: 'POST',
@@ -2509,15 +2983,11 @@
                         refNo: 'Manual-WhatsApp'
                     })
                 });
-                
                 const data = await res.json().catch(() => ({}));
-                
                 if (res.status === 403) {
-                    return notify(data.error || 'Cannot purchase this plan.', 'Not Allowed', 'error');
+                    return showToast(data.error || 'Cannot purchase this plan', 'error');
                 }
-            } catch(e) {
-                console.warn('Renewal request error:', e);
-            }
+            } catch(e) { console.warn('Renewal request error:', e); }
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             let message = `Hello Admin, I want to activate/renew my plan:\n\n`;
@@ -2535,12 +3005,9 @@
 
             window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
             closePlansModal();
+            showToast('Renewal request sent to admin!', 'success');
             
-            notify('Renewal request sent to admin! Please wait for approval.', 'Request Sent', 'success');
-            
-            if (currentId) {
-                setTimeout(() => fetchHistoryRecords(currentId), 1500);
-            }
+            if (currentId) setTimeout(() => fetchHistoryRecords(currentId), 1500);
         }
 
         async function fetchHistoryRecords(linkId) {
@@ -2556,7 +3023,7 @@
                     tbody.innerHTML = past.map(record => {
                         const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
-                        return `<tr><td style="padding:11px 14px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">${dateStr}</td><td style="padding:11px 14px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td><td style="padding:11px 14px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">₹${record.amount || 0}</td><td style="padding:11px 14px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td></tr>`;
+                        return `<tr><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">${dateStr}</td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">₹${record.amount || 0}</td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td></tr>`;
                     }).join('');
                 }
             } catch(e) {}
@@ -2572,13 +3039,13 @@
                 if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
                 c.innerHTML = links.map(l => `
                     <div class="short-item">
-                        <div>
-                            <div style="font-weight:700;font-size:13px;color:#fff;">${l.title || 'Untitled'}</div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-weight:700;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.title || 'Untitled'}</div>
+                            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;word-break:break-all;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
                         </div>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','success'))" style="width:auto;padding:5px 10px;font-size:11px;">Copy</button>
-                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">Delete</button>
+                        <div style="display:flex;gap:6px;flex-shrink:0;">
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))" style="width:auto;padding:6px 10px;font-size:11px;">Copy</button>
+                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:6px 10px;font-size:11px;background:var(--danger);">Delete</button>
                         </div>
                     </div>
                 `).join('');
@@ -2588,18 +3055,19 @@
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-            if (!originalUrl) return notify('Please enter a URL', 'URL Required', 'warning');
+            if (!originalUrl) return showToast('Please enter a URL', 'warning');
             try {
                 const res = await fetch('/api/user/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title, userName: userProfile.name }) });
                 const data = await res.json().catch(() => ({}));
-                if (data.success) { notify('Short link created!', 'Success', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
-                else notify(data.error || 'Failed', 'Error', 'error');
-            } catch(e) { notify('Server error', 'Error', 'warning'); }
+                if (data.success) { showToast('Short link created!', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
+                else showToast(data.error || 'Failed', 'error');
+            } catch(e) { showToast('Server error', 'error'); }
         }
 
         async function deleteUserShortLink(id) {
-            if (!confirm('Delete this short link?')) return;
-            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', 'info'); loadUserShortLinks(); } catch(e) {}
+            notify('Delete this short link?', 'Confirm', 'warning', 'confirm', async () => {
+                try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); showToast('Deleted', 'info'); loadUserShortLinks(); } catch(e) {}
+            }, 'Delete');
         }
 
         function escapeHTML(str) {
@@ -2607,7 +3075,11 @@
             try { const div = document.createElement('div'); div.textContent = String(str); return div.innerHTML; } catch(e) { return ''; }
         }
 
-        function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
+        function performLogout() { 
+            localStorage.removeItem('activeUserSession'); 
+            localStorage.removeItem('userActiveLinkId'); 
+            window.location.reload(); 
+        }
 
         // Session verification
         setInterval(async () => {
@@ -2625,11 +3097,12 @@
             } catch(e) {}
         }, 10000);
 
-        // Auto-refresh every 10s
+        // Auto-refresh
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
                 if (document.getElementById('activatePopup').classList.contains('active')) return;
                 if (document.getElementById('createLinkModal').classList.contains('active')) return;
+                if (document.getElementById('profileOverlay').classList.contains('active')) return;
                 
                 const s = document.getElementById('userLinkSelect');
                 const targetId = s?.value || localStorage.getItem('userActiveLinkId');
@@ -2655,11 +3128,11 @@
             }
         }, 10000);
 
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => { if (window.turnstile) renderSignInTurnstile(); }, 500);
-        });
-
+        // Init
         initApp();
+        
+        // Google GSI callback
+        window.handleGoogleAuth = handleGoogleAuth;
     </script>
 </body>
 </html>
