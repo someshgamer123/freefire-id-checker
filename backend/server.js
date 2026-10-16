@@ -39,7 +39,7 @@ try {
     };
 }
 
-// 🆕 GLOBAL Mongoose strict mode DISABLE — critical fix for old data
+// 🆕 GLOBAL Mongoose strict mode DISABLE
 mongoose.set('strictQuery', false);
 
 function safeLoadModel(modelName, defaultSchema) {
@@ -50,13 +50,11 @@ function safeLoadModel(modelName, defaultSchema) {
     if (mongoose.models && mongoose.models[modelName]) {
         return mongoose.models[modelName];
     }
-    // 🆕 CRITICAL: strict: false so old fields aren't dropped
     return mongoose.model(modelName, new mongoose.Schema(defaultSchema || {}, { strict: false }));
 }
 
 const User = safeLoadModel('User', { passcode: String, lastEnvPasscode: String, theme: { type: String, default: 'dark' }, email: String, phone: String, secretKey: String });
 
-// 🆕 Link schema with ALL fields + strict: false
 const Link = safeLoadModel('Link', {
     id: String, name: String, title: String, linkName: String,
     userName: String, assignedUser: String, creator: String,
@@ -81,7 +79,6 @@ const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0
 const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
 const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
 
-// 🆕 RenewalUser schema with ALL fields + strict: false
 const RenewalUser = safeLoadModel('RenewalUser', {
     name: String, email: String, phone: String, googleId: String,
     authMethod: { type: String, default: 'email' },
@@ -315,7 +312,6 @@ function getPlanDetails(pricingDoc, planKey) {
 
 function isUnlimited(val) { return val === 'unlimited' || val === -1 || val === 'null' || val === null || val === 'Unlimited'; }
 
-// 🆕 FIXED: Check plan expired with lifetime unlimited bypass
 function isPlanExpired(user) {
     if (!user) return false;
     if (user.lifetimeUnlimited === true) return false;
@@ -410,7 +406,9 @@ async function initializeDatabase() {
     }
 }
 
-connectDB().then(() => { initializeDatabase(); }).catch(() => {});
+connectDB().then((conn) => {
+    if (conn) initializeDatabase();
+}).catch(() => {});
 
 // ==================== MIDDLEWARE ====================
 app.set('trust proxy', 1);
@@ -483,10 +481,12 @@ const claimLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 app.use('/api', globalLimiter);
 
 app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'healthy',
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : dbState === 3 ? 'disconnecting' : 'disconnected';
+    res.status(dbState === 1 ? 200 : 503).json({
+        status: dbState === 1 ? 'healthy' : 'unhealthy',
+        database: dbStatus,
         uptime: Math.floor(process.uptime()),
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString()
     });
@@ -576,18 +576,22 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER — 🆕 FIXED ====================
+// ==================== VISITOR LINK RESOLVER — FIXED ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
         
         let rawId = extractCleanId(req.params.id);
-        let link = await Link.findOne(getLinkQuery(rawId)).lean();
+        
+        // 🆕 FRESH QUERY — bypass Mongoose cache
+        let link = await Link.collection.findOne(getLinkQuery(rawId));
 
         if (!link && (rawId === 'default' || !rawId)) {
-            link = await Link.findOne({ status: 'active' }).sort({ created: -1 }).lean();
+            const allActive = await Link.find({ status: 'active' }).sort({ created: -1 }).limit(1).lean();
+            link = allActive[0];
         }
         if (!link) return res.status(404).json({ error: 'not_found', message: 'Link not found' });
         if (link.status === 'suspended' || link.status === 'disabled' || link.status === 'inactive') {
@@ -600,7 +604,6 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // Check owner's plan status
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             try {
@@ -643,17 +646,16 @@ app.get('/api/link/:id', async (req, res) => {
             ).catch(err => console.error('Stats update error:', err));
         }
 
+        // 🆕 ALWAYS update lastSeen so active watching works
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
-            { $set: { lastSeen: new Date() } }, { upsert: true }
+            { $set: { lastSeen: new Date() } }, 
+            { upsert: true }
         ).catch(() => {});
 
-        // 🆕 CRITICAL FIX: Read from both popupSettings AND top-level fields
-        // Handle old links where fields might be in different places
+        // 🆕 Read ALL possible field names for old data compatibility
         const popup = link.popupSettings || {};
         const bannerImage = popup.image || link.image || link.popupImage || link.popupImageUrl || link.banner || null;
-        
-        // Video URL - check all possible field names
         const videoUrl = link.video || link.videoUrl || link.videoURL || link.youtubeUrl || 'https://youtu.be/dQw4w9WgXcQ';
         const claimUrl = link.claim || link.claimUrl || link.claimLink || link.claimURL || link.url || '#';
         const buttonTxt = link.buttonText || link.btnText || link.button || 'Claim Now';
@@ -859,7 +861,6 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     } catch (e) { res.status(401).json({ error: 'Google authentication failed' }); }
 });
 
-// 🆕 FREE PLAN AUTO-APPROVE
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -880,7 +881,7 @@ app.post('/api/user/select-free-plan', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to activate free plan' }); }
 });
 
-// 🆕 USER LINK DETAILS
+// ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1129,58 +1130,71 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 CRITICAL FIX: Lifetime Unlimited toggle with proper save
+// 🆕 FIXED: Lifetime Unlimited toggle with DIRECT MongoDB write
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
         const userId = req.params.id;
-        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) 
+            ? { _id: new mongoose.Types.ObjectId(userId) } 
+            : { id: userId };
         
-        const user = await RenewalUser.findOne(userQuery);
+        const user = await RenewalUser.findOne(userQuery).lean();
         if (!user) return res.status(404).json({ error: 'User not found' });
         
+        // 🔄 Build $set object
+        const $set = {};
+        
         if (enable === true) {
-            user.lifetimeUnlimited = true;
-            user.currentPlan = 'lifetime-unlimited';
-            user.status = 'approved';
-            if (!user.approvedAt) user.approvedAt = new Date();
+            $set.lifetimeUnlimited = true;
+            $set.currentPlan = 'lifetime-unlimited';
+            $set.status = 'approved';
+            if (!user.approvedAt) $set.approvedAt = new Date();
         } else {
-            user.lifetimeUnlimited = false;
+            $set.lifetimeUnlimited = false;
             if (user.currentPlan === 'lifetime-unlimited') {
-                user.currentPlan = 'free-trial';
+                $set.currentPlan = 'free-trial';
                 const pricingDoc = await getPricingDoc();
                 const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
                 const expiry = new Date();
                 expiry.setDate(expiry.getDate() + (ftPlan.durationDays || 7));
-                user.planStartDate = new Date();
-                user.planExpiryDate = expiry;
+                $set.planStartDate = new Date();
+                $set.planExpiryDate = expiry;
             }
         }
         
-        // 🆕 Explicit mark as modified to force save
-        user.markModified('lifetimeUnlimited');
-        user.markModified('currentPlan');
-        await user.save();
+        // 🚀 DIRECT MongoDB UPDATE — no Mongoose strict, no markModified
+        const updateResult = await RenewalUser.collection.updateOne(
+            { _id: user._id },
+            { $set: $set }
+        );
         
-        // Un-expire all links if enabling
+        if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found during update' });
+        }
+        
+        // 🆕 If enabling, un-expire all user's links
         if (enable === true) {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-            await Link.updateMany(
+            await Link.collection.updateMany(
                 { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
                 { $set: { expiryDate: null, status: 'active' } }
             );
         }
+        
+        // 🆕 Fresh fetch
+        const updatedUser = await RenewalUser.findOne({ _id: user._id }).lean();
         
         console.log(`✅ Lifetime Unlimited ${enable ? 'ENABLED' : 'DISABLED'} for: ${user.name}`);
         res.json({ 
             success: true, 
             message: enable ? 'User set to Lifetime Unlimited!' : 'Lifetime Unlimited removed',
             user: {
-                _id: user._id,
-                name: user.name,
-                lifetimeUnlimited: user.lifetimeUnlimited,
-                currentPlan: user.currentPlan,
-                status: user.status
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                lifetimeUnlimited: updatedUser.lifetimeUnlimited,
+                currentPlan: updatedUser.currentPlan,
+                status: updatedUser.status
             }
         });
     } catch (e) { 
@@ -1284,7 +1298,6 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 Approve renewal + Auto-update user's plan
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
@@ -1547,6 +1560,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
+// 🆕 COMPLETELY REWRITTEN: Uses direct MongoDB updateOne — bypasses Mongoose strict
 async function handleLinkUpdate(req, res) {
     try {
         let rawId = req.params.id;
@@ -1555,94 +1569,93 @@ async function handleLinkUpdate(req, res) {
         }
         const cleanId = extractCleanId(rawId);
         const query = getLinkQuery(cleanId);
-        const link = await Link.findOne(query);
-        if (!link) return res.status(404).json({ error: 'Link not found' });
+        
+        const existingLink = await Link.findOne(query).lean();
+        if (!existingLink) return res.status(404).json({ error: 'Link not found' });
 
+        // Handle toggle-uid special case
         if (req.path.includes('toggle') || req.body.action === 'toggle' || req.body.toggle === true) {
-            const newVal = !(!isUidCheckDisabled(link.uidChecking));
-            link.uidChecking = newVal;
-            await link.save();
+            const newVal = !(!isUidCheckDisabled(existingLink.uidChecking));
+            await Link.collection.updateOne({ _id: existingLink._id }, { $set: { uidChecking: newVal } });
             return res.json({ success: true, uidChecking: newVal });
         }
 
-        // 🆕 DIRECT SET approach — no updateMany, use save() to bypass strict issues
-        if (req.body.name !== undefined && req.body.name !== null && req.body.name.toString().trim() !== '') {
+        // 🔄 Build $set object — direct MongoDB write, no strict issues
+        const $set = {};
+
+        if (req.body.name && req.body.name.toString().trim()) {
             const uName = req.body.name.toString().trim();
-            link.name = uName;
-            link.userName = uName;
-            link.assignedUser = uName;
-            link.creator = uName;
+            $set.name = uName;
+            $set.userName = uName;
+            $set.assignedUser = uName;
+            $set.creator = uName;
         }
+
         const incomingLinkName = req.body.linkName ?? req.body.title ?? req.body.linkTitle ?? req.body.campaignName;
         if (incomingLinkName !== undefined && incomingLinkName !== null && incomingLinkName.toString().trim() !== '') {
-            const lTitle = incomingLinkName.toString().trim();
-            link.linkName = lTitle;
-            link.title = lTitle;
+            $set.linkName = incomingLinkName.toString().trim();
+            $set.title = incomingLinkName.toString().trim();
         }
+
         const incomingVideo = req.body.video ?? req.body.videoUrl ?? req.body.url;
-        if (incomingVideo !== undefined) link.video = incomingVideo.trim();
+        if (incomingVideo !== undefined) $set.video = (incomingVideo || '').toString().trim();
+        
         const incomingClaim = req.body.claim ?? req.body.claimUrl ?? req.body.claimLink;
-        if (incomingClaim !== undefined) link.claim = incomingClaim.trim();
+        if (incomingClaim !== undefined) $set.claim = (incomingClaim || '').toString().trim();
+        
         const incomingBtn = req.body.buttonText ?? req.body.btnText;
-        if (incomingBtn !== undefined) link.buttonText = incomingBtn.trim();
+        if (incomingBtn !== undefined) $set.buttonText = (incomingBtn || '').toString().trim();
+        
         const incomingHeadline = req.body.headline ?? req.body.heading;
-        if (incomingHeadline !== undefined) link.headline = incomingHeadline.trim();
-        if (req.body.status !== undefined) link.status = req.body.status;
+        if (incomingHeadline !== undefined) $set.headline = (incomingHeadline || '').toString().trim();
+        
+        if (req.body.status !== undefined) $set.status = req.body.status;
 
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
-        if (incomingUidVal !== undefined) link.uidChecking = !isUidCheckDisabled(incomingUidVal);
+        if (incomingUidVal !== undefined) $set.uidChecking = !isUidCheckDisabled(incomingUidVal);
 
         const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
         if (incomingExpiry !== undefined) {
-            link.expiryDate = (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) ? new Date(incomingExpiry) : null;
+            $set.expiryDate = (incomingExpiry && !isNaN(new Date(incomingExpiry).getTime())) ? new Date(incomingExpiry) : null;
         }
 
-        let incomingImage = req.body.popupImage ?? req.body.image ?? req.body.banner ?? req.body.popupSettings?.image;
-        const currentPopup = link.popupSettings || {};
+        // Popup settings
+        const currentPopup = existingLink.popupSettings || {};
         const newPopup = {
             title: req.body.popupSettings?.title || req.body.popupTitle || currentPopup.title || '🎁 Claim Your Reward',
             subtitle: req.body.popupSettings?.subtitle || req.body.popupSubtitle || currentPopup.subtitle || 'Tap below to unlock your reward',
             buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || currentPopup.buttonText || 'Claim Now',
             image: currentPopup.image || null
         };
+
+        let incomingImage = req.body.popupImage ?? req.body.image ?? req.body.banner ?? req.body.popupSettings?.image;
         if (incomingImage !== undefined) {
-            const cleanImg = (incomingImage || '').trim();
+            const cleanImg = (incomingImage || '').toString().trim();
             const finalImg = cleanImg.length > 4 ? cleanImg : null;
             newPopup.image = finalImg;
-            link.image = finalImg;
-            link.popupImage = finalImg;
-            link.popupImageUrl = finalImg;
-            link.banner = finalImg;
+            $set.image = finalImg;
+            $set.popupImage = finalImg;
+            $set.popupImageUrl = finalImg;
+            $set.banner = finalImg;
         }
-        link.popupSettings = newPopup;
+        $set.popupSettings = newPopup;
 
-        // 🆕 Mark everything as modified to force Mongoose to save
-        link.markModified('name');
-        link.markModified('userName');
-        link.markModified('assignedUser');
-        link.markModified('creator');
-        link.markModified('linkName');
-        link.markModified('title');
-        link.markModified('video');
-        link.markModified('claim');
-        link.markModified('buttonText');
-        link.markModified('headline');
-        link.markModified('status');
-        link.markModified('uidChecking');
-        link.markModified('expiryDate');
-        link.markModified('popupSettings');
-        link.markModified('image');
-        link.markModified('popupImage');
-        link.markModified('popupImageUrl');
-        link.markModified('banner');
-        
-        await link.save();
+        // 🚀 DIRECT MONGODB UPDATE
+        const updateResult = await Link.collection.updateOne(
+            { _id: existingLink._id },
+            { $set: $set }
+        );
 
-        if (incomingLinkName) {
-            await RenewalRequest.updateMany({ linkId: link.id }, { $set: { linkName: link.linkName } }).catch(() => {});
+        if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ error: 'Link not found during update' });
         }
 
-        const updatedDoc = link.toObject();
+        if ($set.linkName) {
+            await RenewalRequest.updateMany({ linkId: existingLink.id }, { $set: { linkName: $set.linkName } }).catch(() => {});
+        }
+
+        // 🆕 Fresh fetch
+        const updatedDoc = await Link.findOne({ _id: existingLink._id }).lean();
         const effectiveUserName = updatedDoc.name || updatedDoc.userName || 'User';
         const effectiveLinkName = updatedDoc.linkName || updatedDoc.title || 'Link';
         const finalUidState = !isUidCheckDisabled(updatedDoc.uidChecking);
@@ -1653,9 +1666,11 @@ async function handleLinkUpdate(req, res) {
             linkName: effectiveLinkName, title: effectiveLinkName,
             claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0,
             uidChecking: finalUidState,
-            image: newPopup.image, popupImage: newPopup.image,
-            popupImageUrl: newPopup.image, banner: newPopup.image,
-            popupSettings: newPopup
+            image: updatedDoc.popupSettings?.image || null,
+            popupImage: updatedDoc.popupSettings?.image || null,
+            popupImageUrl: updatedDoc.popupSettings?.image || null,
+            banner: updatedDoc.popupSettings?.image || null,
+            popupSettings: updatedDoc.popupSettings || newPopup
         });
     } catch (e) { 
         console.error('Link update error:', e);
@@ -1679,7 +1694,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS ====================
+// ==================== ADMIN ALL STATS — FIXED ACTIVE WATCHING ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1715,8 +1730,34 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
                 uidChecking: !isUidCheckDisabled(l.uidChecking)
             };
         });
-        const activeWatching = await VisitorActivity.countDocuments({ type: 'visit', lastSeen: { $gte: new Date(Date.now() - 3 * 60 * 1000) } }).maxTimeMS(1500).catch(() => 0);
-        const activeClaiming = await VisitorActivity.countDocuments({ type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } }).maxTimeMS(1500).catch(() => 0);
+        
+        // 🆕 FIXED: Active Watching — 5 min window, deduplicated
+        const activeWatchingAgg = await VisitorActivity.aggregate([
+            { 
+                $match: { 
+                    type: 'visit',
+                    lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+                } 
+            },
+            { $group: { _id: '$visitorKey' } },
+            { $count: 'count' }
+        ]).catch(() => []);
+        const activeWatching = activeWatchingAgg[0]?.count || 0;
+
+        // 🆕 FIXED: Active Claiming — 5 min window
+        const activeClaimingAgg = await VisitorActivity.aggregate([
+            { 
+                $match: { 
+                    type: 'claim',
+                    source: 'video',
+                    lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+                } 
+            },
+            { $group: { _id: '$visitorKey' } },
+            { $count: 'count' }
+        ]).catch(() => []);
+        const activeClaiming = activeClaimingAgg[0]?.count || 0;
+
         res.json({
             global: {
                 totalVisitors: totV, totalClaims: totC,
@@ -1884,6 +1925,7 @@ function sendUidCheckerFile(res, targetLinkId) {
                     else if (content.includes('<body>')) content = content.replace('<body>', '<body>' + guardScript);
                     else content = guardScript + content;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
                     return res.send(content);
                 } catch(e) { return res.sendFile(p); }
             }
@@ -1911,6 +1953,7 @@ try { sessionStorage.setItem('player_uid', 'verified'); sessionStorage.setItem('
                     else if (content.includes('<body>')) content = content.replace('<body>', '<body>' + preVerifyScript);
                     else content = preVerifyScript + content;
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
                     return res.send(content);
                 } catch(e) { return res.sendFile(p); }
             }
