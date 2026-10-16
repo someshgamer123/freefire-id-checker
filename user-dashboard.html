@@ -12,51 +12,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- 🆕 F12 / DEVTOOLS / RIGHT-CLICK LOCK -->
+    <!-- F12 / DEVTOOLS / RIGHT-CLICK LOCK -->
     <script>
         (function() {
-            // Right-click disable
-            document.addEventListener('contextmenu', function(e) { 
-                e.preventDefault(); 
-                return false; 
-            }, true);
-            
-            // F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+P disable
+            document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
             window.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || e.keyCode === 123) { 
-                    e.preventDefault(); e.stopPropagation(); return false; 
-                }
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); e.stopPropagation(); return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
-                    e.preventDefault(); e.stopPropagation(); return false;
-                }
+                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) { e.preventDefault(); e.stopPropagation(); return false; }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) { e.preventDefault(); e.stopPropagation(); return false; }
             }, true);
-            
-            // Console disable
             try {
                 const noop = function() {};
                 const methods = ['log','debug','info','warn','error','table','trace','dir','dirxml','group','groupEnd','clear','count','assert'];
-                methods.forEach(function(m) {
-                    try { window.console[m] = noop; } catch(e) {}
-                });
+                methods.forEach(function(m) { try { window.console[m] = noop; } catch(e) {} });
             } catch(e) {}
-            
-            // DevTools open detection (optional)
-            let devtools = { open: false, orientation: null };
-            setInterval(function() {
-                const threshold = 160;
-                if (window.outerWidth - window.innerWidth > threshold || 
-                    window.outerHeight - window.innerHeight > threshold) {
-                    if (!devtools.open) {
-                        devtools.open = true;
-                        // Optionally: redirect or clear body
-                    }
-                } else {
-                    devtools.open = false;
-                }
-            }, 1000);
         })();
     </script>
     
@@ -103,18 +72,8 @@
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
         }
 
-        /* ============ SVG ICON UTILITY ============ */
-        .svg-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .svg-icon svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+        .svg-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .svg-icon svg { width: 100%; height: 100%; display: block; }
 
         /* ============ NAVBAR ============ */
         .top-navbar {
@@ -321,7 +280,7 @@
         .welcome-title h2 { font-size: 22px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
 
-        /* ============ HERO CARD ============ */
+        /* HERO CARD */
         .hero-card {
             background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(139,92,246,0.08));
             border: 1px solid rgba(99,102,241,0.3);
@@ -332,10 +291,8 @@
             overflow: hidden;
         }
         .hero-card::before {
-            content: '';
-            position: absolute; top: -50px; right: -50px;
-            width: 180px; height: 180px;
-            border-radius: 50%;
+            content: ''; position: absolute; top: -50px; right: -50px;
+            width: 180px; height: 180px; border-radius: 50%;
             background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
             pointer-events: none;
         }
@@ -385,7 +342,7 @@
         }
         .hero-limit-info strong { color: #a5b4fc; font-weight: 800; }
 
-        /* ============ PLAN DAYS PROGRESS ============ */
+        /* PLAN DAYS */
         .plan-days-card {
             background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04));
             border: 1px solid rgba(16,185,129,0.25);
@@ -418,7 +375,7 @@
         .plan-days-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
         .plan-days-meta strong { color: #fff; font-weight: 700; }
 
-        /* ============ LINK SELECTOR ============ */
+        /* LINK SELECTOR */
         .link-selector-card {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
             border-radius: 14px; padding: 16px 18px;
@@ -455,7 +412,7 @@
         .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .icon-btn:disabled:hover { background: #080c14; color: var(--text-secondary); border-color: var(--border-subtle); }
 
-        /* ============ TIMELINE ============ */
+        /* TIMELINE */
         .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; }
         .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
@@ -474,7 +431,7 @@
         .progress-bar-fill.lifetime { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
         .progress-bar-fill.none { background: rgba(100, 116, 139, 0.3); width: 0%; }
 
-        /* ============ DATE FILTER ============ */
+        /* DATE FILTER */
         .date-filter-box {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
             border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
@@ -494,7 +451,7 @@
         .date-input { background: #080c14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; }
         .date-input:focus { border-color: var(--primary-light); }
 
-        /* ============ STATS ============ */
+        /* STATS */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
         @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
 
@@ -508,7 +465,7 @@
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
-        /* ============ MODALS ============ */
+        /* MODALS */
         .app-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(14px); z-index: 10000;
@@ -550,7 +507,7 @@
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
-        /* ============ CREATE LINK FORM ============ */
+        /* CREATE FORM */
         .create-link-form { display: flex; flex-direction: column; gap: 14px; }
         .create-form-section {
             background: rgba(0,0,0,0.2);
@@ -584,36 +541,21 @@
         .uid-toggle-info .uid-title svg { width: 14px; height: 14px; color: var(--primary-light); }
         .uid-toggle-info .uid-desc { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; }
 
-        .switch-toggle {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 26px;
-        }
+        .switch-toggle { position: relative; display: inline-block; width: 48px; height: 26px; }
         .switch-toggle input { opacity: 0; width: 0; height: 0; }
         .switch-toggle span {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background: #374151;
-            transition: 0.3s;
-            border-radius: 26px;
+            position: absolute; cursor: pointer; inset: 0;
+            background: #374151; transition: 0.3s; border-radius: 26px;
         }
         .switch-toggle span:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            bottom: 3px;
-            background: white;
-            transition: 0.3s;
-            border-radius: 50%;
+            position: absolute; content: "";
+            height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background: white; transition: 0.3s; border-radius: 50%;
         }
         .switch-toggle input:checked + span { background: linear-gradient(135deg, #10b981, #059669); }
         .switch-toggle input:checked + span:before { transform: translateX(22px); }
 
-        /* ============ PLAN CARDS ============ */
+        /* PLANS */
         .plans-carousel-wrap { position: relative; margin-bottom: 18px; overflow: hidden; }
         .plans-carousel {
             display: flex;
@@ -764,7 +706,7 @@
             flex-shrink: 0; margin-top: 1px;
         }
 
-        /* ============ PAYMENT PANEL ============ */
+        /* PAYMENT PANEL */
         .payment-panel-screenshot {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
             border: 1px solid rgba(99, 102, 241, 0.3);
@@ -790,7 +732,7 @@
         }
         .upi-copy-chip:hover { border-color: var(--primary-light); background: #0d1119; }
 
-        /* ============ ACTIVATE POPUP ============ */
+        /* ACTIVATE POPUP */
         .activate-popup-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.92); backdrop-filter: blur(16px); z-index: 25000;
@@ -881,7 +823,7 @@
         .activate-popup-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .activate-popup-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; padding: 11px; }
 
-        /* ============ CUSTOM DIALOG ============ */
+        /* CUSTOM DIALOG */
         .custom-dialog-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.88); backdrop-filter: blur(12px); z-index: 26000;
@@ -916,7 +858,7 @@
         .custom-dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
         .custom-dialog-message strong { color: #fff; font-weight: 700; }
 
-        /* ============ TURNSTILE ============ */
+        /* TURNSTILE */
         .turnstile-wrapper { display: flex; justify-content: center; align-items: center; margin: 12px auto 14px; width: 100%; min-height: 65px; }
         .google-btn-wrapper { display: flex; justify-content: center; align-items: center; margin-top: 4px; width: 100%; }
         .google-btn-wrapper .g_id_signin { display: flex; justify-content: center; width: 100% !important; max-width: 340px !important; margin: 0 auto; }
@@ -1671,10 +1613,8 @@
                 'warning': { cls: 'warning', svg: 'icon-alert-circle' },
                 'info': { cls: 'info', svg: 'icon-info' }
             };
-            
             let detectedType = type || icon;
             if (!typeMap[detectedType]) detectedType = 'info';
-            
             const wrap = document.getElementById('dialogIconWrap');
             wrap.className = 'custom-dialog-icon-wrap ' + typeMap[detectedType].cls;
             const iconSvg = document.getElementById('dialogIconSvg');
@@ -1749,7 +1689,6 @@
         async function openCreateLinkModal() {
             toggleSidebar(false);
 
-            // 🆕 More permissive check — only block if truly no plan
             if (!currentPlanUsage) {
                 notify('Loading plan information. Please wait a moment and try again.', 'Please Wait', 'info');
                 return;
@@ -1759,8 +1698,6 @@
             const planIsExpired = currentPlanUsage.planIsExpired;
             const lifetimeUnlimited = currentPlanUsage.lifetimeUnlimited;
             
-            // 🆕 FIX: Only block if planKey is no-plan OR plan expired
-            // Free-trial and all other active plans are allowed
             if (planKey === 'no-plan' || planKey === 'none') {
                 notify('You need an active plan to create links. Please activate or renew your plan.', 'No Active Plan', 'warning');
                 setTimeout(() => openPlansModal(), 800);
@@ -1778,7 +1715,6 @@
                 return;
             }
 
-            // Auto-fill client name
             document.getElementById('clClientName').value = userProfile.name || '';
             document.getElementById('clLinkName').value = '';
             document.getElementById('clVideo').value = '';
@@ -2551,29 +2487,60 @@
             }
         }
 
+        // ✅ FIXED: Renewal request works WITHOUT any link
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId') || null;
-            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || `${userProfile.name}'s New Link`;
+            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || null;
             const p = loadedPlans ? loadedPlans[activePlan.key] : null;
             const planName = p ? p.name : activePlan.key;
 
+            // Send renewal request to admin — works with or without link
             try {
                 const res = await fetch('/api/user/renew-payment', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ linkId: currentId, linkName: currentLinkTitle, userName: userProfile.name, plan: activePlan.key, days: activePlan.days, amount: activePlan.cost, refNo: 'Manual-WhatsApp' })
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        linkId: currentId,
+                        linkName: currentLinkTitle,
+                        userName: userProfile.name,
+                        plan: activePlan.key,
+                        days: activePlan.days,
+                        amount: activePlan.cost,
+                        refNo: 'Manual-WhatsApp'
+                    })
                 });
+                
+                const data = await res.json().catch(() => ({}));
+                
                 if (res.status === 403) {
-                    const errData = await res.json().catch(() => ({}));
-                    return notify(errData.error || 'Cannot purchase this plan.', 'Not Allowed', 'error');
+                    return notify(data.error || 'Cannot purchase this plan.', 'Not Allowed', 'error');
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.warn('Renewal request error:', e);
+            }
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const message = `Hello Admin, I want to renew my plan:\n\nUser: ${userProfile.name}\nLink: ${currentLinkTitle}\nLink ID: ${currentId || 'Pending'}\nPlan: ${planName} (${activePlan.days} Days)\nAmount: ₹${activePlan.cost}\nDate: ${today}\n\nPlease verify and approve. Thank you!`;
+            let message = `Hello Admin, I want to activate/renew my plan:\n\n`;
+            message += `👤 User: ${userProfile.name}\n`;
+            if (currentId) {
+                message += `🔗 Link: ${currentLinkTitle || 'N/A'}\n`;
+                message += `🆔 Link ID: ${currentId}\n`;
+            } else {
+                message += `📌 Status: New user (no link created yet)\n`;
+            }
+            message += `📦 Plan: ${planName} (${activePlan.days} Days)\n`;
+            message += `💰 Amount: ₹${activePlan.cost}\n`;
+            message += `📅 Date: ${today}\n\n`;
+            message += `Please verify and approve. Thank you!`;
 
             window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
             closePlansModal();
-            if (currentId) setTimeout(() => fetchHistoryRecords(currentId), 1500);
+            
+            notify('Renewal request sent to admin! Please wait for approval.', 'Request Sent', 'success');
+            
+            if (currentId) {
+                setTimeout(() => fetchHistoryRecords(currentId), 1500);
+            }
         }
 
         async function fetchHistoryRecords(linkId) {
