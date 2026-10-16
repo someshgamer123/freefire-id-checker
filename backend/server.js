@@ -24,7 +24,6 @@ if (process.env.GOOGLE_CLIENT_ID) {
     googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 }
 
-// ==================== MongoDB Connection ====================
 let connectDB;
 try {
     connectDB = require('./config/db');
@@ -56,8 +55,8 @@ const Link = safeLoadModel('Link', { id: String, name: String, title: String, li
 const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0 }, totalClaims: { type: Number, default: 0 }, dailyVisitors: { type: Object, default: {} }, dailyClaims: { type: Object, default: {} } });
 const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
 const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
-const RenewalUser = safeLoadModel('RenewalUser', { name: String, email: String, phone: String, googleId: String, authMethod: { type: String, default: 'email' }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
-const Pricing = safeLoadModel('Pricing', { pricing: { type: Object, default: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 } }, paymentSettings: { type: Object, default: { method: 'UPI', details: { upiId: 'admin@upi' } } }, whatsappNumber: { type: String, default: '916372923348' }, autoPaymentEnabled: { type: Boolean, default: false } });
+const RenewalUser = safeLoadModel('RenewalUser', { name: String, email: String, phone: String, googleId: String, authMethod: { type: String, default: 'email' }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, currentPlan: { type: String, default: 'free-trial' }, planStartDate: Date, planExpiryDate: Date, linksCreatedThisCycle: { type: Number, default: 0 }, visitorsThisCycle: { type: Number, default: 0 }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
+const Pricing = safeLoadModel('Pricing', {});
 const Session = safeLoadModel('Session', { userId: { type: String, default: 'admin' }, deviceKey: String, fingerprint: String, ip: String, userAgent: String, deviceName: String, deviceType: String, isActive: { type: Boolean, default: true }, lastActivity: { type: Date, default: Date.now }, createdAt: { type: Date, default: Date.now }, expiresAt: { type: Date, default: () => new Date(Date.now() + 7 * 24 * 3600 * 1000) } });
 const AdminLog = safeLoadModel('AdminLog', { action: String, details: Object, timestamp: { type: Date, default: Date.now } });
 const LoginAttempt = safeLoadModel('LoginAttempt', { ip: String, attempts: Number, lastAttempt: Date });
@@ -88,6 +87,34 @@ const DISPOSABLE_DOMAINS = [
     'maildrop.cc', 'mohmal.com', 'tempr.email', 'dispostable.com',
     'emailondeck.com', 'mytemp.email', 'burnermail.io', 'mailsac.com'
 ];
+
+// ==================== DEFAULT PLANS ====================
+const DEFAULT_PLANS = {
+    'free-trial': {
+        name: 'Free Trial', durationDays: 7, linkLimit: 1, visitorLimit: 1000, price: 0, enabled: true, badge: '',
+        features: ['1 Active Link', '1,000 Total Visitors', 'Basic Analytics', '7 Days Validity']
+    },
+    'basic': {
+        name: 'Basic', durationDays: 14, linkLimit: 5, visitorLimit: 5000, price: 199, enabled: true, badge: '',
+        features: ['5 Active Links', '5,000 Total Visitors', 'Detailed Analytics', '14 Days Validity']
+    },
+    'creator': {
+        name: 'Creator', durationDays: 14, linkLimit: 10, visitorLimit: 15000, price: 399, enabled: true, badge: '',
+        features: ['10 Active Links', '15,000 Total Visitors', 'Detailed Analytics', '14 Days Validity']
+    },
+    'pro': {
+        name: 'Pro', durationDays: 30, linkLimit: 25, visitorLimit: 50000, price: 799, enabled: true, badge: 'POPULAR',
+        features: ['25 Active Links', '50,000 Total Visitors', 'Advanced Analytics', 'Custom Link Names', '30 Days Validity']
+    },
+    'business': {
+        name: 'Business', durationDays: 90, linkLimit: 100, visitorLimit: 200000, price: 1999, enabled: true, badge: 'SAVE 20%',
+        features: ['100 Active Links', '2,00,000 Total Visitors', 'Priority Support', 'Custom Link Names', '90 Days Validity']
+    },
+    'enterprise-vip': {
+        name: 'Enterprise VIP', durationDays: 365, linkLimit: 'unlimited', visitorLimit: 'unlimited', price: 4999, enabled: true, badge: 'BEST VALUE',
+        features: ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'Custom Everything', '1 Year Validity']
+    }
+};
 
 // ==================== Helper Functions ====================
 function getISTDate(dateObj) {
@@ -225,7 +252,6 @@ function isValidMobile(mobile, countryCode = 'IN') {
 async function verifyTurnstile(token, remoteIp) {
     if (!token) return { success: false, error: 'No captcha token' };
     if (!process.env.TURNSTILE_SECRET_KEY) {
-        console.log('⚠️ TURNSTILE_SECRET_KEY not set - skipping verification');
         return { success: true, skipped: true };
     }
     try {
@@ -243,40 +269,101 @@ async function verifyTurnstile(token, remoteIp) {
     }
 }
 
-// ==================== 🛡️ FALLBACK INJECTION PROTECTION ====================
-function injectionProtection(req, res, next) {
-    try {
-        const sanitizeObject = (obj, depth = 0) => {
-            if (depth > 10) return obj;
-            if (!obj || typeof obj !== 'object') return obj;
-            
-            for (const key of Object.keys(obj)) {
-                if (key.startsWith('$') || key.includes('..') || key === '__proto__' || key === 'constructor' || key === 'prototype') {
-                    delete obj[key];
-                    continue;
-                }
-                if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
-                    sanitizeObject(obj[key], depth + 1);
-                }
-                if (Array.isArray(obj[key])) {
-                    obj[key] = obj[key].map(item => {
-                        if (item && typeof item === 'object') {
-                            sanitizeObject(item, depth + 1);
-                        }
-                        return item;
-                    });
-                }
-            }
-            return obj;
-        };
-        
-        if (req.body && typeof req.body === 'object') sanitizeObject(req.body);
-        if (req.query && typeof req.query === 'object') sanitizeObject(req.query);
-        if (req.params && typeof req.params === 'object') sanitizeObject(req.params);
-    } catch(e) {
-        console.error('Injection protection error:', e.message);
+// ==================== 🆕 PLAN HELPERS ====================
+async function getPricingDoc() {
+    let pricingDoc = await Pricing.findOne();
+    if (!pricingDoc) {
+        pricingDoc = await Pricing.create({
+            plans: DEFAULT_PLANS,
+            paymentSettings: { method: 'UPI', showUpi: true, details: { upiId: 'admin@upi' } },
+            whatsappNumber: '916372923348',
+            autoPaymentEnabled: false
+        });
     }
-    next();
+    // Merge missing plans with defaults
+    const currentPlans = pricingDoc.plans || {};
+    let needsSave = false;
+    for (const key of Object.keys(DEFAULT_PLANS)) {
+        if (!currentPlans[key]) {
+            currentPlans[key] = DEFAULT_PLANS[key];
+            needsSave = true;
+        }
+    }
+    if (needsSave) {
+        pricingDoc.plans = currentPlans;
+        pricingDoc.markModified('plans');
+        await pricingDoc.save();
+    }
+    return pricingDoc;
+}
+
+function getPlanDetails(pricingDoc, planKey) {
+    const plans = pricingDoc?.plans || DEFAULT_PLANS;
+    return plans[planKey] || DEFAULT_PLANS['free-trial'];
+}
+
+function isUnlimited(val) {
+    return val === 'unlimited' || val === -1 || val === 'null' || val === null;
+}
+
+// 🆕 Check if user can create a new link
+async function canUserCreateLink(user) {
+    try {
+        const pricingDoc = await getPricingDoc();
+        const planKey = user.currentPlan || 'free-trial';
+        const plan = getPlanDetails(pricingDoc, planKey);
+        
+        // Check link limit
+        const linkLimit = plan.linkLimit;
+        if (isUnlimited(linkLimit)) return { allowed: true };
+        
+        const currentCount = await Link.countDocuments({
+            $or: [
+                { assignedUser: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { userName: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { creator: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { name: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+            ]
+        });
+        
+        if (currentCount >= linkLimit) {
+            return { allowed: false, currentCount, limit: linkLimit, reason: 'LINK_LIMIT_REACHED' };
+        }
+        return { allowed: true, currentCount, limit: linkLimit };
+    } catch(e) {
+        return { allowed: true };
+    }
+}
+
+// 🆕 Check if user has enough visitor limit
+async function canUserGetVisitor(user) {
+    try {
+        const pricingDoc = await getPricingDoc();
+        const planKey = user.currentPlan || 'free-trial';
+        const plan = getPlanDetails(pricingDoc, planKey);
+        
+        const visitorLimit = plan.visitorLimit;
+        if (isUnlimited(visitorLimit)) return { allowed: true };
+        
+        // Total visitors across all user's links
+        const userLinks = await Link.find({
+            $or: [
+                { assignedUser: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { userName: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { creator: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+                { name: new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+            ]
+        }).lean();
+        
+        const totalVisitors = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
+        
+        if (totalVisitors >= visitorLimit) {
+            return { allowed: false, totalVisitors, limit: visitorLimit, reason: 'VISITOR_LIMIT_REACHED' };
+        }
+        return { allowed: true, totalVisitors, limit: visitorLimit };
+    } catch(e) {
+        return { allowed: true };
+    }
 }
 
 // ==================== Database Init ====================
@@ -288,12 +375,8 @@ async function initializeDatabase() {
         if (!admin) {
             const hashedPasscode = bcrypt.hashSync(activeEnvPass, 10);
             await User.create({
-                passcode: hashedPasscode,
-                lastEnvPasscode: activeEnvPass,
-                theme: 'dark',
-                email: process.env.ADMIN_EMAIL || '',
-                phone: process.env.ADMIN_PHONE || '',
-                secretKey: 'admin@2024'
+                passcode: hashedPasscode, lastEnvPasscode: activeEnvPass, theme: 'dark',
+                email: process.env.ADMIN_EMAIL || '', phone: process.env.ADMIN_PHONE || '', secretKey: 'admin@2024'
             });
         } else if (process.env.ADMIN_PASSCODE && admin.lastEnvPasscode !== activeEnvPass) {
             admin.passcode = bcrypt.hashSync(activeEnvPass, 10);
@@ -307,23 +390,12 @@ async function initializeDatabase() {
         const popupExists = await PopupSettings.findOne();
         if (!popupExists) {
             await PopupSettings.create({
-                image: null,
-                title: '🎁 Claim Your Reward',
-                buttonText: 'Claim Now',
-                subtitle: 'Tap below to unlock your reward',
-                uidChecking: true
+                image: null, title: '🎁 Claim Your Reward', buttonText: 'Claim Now',
+                subtitle: 'Tap below to unlock your reward', uidChecking: true
             });
         }
 
-        const pricingExists = await Pricing.findOne();
-        if (!pricingExists) {
-            await Pricing.create({
-                pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
-                paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi', qrCode: null, text: '' } },
-                whatsappNumber: '916372923348',
-                autoPaymentEnabled: false
-            });
-        }
+        await getPricingDoc();
 
         if (Session) {
             await Session.deleteMany({ expiresAt: { $lt: new Date() } }).catch(() => {});
@@ -346,8 +418,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-    origin: true,
-    credentials: true,
+    origin: true, credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Admin-Token', 'token']
 }));
@@ -355,6 +426,35 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+function injectionProtection(req, res, next) {
+    try {
+        const sanitizeObject = (obj, depth = 0) => {
+            if (depth > 10) return obj;
+            if (!obj || typeof obj !== 'object') return obj;
+            for (const key of Object.keys(obj)) {
+                if (key.startsWith('$') || key.includes('..') || key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                    delete obj[key];
+                    continue;
+                }
+                if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                    sanitizeObject(obj[key], depth + 1);
+                }
+                if (Array.isArray(obj[key])) {
+                    obj[key] = obj[key].map(item => {
+                        if (item && typeof item === 'object') sanitizeObject(item, depth + 1);
+                        return item;
+                    });
+                }
+            }
+            return obj;
+        };
+        if (req.body && typeof req.body === 'object') sanitizeObject(req.body);
+        if (req.query && typeof req.query === 'object') sanitizeObject(req.query);
+        if (req.params && typeof req.params === 'object') sanitizeObject(req.params);
+    } catch(e) { console.error('Injection protection error:', e.message); }
+    next();
+}
 app.use(injectionProtection);
 
 app.use((req, res, next) => {
@@ -371,14 +471,12 @@ app.use((req, res, next) => {
 // ==================== CSRF PROTECTION ====================
 const csrfSecret = process.env.CSRF_SECRET || 'change-this-csrf-secret-32-chars-minimum-xyz-123';
 
-const { generateToken: generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
+const { generateToken: generateCsrfToken } = doubleCsrf({
     getSecret: () => csrfSecret,
     cookieName: 'csrf-token',
     cookieOptions: {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        httpOnly: true, sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production', path: '/'
     },
     size: 64,
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
@@ -390,7 +488,6 @@ app.get('/api/csrf-token', (req, res) => {
         const token = generateCsrfToken(req, res);
         res.json({ csrfToken: token });
     } catch(e) {
-        console.error('CSRF token generation error:', e.message);
         res.status(500).json({ error: 'Failed to generate token' });
     }
 });
@@ -399,35 +496,15 @@ app.get('/api/csrf-token', (req, res) => {
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-        return (
-            req.path === '/health' || req.path === '/ping' ||
-            req.path.endsWith('.css') || req.path.endsWith('.js') ||
-            req.path.endsWith('.png') || req.path.endsWith('.jpg') ||
-            req.path.endsWith('.ico')
-        );
-    },
-    message: { error: 'Too many requests, please try again later.' }
+    standardHeaders: true, legacyHeaders: false,
+    skip: (req) => (req.path === '/health' || req.path === '/ping' ||
+        req.path.endsWith('.css') || req.path.endsWith('.js') ||
+        req.path.endsWith('.png') || req.path.endsWith('.jpg') || req.path.endsWith('.ico')),
+    message: { error: 'Too many requests' }
 });
 
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: true,
-    message: { error: 'Too many attempts. Please wait 15 minutes.' }
-});
-
-const claimLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests. Slow down.' }
-});
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, skipSuccessfulRequests: true });
+const claimLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 
 app.use('/api', globalLimiter);
 
@@ -437,13 +514,6 @@ app.get('/health', (req, res) => {
         uptime: Math.floor(process.uptime()),
         database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
         environment: process.env.NODE_ENV || 'development',
-        env_check: {
-            MONGODB_URI: !!process.env.MONGODB_URI,
-            JWT_SECRET: !!process.env.JWT_SECRET,
-            CSRF_SECRET: !!process.env.CSRF_SECRET,
-            GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-            TURNSTILE_SECRET_KEY: !!process.env.TURNSTILE_SECRET_KEY
-        },
         timestamp: new Date().toISOString()
     });
 });
@@ -498,10 +568,8 @@ async function isDeviceBlocked(req) {
 async function authMiddleware(req, res, next) {
     const token = req.cookies?.adminToken || 
                   req.headers['authorization']?.replace('Bearer ', '') ||
-                  req.headers['x-admin-token'] ||
-                  req.headers['x-token'] ||
-                  req.headers['token'] ||
-                  req.query.token;
+                  req.headers['x-admin-token'] || req.headers['x-token'] ||
+                  req.headers['token'] || req.query.token;
 
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     const decoded = verifyToken(token);
@@ -528,127 +596,86 @@ async function authMiddleware(req, res, next) {
 app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     res.status(403).send(`
         <!DOCTYPE html><html><head><title>Forbidden</title>
-        <style>body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
+        <style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}
         .card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
         h1{color:#ef4444;font-size:22px;margin-bottom:10px;}
         p{color:#94a3b8;font-size:14px;line-height:1.6;}
         </style></head>
         <body><div class="card"><h1>⛔ ACCESS DENIED</h1>
-        <p>This action is restricted. Only an authorized administrator can unblock devices from the Admin Panel.</p></div></body></html>
+        <p>Only an authorized administrator can unblock devices from the Admin Panel.</p></div></body></html>
     `);
 });
 
-app.get('/api/whatsapp-number', async (req, res) => {
-    try {
-        const pricing = await Pricing.findOne().lean();
-        res.json({ number: pricing?.whatsappNumber || '916372923348' });
-    } catch (error) { res.json({ number: '916372923348' }); }
-});
-
-app.post('/api/whatsapp-number', async (req, res) => {
-    try {
-        const { number } = req.body;
-        if (!number) return res.status(400).json({ error: 'Number required' });
-        let pricing = await Pricing.findOne();
-        if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = number.toString().trim();
-        await pricing.save();
-        res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.post('/api/admin/whatsapp', authMiddleware, async (req, res) => {
-    try {
-        const { number } = req.body;
-        let pricing = await Pricing.findOne();
-        if (!pricing) pricing = new Pricing();
-        pricing.whatsappNumber = (number || '916372923348').toString().trim();
-        await pricing.save();
-        res.json({ success: true, number: pricing.whatsappNumber });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/dashboard-map/:dashboardId', async (req, res) => {
-    try {
-        const cleanId = extractCleanId(req.params.dashboardId);
-        let link = await Link.findOne(getLinkQuery(cleanId)).lean();
-        if (link) return res.json({ linkId: link.id, name: link.name || link.title, linkName: link.linkName || link.title || link.name });
-        res.status(404).json({ error: 'No link found' });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/visit-stats/:linkId', async (req, res) => {
-    try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        const cleanId = extractCleanId(req.params.linkId);
-        let link = await Link.findOne(getLinkQuery(cleanId)).lean();
-        if (!link) return res.status(404).json({ error: 'Link not found' });
-        const today = getISTDate();
-        const yesterday = getISTDateMinus(1);
-        const isUidOn = !isUidCheckDisabled(link.uidChecking);
-        const lName = link.linkName || link.title || link.name || 'Untitled Link';
-        res.json({
-            linkId: link.id, id: link.id, name: lName, title: lName, linkName: lName,
-            userName: link.userName || link.name || '',
-            totalVisits: link.visits || 0, totalClaims: link.claims || 0, claims: link.claims || 0,
-            todayVisits: getDailyValue(link.dailyVisits, today),
-            todayClaims: getDailyValue(link.dailyClaims, today),
-            yesterdayVisits: getDailyValue(link.dailyVisits, yesterday),
-            yesterdayClaims: getDailyValue(link.dailyClaims, yesterday),
-            status: link.status || 'active', expiryDate: link.expiryDate || null, uidChecking: isUidOn
-        });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/parent-link', async (req, res) => {
-    try {
-        const links = await Link.find({}).limit(1);
-        if (links.length > 0) {
-            const firstLink = links[0];
-            if (!firstLink.dashboardId) {
-                firstLink.dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-                await firstLink.save();
-            }
-            const lName = firstLink.linkName || firstLink.title || firstLink.name || 'Untitled Link';
-            res.json({ url: '/user-dashboard/' + firstLink.dashboardId, linkName: lName, name: lName, title: lName, linkId: firstLink.id });
-        } else {
-            const dashboardId = 'dashboard_' + Date.now() + '_' + crypto.randomBytes(8).toString('hex');
-            res.json({ url: '/user-dashboard/' + dashboardId, linkName: null, name: null, title: null, linkId: null });
-        }
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
+// ==================== 🆕 PUBLIC PRICING ROUTE (for user dashboard) ====================
 app.get('/api/pricing', async (req, res) => {
     try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        let pricingDoc = await Pricing.findOne().lean();
-        if (!pricingDoc) {
-            pricingDoc = {
-                pricing: { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
-                paymentSettings: { method: 'UPI', details: { upiId: 'admin@upi' } },
-                whatsappNumber: '916372923348', autoPaymentEnabled: false
-            };
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        const pricingDoc = await getPricingDoc();
+        
+        // Only return enabled plans for user dashboard
+        const publicPlans = {};
+        for (const [key, plan] of Object.entries(pricingDoc.plans || {})) {
+            if (plan && plan.enabled !== false) {
+                publicPlans[key] = plan;
+            }
         }
+        
         res.json({
-            pricing: pricingDoc.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
-            paymentSettings: pricingDoc.paymentSettings || { method: 'UPI', details: { upiId: 'admin@upi' } },
+            plans: publicPlans,
+            paymentSettings: {
+                method: pricingDoc.paymentSettings?.method || 'UPI',
+                showUpi: pricingDoc.paymentSettings?.showUpi !== false, // Default true
+                details: pricingDoc.paymentSettings?.details || { upiId: 'admin@upi' }
+            },
             whatsappNumber: pricingDoc.whatsappNumber || '916372923348',
             autoPaymentEnabled: false
         });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== ADMIN PRICING UPDATE ====================
 app.post('/api/admin/pricing', authMiddleware, async (req, res) => {
     try {
-        const { pricing, paymentSettings, upiId, whatsappNumber } = req.body;
-        const updateFields = { autoPaymentEnabled: false };
-        if (pricing && typeof pricing === 'object') updateFields.pricing = pricing;
-        if (paymentSettings) updateFields.paymentSettings = paymentSettings;
-        if (upiId) updateFields['paymentSettings.details.upiId'] = upiId.toString().trim();
-        if (whatsappNumber) updateFields.whatsappNumber = whatsappNumber.toString().trim();
-        const updatedPricing = await Pricing.findOneAndUpdate({}, { $set: updateFields }, { upsert: true, new: true, lean: true });
-        res.json({ success: true, pricing: updatedPricing });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
+        const { plans, paymentSettings, showUpi, upiId, whatsappNumber } = req.body;
+        let pricingDoc = await Pricing.findOne();
+        if (!pricingDoc) pricingDoc = new Pricing();
+
+        if (plans && typeof plans === 'object') {
+            pricingDoc.plans = { ...pricingDoc.plans, ...plans };
+            pricingDoc.markModified('plans');
+        }
+
+        if (paymentSettings && typeof paymentSettings === 'object') {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            Object.assign(pricingDoc.paymentSettings, paymentSettings);
+        }
+
+        // 🆕 UPI show/hide toggle
+        if (showUpi !== undefined) {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            pricingDoc.paymentSettings.showUpi = showUpi !== false;
+            pricingDoc.markModified('paymentSettings');
+        }
+
+        if (upiId !== undefined) {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            if (!pricingDoc.paymentSettings.details) pricingDoc.paymentSettings.details = {};
+            pricingDoc.paymentSettings.details.upiId = upiId.toString().trim();
+            pricingDoc.markModified('paymentSettings');
+        }
+
+        if (whatsappNumber !== undefined) {
+            pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
+        }
+
+        pricingDoc.autoPaymentEnabled = false;
+        await pricingDoc.save();
+
+        res.json({ success: true, message: 'Settings saved', pricing: pricingDoc.toObject() });
+    } catch (error) { 
+        console.error('Admin pricing update error:', error);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 // ==================== VISITOR LINK RESOLVER ====================
@@ -670,6 +697,27 @@ app.get('/api/link/:id', async (req, res) => {
             if (expTime > 1000000000000 && Date.now() > expTime) {
                 return res.status(403).json({ error: 'expired', message: 'Link expired', status: 'expired' });
             }
+        }
+
+        // 🆕 Check the OWNER user's visitor limit
+        const ownerName = link.assignedUser || link.userName || link.name || link.creator;
+        if (ownerName) {
+            try {
+                const ownerUser = await RenewalUser.findOne({ 
+                    name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+                }).lean();
+                
+                if (ownerUser) {
+                    const visitorCheck = await canUserGetVisitor(ownerUser);
+                    if (!visitorCheck.allowed) {
+                        return res.status(403).json({ 
+                            error: 'visitor_limit_reached',
+                            message: 'This link has reached its visitor limit. Please contact the owner.',
+                            status: 'expired'
+                        });
+                    }
+                }
+            } catch(e) { console.error('Visitor limit check error:', e.message); }
         }
 
         const { ip, deviceKey } = getDeviceId(req);
@@ -751,9 +799,9 @@ async function executeClaimTracking(rawLinkId, req) {
     if (!cleanId) return { success: false, error: 'Link ID missing' };
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     if (sourceParam === 'popup' || sourceParam === 'popup_image' || sourceParam === 'modal' || sourceParam === 'entrance') {
-        return { success: true, ignored: true, message: 'Popup claims ignored.' };
+        return { success: true, ignored: true };
     }
-    if (sourceParam !== 'video') return { success: true, ignored: true, message: 'Only video claims counted.' };
+    if (sourceParam !== 'video') return { success: true, ignored: true };
 
     const link = await Link.findOne(getLinkQuery(cleanId));
     if (!link) return { success: false, error: 'Link not found' };
@@ -879,7 +927,9 @@ app.post('/api/user/signup', authLimiter, async (req, res) => {
 
         await RenewalUser.create({
             name: cleanName, email: cleanEmail, phone: cleanPhone,
-            authMethod: 'email', status: 'pending', createdAt: new Date()
+            authMethod: 'email', status: 'pending',
+            currentPlan: 'free-trial',
+            createdAt: new Date()
         });
         res.json({ success: true, message: 'Signup submitted!' });
     } catch (e) {
@@ -925,7 +975,7 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
             user = await RenewalUser.create({
                 name: payload.name || 'Google User', email: cleanEmail, phone: '',
                 googleId: payload.sub, authMethod: 'google', status: 'approved',
-                createdAt: new Date(), approvedAt: new Date()
+                currentPlan: 'free-trial', createdAt: new Date(), approvedAt: new Date()
             });
         }
 
@@ -937,6 +987,7 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     }
 });
 
+// ==================== 🆕 USER LINK DETAILS (with plan usage) ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -964,8 +1015,40 @@ app.post('/api/user/link-details', async (req, res) => {
         }
         if (!link) link = await Link.findOne({ status: 'active' }).sort({ created: -1 });
 
+        // 🆕 Get user's plan info
+        const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
+        const pricingDoc = await getPricingDoc();
+        const planKey = ownerUser?.currentPlan || 'free-trial';
+        const plan = getPlanDetails(pricingDoc, planKey);
+        
+        // Compute total visitors for user
+        const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
+
+        // Compute plan usage
+        const planUsage = {
+            planKey: planKey,
+            planName: plan.name,
+            durationDays: plan.durationDays,
+            price: plan.price,
+            badge: plan.badge || '',
+            features: plan.features || [],
+            linkLimit: plan.linkLimit,
+            visitorLimit: plan.visitorLimit,
+            linksUsed: allUserLinks.length,
+            visitorsUsed: totalUserVisits,
+            linksRemaining: isUnlimited(plan.linkLimit) ? 'unlimited' : Math.max(0, plan.linkLimit - allUserLinks.length),
+            visitorsRemaining: isUnlimited(plan.visitorLimit) ? 'unlimited' : Math.max(0, plan.visitorLimit - totalUserVisits),
+            linkLimitReached: !isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit,
+            visitorLimitReached: !isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit
+        };
+
         if (!link) {
-            return res.status(404).json({ error: `No active link found for user "${cleanUser}".`, userLinks: formattedUserLinks });
+            return res.status(404).json({
+                error: `No active link found for user "${cleanUser}".`,
+                userLinks: formattedUserLinks,
+                planUsage,
+                plans: pricingDoc?.plans || DEFAULT_PLANS
+            });
         }
 
         if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
@@ -1002,7 +1085,6 @@ app.post('/api/user/link-details', async (req, res) => {
         }
 
         const lName = link.linkName || link.title || link.name || 'Untitled Campaign';
-        const pricingDoc = await Pricing.findOne().lean();
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
 
         res.json({
@@ -1028,8 +1110,13 @@ app.post('/api/user/link-details', async (req, res) => {
                 dateRange: { filter: filter || 'today', start: dateRangeInfo.startStr, end: dateRangeInfo.endStr, visits: mappedRangeVisits, claims: mappedRangeClaims }
             },
             userLinks: formattedUserLinks,
-            pricing: pricingDoc?.pricing || { '7days': 100, '15days': 200, '30days': 400, '90days': 1000, '1year': 3000 },
-            paymentSettings: pricingDoc?.paymentSettings || { details: { upiId: 'admin@upi' } },
+            planUsage: planUsage,
+            plans: pricingDoc?.plans || DEFAULT_PLANS,
+            paymentSettings: {
+                method: pricingDoc?.paymentSettings?.method || 'UPI',
+                showUpi: pricingDoc?.paymentSettings?.showUpi !== false,
+                details: pricingDoc?.paymentSettings?.details || { upiId: 'admin@upi' }
+            },
             autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
         });
@@ -1037,6 +1124,18 @@ app.post('/api/user/link-details', async (req, res) => {
         console.error('User link details error:', e);
         res.status(500).json({ error: 'Failed to fetch link data' });
     }
+});
+
+// 🆕 Check if user can create a new link
+app.post('/api/user/can-create-link', async (req, res) => {
+    try {
+        const { userName } = req.body;
+        if (!userName) return res.json({ allowed: true });
+        const user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).lean();
+        if (!user) return res.json({ allowed: true });
+        const result = await canUserCreateLink(user);
+        res.json(result);
+    } catch(e) { res.json({ allowed: true }); }
 });
 
 app.post('/api/user/renew-payment', async (req, res) => {
@@ -1089,6 +1188,8 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
         const links = await Link.find().lean();
+        const pricingDoc = await getPricingDoc();
+        
         const usersWithStats = users.map(u => {
             const cleanName = (u.name || '').toLowerCase().trim();
             const userLinks = links.filter(l => {
@@ -1098,11 +1199,27 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
                 const cr = (l.creator || '').toLowerCase().trim();
                 return ln === cleanName || au === cleanName || un === cleanName || cr === cleanName;
             });
+
             const totalVisits = userLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
             const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
+
             const waData = generateWhatsAppApprovalData(u, req);
-            return { ...u, totalLinks: userLinks.length, totalVisits, totalClaims, whatsappMessage: waData.message, whatsappUrl: waData.whatsappUrl, portalLoginUrl: waData.loginUrl };
+            const plan = getPlanDetails(pricingDoc, u.currentPlan || 'free-trial');
+
+            return {
+                ...u,
+                totalLinks: userLinks.length,
+                totalVisits,
+                totalClaims,
+                currentPlanName: plan.name,
+                planLimit: plan.linkLimit,
+                visitorLimit: plan.visitorLimit,
+                whatsappMessage: waData.message,
+                whatsappUrl: waData.whatsappUrl,
+                portalLoginUrl: waData.loginUrl
+            };
         });
+
         res.json({ success: true, users: usersWithStats, totalUsers: users.length });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1142,6 +1259,32 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// 🆕 Update user's plan
+app.post('/api/admin/users/:id/set-plan', authMiddleware, async (req, res) => {
+    try {
+        const { plan } = req.body;
+        const userId = req.params.id;
+        const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
+        const user = await RenewalUser.findOne(userQuery);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        const pricingDoc = await getPricingDoc();
+        if (!pricingDoc.plans || !pricingDoc.plans[plan]) {
+            return res.status(400).json({ error: 'Invalid plan' });
+        }
+        
+        user.currentPlan = plan;
+        user.planStartDate = new Date();
+        const planDetails = pricingDoc.plans[plan];
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + (planDetails.durationDays || 30));
+        user.planExpiryDate = expiry;
+        await user.save();
+        
+        res.json({ success: true, message: 'Plan updated', user });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     try {
         const users = await RenewalUser.find().sort({ createdAt: -1 }).lean();
@@ -1159,7 +1302,19 @@ const handleUserApprovalAction = async (req, res) => {
         const user = await RenewalUser.findOne(userQuery);
         if (!user) return res.status(404).json({ error: 'User not found' });
         user.status = targetAction;
-        if (targetAction === 'approved') user.approvedAt = new Date();
+        if (targetAction === 'approved') {
+            user.approvedAt = new Date();
+            // 🆕 Assign free trial if no plan
+            if (!user.currentPlan) {
+                user.currentPlan = 'free-trial';
+                user.planStartDate = new Date();
+                const pricingDoc = await getPricingDoc();
+                const planDetails = pricingDoc.plans['free-trial'];
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + (planDetails.durationDays || 7));
+                user.planExpiryDate = expiry;
+            }
+        }
         await user.save();
         if (targetAction === 'rejected') {
             const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
@@ -1179,23 +1334,55 @@ app.post('/api/admin/users/:id/action', authMiddleware, handleUserApprovalAction
 // ==================== ADMIN RENEWAL ====================
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
-        const pricing = await Pricing.findOne().lean();
+        const pricingDoc = await getPricingDoc();
         const requests = await RenewalRequest.find({ status: 'pending' }).sort({ createdAt: -1 }).lean();
-        res.json({ success: true, pricing, requests });
+        res.json({ 
+            success: true, 
+            pricing: pricingDoc.toObject(),
+            plans: pricingDoc.plans,
+            paymentSettings: pricingDoc.paymentSettings,
+            requests 
+        });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
-        const { pricing, upiId, whatsappNumber, paymentSettings } = req.body;
-        const updateData = { autoPaymentEnabled: false };
-        if (pricing && typeof pricing === 'object') updateData.pricing = pricing;
-        if (paymentSettings) updateData.paymentSettings = paymentSettings;
-        if (upiId) updateData['paymentSettings.details.upiId'] = upiId.toString().trim();
-        if (whatsappNumber) updateData.whatsappNumber = whatsappNumber.toString().trim();
-        const updatedDoc = await Pricing.findOneAndUpdate({}, { $set: updateData }, { upsert: true, new: true, lean: true });
-        res.json({ success: true, message: 'Settings saved', pricing: updatedDoc });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        const { plans, paymentSettings, upiId, whatsappNumber, showUpi } = req.body;
+        let pricingDoc = await Pricing.findOne();
+        if (!pricingDoc) pricingDoc = new Pricing();
+
+        if (plans && typeof plans === 'object') {
+            pricingDoc.plans = { ...pricingDoc.plans, ...plans };
+            pricingDoc.markModified('plans');
+        }
+        if (paymentSettings && typeof paymentSettings === 'object') {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            Object.assign(pricingDoc.paymentSettings, paymentSettings);
+            pricingDoc.markModified('paymentSettings');
+        }
+        // 🆕 UPI show/hide toggle
+        if (showUpi !== undefined) {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            pricingDoc.paymentSettings.showUpi = showUpi !== false;
+            pricingDoc.markModified('paymentSettings');
+        }
+        if (upiId !== undefined) {
+            if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
+            if (!pricingDoc.paymentSettings.details) pricingDoc.paymentSettings.details = {};
+            pricingDoc.paymentSettings.details.upiId = upiId.toString().trim();
+            pricingDoc.markModified('paymentSettings');
+        }
+        if (whatsappNumber) pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
+
+        pricingDoc.autoPaymentEnabled = false;
+        await pricingDoc.save();
+
+        res.json({ success: true, message: 'Settings saved', pricing: pricingDoc.toObject() });
+    } catch (e) { 
+        console.error('Save renewal settings error:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
@@ -1282,13 +1469,9 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         const cleanPass = (passcode || '').toString().trim();
         if (!cleanPass) return res.status(400).json({ error: 'Passcode required' });
 
-        // 🛡️ Check if device is already blocked — if yes, deny immediately
         const existingBlock = await isDeviceBlocked(req);
         if (existingBlock) {
-            return res.status(403).json({ 
-                error: 'permanently_blocked', 
-                message: '⛔ Your device is permanently blocked. Contact the administrator.' 
-            });
+            return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Your device is permanently blocked.' });
         }
 
         let admin = await User.findOne();
@@ -1310,13 +1493,7 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
         if (isValid) {
             const { deviceKey, fingerprint, ip } = getDeviceId(req);
             const { deviceName, deviceType } = getDeviceDetails(req);
-            
-            // Clear any non-permanent blocked records for this device (fresh login)
-            await BlockedDevice.deleteMany({ 
-                $or: [{ deviceKey }, { ip }, { fingerprint }],
-                isPermanent: false
-            }).catch(() => {});
-
+            await BlockedDevice.deleteMany({ $or: [{ deviceKey }, { ip }, { fingerprint }], isPermanent: false }).catch(() => {});
             if (Session) {
                 await Session.create({
                     userId: 'admin', deviceKey, fingerprint, ip,
@@ -1328,63 +1505,40 @@ app.post('/api/admin/login', authLimiter, async (req, res) => {
             const jwtToken = generateToken('admin');
             res.cookie('adminToken', jwtToken, {
                 path: '/', httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000
+                secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 7 * 24 * 3600 * 1000
             });
             return res.json({ success: true, token: jwtToken });
         }
 
-        // Wrong passcode — increment attempts
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         const { deviceName, deviceType } = getDeviceDetails(req);
         let record = await BlockedDevice.findOne({ $or: [{ deviceKey }, { ip }, { fingerprint }] });
-        
         if (!record) {
-            record = new BlockedDevice({ 
-                deviceKey, fingerprint, ip, deviceName, deviceType, 
-                attempts: 1, 
-                reason: 'Failed login attempt (1/3)', 
-                isPermanent: false,
-                lastAttempt: new Date() 
-            });
+            record = new BlockedDevice({ deviceKey, fingerprint, ip, deviceName, deviceType, attempts: 1, reason: 'Failed login attempt (1/3)', isPermanent: false, lastAttempt: new Date() });
         } else {
             record.attempts = (record.attempts || 0) + 1;
             record.lastAttempt = new Date();
-            // Update device info in case it changed
-            record.ip = ip;
-            record.deviceName = deviceName;
-            record.deviceType = deviceType;
+            record.ip = ip; record.deviceName = deviceName; record.deviceType = deviceType;
         }
 
-        // 🛡️ 3 failed attempts → PERMANENT BLOCK forever
         if (record.attempts >= 3 && ip !== '127.0.0.1' && ip !== '::1' && !ip.includes('localhost')) {
             record.isPermanent = true;
             record.reason = 'Permanent ban: 3 failed passcode attempts';
             await record.save();
-            return res.status(403).json({ 
-                error: 'permanently_blocked', 
-                message: '⛔ Device permanently blocked due to 3 failed attempts. Contact administrator.' 
-            });
+            return res.status(403).json({ error: 'permanently_blocked', message: '⛔ Device permanently blocked.' });
         } else {
             record.reason = `Failed passcode attempt (${record.attempts}/3)`;
             await record.save();
             return res.status(401).json({ error: `Incorrect Passcode! Attempt ${record.attempts} of 3.` });
         }
-    } catch (error) { 
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Server authentication error' }); 
-    }
+    } catch (error) { res.status(500).json({ error: 'Server authentication error' }); }
 });
 
 app.post('/api/admin/logout', async (req, res) => {
     try {
         const { deviceKey, fingerprint, ip } = getDeviceId(req);
         if (Session) {
-            // Deactivate session but don't delete (keep history for Active Devices tab)
-            await Session.updateMany(
-                { $or: [{ deviceKey }, { ip }, { fingerprint }] },
-                { $set: { isActive: false, lastActivity: new Date() } }
-            ).catch(() => {});
+            await Session.updateMany({ $or: [{ deviceKey }, { ip }, { fingerprint }] }, { $set: { isActive: false, lastActivity: new Date() } }).catch(() => {});
         }
     } catch(e) {}
     res.clearCookie('adminToken', { path: '/' });
@@ -1425,13 +1579,6 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
         }
         await popup.save();
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/admin/logs', authMiddleware, async (req, res) => {
-    try {
-        const logs = await AdminLog.find().sort({ timestamp: -1 }).limit(50);
-        res.json({ logs, count: logs.length });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -1612,8 +1759,7 @@ async function handleLinkUpdate(req, res) {
             uidChecking: finalUidState,
             image: newPopup.image, popupImage: newPopup.image,
             popupImageUrl: newPopup.image, banner: newPopup.image,
-            popupSettings: newPopup,
-            link: { ...updatedDoc, id: updatedDoc.id, name: effectiveLinkName, userName: effectiveUserName, title: effectiveLinkName, linkName: effectiveLinkName, claims: updatedDoc.claims || 0, visits: updatedDoc.visits || 0, uidChecking: finalUidState, image: newPopup.image, popupSettings: newPopup }
+            popupSettings: newPopup
         });
     } catch (e) { res.status(500).json({ error: 'Failed to update link' }); }
 }
@@ -1640,16 +1786,6 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
         const query = getLinkQuery(extractCleanId(req.params.id));
         await Link.deleteMany(query);
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/search-links', authMiddleware, async (req, res) => {
-    try {
-        const { query } = req.query;
-        if (!query) return res.json({ links: [] });
-        const searchRegex = new RegExp(query, 'i');
-        const links = await Link.find({ $or: [{ name: searchRegex }, { linkName: searchRegex }, { title: searchRegex }, { id: searchRegex }, { dashboardId: searchRegex }] }).limit(20);
-        res.json({ links });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -1732,7 +1868,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
 // ==================== DEVICES & SESSIONS ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
-        // 🛡️ Show all blocked devices (permanent AND temporary)
         const devices = await BlockedDevice.find({}).sort({ lastAttempt: -1 }).lean();
         res.json({ success: true, devices });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
@@ -1740,22 +1875,9 @@ app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
 
 app.post('/api/admin/blocked-devices/:id/unblock', authMiddleware, async (req, res) => {
     try {
-        // 🛡️ Only authenticated admin can unblock
         await BlockedDevice.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'Device unblocked' });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.post('/api/admin/blocked-devices/:id/permanent-ban', authMiddleware, async (req, res) => {
-    try {
-        const dev = await BlockedDevice.findById(req.params.id);
-        if (dev) {
-            dev.isPermanent = true;
-            dev.reason = req.body.reason || 'Permanent ban by admin';
-            await dev.save();
-        }
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) => {
@@ -1765,50 +1887,34 @@ app.delete('/api/admin/blocked-devices/:id', authMiddleware, async (req, res) =>
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🛡️ NEW: Show ALL login sessions (active + inactive), one per unique device
 app.get('/api/admin/active-sessions', authMiddleware, async (req, res) => {
     try {
         let allSessions = [];
         if (Session) {
-            // Get all sessions (active and inactive) from last 30 days
-            allSessions = await Session.find({
-                createdAt: { $gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) }
-            }).sort({ lastActivity: -1 }).lean();
+            allSessions = await Session.find({ createdAt: { $gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) } }).sort({ lastActivity: -1 }).lean();
         }
-
-        // Deduplicate by deviceKey — show one entry per unique device
         const uniqueDevices = new Map();
         for (const s of allSessions) {
             const key = s.deviceKey || s.fingerprint || s._id.toString();
             const existing = uniqueDevices.get(key);
-            // Prefer active/most recent session per device
             if (!existing || (s.isActive && !existing.isActive) || (new Date(s.lastActivity) > new Date(existing.lastActivity))) {
                 uniqueDevices.set(key, s);
             }
         }
-
         const sessionsList = Array.from(uniqueDevices.values()).sort((a, b) => {
-            // Active first, then by last activity
             if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
             return new Date(b.lastActivity) - new Date(a.lastActivity);
         });
-
         res.json({ success: true, sessions: sessionsList });
-    } catch (error) { 
-        console.error('Active sessions error:', error);
-        res.status(500).json({ error: 'Failed' }); 
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.delete('/api/admin/sessions/:id', authMiddleware, async (req, res) => {
     try {
         if (Session) {
             const sid = req.params.id;
-            if (mongoose.Types.ObjectId.isValid(sid)) {
-                await Session.updateOne({ _id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
-            } else {
-                await Session.updateOne({ id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
-            }
+            if (mongoose.Types.ObjectId.isValid(sid)) await Session.updateOne({ _id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
+            else await Session.updateOne({ id: sid }, { $set: { isActive: false, lastActivity: new Date() } });
         }
         res.json({ success: true, message: 'Session terminated' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1829,16 +1935,11 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
                 fingerprint: session.fingerprint || crypto.randomBytes(16).toString('hex'),
                 deviceName: session.deviceName || 'Admin Device',
                 deviceType: session.deviceType || 'Desktop',
-                attempts: 3, 
-                isPermanent: true,
+                attempts: 3, isPermanent: true,
                 reason: 'Permanently blocked by admin',
                 lastAttempt: new Date()
             });
-            // Deactivate all sessions for this device
-            await Session.updateMany(
-                { $or: [{ deviceKey: session.deviceKey }, { fingerprint: session.fingerprint }, { ip: session.ip }] },
-                { $set: { isActive: false } }
-            ).catch(() => {});
+            await Session.updateMany({ $or: [{ deviceKey: session.deviceKey }, { fingerprint: session.fingerprint }, { ip: session.ip }] }, { $set: { isActive: false } }).catch(() => {});
         }
         res.json({ success: true, message: 'Device blocked permanently' });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1877,15 +1978,6 @@ app.get('/api/short-links', authMiddleware, async (req, res) => {
     res.json({ success: true, links });
 });
 
-app.get('/api/short-links/:id/analytics', authMiddleware, async (req, res) => {
-    try {
-        const link = await ShortLink.findById(req.params.id);
-        if (!link) return res.status(404).json({ error: 'Link not found' });
-        const clicks = await ShortLinkClick.find({ shortLinkId: req.params.id }).sort({ timestamp: -1 }).limit(100);
-        res.json({ success: true, link, clicks, totalClicks: link.visits || 0 });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
-});
-
 app.post('/api/short-links', authMiddleware, async (req, res) => {
     const { originalUrl, title, appOpen, appScheme } = req.body;
     const link = new ShortLink({ code: Math.random().toString(36).substring(2, 8), originalUrl, title: title || 'Untitled', appOpen: !!appScheme, appScheme: appScheme || '' });
@@ -1904,15 +1996,6 @@ app.delete('/api/short-links/:id', authMiddleware, async (req, res) => {
     await ShortLink.findByIdAndDelete(req.params.id);
     await ShortLinkClick.deleteMany({ shortLinkId: req.params.id });
     res.json({ success: true });
-});
-
-app.get('/api/short-links/stats', authMiddleware, async (req, res) => {
-    try {
-        const totalLinks = await ShortLink.countDocuments();
-        const activeLinks = await ShortLink.countDocuments({ status: 'active' });
-        const totalClicks = await ShortLink.aggregate([{ $group: { _id: null, total: { $sum: '$visits' } } }]);
-        res.json({ success: true, stats: { totalLinks, activeLinks, totalClicks: totalClicks.length > 0 ? totalClicks[0].total : 0 } });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 // ==================== FILE SERVING ====================
@@ -2016,14 +2099,13 @@ try {
 app.get('/admin/login.html', async (req, res) => {
     const blocked = await isDeviceBlocked(req);
     if (blocked) {
-        // 🛡️ REMOVED "unblock immediately" link — no way to bypass ban
         return res.send(`<!DOCTYPE html><html><head><title>Access Blocked</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body{background:#090a10;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;text-align:center;padding:20px;margin:0;}
-            .card{background:#131722;padding:40px 30px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;box-shadow:0 25px 60px rgba(0,0,0,0.7);}
+            .card{background:#131722;padding:40px 30px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}
             .icon{font-size:56px;margin-bottom:12px;display:block;}
-            h1{color:#ef4444;font-size:22px;margin-bottom:14px;font-weight:800;letter-spacing:0.5px;}
+            h1{color:#ef4444;font-size:22px;margin-bottom:14px;font-weight:800;}
             p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px;}
             .note{color:#64748b;font-size:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);}
             strong{color:#f87171;}
@@ -2033,7 +2115,7 @@ app.get('/admin/login.html', async (req, res) => {
             <h1>DEVICE PERMANENTLY BLOCKED</h1>
             <p>Your device has been <strong>permanently blocked</strong> due to repeated failed login attempts.</p>
             <p>This ban cannot be removed automatically.</p>
-            <p class="note">Only an authorized administrator can unblock this device from the Admin Panel. Please contact the site owner if you believe this is a mistake.</p>
+            <p class="note">Only an authorized administrator can unblock this device from the Admin Panel.</p>
         </div></body></html>`);
     }
     sendAppFile(res, 'login.html', 'admin/login.html');
