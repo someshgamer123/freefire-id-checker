@@ -658,7 +658,7 @@
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
-        /* ============ ACTIVATE POPUP (Premium) ============ */
+        /* ============ ACTIVATE POPUP ============ */
         .activate-popup-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(4, 7, 15, 0.92); backdrop-filter: blur(16px); z-index: 25000;
@@ -1020,7 +1020,7 @@
                 </div>
             </div>
 
-            <!-- ACTIVATE BANNER (shown only when no plan) -->
+            <!-- ACTIVATE BANNER -->
             <div class="activate-banner" id="activateBanner" style="display:none;">
                 <span class="activate-icon">🎁</span>
                 <div class="activate-title" id="activateTitle">Activate Your Plan</div>
@@ -1115,16 +1115,17 @@
                 </div>
             </div>
 
+            <!-- ONLY 4 METRIC CARDS (Today/24h/7d REMOVED) -->
             <div class="stats-row">
                 <div class="metric-card highlight">
                     <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
                     <div class="metric-title">Total Visits (All Time)</div>
-                    <div class="metric-subtitle">Unique in 24h</div>
+                    <div class="metric-subtitle">Unique in 48h</div>
                 </div>
                 <div class="metric-card highlight-success">
                     <div class="metric-value" id="metricTotalClaims" style="color:var(--success);">0</div>
                     <div class="metric-title">Total Claims (All Time)</div>
-                    <div class="metric-subtitle">Original Video Claim Only</div>
+                    <div class="metric-subtitle">Main Video Claim Only</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricFilteredVisits">0</div>
@@ -1136,13 +1137,6 @@
                     <div class="metric-title" id="lblFilteredClaims">Selected Date Claims</div>
                     <div class="metric-subtitle">Video Claims Only</div>
                 </div>
-            </div>
-
-            <div class="stats-row">
-                <div class="metric-card"><div class="metric-value" id="metricToday">0</div><div class="metric-title">Today Visits (Unique)</div></div>
-                <div class="metric-card"><div class="metric-value" id="metricTodayClaims" style="color:var(--success);">0</div><div class="metric-title">Today Claims (Unique)</div></div>
-                <div class="metric-card"><div class="metric-value" id="metric24h">0</div><div class="metric-title">Last 24 Hours (Unique)</div></div>
-                <div class="metric-card"><div class="metric-value" id="metric7d">0</div><div class="metric-title">Last 7 Days (Unique)</div></div>
             </div>
 
             <div class="pro-card">
@@ -1157,7 +1151,7 @@
         </div>
     </main>
 
-    <!-- ACTIVATE FREE PLAN POPUP (Premium) -->
+    <!-- ACTIVATE FREE PLAN POPUP -->
     <div class="activate-popup-overlay" id="activatePopup">
         <div class="activate-popup-card">
             <button class="activate-popup-close" onclick="closeActivatePopup()" aria-label="Close">✕</button>
@@ -1281,7 +1275,7 @@
         <div class="modal-body-card" style="max-width:520px;">
             <div class="modal-header-row"><h3>📖 How to Use Your Dashboard</h3><button class="modal-close-btn" onclick="closeGuideModal()">✕</button></div>
             <div class="guide-item"><h4>1. Account Access & Ownership</h4><p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p></div>
-            <div class="guide-item"><h4>2. Traffic & Claim Analytics (24h Unique)</h4><p>Visitors and video claims are calculated on a strict 24-hour unique basis. Duplicate clicks by the same user within 24 hours are excluded.</p></div>
+            <div class="guide-item"><h4>2. Traffic & Claim Analytics (48h Unique)</h4><p>Visitors and video claims are calculated on a strict 48-hour unique basis. Duplicate clicks by the same user within 48 hours are excluded.</p></div>
             <div class="guide-item"><h4>3. Custom Date Selection</h4><p>Filter data by specific single dates or custom date ranges using the Date Filter bar above the statistics.</p></div>
             <div class="guide-item"><h4>4. Plan Limits</h4><p>Each plan has a duration, link limit, and visitor limit. When you reach the visitor limit, your link expires automatically. Renew or upgrade to continue.</p></div>
             <div class="guide-item"><h4>5. URL Shortener</h4><p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns (requires 3 active links).</p></div>
@@ -1300,7 +1294,7 @@
         </div>
     </div>
 
-    <!-- CUSTOM DIALOG (Improved UI) -->
+    <!-- CUSTOM DIALOG -->
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="custom-dialog-icon-wrap info" id="dialogIconWrap">
@@ -1368,9 +1362,7 @@
 
         function getTurnstileToken() { return currentTurnstileToken || ''; }
 
-        // 🆕 Improved notify with better UI
         function notify(message, title = 'Notification', icon = 'ℹ️', type = null) {
-            // Auto-detect type from icon
             let detectedType = type;
             if (!detectedType) {
                 if (icon === '✅' || icon === '🎉') detectedType = 'success';
@@ -1430,20 +1422,17 @@
         }
         function closeLockModal() { document.getElementById('lockModal').classList.remove('active'); }
 
-        // 🆕 OPEN ACTIVATE POPUP (Free Trial only)
         function openActivateFreePlan() {
             if (!loadedPlans || !loadedPlans['free-trial']) {
                 return notify('Free trial plan not available at the moment.', 'Not Available', '⚠️');
             }
             
-            // 🆕 Check if free trial already used
             if (currentPlanUsage?.freeTrialUsed === true) {
                 return notify('You have already used your Free Trial. Please purchase a paid plan to continue.', 'Free Trial Already Used', '⛔', 'warning');
             }
             
             const ftPlan = loadedPlans['free-trial'];
             
-            // Populate popup with plan details
             document.getElementById('apLinksLimit').textContent = (ftPlan.linkLimit === 'unlimited' || ftPlan.linkLimit === -1) ? 'Unlimited' : `${ftPlan.linkLimit} Link${ftPlan.linkLimit > 1 ? 's' : ''}`;
             document.getElementById('apVisitorsLimit').textContent = (ftPlan.visitorLimit === 'unlimited' || ftPlan.visitorLimit === -1) ? 'Unlimited' : `${(ftPlan.visitorLimit || 0).toLocaleString()} Visitors`;
             document.getElementById('apDuration').textContent = `${ftPlan.durationDays} Days`;
@@ -1455,7 +1444,6 @@
             document.getElementById('activatePopup').classList.remove('active');
         }
         
-        // 🆕 CONFIRM FREE PLAN ACTIVATION
         async function confirmActivateFreePlan() {
             const btn = document.getElementById('btnActivateNow');
             if (!userProfile || !userProfile.name) {
@@ -1475,14 +1463,11 @@
                 const data = await res.json().catch(() => ({}));
                 
                 if (res.ok && data.success) {
-                    // Success — close popup, show success, refresh
                     closeActivatePopup();
                     notify('Your Free Trial has been activated successfully! Enjoy 3 days of access.', 'Free Trial Activated', '🎉', 'success');
                     
-                    // 🆕 Immediately refresh user data
                     setTimeout(() => {
                         fetchUserLinkData().then(() => {
-                            // Update the UI
                             updatePlanUsageUI();
                         });
                     }, 600);
@@ -1490,7 +1475,6 @@
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                     notify(data.error || 'Failed to activate free plan. Please try again.', 'Activation Failed', '❌', 'error');
-                    // If free trial used, refresh to hide it
                     if (data.error && data.error.toLowerCase().includes('already used')) {
                         setTimeout(() => fetchUserLinkData(), 800);
                     }
@@ -1669,7 +1653,8 @@
         }
 
         function displayEmptyState() {
-            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims','metricToday','metricTodayClaims','metric24h','metric7d'].forEach(id => { 
+            // 🆕 Only 4 metric cards now
+            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => { 
                 const e = document.getElementById(id); 
                 if (e) e.textContent = '0'; 
             });
@@ -1687,12 +1672,10 @@
             if (tc) tc.textContent = '--';
         }
 
-        // 🆕 Plan usage UI — critical logic for showing banner vs card
         function updatePlanUsageUI() {
             if (!currentPlanUsage) return;
             const pu = currentPlanUsage;
             
-            // Determine if user has NO active plan
             const hasNoPlan = pu.planKey === 'no-plan' || 
                               (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0)) ||
                               (pu.planKey === 'none');
@@ -1701,11 +1684,9 @@
             const bannerEl = document.getElementById('activateBanner');
             
             if (hasNoPlan) {
-                // 🆕 NO PLAN — hide card, show banner
                 cardEl.style.display = 'none';
                 bannerEl.style.display = 'block';
                 
-                // Update banner text based on expiry state
                 if (pu.planIsExpired) {
                     document.getElementById('activateTitle').textContent = 'Plan Expired — Renew Now';
                     document.getElementById('activateSubtitle').innerHTML = 'Your previous plan has expired. Choose a new plan below to continue using your dashboard.';
@@ -1719,7 +1700,6 @@
                 return;
             }
             
-            // 🆕 HAS PLAN — show card, hide banner
             cardEl.style.display = 'block';
             bannerEl.style.display = 'none';
             
@@ -1890,14 +1870,11 @@
                 return true;
             });
 
-            // 🆕 Auto-select free-trial if user has no plan and hasn't used it
             if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || (activePlan.key === 'free-trial' && freeTrialUsed)) {
                 let defKey = null;
-                // Priority 1: Free trial if available and user has no plan
                 if (!freeTrialUsed && plansToShow.includes('free-trial')) {
                     defKey = 'free-trial';
                 } else {
-                    // Priority 2: POPULAR badge or first
                     defKey = plansToShow.find(k => loadedPlans[k].badge === 'POPULAR') || plansToShow[0];
                 }
                 if (defKey) {
@@ -2065,6 +2042,7 @@
         function onSelectUserLink(selectedId) { if (!selectedId) return; localStorage.setItem('userActiveLinkId', selectedId); fetchUserLinkData(selectedId); }
         function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
 
+        // 🆕 populateDashboardMetrics — Only 4 metrics now (Today/24h/7d removed)
         function populateDashboardMetrics(data) {
             const l = data.link || data;
             const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
@@ -2103,13 +2081,9 @@
             } else {
                 filterLabel.textContent = "Today Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Today Claims";
-                subFilterLabel.textContent = "Unique in 24h";
+                subFilterLabel.textContent = "Unique in 48h";
             }
 
-            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : 0);
-            document.getElementById('metricTodayClaims').textContent = (l.todayClaims !== undefined ? l.todayClaims : 0);
-            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : 0);
-            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : 0);
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
             const badge = document.getElementById('badgeExpiry');
@@ -2234,10 +2208,9 @@ Please verify and approve. Thank you!`;
 
         function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
-        // Auto-refresh every 8 seconds — but not while popup is open
+        // Auto-refresh every 8 seconds
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
-                // Skip if activate popup is open
                 if (document.getElementById('activatePopup').classList.contains('active')) return;
                 
                 const s = document.getElementById('userLinkSelect');
@@ -2262,7 +2235,6 @@ Please verify and approve. Thank you!`;
                             populateDashboardMetrics(data); 
                             updatePlanUsageUI(); 
                         } else if (data && data.planUsage) {
-                            // No link but has plan update
                             currentPlanUsage = data.planUsage;
                             loadedPlans = data.plans || loadedPlans;
                             updatePlanUsageUI();
@@ -2270,7 +2242,6 @@ Please verify and approve. Thank you!`;
                     })
                     .catch(() => {});
                 } else {
-                    // No link selected — just refresh plan info
                     fetch('/api/user/link-details', { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
