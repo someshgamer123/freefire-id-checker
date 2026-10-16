@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Dashboard</title>
+    <title>Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
@@ -11,6 +11,54 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- 🆕 F12 / DEVTOOLS / RIGHT-CLICK LOCK -->
+    <script>
+        (function() {
+            // Right-click disable
+            document.addEventListener('contextmenu', function(e) { 
+                e.preventDefault(); 
+                return false; 
+            }, true);
+            
+            // F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+P disable
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || e.keyCode === 123) { 
+                    e.preventDefault(); e.stopPropagation(); return false; 
+                }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I','J','C','K'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+                if ((e.ctrlKey || e.metaKey) && ['U','S','P'].includes(e.key.toUpperCase())) {
+                    e.preventDefault(); e.stopPropagation(); return false;
+                }
+            }, true);
+            
+            // Console disable
+            try {
+                const noop = function() {};
+                const methods = ['log','debug','info','warn','error','table','trace','dir','dirxml','group','groupEnd','clear','count','assert'];
+                methods.forEach(function(m) {
+                    try { window.console[m] = noop; } catch(e) {}
+                });
+            } catch(e) {}
+            
+            // DevTools open detection (optional)
+            let devtools = { open: false, orientation: null };
+            setInterval(function() {
+                const threshold = 160;
+                if (window.outerWidth - window.innerWidth > threshold || 
+                    window.outerHeight - window.innerHeight > threshold) {
+                    if (!devtools.open) {
+                        devtools.open = true;
+                        // Optionally: redirect or clear body
+                    }
+                } else {
+                    devtools.open = false;
+                }
+            }, 1000);
+        })();
+    </script>
     
     <style>
         :root {
@@ -31,7 +79,11 @@
             --text-muted: #64748b;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+        }
 
         body {
             background-color: var(--bg-base);
@@ -49,6 +101,19 @@
             background: 
                 radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
+        }
+
+        /* ============ SVG ICON UTILITY ============ */
+        .svg-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .svg-icon svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         /* ============ NAVBAR ============ */
@@ -69,27 +134,28 @@
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 11px;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+            gap: 5px; cursor: pointer; transition: all 0.25s; flex-shrink: 0;
         }
-        .btn-menu-toggle:hover { background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2)); border-color: var(--primary-light); transform: scale(1.03); }
-        .btn-menu-toggle .line { display: block; height: 2px; background: linear-gradient(90deg, #fff, #cbd5e1); border-radius: 3px; transition: 0.3s; }
-        .btn-menu-toggle .line.short { width: 12px; }
-        .btn-menu-toggle .line.medium { width: 16px; }
-        .btn-menu-toggle .line.full { width: 20px; }
+        .btn-menu-toggle:hover { background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2)); border-color: var(--primary-light); }
+        .btn-menu-toggle .line { display: block; height: 2px; background: #fff; border-radius: 3px; transition: 0.3s; }
+        .btn-menu-toggle .line.l1 { width: 18px; }
+        .btn-menu-toggle .line.l2 { width: 14px; }
+        .btn-menu-toggle .line.l3 { width: 18px; }
 
         .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 
         .brand-badge-icon {
-            width: 36px; height: 36px;
+            width: 38px; height: 38px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 17px; color: #fff;
+            color: #fff;
             box-shadow: 0 4px 14px var(--primary-glow);
         }
+        .brand-badge-icon svg { width: 20px; height: 20px; }
 
-        .brand-title { font-size: 15px; font-weight: 800; letter-spacing: 0.5px; color: #fff; }
-        .brand-subtitle { font-size: 9.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; }
+        .brand-title { font-size: 15px; font-weight: 800; letter-spacing: 0.3px; color: #fff; }
+        .brand-subtitle { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; margin-top: 1px; }
 
         .navbar-right { display: flex; align-items: center; gap: 10px; }
 
@@ -101,7 +167,10 @@
             font-size: 12px; font-weight: 700;
             display: flex; align-items: center; gap: 6px;
         }
-        .user-pill .live-indicator { width: 6px; height: 6px; border-radius: 50%; background: #34d399; animation: pulseDot 1.5s infinite; }
+        .user-pill .live-indicator { 
+            width: 6px; height: 6px; border-radius: 50%; 
+            background: #34d399; animation: pulseDot 1.5s infinite; 
+        }
         @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         /* ============ SIDEBAR ============ */
@@ -132,17 +201,24 @@
         }
         .sidebar-head .sb-logo { display: flex; align-items: center; gap: 10px; }
         .sidebar-head .sb-logo-icon {
-            width: 38px; height: 38px;
+            width: 40px; height: 40px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 10px;
+            border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; color: #fff;
+            color: #fff;
             box-shadow: 0 4px 14px var(--primary-glow);
         }
+        .sidebar-head .sb-logo-icon svg { width: 20px; height: 20px; }
         .sidebar-head h2 { font-size: 15px; font-weight: 800; color: #fff; line-height: 1; }
-        .sidebar-head p { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
-        .sidebar-close { background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); width: 34px; height: 34px; border-radius: 10px; color: var(--text-muted); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .sidebar-head p { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .sidebar-close { 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); 
+            width: 34px; height: 34px; border-radius: 10px; color: var(--text-muted); 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            transition: 0.2s; 
+        }
         .sidebar-close:hover { background: rgba(239,68,68,0.15); color: #fff; border-color: rgba(239,68,68,0.3); }
+        .sidebar-close svg { width: 16px; height: 16px; }
 
         .sidebar-links-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; padding: 16px 14px; }
         .drawer-item {
@@ -152,12 +228,24 @@
             cursor: pointer; transition: all 0.2s; text-decoration: none;
             border-left: 3px solid transparent;
         }
-        .drawer-item:hover { background: rgba(99, 102, 241, 0.1); color: #fff; border-left-color: var(--primary-light); transform: translateX(3px); }
-        .drawer-item .drawer-icon { width: 22px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .drawer-item:hover { background: rgba(99, 102, 241, 0.1); color: #fff; border-left-color: var(--primary-light); }
+        .drawer-item .drawer-icon {
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .drawer-item .drawer-icon svg { width: 18px; height: 18px; }
         .drawer-item.danger { color: #f87171; }
         .drawer-item.danger:hover { background: rgba(239, 68, 68, 0.12); border-left-color: #ef4444; }
-        .drawer-item .drawer-badge { margin-left: auto; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: rgba(99,102,241,0.2); color: #a5b4fc; }
-        .drawer-item.primary-highlight { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); color: #fff; border-left-color: var(--primary-light); }
+        .drawer-item .drawer-badge { 
+            margin-left: auto; font-size: 10px; font-weight: 800; 
+            padding: 2px 8px; border-radius: 10px; 
+            background: rgba(99,102,241,0.2); color: #a5b4fc; 
+        }
+        .drawer-item.primary-highlight { 
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); 
+            color: #fff; border-left-color: var(--primary-light); 
+        }
 
         .sidebar-footer {
             padding: 16px 20px;
@@ -166,10 +254,10 @@
         }
         .sidebar-footer .sb-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
         .sidebar-footer .sb-user-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
+            width: 38px; height: 38px; border-radius: 50%;
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 800; color: #fff;
+            font-size: 15px; font-weight: 800; color: #fff;
         }
         .sidebar-footer .sb-user-name { font-size: 13px; font-weight: 700; color: #fff; }
         .sidebar-footer .sb-user-status { font-size: 10.5px; color: #34d399; font-weight: 600; }
@@ -204,6 +292,7 @@
         .btn-action:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 10px 25px rgba(79,70,229,0.35); }
         .btn-action:active { transform: scale(0.99); }
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-action svg { width: 18px; height: 18px; }
 
         .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
         .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
@@ -256,10 +345,11 @@
             background: linear-gradient(135deg, #4f46e5, #7c3aed);
             border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px;
+            color: #fff;
             box-shadow: 0 8px 22px rgba(79,70,229,0.4);
             flex-shrink: 0;
         }
+        .hero-icon svg { width: 26px; height: 26px; }
         .hero-text { flex: 1; min-width: 0; }
         .hero-text h3 { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 4px; }
         .hero-text p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
@@ -278,11 +368,8 @@
         }
         .hero-create-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 38px rgba(79,70,229,0.55); }
         .hero-create-btn:active:not(:disabled) { transform: scale(0.98); }
-        .hero-create-btn:disabled {
-            background: linear-gradient(135deg, #4b5563, #374151);
-            cursor: not-allowed; opacity: 0.7;
-            box-shadow: none;
-        }
+        .hero-create-btn:disabled { background: linear-gradient(135deg, #4b5563, #374151); cursor: not-allowed; opacity: 0.7; box-shadow: none; }
+        .hero-create-btn svg { width: 18px; height: 18px; }
         .hero-create-btn .btn-badge {
             font-size: 11px; font-weight: 700;
             background: rgba(255,255,255,0.2);
@@ -313,6 +400,7 @@
             margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
         }
         .plan-days-label { font-size: 11.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+        .plan-days-label svg { width: 14px; height: 14px; }
         .plan-days-card.warn .plan-days-label { color: #fbbf24; }
         .plan-days-card.danger .plan-days-label { color: #f87171; }
         .plan-days-value { font-size: 15px; font-weight: 800; color: #fff; }
@@ -339,12 +427,11 @@
         }
         .link-info-box { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 200px; }
         .link-title-badge { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 700; color: #fff; }
+        .link-title-badge svg { width: 16px; height: 16px; color: var(--primary-light); }
         .link-id-sub { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
         .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 12px; }
 
-        .link-actions-row {
-            display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-        }
+        .link-actions-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .link-actions-row select {
             padding: 9px 12px; font-size: 12.5px;
             background: #080c14; border: 1px solid var(--border-subtle);
@@ -354,15 +441,15 @@
         }
         .link-actions-row select:focus { outline: none; border-color: var(--primary-light); }
         .icon-btn {
-            width: 36px; height: 36px;
+            width: 38px; height: 38px;
             border-radius: 10px;
             background: #080c14;
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 14px;
-            transition: 0.2s;
+            cursor: pointer; transition: 0.2s;
         }
+        .icon-btn svg { width: 16px; height: 16px; }
         .icon-btn:hover { background: rgba(99,102,241,0.15); color: #fff; border-color: var(--primary-light); }
         .icon-btn.danger:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
         .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -435,14 +522,24 @@
             max-height: 92vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
             animation: fadeInUp 0.3s ease;
         }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .modal-body-card.wide { max-width: 1100px; }
         .modal-header-row {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;
         }
-        .modal-header-row h3 { font-size: 18px; font-weight: 800; color: #fff; }
-        .modal-close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; transition: 0.2s; }
-        .modal-close-btn:hover { color: #fff; }
+        .modal-header-row h3 { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .modal-header-row h3 svg { width: 20px; height: 20px; color: var(--primary-light); }
+        .modal-close-btn { 
+            background: transparent; border: none; color: var(--text-muted); 
+            font-size: 22px; cursor: pointer; transition: 0.2s; 
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 8px;
+        }
+        .modal-close-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
 
         .guide-item { margin-bottom: 14px; }
         .guide-item h4 { font-size: 13.5px; font-weight: 700; color: #fff; margin-bottom: 3px; }
@@ -467,6 +564,7 @@
             margin-bottom: 12px;
             display: flex; align-items: center; gap: 8px;
         }
+        .create-form-section-title svg { width: 14px; height: 14px; }
         .create-form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .create-form-grid-2 { grid-template-columns: 1fr; } }
 
@@ -483,8 +581,8 @@
         }
         .uid-toggle-info { flex: 1; min-width: 200px; }
         .uid-toggle-info .uid-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .uid-toggle-info .uid-title svg { width: 14px; height: 14px; color: var(--primary-light); }
         .uid-toggle-info .uid-desc { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; }
-        .uid-toggle-switch { display: flex; align-items: center; gap: 10px; }
 
         .switch-toggle {
             position: relative;
@@ -576,7 +674,7 @@
             z-index: 5;
         }
         .plan-card-screenshot.owned-plan::before {
-            content: '👑';
+            content: '★';
             position: absolute; top: 14px; right: 14px;
             width: 36px; height: 36px; border-radius: 50%;
             background: linear-gradient(135deg, #10b981, #059669);
@@ -592,12 +690,14 @@
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(99, 102, 241, 0.3);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; margin-bottom: 10px;
+            color: #818cf8;
+            margin-bottom: 10px;
             flex-shrink: 0;
         }
-        .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); }
-        .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
-        .plan-card-screenshot.owned-plan .plan-card-icon-wrap { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); }
+        .plan-card-icon-wrap svg { width: 24px; height: 24px; }
+        .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; }
+        .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
+        .plan-card-screenshot.owned-plan .plan-card-icon-wrap { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #34d399; }
 
         .plan-card-name { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 
@@ -728,9 +828,10 @@
             border-radius: 24px;
             background: linear-gradient(135deg, #10b981, #059669);
             display: flex; align-items: center; justify-content: center;
-            font-size: 42px;
+            color: #fff;
             box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
         }
+        .activate-popup-icon svg { width: 40px; height: 40px; }
         .activate-popup-title { font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 8px; }
         .activate-popup-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
         .activate-popup-subtitle strong { color: #34d399; font-weight: 800; }
@@ -744,7 +845,14 @@
             display: flex; align-items: center; gap: 10px;
             text-align: left;
         }
-        .activate-feature-item .af-icon { width: 34px; height: 34px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+        .activate-feature-item .af-icon { 
+            width: 34px; height: 34px; border-radius: 10px; 
+            background: rgba(16, 185, 129, 0.15); 
+            display: flex; align-items: center; justify-content: center; 
+            color: #34d399;
+            flex-shrink: 0; 
+        }
+        .activate-feature-item .af-icon svg { width: 16px; height: 16px; }
         .activate-feature-item .af-content { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
         .activate-feature-item .af-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
         .activate-feature-item .af-value { font-size: 13.5px; font-weight: 800; color: #fff; }
@@ -797,12 +905,13 @@
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(99, 102, 241, 0.3);
             display: flex; align-items: center; justify-content: center;
-            font-size: 36px;
+            color: #818cf8;
         }
-        .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); }
-        .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); }
-        .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
-        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); }
+        .custom-dialog-icon-wrap svg { width: 32px; height: 32px; }
+        .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981; }
+        .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #ef4444; }
+        .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; }
+        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #818cf8; }
         .custom-dialog-title { font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 8px; }
         .custom-dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
         .custom-dialog-message strong { color: #fff; font-weight: 700; }
@@ -832,43 +941,180 @@
 <body>
     <div class="ambient-layer"></div>
 
+    <!-- SVG ICON LIBRARY -->
+    <svg style="display:none;">
+        <symbol id="icon-flash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </symbol>
+        <symbol id="icon-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18h18l-2-11-5 5-2-7-2 7-5-5z" fill="currentColor" stroke="none"/>
+            <rect x="4" y="18" width="16" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </symbol>
+        <symbol id="icon-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+        </symbol>
+        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+        </symbol>
+        <symbol id="icon-log-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+        </symbol>
+        <symbol id="icon-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+        </symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+        </symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </symbol>
+        <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 12 20 22 4 22 4 12"/>
+            <rect x="2" y="7" width="20" height="5"/>
+            <line x1="12" y1="22" x2="12" y2="7"/>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        </symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+        </symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </symbol>
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+        </symbol>
+        <symbol id="icon-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+        </symbol>
+        <symbol id="icon-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </symbol>
+        <symbol id="icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+        </symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </symbol>
+        <symbol id="icon-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </symbol>
+        <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+        </symbol>
+        <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </symbol>
+        <symbol id="icon-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </symbol>
+    </svg>
+
     <!-- SIDEBAR -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <aside class="sidebar-drawer" id="sidebarDrawer">
         <div class="sidebar-head">
             <div class="sb-logo">
-                <div class="sb-logo-icon">⚡</div>
+                <div class="sb-logo-icon">
+                    <svg><use href="#icon-flash"/></svg>
+                </div>
                 <div>
-                    <h2>MY DASHBOARD</h2>
+                    <h2>DASHBOARD</h2>
                     <p>User Control Center</p>
                 </div>
             </div>
-            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
+            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">
+                <svg><use href="#icon-x-circle"/></svg>
+            </button>
         </div>
         <div class="sidebar-links-list">
             <div class="drawer-item primary-highlight" onclick="openCreateLinkModal()">
-                <span class="drawer-icon">➕</span>
+                <span class="drawer-icon"><svg><use href="#icon-plus"/></svg></span>
                 <span>Create New Link</span>
                 <span class="drawer-badge" id="menuLinkCount">0</span>
             </div>
             <div class="drawer-item" onclick="openMyPlanModal()">
-                <span class="drawer-icon">👑</span>
+                <span class="drawer-icon"><svg><use href="#icon-crown"/></svg></span>
                 <span>My Current Plan</span>
             </div>
+            <div class="drawer-item" onclick="openPlansModal()">
+                <span class="drawer-icon"><svg><use href="#icon-dollar"/></svg></span>
+                <span>Renewal Plans</span>
+            </div>
             <div class="drawer-item" onclick="openShortenerModal()">
-                <span class="drawer-icon">🔗</span>
+                <span class="drawer-icon"><svg><use href="#icon-link"/></svg></span>
                 <span>URL Shortener</span>
             </div>
             <div class="drawer-item" onclick="openGuideModal()">
-                <span class="drawer-icon">📖</span>
+                <span class="drawer-icon"><svg><use href="#icon-book"/></svg></span>
                 <span>How to Use</span>
             </div>
             <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
-                <span class="drawer-icon">💬</span>
+                <span class="drawer-icon"><svg><use href="#icon-headphones"/></svg></span>
                 <span>Support</span>
             </a>
             <div class="drawer-item" onclick="openTermsModal()">
-                <span class="drawer-icon">📜</span>
+                <span class="drawer-icon"><svg><use href="#icon-file-text"/></svg></span>
                 <span>Terms & Rules</span>
             </div>
         </div>
@@ -881,7 +1127,7 @@
                 </div>
             </div>
             <div class="drawer-item danger" onclick="performLogout()" style="padding: 10px 12px; margin: 0;">
-                <span class="drawer-icon">🚪</span>
+                <span class="drawer-icon"><svg><use href="#icon-log-out"/></svg></span>
                 <span>Logout</span>
             </div>
         </div>
@@ -891,12 +1137,14 @@
     <header class="top-navbar">
         <div class="nav-left">
             <button class="btn-menu-toggle" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
-                <span class="line short"></span>
-                <span class="line full"></span>
-                <span class="line medium"></span>
+                <span class="line l1"></span>
+                <span class="line l2"></span>
+                <span class="line l3"></span>
             </button>
             <a href="#" class="navbar-brand">
-                <div class="brand-badge-icon">⚡</div>
+                <div class="brand-badge-icon">
+                    <svg><use href="#icon-flash"/></svg>
+                </div>
                 <div>
                     <div class="brand-title">DASHBOARD</div>
                     <div class="brand-subtitle">Control Center</div>
@@ -969,7 +1217,7 @@
         <div id="dashboardSection">
             <div class="welcome-header">
                 <div class="welcome-title">
-                    <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
+                    <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span></h2>
                     <p>Manage your links, track performance, and grow your reach</p>
                 </div>
             </div>
@@ -977,14 +1225,16 @@
             <!-- HERO CARD -->
             <div class="hero-card">
                 <div class="hero-card-top">
-                    <div class="hero-icon">🚀</div>
+                    <div class="hero-icon">
+                        <svg><use href="#icon-rocket"/></svg>
+                    </div>
                     <div class="hero-text">
                         <h3 id="heroTitle">Create New Link</h3>
                         <p id="heroSubtitle">Generate a fresh rewarded tracking link and start earning</p>
                     </div>
                 </div>
                 <button class="hero-create-btn" id="heroCreateBtn" onclick="openCreateLinkModal()">
-                    <span>➕</span>
+                    <svg><use href="#icon-plus"/></svg>
                     <span>Create New Link</span>
                     <span class="btn-badge" id="heroLinkBadge">0 / 0</span>
                 </button>
@@ -995,7 +1245,7 @@
             <div class="plan-days-card" id="planDaysCard" style="display:none;">
                 <div class="plan-days-header">
                     <div class="plan-days-label">
-                        <span>📅</span> Plan Validity
+                        <svg><use href="#icon-calendar"/></svg> Plan Validity
                     </div>
                     <div class="plan-days-value" id="planDaysValue">-- Days Left</div>
                 </div>
@@ -1011,16 +1261,25 @@
             <!-- LINK SELECTOR -->
             <div class="link-selector-card">
                 <div class="link-info-box">
-                    <div class="link-title-badge"><span>🔗</span><span id="displayLinkName" style="color:#fff;">No link selected</span></div>
+                    <div class="link-title-badge">
+                        <svg><use href="#icon-link"/></svg>
+                        <span id="displayLinkName" style="color:#fff;">No link selected</span>
+                    </div>
                     <div class="link-id-sub"><span>ID:</span><strong id="displayLinkId">--</strong></div>
                 </div>
                 <div class="link-actions-row">
                     <select id="userLinkSelect" onchange="onSelectUserLink(this.value)">
                         <option value="">-- Select a Link --</option>
                     </select>
-                    <button class="icon-btn" onclick="refreshCurrentLinkData()" title="Refresh">🔄</button>
-                    <button class="icon-btn" id="btnCopyLink" onclick="copyCurrentLink()" title="Copy Link">📋</button>
-                    <button class="icon-btn danger" id="btnDeleteLink" onclick="deleteCurrentLink()" title="Delete Link">🗑️</button>
+                    <button class="icon-btn" onclick="refreshCurrentLinkData()" title="Refresh">
+                        <svg><use href="#icon-refresh"/></svg>
+                    </button>
+                    <button class="icon-btn" id="btnCopyLink" onclick="copyCurrentLink()" title="Copy Link">
+                        <svg><use href="#icon-copy"/></svg>
+                    </button>
+                    <button class="icon-btn danger" id="btnDeleteLink" onclick="deleteCurrentLink()" title="Delete Link">
+                        <svg><use href="#icon-trash"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -1041,12 +1300,12 @@
             <div class="date-filter-box">
                 <div class="date-filter-top">
                     <div class="date-pills">
-                        <span style="font-size:12.5px; font-weight:700; color:var(--text-secondary);">📅 Filter:</span>
+                        <span style="font-size:12.5px; font-weight:700; color:var(--text-secondary);">Filter:</span>
                         <button class="pill-btn active" onclick="selectDateFilter('today', this)">Today</button>
                         <button class="pill-btn" onclick="selectDateFilter('yesterday', this)">Yesterday</button>
                         <button class="pill-btn" onclick="selectDateFilter('7days', this)">Last 7 Days</button>
                         <button class="pill-btn" onclick="selectDateFilter('all', this)">All Time</button>
-                        <button class="pill-btn" onclick="toggleCustomDateUI(this)">Custom ▾</button>
+                        <button class="pill-btn" onclick="toggleCustomDateUI(this)">Custom</button>
                     </div>
                     <span id="activeDateLabel" style="font-size:12px; color:var(--accent-cyan); font-weight:700;">Showing: Today</span>
                 </div>
@@ -1100,12 +1359,12 @@
     <div class="app-modal" id="createLinkModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>➕ Create New Link</h3>
+                <h3><svg><use href="#icon-plus"/></svg> Create New Link</h3>
                 <button class="modal-close-btn" onclick="closeCreateLinkModal()">✕</button>
             </div>
             <div class="create-link-form">
                 <div class="create-form-section">
-                    <div class="create-form-section-title">📝 Basic Info</div>
+                    <div class="create-form-section-title"><svg><use href="#icon-user"/></svg> Basic Info</div>
                     <div class="form-group">
                         <label class="form-label">Your Name (Client)</label>
                         <input type="text" id="clClientName" class="form-input" disabled>
@@ -1117,7 +1376,7 @@
                 </div>
 
                 <div class="create-form-section">
-                    <div class="create-form-section-title">🎬 Video & Claim</div>
+                    <div class="create-form-section-title"><svg><use href="#icon-video"/></svg> Video & Claim</div>
                     <div class="create-form-grid-2">
                         <div class="form-group">
                             <label class="form-label">Video URL *</label>
@@ -1135,15 +1394,15 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Headline</label>
-                            <input type="text" id="clHeadline" class="form-input" placeholder="🎬 Watch Video & Unlock Reward" value="🎬 Watch Video & Unlock Reward" maxlength="150">
+                            <input type="text" id="clHeadline" class="form-input" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150">
                         </div>
                     </div>
                 </div>
 
                 <div class="uid-toggle-box">
                     <div class="uid-toggle-info">
-                        <div class="uid-title">🛡️ UID Checking</div>
-                        <div class="uid-desc" id="uidToggleDesc">🟢 ON — Visitors must enter UID first</div>
+                        <div class="uid-title"><svg><use href="#icon-shield"/></svg> UID Checking</div>
+                        <div class="uid-desc" id="uidToggleDesc">ON — Visitors must enter UID first</div>
                     </div>
                     <div class="uid-toggle-switch">
                         <label class="switch-toggle">
@@ -1154,11 +1413,11 @@
                 </div>
 
                 <div class="create-form-section">
-                    <div class="create-form-section-title">🖼️ Popup Settings</div>
+                    <div class="create-form-section-title"><svg><use href="#icon-image"/></svg> Popup Settings</div>
                     <div class="create-form-grid-2">
                         <div class="form-group">
                             <label class="form-label">Popup Title</label>
-                            <input type="text" id="clPopTitle" class="form-input" placeholder="🎁 Claim Your Reward" value="🎁 Claim Your Reward" maxlength="100">
+                            <input type="text" id="clPopTitle" class="form-input" placeholder="Claim Your Reward" value="Claim Your Reward" maxlength="100">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Popup Button Text</label>
@@ -1176,7 +1435,7 @@
                 </div>
 
                 <button class="btn-action" id="btnCreateLink" onclick="submitCreateLink()">
-                    <span>🚀</span> Generate My Link
+                    <svg><use href="#icon-rocket"/></svg> Generate My Link
                 </button>
             </div>
         </div>
@@ -1186,7 +1445,7 @@
     <div class="app-modal" id="myPlanModal">
         <div class="modal-body-card">
             <div class="modal-header-row">
-                <h3>👑 My Current Plan</h3>
+                <h3><svg><use href="#icon-crown"/></svg> My Current Plan</h3>
                 <button class="modal-close-btn" onclick="closeMyPlanModal()">✕</button>
             </div>
             <div id="myPlanContent">Loading...</div>
@@ -1196,7 +1455,10 @@
     <!-- PLANS MODAL -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card wide">
-            <div class="modal-header-row"><h3>💎 Choose Your Plan</h3><button class="modal-close-btn" onclick="closePlansModal()">✕</button></div>
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-dollar"/></svg> Choose Your Plan</h3>
+                <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
+            </div>
             <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:8px; text-align:center;">Swipe sideways to browse plans.</div>
             <div class="plans-carousel-wrap">
                 <div class="plans-carousel" id="plansCarousel">
@@ -1210,10 +1472,13 @@
     <!-- SHORTENER MODAL -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
-            <div class="modal-header-row"><h3>🔗 URL Shortener</h3><button class="modal-close-btn" onclick="closeShortenerModal()">✕</button></div>
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-link"/></svg> URL Shortener</h3>
+                <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
+            </div>
             <div class="form-group"><label class="form-label">Destination URL</label><input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com"></div>
             <div class="form-group"><label class="form-label">Title / Label</label><input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link"></div>
-            <button class="btn-action" onclick="createUserShortLink()"><span>Create Short Link ➜</span></button>
+            <button class="btn-action" onclick="createUserShortLink()"><span>Create Short Link</span></button>
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle);">
                 <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading...</div>
@@ -1223,8 +1488,10 @@
 
     <!-- LOCK MODAL -->
     <div class="app-modal" id="lockModal">
-        <div class="modal-body-card lock-modal-body" style="text-align:center; max-width:400px; padding:32px 24px;">
-            <div style="font-size:48px; margin-bottom:12px;">🔒</div>
+        <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
+            <div style="width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 16px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+                <svg style="width:32px;height:32px;"><use href="#icon-shield"/></svg>
+            </div>
             <h3 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">Feature Locked</h3>
             <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">You need at least <strong>3 active links</strong> to unlock the URL Shortener feature.</p>
             <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:14px; margin-bottom:20px; text-align:left;">
@@ -1242,7 +1509,10 @@
     <!-- GUIDE MODAL -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
-            <div class="modal-header-row"><h3>📖 How to Use Your Dashboard</h3><button class="modal-close-btn" onclick="closeGuideModal()">✕</button></div>
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-book"/></svg> How to Use</h3>
+                <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
+            </div>
             <div class="guide-item"><h4>1. Create Your Own Links</h4><p>Click "Create New Link" from the menu or hero button. Fill in the details and generate your tracking link instantly.</p></div>
             <div class="guide-item"><h4>2. Link Limit</h4><p>Your plan determines how many active links you can create. When limit is reached, upgrade your plan to create more.</p></div>
             <div class="guide-item"><h4>3. UID Checking</h4><p>Enable UID checking to require visitors to enter their player UID before watching the reward video.</p></div>
@@ -1250,6 +1520,7 @@
             <div class="guide-item"><h4>5. Traffic Analytics (48h Unique)</h4><p>Visitors and video claims are counted on strict 48-hour unique basis. Duplicate clicks within 48 hours are excluded.</p></div>
             <div class="guide-item"><h4>6. URL Shortener</h4><p>Requires 3+ active links. Create short, clean links for your campaigns.</p></div>
             <div class="guide-item"><h4>7. Plan Validity</h4><p>Your plan duration decreases daily. Track remaining days from the home screen progress bar.</p></div>
+            <div class="guide-item"><h4>8. Renewal Plans</h4><p>Open the menu and click "Renewal Plans" to view, compare, and purchase any plan. Your current plan cannot be re-purchased — only higher tiers are available.</p></div>
             <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;"><span>Got it</span></button>
         </div>
     </div>
@@ -1257,7 +1528,10 @@
     <!-- TERMS MODAL -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
-            <div class="modal-header-row"><h3>📜 Terms & Guidelines</h3><button class="modal-close-btn" onclick="closeTermsModal()">✕</button></div>
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
+                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
+            </div>
             <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register with legitimate credentials. Each link is private and exclusively managed by its owner.</p></div>
             <div class="guide-item"><h4>2. Link Ownership</h4><p>All links you create are permanently associated with your account and cannot be transferred.</p></div>
             <div class="guide-item"><h4>3. Plan Expiry</h4><p>Your plan duration decreases daily. When expired, all your links become inactive immediately. Renew to continue.</p></div>
@@ -1272,33 +1546,35 @@
     <div class="activate-popup-overlay" id="activatePopup">
         <div class="activate-popup-card">
             <button class="activate-popup-close" onclick="closeActivatePopup()" aria-label="Close">✕</button>
-            <div class="activate-popup-icon">🎁</div>
+            <div class="activate-popup-icon">
+                <svg><use href="#icon-gift"/></svg>
+            </div>
             <div class="activate-popup-title">Activate Your Free Trial</div>
             <div class="activate-popup-subtitle">Get started with our <strong>3-day FREE trial</strong> — no payment required.</div>
             <div class="activate-features-grid">
                 <div class="activate-feature-item">
-                    <div class="af-icon">🔗</div>
+                    <div class="af-icon"><svg><use href="#icon-link"/></svg></div>
                     <div class="af-content">
                         <div class="af-label">Active Links</div>
                         <div class="af-value" id="apLinksLimit">1 Link</div>
                     </div>
                 </div>
                 <div class="activate-feature-item">
-                    <div class="af-icon">👁️</div>
+                    <div class="af-icon"><svg><use href="#icon-eye"/></svg></div>
                     <div class="af-content">
                         <div class="af-label">Total Visitors</div>
                         <div class="af-value" id="apVisitorsLimit">150 Visitors</div>
                     </div>
                 </div>
                 <div class="activate-feature-item">
-                    <div class="af-icon">📅</div>
+                    <div class="af-icon"><svg><use href="#icon-calendar"/></svg></div>
                     <div class="af-content">
                         <div class="af-label">Validity</div>
                         <div class="af-value" id="apDuration">3 Days</div>
                     </div>
                 </div>
                 <div class="activate-feature-item">
-                    <div class="af-icon">💰</div>
+                    <div class="af-icon"><svg><use href="#icon-dollar"/></svg></div>
                     <div class="af-content">
                         <div class="af-label">Price</div>
                         <div class="af-value" style="color:#34d399;">FREE</div>
@@ -1306,12 +1582,12 @@
                 </div>
             </div>
             <div class="activate-popup-notice">
-                <span>⚠️</span>
+                <svg style="width:18px;height:18px;flex-shrink:0;"><use href="#icon-alert-circle"/></svg>
                 <span><strong>One-time offer:</strong> Free trial can only be activated <strong>once per account</strong>.</span>
             </div>
             <div class="activate-popup-actions">
                 <button class="activate-popup-btn primary" id="btnActivateNow" onclick="confirmActivateFreePlan()">
-                    <span>⚡</span> Activate Free Trial Now
+                    <span>Activate Free Trial Now</span>
                 </button>
                 <button class="activate-popup-btn secondary" onclick="closeActivatePopup()">Maybe Later</button>
             </div>
@@ -1322,7 +1598,7 @@
     <div class="custom-dialog-overlay" id="customDialog">
         <div class="custom-dialog-card">
             <div class="custom-dialog-icon-wrap info" id="dialogIconWrap">
-                <span id="dialogIcon">🔔</span>
+                <svg id="dialogIconSvg"><use href="#icon-info"/></svg>
             </div>
             <div class="custom-dialog-title" id="dialogTitle">Notification</div>
             <div class="custom-dialog-message" id="dialogMessage">Alert message goes here.</div>
@@ -1388,17 +1664,21 @@
 
         function getTurnstileToken() { return currentTurnstileToken || ''; }
 
-        function notify(message, title = 'Notification', icon = 'ℹ️', type = null) {
-            let detectedType = type;
-            if (!detectedType) {
-                if (icon === '✅' || icon === '🎉') detectedType = 'success';
-                else if (icon === '❌' || icon === '⛔') detectedType = 'error';
-                else if (icon === '⚠️' || icon === '🔒') detectedType = 'warning';
-                else detectedType = 'info';
-            }
+        function notify(message, title = 'Notification', icon = 'info', type = null) {
+            const typeMap = {
+                'success': { cls: 'success', svg: 'icon-check-circle' },
+                'error': { cls: 'error', svg: 'icon-x-circle' },
+                'warning': { cls: 'warning', svg: 'icon-alert-circle' },
+                'info': { cls: 'info', svg: 'icon-info' }
+            };
+            
+            let detectedType = type || icon;
+            if (!typeMap[detectedType]) detectedType = 'info';
+            
             const wrap = document.getElementById('dialogIconWrap');
-            wrap.className = 'custom-dialog-icon-wrap ' + detectedType;
-            document.getElementById('dialogIcon').textContent = icon;
+            wrap.className = 'custom-dialog-icon-wrap ' + typeMap[detectedType].cls;
+            const iconSvg = document.getElementById('dialogIconSvg');
+            iconSvg.innerHTML = '<use href="#' + typeMap[detectedType].svg + '"/>';
             document.getElementById('dialogTitle').textContent = title;
             document.getElementById('dialogMessage').textContent = message;
             document.getElementById('customDialog').classList.add('active');
@@ -1411,7 +1691,13 @@
             document.body.innerHTML = `
                 <div style="position:fixed; inset:0; background:#080c16; display:flex; align-items:center; justify-content:center; padding:20px; z-index:99999; font-family:'Plus Jakarta Sans',sans-serif;">
                     <div style="background:rgba(17,23,38,0.95); border:1px solid rgba(239,68,68,0.35); border-radius:24px; padding:36px 28px; max-width:400px; width:100%; text-align:center;">
-                        <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(220,38,38,0.15)); border:2px solid rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; font-size:42px;">⛔</div>
+                        <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(220,38,38,0.15)); border:2px solid rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; color:#f87171;">
+                            <svg style="width:40px;height:40px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                        </div>
                         <div style="font-size:20px; font-weight:800; color:#ef4444; margin-bottom:10px;">Account Removed</div>
                         <div style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:20px;">Your account has been removed by the administrator. All your links and data have been permanently deleted.</div>
                         <button onclick="localStorage.clear(); window.location.reload();" style="padding:12px 28px; border:none; border-radius:10px; background:linear-gradient(135deg, #4f46e5, #6366f1); color:#fff; font-size:14px; font-weight:700; cursor:pointer; width:100%;">Return to Login</button>
@@ -1463,28 +1749,44 @@
         async function openCreateLinkModal() {
             toggleSidebar(false);
 
-            // Check plan + link limit
-            if (!currentPlanUsage || currentPlanUsage.planKey === 'no-plan' || currentPlanUsage.planIsExpired) {
-                notify('You need an active plan to create links. Please activate or renew your plan.', 'No Active Plan', '⚠️', 'warning');
+            // 🆕 More permissive check — only block if truly no plan
+            if (!currentPlanUsage) {
+                notify('Loading plan information. Please wait a moment and try again.', 'Please Wait', 'info');
+                return;
+            }
+            
+            const planKey = currentPlanUsage.planKey;
+            const planIsExpired = currentPlanUsage.planIsExpired;
+            const lifetimeUnlimited = currentPlanUsage.lifetimeUnlimited;
+            
+            // 🆕 FIX: Only block if planKey is no-plan OR plan expired
+            // Free-trial and all other active plans are allowed
+            if (planKey === 'no-plan' || planKey === 'none') {
+                notify('You need an active plan to create links. Please activate or renew your plan.', 'No Active Plan', 'warning');
+                setTimeout(() => openPlansModal(), 800);
+                return;
+            }
+            
+            if (planIsExpired && !lifetimeUnlimited) {
+                notify('Your plan has expired. Please renew to create new links.', 'Plan Expired', 'warning');
                 setTimeout(() => openPlansModal(), 800);
                 return;
             }
 
-            if (currentPlanUsage.linkLimitReached && !currentPlanUsage.lifetimeUnlimited) {
-                notify(`You have reached your plan's link limit (${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}). Please upgrade to create more links.`, 'Link Limit Reached', '⛔', 'error');
+            if (currentPlanUsage.linkLimitReached && !lifetimeUnlimited) {
+                notify(`You have reached your plan's link limit (${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}). Please upgrade to create more links.`, 'Link Limit Reached', 'error');
                 return;
             }
 
             // Auto-fill client name
             document.getElementById('clClientName').value = userProfile.name || '';
-            // Reset form
             document.getElementById('clLinkName').value = '';
             document.getElementById('clVideo').value = '';
             document.getElementById('clClaim').value = '';
             document.getElementById('clButtonText').value = 'Claim Now';
-            document.getElementById('clHeadline').value = '🎬 Watch Video & Unlock Reward';
+            document.getElementById('clHeadline').value = 'Watch Video & Unlock Reward';
             document.getElementById('clUidChecking').checked = true;
-            document.getElementById('clPopTitle').value = '🎁 Claim Your Reward';
+            document.getElementById('clPopTitle').value = 'Claim Your Reward';
             document.getElementById('clPopBtn').value = 'Claim Now';
             document.getElementById('clPopSub').value = 'Tap below to unlock your reward';
             document.getElementById('clPopImg').value = '';
@@ -1493,18 +1795,13 @@
             document.getElementById('createLinkModal').classList.add('active');
         }
 
-        function closeCreateLinkModal() {
-            document.getElementById('createLinkModal').classList.remove('active');
-        }
+        function closeCreateLinkModal() { document.getElementById('createLinkModal').classList.remove('active'); }
 
         function toggleUidDesc() {
             const cb = document.getElementById('clUidChecking');
             const desc = document.getElementById('uidToggleDesc');
-            if (cb.checked) {
-                desc.innerHTML = '🟢 <b>ON</b> — Visitors must enter UID first';
-            } else {
-                desc.innerHTML = '🔴 <b>OFF</b> — Direct popup & video';
-            }
+            if (cb.checked) desc.textContent = 'ON — Visitors must enter UID first';
+            else desc.textContent = 'OFF — Direct popup & video';
         }
 
         async function submitCreateLink() {
@@ -1512,12 +1809,12 @@
             const linkName = document.getElementById('clLinkName').value.trim();
             const video = document.getElementById('clVideo').value.trim();
 
-            if (!linkName) return notify('Please enter a link name.', 'Missing Field', '⚠️', 'warning');
-            if (!video) return notify('Please enter a video URL.', 'Missing Field', '⚠️', 'warning');
+            if (!linkName) return notify('Please enter a link name.', 'Missing Field', 'warning');
+            if (!video) return notify('Please enter a video URL.', 'Missing Field', 'warning');
 
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span>⏳</span> Creating...';
+            btn.innerHTML = '<span>Creating...</span>';
 
             try {
                 const payload = {
@@ -1526,9 +1823,9 @@
                     video: video,
                     claim: document.getElementById('clClaim').value.trim() || '#',
                     buttonText: document.getElementById('clButtonText').value.trim() || 'Claim Now',
-                    headline: document.getElementById('clHeadline').value.trim() || '🎬 Watch Video & Unlock Reward',
+                    headline: document.getElementById('clHeadline').value.trim() || 'Watch Video & Unlock Reward',
                     uidChecking: document.getElementById('clUidChecking').checked,
-                    popupTitle: document.getElementById('clPopTitle').value.trim() || '🎁 Claim Your Reward',
+                    popupTitle: document.getElementById('clPopTitle').value.trim() || 'Claim Your Reward',
                     popupSubtitle: document.getElementById('clPopSub').value.trim() || 'Tap below to unlock your reward',
                     popupButtonText: document.getElementById('clPopBtn').value.trim() || 'Claim Now',
                     popupImage: document.getElementById('clPopImg').value.trim() || null
@@ -1544,28 +1841,20 @@
 
                 if (res.ok && data.success) {
                     closeCreateLinkModal();
-                    notify(`Link "${data.link.linkName}" created successfully! It's now available in your links list.`, 'Link Created', '🎉', 'success');
-
-                    // Refresh
-                    setTimeout(() => {
-                        fetchUserLinkData(data.link.id);
-                    }, 500);
+                    notify(`Link "${data.link.linkName}" created successfully!`, 'Link Created', 'success');
+                    setTimeout(() => fetchUserLinkData(data.link.id), 500);
                 } else {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                     const errMsg = data.error || 'Failed to create link.';
-                    if (data.reason === 'LINK_LIMIT_REACHED') {
-                        notify(errMsg, 'Link Limit Reached', '⛔', 'error');
-                    } else if (data.reason === 'PLAN_EXPIRED' || data.reason === 'NO_ACTIVE_PLAN') {
-                        notify(errMsg, 'Plan Issue', '⚠️', 'warning');
-                    } else {
-                        notify(errMsg, 'Create Failed', '❌', 'error');
-                    }
+                    if (data.reason === 'LINK_LIMIT_REACHED') notify(errMsg, 'Link Limit Reached', 'error');
+                    else if (data.reason === 'PLAN_EXPIRED' || data.reason === 'NO_ACTIVE_PLAN') notify(errMsg, 'Plan Issue', 'warning');
+                    else notify(errMsg, 'Create Failed', 'error');
                 }
             } catch (err) {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
-                notify('Server error: ' + err.message, 'Connection Error', '⚠️', 'warning');
+                notify('Server error: ' + err.message, 'Connection Error', 'warning');
             }
         }
 
@@ -1605,8 +1894,8 @@
 
         async function openActivateFreePlan() {
             await refreshPricingData();
-            if (!loadedPlans || !loadedPlans['free-trial']) return notify('Free trial not available.', 'Not Available', '⚠️');
-            if (currentPlanUsage?.freeTrialUsed === true) return notify('You have already used your Free Trial.', 'Already Used', '⛔', 'warning');
+            if (!loadedPlans || !loadedPlans['free-trial']) return notify('Free trial not available.', 'Not Available', 'warning');
+            if (currentPlanUsage?.freeTrialUsed === true) return notify('You have already used your Free Trial.', 'Already Used', 'error');
             const ftPlan = loadedPlans['free-trial'];
             document.getElementById('apLinksLimit').textContent = (ftPlan.linkLimit === 'unlimited' || ftPlan.linkLimit === -1) ? 'Unlimited' : `${ftPlan.linkLimit} Link${ftPlan.linkLimit > 1 ? 's' : ''}`;
             document.getElementById('apVisitorsLimit').textContent = (ftPlan.visitorLimit === 'unlimited' || ftPlan.visitorLimit === -1) ? 'Unlimited' : `${(ftPlan.visitorLimit || 0).toLocaleString()} Visitors`;
@@ -1617,10 +1906,10 @@
 
         async function confirmActivateFreePlan() {
             const btn = document.getElementById('btnActivateNow');
-            if (!userProfile || !userProfile.name) return notify('Session expired.', 'Error', '❌', 'error');
+            if (!userProfile || !userProfile.name) return notify('Session expired.', 'Error', 'error');
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span>⏳</span> Activating...';
+            btn.innerHTML = '<span>Activating...</span>';
             try {
                 const res = await fetch('/api/user/select-free-plan', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1629,15 +1918,15 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) {
                     closeActivatePopup();
-                    notify('Free Trial activated successfully!', 'Activated', '🎉', 'success');
+                    notify('Free Trial activated successfully!', 'Activated', 'success');
                     setTimeout(() => fetchUserLinkData(), 500);
                 } else {
                     btn.disabled = false; btn.innerHTML = originalHtml;
-                    notify(data.error || 'Failed to activate.', 'Activation Failed', '❌', 'error');
+                    notify(data.error || 'Failed to activate.', 'Activation Failed', 'error');
                 }
             } catch (err) {
                 btn.disabled = false; btn.innerHTML = originalHtml;
-                notify('Server error: ' + err.message, 'Error', '⚠️', 'warning');
+                notify('Server error: ' + err.message, 'Error', 'warning');
             }
         }
 
@@ -1667,14 +1956,14 @@
             const phone = document.getElementById('inPhone').value.trim();
             const btn = document.getElementById('btnSubmitLogin');
             const turnstileToken = getTurnstileToken();
-            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', '⚠️', 'warning');
+            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', 'warning');
             btn.disabled = true; btn.innerHTML = '<span>Verifying...</span>';
             try {
                 const res = await fetch('/api/user/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); }
-                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', '❌', 'error'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️', 'warning'); }
+                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', 'error'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', 'warning'); }
             finally { btn.disabled = false; btn.innerHTML = '<span>Sign In</span>'; }
         }
 
@@ -1685,30 +1974,30 @@
             const phone = document.getElementById('upPhone').value.trim();
             const termsAgreed = document.getElementById('upTermsCheck').checked;
             const turnstileToken = getTurnstileToken();
-            if (!termsAgreed) return notify('Please accept the Terms.', 'Terms Required', '⚠️', 'warning');
+            if (!termsAgreed) return notify('Please accept the Terms.', 'Terms Required', 'warning');
             const emailCheck = validateEmailFormat(email);
-            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', '⚠️', 'warning');
-            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', '⚠️', 'warning');
-            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', '⚠️', 'warning');
+            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', 'warning');
+            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', 'warning');
+            if (!turnstileToken) return notify('Please complete the CAPTCHA', 'CAPTCHA Required', 'warning');
             const btn = document.getElementById('btnSubmitRegister');
             btn.disabled = true; btn.innerHTML = '<span>Submitting...</span>';
             try {
                 const res = await fetch('/api/user/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', '🎉', 'success'); resetTurnstile(); switchAuth('login'); }
-                else { notify(data.error || 'Registration failed.', 'Error', '❌', 'error'); resetTurnstile(); }
-            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️', 'warning'); }
+                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', 'success'); resetTurnstile(); switchAuth('login'); }
+                else { notify(data.error || 'Registration failed.', 'Error', 'error'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', 'warning'); }
             finally { btn.disabled = false; btn.innerHTML = '<span>Create Account</span>'; }
         }
 
         async function handleGoogleLogin(response) {
-            if (!response || !response.credential) return notify('Google login failed.', 'Error', '❌', 'error');
+            if (!response || !response.credential) return notify('Google login failed.', 'Error', 'error');
             try {
                 const res = await fetch('/api/user/google-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: response.credential }) });
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', '✅', 'success'); }
-                else notify(data.error || 'Google login failed', 'Error', '❌', 'error');
-            } catch (err) { notify('Unable to connect', 'Connection Error', '⚠️', 'warning'); }
+                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', 'success'); }
+                else notify(data.error || 'Google login failed', 'Error', 'error');
+            } catch (err) { notify('Unable to connect', 'Connection Error', 'warning'); }
         }
 
         function showDashboardView() {
@@ -1757,7 +2046,7 @@
         function applyCustomDateRange() {
             const s = document.getElementById('customDateInput').value;
             const e = document.getElementById('customEndDateInput').value || s;
-            if (!s) return notify('Please select a date.', 'Date Required', '⚠️', 'warning');
+            if (!s) return notify('Please select a date.', 'Date Required', 'warning');
             currentDateFilter = 'custom'; currentStartDate = s; currentEndDate = e;
             const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -1778,7 +2067,7 @@
                 
                 if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                 
-                if (data.planUsage) { currentPlanUsage = data.planUsage; updatePlanUsageUI(); updateHeroUI(); updatePlanDaysUI(); }
+                if (data.planUsage) { currentPlanUsage = data.planUsage; updateHeroUI(); updatePlanDaysUI(); }
                 if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
                 if (data.paymentSettings) {
                     activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi';
@@ -1803,7 +2092,6 @@
                     document.getElementById('btnDeleteLink').disabled = true;
                     document.getElementById('btnCopyLink').disabled = true;
                 }
-                // Update link count in menu
                 const cnt = document.getElementById('menuLinkCount');
                 if (cnt) cnt.textContent = myLinksList.length;
             } catch (err) {
@@ -1827,16 +2115,20 @@
             const heroTitle = document.getElementById('heroTitle');
             const heroSubtitle = document.getElementById('heroSubtitle');
             
-            if (pu.planKey === 'no-plan' || pu.planIsExpired || !pu.planKey) {
+            const noPlan = !pu.planKey || pu.planKey === 'no-plan' || pu.planKey === 'none';
+            const expired = pu.planIsExpired === true;
+            const limitHit = pu.linkLimitReached && !pu.lifetimeUnlimited;
+            
+            if (noPlan || expired) {
                 if (btn) btn.disabled = true;
                 if (heroTitle) heroTitle.textContent = 'Plan Required';
                 if (heroSubtitle) heroSubtitle.textContent = 'Activate a plan to start creating links';
-                if (info) info.innerHTML = '⚠️ <strong>No active plan</strong> — Please activate or renew your plan.';
-            } else if (pu.linkLimitReached && !pu.lifetimeUnlimited) {
+                if (info) info.innerHTML = '<strong>No active plan</strong> — Please activate or renew your plan.';
+            } else if (limitHit) {
                 if (btn) btn.disabled = true;
                 if (heroTitle) heroTitle.textContent = 'Link Limit Reached';
                 if (heroSubtitle) heroSubtitle.textContent = 'Upgrade your plan to create more links';
-                if (info) info.innerHTML = `⛔ You've used all <strong>${linksLimit}</strong> link${linksLimit > 1 ? 's' : ''}. Upgrade to create more.`;
+                if (info) info.innerHTML = `You've used all <strong>${linksLimit}</strong> link${linksLimit > 1 ? 's' : ''}. Upgrade to create more.`;
             } else {
                 if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'Create New Link';
@@ -1860,8 +2152,6 @@
             card.classList.remove('warn', 'danger');
             
             const daysLeft = pu.planDaysLeft || 0;
-            const totalDays = pu.planTotalDays || 0;
-            const elapsed = pu.planDaysElapsed || 0;
             const progressPct = pu.planProgressPct || 0;
             
             const valueEl = document.getElementById('planDaysValue');
@@ -1871,13 +2161,8 @@
             barEl.style.width = `${progressPct}%`;
             barEl.className = 'plan-days-bar-fill';
             
-            if (daysLeft <= 2) {
-                card.classList.add('danger');
-                barEl.classList.add('danger');
-            } else if (daysLeft <= 5) {
-                card.classList.add('warn');
-                barEl.classList.add('warn');
-            }
+            if (daysLeft <= 2) { card.classList.add('danger'); barEl.classList.add('danger'); }
+            else if (daysLeft <= 5) { card.classList.add('warn'); barEl.classList.add('warn'); }
             
             document.getElementById('planStartDate').textContent = pu.planStartDate ? new Date(pu.planStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--';
             document.getElementById('planExpiryDate').textContent = pu.planExpiryDate ? new Date(pu.planExpiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--';
@@ -1897,30 +2182,19 @@
             const tc = document.getElementById('txtCreatedDate'); if (tc) tc.textContent = '--';
         }
 
-        function updatePlanUsageUI() {
-            if (!currentPlanUsage) return;
-            const pu = currentPlanUsage;
-            
-            // Update My Plan content if modal open
-            if (document.getElementById('myPlanModal').classList.contains('active')) {
-                renderMyPlan();
-            }
-        }
-
         function renderMyPlan() {
             const el = document.getElementById('myPlanContent');
             if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Loading...</p>'; return; }
             const pu = currentPlanUsage;
             
-            const hasNoPlan = pu.planKey === 'no-plan' || pu.planIsExpired || pu.planKey === 'none';
+            const hasNoPlan = pu.planKey === 'no-plan' || pu.planIsExpired || pu.planKey === 'none' || !pu.planKey;
             
             if (hasNoPlan) {
                 el.innerHTML = `
                     <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:24px; margin-bottom:14px; text-align:center;">
-                        <div style="font-size:48px; margin-bottom:10px;">🎁</div>
                         <div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
                         <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:18px;">Activate a plan to start creating links.</div>
-                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>⚡ Activate Plan</span></button>
+                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>Activate Plan</span></button>
                     </div>
                 `;
                 return;
@@ -1932,48 +2206,47 @@
 
             let featuresHtml = '';
             if (Array.isArray(pu.features) && pu.features.length) {
-                featuresHtml = `<ul style="list-style:none; padding:0; margin:12px 0 0;">` +
-                    pu.features.map(f => `<li style="padding:6px 0; color:#cbd5e1; font-size:12.5px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">✓</span> <span>${f}</span></li>`).join('') +
-                    `</ul>`;
+                featuresHtml = '<ul style="list-style:none; padding:0; margin:12px 0 0;">' +
+                    pu.features.map(f => `<li style="padding:6px 0; color:#cbd5e1; font-size:12.5px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">•</span> <span>${f}</span></li>`).join('') +
+                    '</ul>';
             }
 
             let cardBg = 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))';
             let cardBorder = 'rgba(99,102,241,0.35)';
-            let titlePrefix = '';
-            if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.1))'; cardBorder = 'rgba(245,158,11,0.6)'; titlePrefix = '👑 '; }
+            if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.1))'; cardBorder = 'rgba(245,158,11,0.6)'; }
 
-            const daysLeftText = isVip ? '∞ Lifetime' : ((pu.durationDays || 0) + ' Days (' + (pu.planDaysLeft || 0) + ' left)');
+            const daysLeftText = isVip ? 'Lifetime' : ((pu.durationDays || 0) + ' Days (' + (pu.planDaysLeft || 0) + ' left)');
 
             el.innerHTML = `
                 <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; margin-bottom:14px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
-                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${titlePrefix}${pu.planName || 'Free Trial'}</div>
+                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${pu.planName || 'Free Trial'}</div>
                     <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${daysLeftText}</b>${!isVip ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
                     ${featuresHtml}
                 </div>
                 <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Usage Summary</div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
-                        <span style="color:var(--text-secondary); font-size:13px;">🔗 Links Used</span>
+                        <span style="color:var(--text-secondary); font-size:13px;">Links Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.linksUsed || 0} / ${linksLimitText}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
-                        <span style="color:var(--text-secondary); font-size:13px;">👁️ Visitors Used</span>
+                        <span style="color:var(--text-secondary); font-size:13px;">Visitors Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.visitorsUsed || 0} / ${visitorLimitText}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                        <span style="color:var(--text-secondary); font-size:13px;">🎁 Claims Used</span>
+                        <span style="color:var(--text-secondary); font-size:13px;">Claims Used</span>
                         <span style="color:#fff; font-weight:700;">${pu.claimsUsed || 0}</span>
                     </div>
                 </div>
                 ${isVip ? `
                     <div style="margin-top:14px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; text-align:center;">
-                        <div style="font-size:13px; font-weight:700; color:#fbbf24;">👑 Lifetime Unlimited access!</div>
+                        <div style="font-size:13px; font-weight:700; color:#fbbf24;">Lifetime Unlimited access!</div>
                         <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div>
                     </div>
                 ` : `
                     <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
-                        <span>💎 View Plans & Upgrade</span>
+                        <span>View Plans & Upgrade</span>
                     </button>
                 `}
             `;
@@ -2014,7 +2287,6 @@
             if (isLifetimeUnlimited || plansToShow.length === 0) {
                 container.innerHTML = `
                     <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
-                        <div style="font-size: 64px; margin-bottom: 16px;">👑</div>
                         <div style="font-size: 22px; font-weight: 800; color: #fbbf24; margin-bottom: 8px;">Lifetime Unlimited Active</div>
                         <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">
                             You have the highest plan available. No upgrade or renewal needed.
@@ -2033,6 +2305,15 @@
                 }
             }
 
+            const iconMap = {
+                'free-trial': 'icon-gift',
+                'basic': 'icon-tag',
+                'creator': 'icon-target',
+                'pro': 'icon-rocket',
+                'business': 'icon-shield',
+                'enterprise-vip': 'icon-crown'
+            };
+
             container.innerHTML = plansToShow.map(key => {
                 const p = loadedPlans[key];
                 const isSelected = (key === activePlan.key);
@@ -2041,19 +2322,22 @@
                 const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : (p.badge === 'FREE' ? 'free' : '')));
                 const extraClass = p.badge === 'POPULAR' ? 'popular-plan' : (p.badge === 'BEST VALUE' ? 'best-plan' : '');
                 const ownedClass = isOwned ? 'owned-plan' : '';
+                const iconName = iconMap[key] || 'icon-gift';
                 const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Active Links`;
                 const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
                 const perDay = p.durationDays > 0 && p.price > 0 ? (p.price / p.durationDays).toFixed(1) : '0';
                 
                 const features = Array.isArray(p.features) && p.features.length ? p.features : [linksLabel, visitorLabel, `${p.durationDays} Days Validity`];
-                const featuresHtml = features.map(f => `<div class="plan-feature-item"><span class="check-icon">✓</span><span>${escapeHTML(f)}</span></div>`).join('');
+                const featuresHtml = features.map(f => `<div class="plan-feature-item"><span class="check-icon">•</span><span>${escapeHTML(f)}</span></div>`).join('');
 
                 return `
-                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `notify('This is your current plan.', 'Already Owned', '👑', 'info')` : `pickDynamicPlan('${key}')`}">
-                        <div class="plan-card-icon-wrap">${p.icon || '🎁'}</div>
+                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `notify('This is your current plan.', 'Already Owned', 'info')` : `pickDynamicPlan('${key}')`}">
+                        <div class="plan-card-icon-wrap">
+                            <svg><use href="#${iconName}"/></svg>
+                        </div>
                         <div class="plan-card-name">
                             <span>${escapeHTML(p.name)}</span>
-                            ${isOwned ? `<span class="plan-card-badge-pill owned">✓ OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
+                            ${isOwned ? `<span class="plan-card-badge-pill owned">OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
                         </div>
                         
                         <div class="plan-card-price-section">
@@ -2061,14 +2345,14 @@
                                 ${p.price === 0 ? `<span class="price-free">FREE</span>` : `<span class="price-currency">₹</span><span class="price-amount">${p.price}</span>`}
                             </div>
                             <div class="plan-card-price-sub">${p.price > 0 ? `₹${perDay} per day` : 'No cost'}</div>
-                            <div class="plan-card-duration">📅 ${p.durationDays} Days Validity</div>
+                            <div class="plan-card-duration">${p.durationDays} Days Validity</div>
                         </div>
 
-                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `notify('This is your current plan.', 'Already Owned', '👑', 'info')` : `pickDynamicPlan('${key}')`}">
-                            ${isOwned ? '👑 Current Plan' : (isSelected ? '✓ Selected' : 'Choose Plan')}
+                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `notify('This is your current plan.', 'Already Owned', 'info')` : `pickDynamicPlan('${key}')`}">
+                            ${isOwned ? 'Current Plan' : (isSelected ? 'Selected' : 'Choose Plan')}
                         </button>
 
-                        <div class="plan-card-includes-title">✨ WHAT'S INCLUDED</div>
+                        <div class="plan-card-includes-title">WHAT'S INCLUDED</div>
                         <div class="plan-features-list">${featuresHtml}</div>
                     </div>
                 `;
@@ -2095,7 +2379,6 @@
             if (isOwned) {
                 footer.innerHTML = `
                     <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1px dashed rgba(16,185,129,0.4); border-radius:12px; padding:16px; text-align:center;">
-                        <div style="font-size:32px; margin-bottom:8px;">👑</div>
                         <div style="font-size:14px; font-weight:800; color:#34d399;">This is your Current Plan</div>
                         <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Choose a higher plan to upgrade.</div>
                     </div>
@@ -2111,19 +2394,18 @@
                     <div class="payment-panel-screenshot">
                         <div class="qr-wrapper">
                             <img src="${qrUrl}" alt="Payment QR">
-                            <span style="font-size:11px; color:var(--text-muted); font-weight:600;">📱 Scan to Pay ₹${p.price}</span>
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:600;">Scan to Pay ₹${p.price}</span>
                         </div>
                         <div class="payment-info">
                             <div style="font-size:14px; font-weight:800; color:#fff; margin-bottom:10px;">Complete Your Payment</div>
                             <div class="upi-copy-chip" onclick="copyUpiText()">
                                 <span>UPI: <strong>${activeAdminUpi}</strong></span>
-                                <span>📋</span>
                             </div>
                             <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">
                                 Pay <strong style="color:#38bdf8;">₹${p.price}</strong> then send screenshot on WhatsApp.
                             </div>
                             <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;">
-                                <span>📩 Send Screenshot on WhatsApp</span>
+                                <span>Send Screenshot on WhatsApp</span>
                             </button>
                         </div>
                     </div>
@@ -2133,10 +2415,10 @@
                 if (freeTrialUsed) {
                     paymentHtml = `<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:13px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>`;
                 } else {
-                    paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();"><span>⚡ Activate Free Trial</span></button>`;
+                    paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();"><span>Activate Free Trial</span></button>`;
                 }
             } else {
-                paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()"><span>📩 Contact Admin on WhatsApp</span></button>`;
+                paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()"><span>Contact Admin on WhatsApp</span></button>`;
             }
 
             footer.innerHTML = `
@@ -2155,7 +2437,7 @@
         }
 
         function copyUpiText() {
-            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI copied: ${activeAdminUpi}`, 'Copied', '📋', 'success'));
+            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI copied: ${activeAdminUpi}`, 'Copied', 'success'));
         }
 
         function populateUserLinksDropdown(links, currentActiveId) {
@@ -2164,7 +2446,7 @@
             selectEl.innerHTML = links.map(l => {
                 const isSelected = l.id === currentActiveId ? 'selected' : '';
                 const lName = l.name || l.title || l.linkName || 'Untitled';
-                return `<option value="${l.id}" ${isSelected}>🔗 ${lName}</option>`;
+                return `<option value="${l.id}" ${isSelected}>${lName}</option>`;
             }).join('');
         }
 
@@ -2172,13 +2454,13 @@
         function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
 
         function copyCurrentLink() {
-            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link to copy', 'Error', '⚠️', 'warning');
+            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link to copy', 'Error', 'warning');
             const url = window.location.origin + '/uid?link=' + encodeURIComponent(activeLinkRecord.id);
-            navigator.clipboard.writeText(url).then(() => notify('Link URL copied!', 'Copied', '📋', 'success'));
+            navigator.clipboard.writeText(url).then(() => notify('Link URL copied!', 'Copied', 'success'));
         }
 
         async function deleteCurrentLink() {
-            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link selected', 'Error', '⚠️', 'warning');
+            if (!activeLinkRecord || !activeLinkRecord.id) return notify('No link selected', 'Error', 'warning');
             if (!confirm(`Delete link "${activeLinkRecord.name || activeLinkRecord.title}"?\n\nThis cannot be undone.`)) return;
             
             try {
@@ -2189,14 +2471,14 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) {
-                    notify('Link deleted successfully!', 'Deleted', '🗑️', 'success');
+                    notify('Link deleted successfully!', 'Deleted', 'success');
                     localStorage.removeItem('userActiveLinkId');
                     setTimeout(() => fetchUserLinkData(), 500);
                 } else {
-                    notify(data.error || 'Failed to delete link.', 'Error', '❌', 'error');
+                    notify(data.error || 'Failed to delete link.', 'Error', 'error');
                 }
             } catch (err) {
-                notify('Server error: ' + err.message, 'Error', '⚠️', 'warning');
+                notify('Server error: ' + err.message, 'Error', 'warning');
             }
         }
 
@@ -2224,7 +2506,7 @@
                 const datePretty = new Date(currentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 filterLabel.textContent = `${datePretty} Visits`;
                 document.getElementById('lblFilteredClaims').textContent = `${datePretty} Claims`;
-                subFilterLabel.textContent = 'Filtered Date';
+                subFilterLabel.textContent = 'Filtered';
             } else if (currentDateFilter === 'yesterday') {
                 filterLabel.textContent = "Yesterday Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Yesterday Claims";
@@ -2282,12 +2564,12 @@
                 });
                 if (res.status === 403) {
                     const errData = await res.json().catch(() => ({}));
-                    return notify(errData.error || 'Cannot purchase this plan.', 'Not Allowed', '⛔', 'error');
+                    return notify(errData.error || 'Cannot purchase this plan.', 'Not Allowed', 'error');
                 }
             } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const message = `Hello Admin, I want to renew my plan:\n\n👤 User: ${userProfile.name}\n🔗 Link: ${currentLinkTitle}\n🆔 Link ID: ${currentId || 'Pending'}\n💎 Plan: ${planName} (${activePlan.days} Days)\n💰 Amount: ₹${activePlan.cost}\n📅 Date: ${today}\n\nPlease verify and approve. Thank you!`;
+            const message = `Hello Admin, I want to renew my plan:\n\nUser: ${userProfile.name}\nLink: ${currentLinkTitle}\nLink ID: ${currentId || 'Pending'}\nPlan: ${planName} (${activePlan.days} Days)\nAmount: ₹${activePlan.cost}\nDate: ${today}\n\nPlease verify and approve. Thank you!`;
 
             window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
             closePlansModal();
@@ -2328,8 +2610,8 @@
                             <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
                         </div>
                         <div style="display:flex;gap:6px;">
-                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','📋','success'))" style="width:auto;padding:5px 10px;font-size:11px;">📋</button>
-                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">🗑️</button>
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','success'))" style="width:auto;padding:5px 10px;font-size:11px;">Copy</button>
+                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">Delete</button>
                         </div>
                     </div>
                 `).join('');
@@ -2339,18 +2621,18 @@
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-            if (!originalUrl) return notify('Please enter a URL', 'URL Required', '⚠️', 'warning');
+            if (!originalUrl) return notify('Please enter a URL', 'URL Required', 'warning');
             try {
                 const res = await fetch('/api/user/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title, userName: userProfile.name }) });
                 const data = await res.json().catch(() => ({}));
-                if (data.success) { notify('Short link created!', 'Success', '🎉', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
-                else notify(data.error || 'Failed', 'Error', '❌', 'error');
-            } catch(e) { notify('Server error', 'Error', '⚠️', 'warning'); }
+                if (data.success) { notify('Short link created!', 'Success', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
+                else notify(data.error || 'Failed', 'Error', 'error');
+            } catch(e) { notify('Server error', 'Error', 'warning'); }
         }
 
         async function deleteUserShortLink(id) {
             if (!confirm('Delete this short link?')) return;
-            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', '🗑️', 'info'); loadUserShortLinks(); } catch(e) {}
+            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', 'info'); loadUserShortLinks(); } catch(e) {}
         }
 
         function escapeHTML(str) {
