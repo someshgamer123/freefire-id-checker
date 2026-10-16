@@ -19,8 +19,8 @@ const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
-const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours for unique visit/claim counting
-const ACTIVE_WINDOW_MS = 5 * 60 * 1000;       // 5 minutes for "active now" real-time tracking
+const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -130,7 +130,6 @@ const DISPOSABLE_DOMAINS = [
     'emailondeck.com', 'mytemp.email', 'burnermail.io', 'mailsac.com'
 ];
 
-// 🆕 PLAN ORDER for hierarchy (small to large)
 const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
 
 const DEFAULT_PLANS = {
@@ -248,7 +247,6 @@ function isLinkExpired(link) {
     return false;
 }
 
-// 🆕 Check if plan A is higher tier than plan B
 function isPlanHigher(planA, planB) {
     const indexA = PLAN_ORDER.indexOf(planA);
     const indexB = PLAN_ORDER.indexOf(planB);
@@ -256,7 +254,8 @@ function isPlanHigher(planA, planB) {
     return indexA > indexB;
 }
 
-// 🆕 Check if user can purchase a plan (plan must be >= current plan)
+// 🆕 Check if user can purchase a plan
+// BUT: allow purchase even if no link (link will be created after)
 function canUserPurchasePlan(user, targetPlanKey) {
     if (!user) return { allowed: false, reason: 'NO_USER' };
     if (user.lifetimeUnlimited === true) {
@@ -265,21 +264,18 @@ function canUserPurchasePlan(user, targetPlanKey) {
     
     const currentPlan = user.currentPlan || 'none';
     
-    // If user has no plan or expired plan → can buy anything
     if (currentPlan === 'none' || isPlanExpired(user)) {
         return { allowed: true };
     }
     
-    // If current plan is lifetime-unlimited
     if (currentPlan === 'lifetime-unlimited') {
         return { allowed: false, reason: 'LIFETIME_UNLIMITED', message: 'You already have Lifetime Unlimited access.' };
     }
     
-    // User can only buy plans HIGHER than current plan
     const currentIdx = PLAN_ORDER.indexOf(currentPlan);
     const targetIdx = PLAN_ORDER.indexOf(targetPlanKey);
     
-    if (currentIdx === -1 || targetIdx === -1) return { allowed: true }; // fallback allow
+    if (currentIdx === -1 || targetIdx === -1) return { allowed: true };
     
     if (targetIdx <= currentIdx) {
         return { 
@@ -353,7 +349,6 @@ async function getPricingDoc() {
     }
     const currentPlans = pricingDoc.plans || {};
     let needsSave = false;
-    // 🆕 Only add missing plans; DON'T overwrite existing ones (user changes preserved)
     for (const key of Object.keys(DEFAULT_PLANS)) {
         if (!currentPlans[key]) {
             currentPlans[key] = DEFAULT_PLANS[key];
@@ -627,9 +622,12 @@ app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     res.status(403).send(`<!DOCTYPE html><html><head><title>Forbidden</title><style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:22px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head><body><div class="card"><h1>⛔ ACCESS DENIED</h1><p>Only an authorized administrator can unblock devices.</p></div></body></html>`);
 });
 
+// 🆕 PUBLIC pricing — always fresh from DB (no cache)
 app.get('/api/pricing', async (req, res) => {
     try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         const pricingDoc = await getPricingDoc();
         const publicPlans = {};
         for (const [key, plan] of Object.entries(pricingDoc.plans || {})) {
@@ -676,16 +674,13 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
-        // 🆕 STRICT: Check if link owner user still exists
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
             const ownerUser = await RenewalUser.findOne({ 
                 name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
             }).lean();
             
-            // 🆕 If owner user deleted → disable link and return expired
             if (!ownerUser) {
-                // Auto-delete the orphaned link
                 await Link.collection.deleteOne({ _id: link._id }).catch(() => {});
                 return res.status(403).json({ 
                     error: 'owner_deleted', 
@@ -785,7 +780,7 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING — 48H UNIQUE ====================
+// ==================== CLAIM TRACKING ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
@@ -957,7 +952,6 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     } catch (e) { res.status(401).json({ error: 'Google authentication failed' }); }
 });
 
-// 🆕 VERIFY USER SESSION — called by frontend every 10 sec to check if user still exists
 app.post('/api/user/verify-session', async (req, res) => {
     try {
         const { userName, userId } = req.body;
@@ -1061,11 +1055,12 @@ app.post('/api/user/select-free-plan', async (req, res) => {
 app.post('/api/user/link-details', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         const { userName, linkInput, linkId, id, dashboardId, filter, startDate, endDate } = req.body;
         const cleanUser = (userName || '').trim();
         const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
 
-        // 🆕 STRICT: Check if user still exists
         const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
         if (!ownerUser) {
             return res.status(404).json({
@@ -1120,6 +1115,7 @@ app.post('/api/user/link-details', async (req, res) => {
         }
         if (!link && allUserLinks.length > 0) link = allUserLinks[0];
 
+        // 🆕 FRESH pricing data from DB (no stale cache)
         const pricingDoc = await getPricingDoc();
         
         const hasPlan = userHasActivePlan(ownerUser);
@@ -1185,13 +1181,16 @@ app.post('/api/user/link-details', async (req, res) => {
             };
         }
 
+        // 🆕 Always return FRESH plans even if no link
+        const freshPlans = pricingDoc?.plans || DEFAULT_PLANS;
+
         if (!link) {
             return res.status(404).json({
                 success: false,
                 error: `No active link found for user "${cleanUser}".`,
                 userLinks: [],
                 planUsage,
-                plans: pricingDoc?.plans || DEFAULT_PLANS,
+                plans: freshPlans,
                 paymentSettings: { method: pricingDoc?.paymentSettings?.method || 'UPI', showUpi: pricingDoc?.paymentSettings?.showUpi !== false, details: pricingDoc?.paymentSettings?.details || { upiId: 'admin@upi' } },
                 whatsappNumber: pricingDoc?.whatsappNumber || '916372923348',
                 hasAnyLink: false
@@ -1263,7 +1262,7 @@ app.post('/api/user/link-details', async (req, res) => {
                 dateRange: { filter: filter || 'today', start: dateRangeInfo.startStr, end: dateRangeInfo.endStr, visits: mappedRangeVisits, claims: mappedRangeClaims }
             },
             userLinks: formattedUserLinks, planUsage,
-            plans: pricingDoc?.plans || DEFAULT_PLANS,
+            plans: freshPlans,
             paymentSettings: { method: pricingDoc?.paymentSettings?.method || 'UPI', showUpi: pricingDoc?.paymentSettings?.showUpi !== false, details: pricingDoc?.paymentSettings?.details || { upiId: 'admin@upi' } },
             autoPaymentEnabled: false,
             whatsappNumber: pricingDoc?.whatsappNumber || '916372923348'
@@ -1274,27 +1273,41 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
+// 🆕 RENEWAL PAYMENT — link optional if user doesn't have one yet
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
-        if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
+        if (!plan) return res.status(400).json({ error: 'Plan required' });
         
-        // 🆕 Check plan hierarchy: user can only buy plans >= their current plan
         const user = await RenewalUser.findOne({ name: new RegExp('^' + (userName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
-        if (user) {
-            const purchaseCheck = canUserPurchasePlan(user, plan);
-            if (!purchaseCheck.allowed) {
-                return res.status(403).json({ error: purchaseCheck.message || 'You cannot purchase this plan.' });
-            }
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        // 🆕 Check plan hierarchy
+        const purchaseCheck = canUserPurchasePlan(user, plan);
+        if (!purchaseCheck.allowed) {
+            return res.status(403).json({ error: purchaseCheck.message || 'You cannot purchase this plan.' });
         }
         
+        // 🆕 Allow renewal request even if user has no link yet
+        // They will create link after admin approves their plan
+        const finalLinkId = linkId || 'pending_link_' + user._id;
+        const finalLinkName = linkName || `${user.name}'s New Link (Pending)`;
+        
         await RenewalRequest.create({
-            id: 'req_' + Date.now(), linkId, linkName: linkName || userName || 'Unknown Link',
-            plan, days: parseInt(days) || 30, amount: parseInt(amount) || 0,
-            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(), status: 'pending'
+            id: 'req_' + Date.now(), 
+            linkId: finalLinkId, 
+            linkName: finalLinkName,
+            plan, 
+            days: parseInt(days) || 30, 
+            amount: parseInt(amount) || 0,
+            transactionId: (refNo || 'Manual-WhatsApp').toString().trim(), 
+            status: 'pending'
         });
         res.json({ success: true, message: 'Renewal request submitted.' });
-    } catch (e) { res.status(500).json({ error: 'Payment processing error' }); }
+    } catch (e) { 
+        console.error('Renew payment error:', e);
+        res.status(500).json({ error: 'Payment processing error' }); 
+    }
 });
 
 app.get('/api/user/short-links', async (req, res) => {
@@ -1372,7 +1385,6 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 PERMANENT DELETE — User + ALL their links + ALL related data
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
@@ -1389,7 +1401,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
         if (userName) {
             const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
             
-            // 🆕 1. Get all link IDs first (for cleanup of related collections)
             const userLinks = await Link.find({
                 $or: [
                     { assignedUser: userRegex }, 
@@ -1400,9 +1411,7 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
             }).lean();
             
             const linkIds = userLinks.map(l => l.id).filter(Boolean);
-            const linkObjIds = userLinks.map(l => l._id);
             
-            // 🆕 2. Delete all renewal requests for these links
             if (linkIds.length > 0) {
                 const renewalRes = await RenewalRequest.deleteMany({ 
                     $or: [
@@ -1413,7 +1422,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
                 renewalReqsDeleted = renewalRes.deletedCount || 0;
             }
             
-            // 🆕 3. Delete visitor activity for these links
             if (linkIds.length > 0) {
                 const visitorRes = await VisitorActivity.deleteMany({ 
                     linkId: { $in: linkIds } 
@@ -1421,11 +1429,9 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
                 visitorActivityDeleted = visitorRes.deletedCount || 0;
             }
             
-            // 🆕 4. Delete all short links created by this user
             const shortRes = await ShortLink.deleteMany({ creator: userRegex });
             shortLinksDeleted = shortRes.deletedCount || 0;
             
-            // 🆕 5. Delete all links
             const linkRes = await Link.deleteMany({
                 $or: [
                     { assignedUser: userRegex }, 
@@ -1439,7 +1445,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
             console.log(`🗑️ Deleted user "${userName}": ${linksDeleted} links, ${renewalReqsDeleted} renewal requests, ${visitorActivityDeleted} visitor activities, ${shortLinksDeleted} short links`);
         }
         
-        // 🆕 6. Delete the user itself (permanent)
         await RenewalUser.deleteOne({ _id: user._id });
         
         res.json({ 
@@ -1459,7 +1464,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// Lifetime Unlimited toggle
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
@@ -1584,18 +1588,19 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 Save Renewal Settings — Force refresh from DB to ensure latest
+// 🆕 Save Renewal Settings — FORCE full plan replacement + fresh DB read
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { plans, paymentSettings, upiId, whatsappNumber, showUpi } = req.body;
         let pricingDoc = await Pricing.findOne();
         if (!pricingDoc) pricingDoc = new Pricing();
         
-        // 🆕 Merge plans properly — replace full plan object, not partial
+        // 🆕 FULL plan replacement — replace entire plan objects
         if (plans && typeof plans === 'object') {
             const currentPlans = pricingDoc.plans || {};
             for (const [key, incomingPlan] of Object.entries(plans)) {
                 if (incomingPlan && typeof incomingPlan === 'object') {
+                    // Replace entire plan object with incoming (not merge)
                     currentPlans[key] = {
                         ...(currentPlans[key] || DEFAULT_PLANS[key] || {}),
                         ...incomingPlan
@@ -1626,7 +1631,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         pricingDoc.autoPaymentEnabled = false;
         await pricingDoc.save();
         
-        // 🆕 Fetch fresh from DB to return latest
+        // 🆕 Fetch fresh from DB
         const freshPricing = await Pricing.findOne().lean();
         
         console.log(`✅ Renewal settings updated — Plans: ${Object.keys(freshPricing.plans || {}).length}`);
@@ -1963,7 +1968,6 @@ async function handleLinkUpdate(req, res) {
         
         if (makeLifetimeFlag) {
             $set.expiryDate = null;
-            console.log(`✅ Link ${cleanId} set to Lifetime Active`);
         } else if (hasExpiryField) {
             const incomingExpiry = req.body.expiryDate ?? req.body.expiry ?? req.body.expDate;
             if (incomingExpiry === null || incomingExpiry === '' || incomingExpiry === 'null' || incomingExpiry === undefined) {
@@ -2040,7 +2044,6 @@ app.all('/api/links/:id/toggle-uid', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/uid', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/toggle', authMiddleware, handleLinkUpdate);
 
-// 🆕 PERMANENT LINK DELETE — with cleanup of related data
 app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(extractCleanId(req.params.id));
@@ -2049,7 +2052,6 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
         
         const linkId = link.id;
         
-        // 🆕 Clean up related data
         await RenewalRequest.deleteMany({ linkId }).catch(() => {});
         await VisitorActivity.deleteMany({ linkId }).catch(() => {});
         
