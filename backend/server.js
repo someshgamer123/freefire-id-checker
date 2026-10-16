@@ -247,15 +247,6 @@ function isLinkExpired(link) {
     return false;
 }
 
-function isPlanHigher(planA, planB) {
-    const indexA = PLAN_ORDER.indexOf(planA);
-    const indexB = PLAN_ORDER.indexOf(planB);
-    if (indexA === -1 || indexB === -1) return false;
-    return indexA > indexB;
-}
-
-// 🆕 Check if user can purchase a plan
-// BUT: allow purchase even if no link (link will be created after)
 function canUserPurchasePlan(user, targetPlanKey) {
     if (!user) return { allowed: false, reason: 'NO_USER' };
     if (user.lifetimeUnlimited === true) {
@@ -388,26 +379,45 @@ function userHasActivePlan(user) {
     } catch(e) { return false; }
 }
 
+// 🆕 STRICT CHECK — user can create a link based on plan limits
 async function canUserCreateLink(user) {
     try {
         if (user.lifetimeUnlimited === true) {
             return { allowed: true, currentCount: 0, limit: 'unlimited', lifetimeUnlimited: true };
         }
         if (isPlanExpired(user)) {
-            return { allowed: false, currentCount: 0, limit: 0, reason: 'PLAN_EXPIRED' };
+            return { allowed: false, currentCount: 0, limit: 0, reason: 'PLAN_EXPIRED', message: 'Your plan has expired. Please renew to create new links.' };
         }
+        if (!userHasActivePlan(user)) {
+            return { allowed: false, currentCount: 0, limit: 0, reason: 'NO_ACTIVE_PLAN', message: 'You need an active plan to create links.' };
+        }
+        
         const pricingDoc = await getPricingDoc();
         const planKey = user.currentPlan || 'free-trial';
         const plan = getPlanDetails(pricingDoc, planKey);
         const linkLimit = plan.linkLimit;
+        
         if (isUnlimited(linkLimit)) return { allowed: true, limit: 'unlimited' };
 
         const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        // 🆕 STRICT: count all links assigned to this user (regardless of status)
         const currentCount = await Link.countDocuments({
-            $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }]
+            $or: [
+                { assignedUser: userRegex }, 
+                { userName: userRegex }, 
+                { creator: userRegex }, 
+                { name: userRegex }
+            ]
         });
+        
         if (currentCount >= linkLimit) {
-            return { allowed: false, currentCount, limit: linkLimit, reason: 'LINK_LIMIT_REACHED' };
+            return { 
+                allowed: false, 
+                currentCount, 
+                limit: linkLimit, 
+                reason: 'LINK_LIMIT_REACHED',
+                message: `You have reached your plan's link limit (${currentCount}/${linkLimit}). Please upgrade your plan to create more links.`
+            };
         }
         return { allowed: true, currentCount, limit: linkLimit };
     } catch(e) { return { allowed: true }; }
@@ -622,7 +632,6 @@ app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     res.status(403).send(`<!DOCTYPE html><html><head><title>Forbidden</title><style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:22px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head><body><div class="card"><h1>⛔ ACCESS DENIED</h1><p>Only an authorized administrator can unblock devices.</p></div></body></html>`);
 });
 
-// 🆕 PUBLIC pricing — always fresh from DB (no cache)
 app.get('/api/pricing', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -646,7 +655,7 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER — 48H UNIQUE ====================
+// ==================== VISITOR LINK RESOLVER ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -1051,6 +1060,118 @@ app.post('/api/user/select-free-plan', async (req, res) => {
     }
 });
 
+// ==================== USER LINK CREATION (NEW) ====================
+app.post('/api/user/create-link', async (req, res) => {
+    try {
+        const {
+            userName,
+            linkName,
+            video,
+            claim,
+            buttonText,
+            headline,
+            uidChecking,
+            popupTitle,
+            popupSubtitle,
+            popupButtonText,
+            popupImage
+        } = req.body;
+        
+        if (!userName) return res.status(400).json({ error: 'User name required' });
+        
+        const user = await RenewalUser.findOne({ 
+            name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+        });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.status === 'rejected') return res.status(403).json({ error: 'Your account has been rejected.' });
+        
+        // 🆕 STRICT: Check plan + link limit BEFORE creating
+        const limitCheck = await canUserCreateLink(user);
+        if (!limitCheck.allowed) {
+            return res.status(403).json({ 
+                error: limitCheck.message || 'Link limit reached', 
+                reason: limitCheck.reason,
+                currentCount: limitCheck.currentCount,
+                limit: limitCheck.limit
+            });
+        }
+        
+        const cleanLinkName = (linkName || 'My Link').toString().trim().slice(0, 100);
+        const cleanVideo = (video || 'https://youtu.be/dQw4w9WgXcQ').toString().trim();
+        const cleanClaim = (claim || '#').toString().trim();
+        const cleanButtonText = (buttonText || 'Claim Now').toString().trim().slice(0, 50);
+        const cleanHeadline = (headline || '🎬 Watch Video & Unlock Reward').toString().trim().slice(0, 150);
+        const cleanUidChecking = !isUidCheckDisabled(uidChecking);
+        const cleanPopupTitle = (popupTitle || '🎁 Claim Your Reward').toString().trim().slice(0, 100);
+        const cleanPopupSubtitle = (popupSubtitle || 'Tap below to unlock your reward').toString().trim().slice(0, 200);
+        const cleanPopupButton = (popupButtonText || cleanButtonText).toString().trim().slice(0, 50);
+        const cleanPopupImage = popupImage && popupImage.trim().length > 4 ? popupImage.trim() : null;
+        
+        // 🆕 Calculate expiry based on user's plan expiry date
+        let linkExpiry = null;
+        if (user.planExpiryDate) {
+            linkExpiry = new Date(user.planExpiryDate);
+        }
+        
+        const newLink = new Link({
+            id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
+            name: user.name,
+            userName: user.name,
+            assignedUser: user.name,
+            creator: user.name,
+            linkName: cleanLinkName,
+            title: cleanLinkName,
+            video: cleanVideo,
+            claim: cleanClaim,
+            buttonText: cleanButtonText,
+            headline: cleanHeadline,
+            expiryDate: linkExpiry,
+            uidChecking: cleanUidChecking,
+            status: 'active',
+            claims: 0,
+            visits: 0,
+            dailyClaims: {},
+            dailyVisits: {},
+            image: cleanPopupImage,
+            popupImage: cleanPopupImage,
+            popupImageUrl: cleanPopupImage,
+            banner: cleanPopupImage,
+            popupSettings: {
+                title: cleanPopupTitle,
+                subtitle: cleanPopupSubtitle,
+                buttonText: cleanPopupButton,
+                image: cleanPopupImage
+            }
+        });
+        
+        await newLink.save();
+        
+        console.log(`✅ User "${user.name}" created new link: ${newLink.id}`);
+        
+        res.json({
+            success: true,
+            message: 'Link created successfully!',
+            link: {
+                id: newLink.id,
+                name: cleanLinkName,
+                title: cleanLinkName,
+                linkName: cleanLinkName,
+                video: cleanVideo,
+                claim: cleanClaim,
+                buttonText: cleanButtonText,
+                headline: cleanHeadline,
+                expiryDate: linkExpiry,
+                uidChecking: cleanUidChecking,
+                status: 'active',
+                popupSettings: newLink.popupSettings
+            }
+        });
+    } catch (e) {
+        console.error('User create link error:', e);
+        res.status(500).json({ error: 'Failed to create link: ' + e.message });
+    }
+});
+
 // ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', async (req, res) => {
     try {
@@ -1115,7 +1236,6 @@ app.post('/api/user/link-details', async (req, res) => {
         }
         if (!link && allUserLinks.length > 0) link = allUserLinks[0];
 
-        // 🆕 FRESH pricing data from DB (no stale cache)
         const pricingDoc = await getPricingDoc();
         
         const hasPlan = userHasActivePlan(ownerUser);
@@ -1126,13 +1246,40 @@ app.post('/api/user/link-details', async (req, res) => {
         
         const plan = getPlanDetails(pricingDoc, hasPlan ? userCurrentPlan : 'free-trial');
         const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
+        const totalUserClaims = allUserLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
 
+        // 🆕 Compute plan days left
         let planDaysLeft = null;
-        if (isLifetimeUnlimited) planDaysLeft = 'lifetime';
-        else if (ownerUser?.planExpiryDate) {
-            const diff = new Date(ownerUser.planExpiryDate) - new Date();
-            planDaysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        let planHoursLeft = null;
+        let planTotalDays = 0;
+        let planDaysElapsed = 0;
+        let planProgressPct = 0;
+        
+        if (isLifetimeUnlimited) {
+            planDaysLeft = 'lifetime';
+        } else if (ownerUser?.planExpiryDate && ownerUser?.planStartDate) {
+            const now = new Date();
+            const start = new Date(ownerUser.planStartDate);
+            const end = new Date(ownerUser.planExpiryDate);
+            const diffMs = end - now;
+            planDaysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            planHoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+            planTotalDays = plan.durationDays || 0;
+            const elapsedMs = now - start;
+            planDaysElapsed = Math.max(0, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)));
+            planProgressPct = planTotalDays > 0 ? Math.min(100, Math.round((planDaysElapsed / planTotalDays) * 100)) : 0;
+        } else if (ownerUser?.planExpiryDate) {
+            const diffMs = new Date(ownerUser.planExpiryDate) - new Date();
+            planDaysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            planHoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
         }
+
+        // 🆕 Compute link limit usage
+        const linkLimitRaw = isLifetimeUnlimited ? 'unlimited' : plan.linkLimit;
+        const linksUsed = allUserLinks.length;
+        const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimitRaw)) ? 'unlimited' : Math.max(0, linkLimitRaw - linksUsed);
+        const linkLimitReached = isLifetimeUnlimited ? false : (!isUnlimited(linkLimitRaw) && linksUsed >= linkLimitRaw);
+        const canCreateMoreLinks = isLifetimeUnlimited || (!isUnlimited(linkLimitRaw) && linksUsed < linkLimitRaw) || isUnlimited(linkLimitRaw);
 
         let planUsage;
         if (hasPlan || isLifetimeUnlimited) {
@@ -1143,18 +1290,25 @@ app.post('/api/user/link-details', async (req, res) => {
                 price: isLifetimeUnlimited ? 0 : plan.price,
                 badge: isLifetimeUnlimited ? 'VIP' : (plan.badge || ''),
                 features: isLifetimeUnlimited ? ['Unlimited Links', 'Unlimited Visitors', 'VIP Support', 'No Expiry', 'All Features'] : (plan.features || []),
-                linkLimit: isLifetimeUnlimited ? 'unlimited' : plan.linkLimit,
+                linkLimit: linkLimitRaw,
                 visitorLimit: isLifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
-                linksUsed: allUserLinks.length,
+                linksUsed: linksUsed,
                 visitorsUsed: totalUserVisits,
-                linksRemaining: (isLifetimeUnlimited || isUnlimited(plan.linkLimit)) ? 'unlimited' : Math.max(0, plan.linkLimit - allUserLinks.length),
+                claimsUsed: totalUserClaims,
+                linksRemaining: linksRemaining,
                 visitorsRemaining: (isLifetimeUnlimited || isUnlimited(plan.visitorLimit)) ? 'unlimited' : Math.max(0, plan.visitorLimit - totalUserVisits),
-                linkLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.linkLimit) && allUserLinks.length >= plan.linkLimit),
+                linkLimitReached: linkLimitReached,
                 visitorLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit),
+                canCreateMoreLinks: canCreateMoreLinks,
                 lifetimeUnlimited: isLifetimeUnlimited,
                 planExpiryDate: ownerUser?.planExpiryDate || null,
+                planStartDate: ownerUser?.planStartDate || null,
                 planIsExpired: false,
                 planDaysLeft: planDaysLeft,
+                planHoursLeft: planHoursLeft,
+                planTotalDays: planTotalDays,
+                planDaysElapsed: planDaysElapsed,
+                planProgressPct: planProgressPct,
                 freeTrialUsed: freeTrialUsed
             };
         } else {
@@ -1167,27 +1321,33 @@ app.post('/api/user/link-details', async (req, res) => {
                 features: [],
                 linkLimit: 0,
                 visitorLimit: 0,
-                linksUsed: allUserLinks.length,
+                linksUsed: linksUsed,
                 visitorsUsed: totalUserVisits,
+                claimsUsed: totalUserClaims,
                 linksRemaining: 0,
                 visitorsRemaining: 0,
                 linkLimitReached: true,
                 visitorLimitReached: true,
+                canCreateMoreLinks: false,
                 lifetimeUnlimited: false,
                 planExpiryDate: ownerUser?.planExpiryDate || null,
+                planStartDate: ownerUser?.planStartDate || null,
                 planIsExpired: planIsExpired,
                 planDaysLeft: 0,
+                planHoursLeft: 0,
+                planTotalDays: 0,
+                planDaysElapsed: 0,
+                planProgressPct: 0,
                 freeTrialUsed: freeTrialUsed
             };
         }
 
-        // 🆕 Always return FRESH plans even if no link
         const freshPlans = pricingDoc?.plans || DEFAULT_PLANS;
 
         if (!link) {
             return res.status(404).json({
                 success: false,
-                error: `No active link found for user "${cleanUser}".`,
+                error: `No link found for user "${cleanUser}".`,
                 userLinks: [],
                 planUsage,
                 plans: freshPlans,
@@ -1273,7 +1433,41 @@ app.post('/api/user/link-details', async (req, res) => {
     }
 });
 
-// 🆕 RENEWAL PAYMENT — link optional if user doesn't have one yet
+// ==================== USER DELETE OWN LINK ====================
+app.delete('/api/user/delete-link/:linkId', async (req, res) => {
+    try {
+        const { userName } = req.body;
+        const { linkId } = req.params;
+        
+        if (!userName || !linkId) return res.status(400).json({ error: 'User name and link ID required' });
+        
+        const user = await RenewalUser.findOne({ 
+            name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+        });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        const link = await Link.findOne(getLinkQuery(linkId)).lean();
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        
+        // Verify ownership
+        const ownerName = (link.assignedUser || link.userName || link.creator || '').toLowerCase();
+        if (ownerName !== user.name.toLowerCase()) {
+            return res.status(403).json({ error: 'You do not own this link' });
+        }
+        
+        // Delete link + related data
+        await RenewalRequest.deleteMany({ linkId }).catch(() => {});
+        await VisitorActivity.deleteMany({ linkId }).catch(() => {});
+        await Link.deleteOne({ _id: link._id });
+        
+        console.log(`🗑️ User "${user.name}" deleted their link: ${linkId}`);
+        res.json({ success: true, message: 'Link deleted successfully' });
+    } catch (e) { 
+        console.error('User delete link error:', e);
+        res.status(500).json({ error: 'Failed to delete link' }); 
+    }
+});
+
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
@@ -1282,14 +1476,11 @@ app.post('/api/user/renew-payment', async (req, res) => {
         const user = await RenewalUser.findOne({ name: new RegExp('^' + (userName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        // 🆕 Check plan hierarchy
         const purchaseCheck = canUserPurchasePlan(user, plan);
         if (!purchaseCheck.allowed) {
             return res.status(403).json({ error: purchaseCheck.message || 'You cannot purchase this plan.' });
         }
         
-        // 🆕 Allow renewal request even if user has no link yet
-        // They will create link after admin approves their plan
         const finalLinkId = linkId || 'pending_link_' + user._id;
         const finalLinkName = linkName || `${user.name}'s New Link (Pending)`;
         
@@ -1357,14 +1548,20 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
             const totalClaims = userLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
             const waData = generateWhatsAppApprovalData(u, req);
             const plan = getPlanDetails(pricingDoc, u.currentPlan || 'free-trial');
+            
+            const isLifetimeUnlimited = u.lifetimeUnlimited === true;
+            const linkLimit = isLifetimeUnlimited ? 'unlimited' : plan.linkLimit;
+            const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimit)) ? 'unlimited' : Math.max(0, linkLimit - userLinks.length);
+            
             return {
                 ...u,
                 totalLinks: userLinks.length,
                 totalVisits, totalClaims,
-                lifetimeUnlimited: u.lifetimeUnlimited === true,
-                currentPlanName: u.lifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
-                planLimit: u.lifetimeUnlimited ? 'unlimited' : plan.linkLimit,
-                visitorLimit: u.lifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
+                lifetimeUnlimited: isLifetimeUnlimited,
+                currentPlanName: isLifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
+                planLimit: linkLimit,
+                visitorLimit: isLifetimeUnlimited ? 'unlimited' : plan.visitorLimit,
+                linksRemaining,
                 whatsappMessage: waData.message,
                 whatsappUrl: waData.whatsappUrl,
                 portalLoginUrl: waData.loginUrl
@@ -1588,19 +1785,16 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 Save Renewal Settings — FORCE full plan replacement + fresh DB read
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { plans, paymentSettings, upiId, whatsappNumber, showUpi } = req.body;
         let pricingDoc = await Pricing.findOne();
         if (!pricingDoc) pricingDoc = new Pricing();
         
-        // 🆕 FULL plan replacement — replace entire plan objects
         if (plans && typeof plans === 'object') {
             const currentPlans = pricingDoc.plans || {};
             for (const [key, incomingPlan] of Object.entries(plans)) {
                 if (incomingPlan && typeof incomingPlan === 'object') {
-                    // Replace entire plan object with incoming (not merge)
                     currentPlans[key] = {
                         ...(currentPlans[key] || DEFAULT_PLANS[key] || {}),
                         ...incomingPlan
@@ -1631,7 +1825,6 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         pricingDoc.autoPaymentEnabled = false;
         await pricingDoc.save();
         
-        // 🆕 Fetch fresh from DB
         const freshPricing = await Pricing.findOne().lean();
         
         console.log(`✅ Renewal settings updated — Plans: ${Object.keys(freshPricing.plans || {}).length}`);
@@ -1685,6 +1878,14 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
                             approvedAt: ownerUser.approvedAt || new Date()
                         }}
                     );
+                    
+                    // Also update all their links' expiry
+                    const userRegex = new RegExp('^' + ownerUser.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+                    await Link.updateMany(
+                        { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
+                        { $set: { expiryDate: planExpiry, status: 'active' } }
+                    );
+                    
                     console.log(`✅ User "${ownerUser.name}" plan updated to: ${reqDoc.plan}`);
                 }
             }
@@ -1873,6 +2074,7 @@ app.get(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) =>
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// 🆕 ADMIN CREATE LINK — with STRICT user link limit enforcement
 app.post('/api/links', authMiddleware, async (req, res) => {
     try {
         const cleanUserName = (req.body.name || req.body.userName || req.body.cCampaignName || 'User').trim();
@@ -1893,6 +2095,35 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             buttonText: req.body.popupSettings?.buttonText || req.body.popupButtonText || cleanButtonText,
             image: finalBanner
         };
+        
+        // 🆕 STRICT: Check link limit for assigned user (if user exists)
+        let assignedUser = null;
+        if (cleanUserName && cleanUserName.toLowerCase() !== 'user') {
+            assignedUser = await RenewalUser.findOne({ 
+                name: new RegExp('^' + cleanUserName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+            });
+        }
+        
+        if (assignedUser) {
+            const limitCheck = await canUserCreateLink(assignedUser);
+            if (!limitCheck.allowed) {
+                console.log(`⛔ Admin tried to create link for "${cleanUserName}" but limit reached: ${limitCheck.currentCount}/${limitCheck.limit}`);
+                return res.status(403).json({ 
+                    error: `Cannot create link for "${cleanUserName}". ${limitCheck.message || 'Link limit reached.'}`,
+                    reason: limitCheck.reason,
+                    currentCount: limitCheck.currentCount,
+                    limit: limitCheck.limit
+                });
+            }
+            
+            // 🆕 Auto-set expiry to user's plan expiry if not provided
+            if (!cleanExpiry && assignedUser.planExpiryDate) {
+                // Use user's plan expiry
+            }
+        }
+        
+        const finalExpiry = cleanExpiry || (assignedUser?.planExpiryDate ? new Date(assignedUser.planExpiryDate) : null);
+        
         const newLink = new Link({
             id: 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
             name: cleanUserName, userName: cleanUserName,
@@ -1900,7 +2131,7 @@ app.post('/api/links', authMiddleware, async (req, res) => {
             linkName: cleanLinkName, title: cleanLinkName,
             video: cleanVideo, claim: cleanClaim,
             buttonText: cleanButtonText, headline: cleanHeadline,
-            expiryDate: cleanExpiry, uidChecking: cleanUidChecking,
+            expiryDate: finalExpiry, uidChecking: cleanUidChecking,
             status: 'active', claims: 0, visits: 0,
             dailyClaims: {}, dailyVisits: {},
             image: finalBanner, popupImage: finalBanner,
@@ -1909,7 +2140,10 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         });
         await newLink.save();
         res.json({ ...newLink.toObject(), name: cleanUserName, userName: cleanUserName, linkName: cleanLinkName, title: cleanLinkName, uidChecking: cleanUidChecking, claims: 0, visits: 0, image: finalBanner, popupSettings: finalPopup });
-    } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
+    } catch (e) { 
+        console.error('Admin create link error:', e);
+        res.status(500).json({ error: 'Failed to create link' }); 
+    }
 });
 
 async function handleLinkUpdate(req, res) {
