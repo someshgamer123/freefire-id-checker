@@ -154,6 +154,7 @@
         .form-group { display: flex; flex-direction: column; margin-bottom: 12px; width: 100%; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 5px; }
         .form-group input, .form-group select { width: 100%; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
         .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; width: 100%; }
         @media (max-width: 650px) { .form-row-2 { grid-template-columns: 1fr; } }
 
@@ -174,10 +175,26 @@
         .toast.error { background: #dc2626; }
         .toast.info { background: #4f46e5; }
 
-        .copyable-input-wrap { position: relative; display: flex; align-items: center; width: 100%; }
-        .copyable-input-wrap input { padding-right: 44px !important; margin: 0 !important; cursor: pointer; width: 100%; }
-        .copyable-input-wrap .copy-icon-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: #818cf8; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.2s; z-index: 2; }
-        .copyable-input-wrap .copy-icon-btn:hover { background: rgba(99, 102, 241, 0.3); color: #fff; transform: translateY(-50%) scale(1.05); }
+        /* 🆕 FIXED: Editable input + copy button side by side */
+        .copyable-input-wrap { position: relative; display: flex; align-items: center; width: 100%; gap: 8px; }
+        .copyable-input-wrap input { flex: 1; padding-right: 14px !important; margin: 0 !important; cursor: text; }
+        .copyable-input-wrap .copy-icon-btn { 
+            background: rgba(99, 102, 241, 0.15); 
+            border: 1px solid rgba(99, 102, 241, 0.3); 
+            color: #818cf8; 
+            width: 42px; 
+            height: 42px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; 
+            transition: all 0.2s; 
+            flex-shrink: 0;
+        }
+        .copyable-input-wrap .copy-icon-btn:hover { background: rgba(99, 102, 241, 0.3); color: #fff; transform: scale(1.05); }
+        .copyable-input-wrap .copy-icon-btn:active { transform: scale(0.95); }
         .copyable-input-wrap .copy-icon-btn.copied { background: rgba(34, 197, 94, 0.25); border-color: rgba(34, 197, 94, 0.5); color: #22c55e; }
 
         .lifetime-btn-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
@@ -201,7 +218,6 @@
         .paste-uid-card .paste-btn:hover { transform: translateY(-1px); opacity: 0.95; }
         .paste-uid-card .paste-hint { font-size: 11px; color: var(--text-light); margin-top: 8px; line-height: 1.4; }
 
-        /* Plan Editor Cards */
         .plan-editor-card { background: #090a0f; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
         .plan-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
         .plan-editor-name { font-size: 15px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -217,14 +233,12 @@
         .plan-toggle-enable input { width: auto !important; margin: 0 !important; }
         .plan-disabled { opacity: 0.5; pointer-events: none; }
 
-        /* Custom/Unlimited Toggle */
         .limit-toggle-wrap { display: flex; gap: 6px; margin-top: 6px; }
         .limit-toggle-btn { flex: 1; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: #090a0f; color: var(--text-light); font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .limit-toggle-btn:hover { border-color: var(--primary); color: #fff; }
-        .limit-toggle-btn.active { background: var(--primary); border-color: var(--primary-light); color: #fff; box-shadow: 0 2px 10px rgba(99,102,241,0.3); }
+        .limit-toggle-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
         .limit-toggle-btn.unlimited-active { background: linear-gradient(135deg, #10b981, #059669); border-color: #10b981; color: #fff; }
 
-        /* VIP User row highlight */
         .user-vip-row { border-left: 4px solid #f59e0b !important; background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.04), #090a0f) !important; }
 
         @media (max-width: 768px) {
@@ -234,8 +248,6 @@
             .header-actions { justify-content: center; }
             .link-item { flex-direction: column; align-items: stretch; }
             .edit-modal .modal-content { padding: 16px; }
-            .uid-card .uid-value-row { flex-direction: column; align-items: stretch; }
-            .uid-card .uid-copy-btn { width: 100%; justify-content: center; }
             .plan-editor-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -730,6 +742,7 @@
             } catch(e) {}
         }
 
+        // 🆕 UPDATED: Copy only on button click
         function copyFromInput(inputId, msg) {
             try {
                 const input = document.getElementById(inputId);
@@ -969,11 +982,12 @@
                 const res = await fetchWithAuth('/api/links/' + encodeURIComponent(id), { method: 'DELETE' });
                 if (res && res.ok) {
                     allLinks = allLinks.filter(l => l && String(l.id || l._id) !== String(id));
-                    filterLinks(); showToast('Link deleted successfully', 'info'); loadStats();
-                } else showToast('Failed to delete link', 'error');
-            } catch(e) { showToast('Failed to delete link', 'error'); }
+                    filterLinks(); showToast('Link deleted', 'info'); loadStats();
+                } else showToast('Failed to delete', 'error');
+            } catch(e) { showToast('Failed to delete', 'error'); }
         }
 
+        // 🆕 FIXED: Editable URLs with copy button beside
         function openEditModal(id) {
             try {
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
@@ -1000,8 +1014,20 @@
                         <div class="form-group"><label style="color:#38bdf8;">🏷️ Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
                     </div>
                     <div class="form-row-2">
-                        <div class="form-group"><label>🎬 Video URL <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label><div class="copyable-input-wrap"><input type="text" id="eVideo" value="${escapeHTML(link.video || '')}" readonly onclick="copyFromInput('eVideo', 'Video URL copied!')"><button type="button" class="copy-icon-btn" onclick="copyFromInput('eVideo', 'Video URL copied!')">📋</button></div></div>
-                        <div class="form-group"><label>🎯 Claim URL <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label><div class="copyable-input-wrap"><input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}" readonly onclick="copyFromInput('eClaim', 'Claim URL copied!')"><button type="button" class="copy-icon-btn" onclick="copyFromInput('eClaim', 'Claim URL copied!')">📋</button></div></div>
+                        <div class="form-group">
+                            <label>🎬 Video URL</label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="eVideo" value="${escapeHTML(link.video || '')}" placeholder="Enter Video URL">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eVideo', 'Video URL copied!')" title="Copy">📋</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>🎯 Claim URL</label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}" placeholder="Enter Claim URL">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eClaim', 'Claim URL copied!')" title="Copy">📋</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-row-2">
                         <div class="form-group"><label>Button Text</label><input type="text" id="eBtnText" value="${escapeHTML(link.buttonText || 'Claim Now')}"></div>
@@ -1025,11 +1051,25 @@
                             <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
                         </div>
                         <div class="form-group"><label>Popup Subtitle</label><input type="text" id="ePopSub" value="${escapeHTML(popup.subtitle || 'Tap below to unlock your reward')}"></div>
-                        <div class="form-group"><label>Popup Image URL (16:9) <span style="color:#38bdf8;font-size:10.5px;">(click to copy)</span></label><div class="copyable-input-wrap"><input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" readonly onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')"><button type="button" class="copy-icon-btn" onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')">📋</button></div></div>
+                        <div class="form-group">
+                            <label>Popup Image URL (16:9)</label>
+                            <div class="copyable-input-wrap">
+                                <input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" placeholder="Enter Popup Image URL" oninput="updateEditPopupPreview(this.value)">
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')" title="Copy">📋</button>
+                            </div>
+                        </div>
                         <div class="preview-box-16-9" id="editPreviewBox">${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}</div>
                     </div>
                 `;
                 document.getElementById('editModal').classList.add('show');
+            } catch(e) { console.error('openEditModal error:', e); }
+        }
+
+        function updateEditPopupPreview(url) {
+            try {
+                const box = document.getElementById('editPreviewBox');
+                if (!box) return;
+                box.innerHTML = (url && url.startsWith('http')) ? `<img src="${escapeHTML(url)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`;
             } catch(e) {}
         }
 
@@ -1073,8 +1113,10 @@
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(editingLinkId));
                 if (link) Object.assign(link, { name, userName: name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
                 showToast(`✅ Link updated`, 'success');
-                closeEditModal(); filterLinks();
-            } catch(e) { showToast('Error saving: ' + e.message, 'error'); }
+                closeEditModal(); 
+                loadLinks();
+                loadStats();
+            } catch(e) { showToast('Error: ' + e.message, 'error'); }
         }
 
         function updateSchedulePreset() {
@@ -1270,7 +1312,6 @@
             } catch(e) {}
         }
 
-        // 🆕 FIXED: Lifetime Unlimited Toggle — reads from element, proper confirmation
         async function toggleLifetimeUnlimited(checkboxEl) {
             try {
                 const enable = checkboxEl.checked;
@@ -1278,17 +1319,11 @@
                 const name = checkboxEl.getAttribute('data-user-name');
                 
                 if (enable === true) {
-                    const confirmed = confirm(`⚠️ Are you sure?\n\nMake user "${name}" LIFETIME UNLIMITED?\n\nThis will give them:\n✅ Unlimited Links\n✅ Unlimited Visitors\n✅ No Expiry\n✅ All features unlocked\n\nThey will have NO limitations.`);
-                    if (!confirmed) {
-                        checkboxEl.checked = false;
-                        return;
-                    }
+                    const confirmed = confirm(`⚠️ Make "${name}" LIFETIME UNLIMITED?\n\n✅ Unlimited Links\n✅ Unlimited Visitors\n✅ No Expiry\n✅ All features unlocked`);
+                    if (!confirmed) { checkboxEl.checked = false; return; }
                 } else {
-                    const confirmed = confirm(`⚠️ Remove Lifetime Unlimited for "${name}"?\n\nThey will be moved back to Free Trial plan.`);
-                    if (!confirmed) {
-                        checkboxEl.checked = true;
-                        return;
-                    }
+                    const confirmed = confirm(`⚠️ Remove Lifetime Unlimited for "${name}"?`);
+                    if (!confirmed) { checkboxEl.checked = true; return; }
                 }
                 
                 const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/lifetime-unlimited`, {
@@ -1319,7 +1354,7 @@
                 const data = await res.json();
                 showToast('✅ User Approved!', 'success');
                 await loadAllUsers(); loadRenewalSystem();
-                if (data.whatsappUrl && confirm('Open WhatsApp to send notification?')) window.open(data.whatsappUrl, '_blank');
+                if (data.whatsappUrl && confirm('Open WhatsApp?')) window.open(data.whatsappUrl, '_blank');
             } catch(e) { showToast('Failed', 'error'); }
         }
 
@@ -1353,7 +1388,6 @@
             } catch(e) { showToast('Failed', 'error'); }
         }
 
-        // ==================== 6 PLANS EDITOR ====================
         const PLAN_KEYS_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
         const PLAN_LABELS = {
             'free-trial': { icon: '🎁', name: 'Free Trial' },
@@ -1435,14 +1469,10 @@
                 const modeInput = document.getElementById(modeInputId);
                 const buttons = input.parentElement.querySelectorAll('.limit-toggle-btn');
                 
-                buttons.forEach(btn => {
-                    btn.classList.remove('active', 'unlimited-active');
-                });
+                buttons.forEach(btn => { btn.classList.remove('active', 'unlimited-active'); });
                 
                 if (mode === 'unlimited') {
-                    input.disabled = true;
-                    input.value = '';
-                    modeInput.value = 'unlimited';
+                    input.disabled = true; input.value = ''; modeInput.value = 'unlimited';
                     buttons[1].classList.add('unlimited-active');
                 } else {
                     input.disabled = false;
@@ -1456,10 +1486,7 @@
         function togglePlanEnabled(key, enabled) {
             try {
                 const grid = document.getElementById('plan-grid-' + key);
-                if (grid) {
-                    if (enabled) grid.classList.remove('plan-disabled');
-                    else grid.classList.add('plan-disabled');
-                }
+                if (grid) { if (enabled) grid.classList.remove('plan-disabled'); else grid.classList.add('plan-disabled'); }
             } catch(e) {}
         }
 
@@ -1478,16 +1505,10 @@
                 const visitorsMode = visitorsModeEl ? visitorsModeEl.value : 'custom';
                 
                 let linkLimit = 'unlimited';
-                if (linksMode === 'custom' && linksEl) {
-                    const num = parseInt(linksEl.value, 10);
-                    linkLimit = isNaN(num) ? 1 : num;
-                }
+                if (linksMode === 'custom' && linksEl) { const num = parseInt(linksEl.value, 10); linkLimit = isNaN(num) ? 1 : num; }
                 
                 let visitorLimit = 'unlimited';
-                if (visitorsMode === 'custom' && visitorsEl) {
-                    const num = parseInt(visitorsEl.value, 10);
-                    visitorLimit = isNaN(num) ? 1000 : num;
-                }
+                if (visitorsMode === 'custom' && visitorsEl) { const num = parseInt(visitorsEl.value, 10); visitorLimit = isNaN(num) ? 1000 : num; }
                 
                 plans[key] = {
                     name: PLAN_LABELS[key].name,
@@ -1585,10 +1606,8 @@
                     body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, showUpi })
                 });
                 
-                if (res && res.ok) {
-                    showToast('✅ All plans & settings saved!', 'success');
-                    loadRenewalSystem();
-                } else showToast('❌ Failed to save', 'error');
+                if (res && res.ok) { showToast('✅ All plans & settings saved!', 'success'); loadRenewalSystem(); }
+                else showToast('❌ Failed to save', 'error');
             } catch(e) { showToast('Failed to save', 'error'); }
         }
 
@@ -1611,10 +1630,7 @@
             } catch(e) {}
         }
 
-        function refreshDeviceTabs() {
-            if (currentDeviceTab === 'blocked') loadBlockedDevices();
-            else loadActiveDevices();
-        }
+        function refreshDeviceTabs() { if (currentDeviceTab === 'blocked') loadBlockedDevices(); else loadActiveDevices(); }
 
         async function loadBlockedDevices() {
             const list = document.getElementById('deviceList');
