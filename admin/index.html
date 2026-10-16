@@ -38,15 +38,19 @@
 
         .admin-container { max-width: 1400px; margin: 0 auto; position: relative; }
 
+        /* ✅ SVG ICON UTILITY */
+        .svg-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .svg-icon svg { width: 100%; height: 100%; display: block; }
+
         .header { background: var(--card-bg); padding: 14px 20px; border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.4); flex-wrap: wrap; gap: 12px; }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .header h1 { font-size: 19px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 { font-size: 19px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px; }
         .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .header-actions button { padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; }
+        .header-actions button { padding: 7px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .header-actions button:hover { transform: translateY(-2px); }
         .btn-logout { background: var(--danger) !important; color: white !important; border: none !important; }
         .btn-install { background: var(--success); color: white; border: none !important; display: none; }
-        .btn-install.show { display: inline-block; }
+        .btn-install.show { display: inline-flex; }
         .theme-toggle { display: flex; gap: 3px; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
         .theme-toggle button { padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; background: transparent; color: var(--text-light); font-size: 11px; }
         .theme-toggle button.active { background: var(--primary); color: white; }
@@ -60,22 +64,24 @@
         .top-nav-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 10px; background: transparent; color: var(--text-light); font-size: 13px; font-weight: 700; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .top-nav-btn:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.25); }
         .top-nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
+        .top-nav-btn .svg-icon { width: 16px; height: 16px; }
 
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
         .sidebar { position: fixed; top: 0; left: 0; width: 300px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); z-index: 9999; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; padding: 24px 18px; box-shadow: 10px 0 40px rgba(0,0,0,0.8); }
         .sidebar.show { transform: translateX(0); }
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: #fff; }
-        .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-light); cursor: pointer; }
+        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .sidebar-close { background: none; border: none; font-size: 24px; color: var(--text-light); cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
         .sidebar-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: transparent; color: var(--text-light); font-size: 14px; font-weight: 700; border: 1px solid transparent; cursor: pointer; transition: 0.2s; text-align: left; width: 100%; }
         .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #fff; }
         .sidebar-btn.active { background: var(--primary); color: #fff; }
+        .sidebar-btn .svg-icon { width: 18px; height: 18px; }
 
         .date-filter-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
         .date-filter-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .btn-filter-pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: #090a0f; color: var(--text-light); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-filter-pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: #090a0f; color: var(--text-light); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-filter-pill:hover { border-color: var(--primary); color: #fff; }
         .btn-filter-pill.active { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
         .custom-range-inputs { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px dashed var(--border); }
@@ -83,8 +89,9 @@
         .date-input-field:focus { border-color: var(--primary); }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.2s; }
+        .stat-card { background: var(--card-bg); padding: 16px; border-radius: var(--radius); text-align: center; border: 1px solid var(--border); transition: 0.2s; position: relative; overflow: hidden; }
         .stat-card:hover { transform: translateY(-2px); }
+        .stat-card .stat-icon { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; opacity: 0.15; }
         .stat-card .number { font-size: 26px; font-weight: 800; color: #fff; }
         .stat-card .label { color: var(--text-light); font-size: 11px; margin-top: 4px; font-weight: 600; }
 
@@ -102,7 +109,8 @@
         .section.active { display: block; }
 
         .card { background: var(--card-bg); padding: 22px; border-radius: var(--radius); margin-bottom: 20px; border: 1px solid var(--border); }
-        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        .card h3 { font-size: 16px; margin-bottom: 14px; color: var(--text); padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+        .card h3 .svg-icon { width: 18px; height: 18px; color: var(--primary); }
         .card input, .card select, .card textarea { width: 100%; padding: 11px 14px; margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; background: #090a0f; color: var(--text); outline: none; transition: 0.2s; }
         .card input:focus, .card select:focus, .card textarea:focus { border-color: var(--primary); }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -111,18 +119,20 @@
         .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; color: white; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
         .btn:hover { transform: translateY(-2px); }
         .btn:active { transform: scale(0.98); }
+        .btn .svg-icon { width: 15px; height: 15px; }
         .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); width: 100%; }
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
         .btn-warning { background: var(--warning); color: white; }
         .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
         .btn-sm { padding: 7px 14px; font-size: 11.5px; border-radius: 8px; width: auto; }
+        .btn-sm .svg-icon { width: 13px; height: 13px; }
 
         .link-item { background: #090a0f; padding: 14px 18px; margin: 8px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; transition: 0.2s; }
         .link-item .name { font-weight: 700; font-size: 14px; }
         .link-item .details { font-size: 12px; color: var(--text-light); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; }
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
         .status-active { background: rgba(34,197,94,0.18); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
         .status-suspended { background: rgba(245,158,11,0.18); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
         .status-disabled { background: rgba(239,68,68,0.18); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
@@ -133,7 +143,8 @@
         .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; background: #090a0f; color: var(--text); font-size: 14px; }
 
         .share-box { background: rgba(99, 102, 241, 0.08); border: 1px dashed var(--primary); border-radius: 12px; padding: 14px; margin-bottom: 20px; }
-        .share-box .share-title { font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px; }
+        .share-box .share-title { font-size: 13px; font-weight: 700; color: #818cf8; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .share-box .share-title .svg-icon { width: 16px; height: 16px; }
         .share-box .box-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .share-box input { flex: 1; min-width: 200px; padding: 10px 14px; background: #090a0f; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; }
 
@@ -169,13 +180,13 @@
         .switch input:checked + span:before { transform: translateX(20px); }
         .switch.vip-switch input:checked + span { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
 
-        .toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px; color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease; }
+        .toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 22px; border-radius: 12px; color: white; font-weight: 600; font-size: 13px; z-index: 999999; transform: translateY(120px); opacity: 0; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
         .toast.show { transform: translateY(0); opacity: 1; }
+        .toast .svg-icon { width: 16px; height: 16px; }
         .toast.success { background: #16a34a; }
         .toast.error { background: #dc2626; }
         .toast.info { background: #4f46e5; }
 
-        /* 🆕 FIXED: Editable input + copy button side by side */
         .copyable-input-wrap { position: relative; display: flex; align-items: center; width: 100%; gap: 8px; }
         .copyable-input-wrap input { flex: 1; padding-right: 14px !important; margin: 0 !important; cursor: text; }
         .copyable-input-wrap .copy-icon-btn { 
@@ -189,7 +200,6 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 16px; 
             transition: all 0.2s; 
             flex-shrink: 0;
         }
@@ -253,23 +263,236 @@
     </style>
 </head>
 <body>
+    <!-- ✅ SVG ICON LIBRARY -->
+    <svg style="display:none;">
+        <symbol id="icon-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1"/>
+            <rect x="14" y="3" width="7" height="5" rx="1"/>
+            <rect x="14" y="12" width="7" height="9" rx="1"/>
+            <rect x="3" y="16" width="7" height="5" rx="1"/>
+        </symbol>
+        <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </symbol>
+        <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </symbol>
+        <symbol id="icon-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </symbol>
+        <symbol id="icon-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+        </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+        </symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+        </symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+        </symbol>
+        <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </symbol>
+        <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </symbol>
+        <symbol id="icon-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18h18l-2-11-5 5-2-7-2 7-5-5z" fill="currentColor" stroke="none"/>
+            <rect x="4" y="18" width="16" height="2" rx="0.5" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="icon-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+        </symbol>
+        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+        </symbol>
+        <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+        </symbol>
+        <symbol id="icon-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </symbol>
+        <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="icon-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+        </symbol>
+        <symbol id="icon-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </symbol>
+        <symbol id="icon-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 12 20 22 4 22 4 12"/>
+            <rect x="2" y="7" width="20" height="5"/>
+            <line x1="12" y1="22" x2="12" y2="7"/>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        </symbol>
+        <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </symbol>
+        <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+        </symbol>
+        <symbol id="icon-unlock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </symbol>
+        <symbol id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="icon-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+        </symbol>
+        <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </symbol>
+        <symbol id="icon-user-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="20" y1="8" x2="20" y2="14"/>
+            <line x1="23" y1="11" x2="17" y2="11"/>
+        </symbol>
+        <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </symbol>
+        <symbol id="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+        </symbol>
+        <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+        </symbol>
+    </svg>
+
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>⚡ Control Menu</h2>
+            <h2><span class="svg-icon"><svg><use href="#icon-zap"/></svg></span> Control Menu</h2>
             <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
         </div>
         <div class="sidebar-menu">
-            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')"><span>📊</span> Dashboard</button>
-            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')"><span>🔗</span> Links Manager</button>
-            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')"><span>➕</span> Create Link</button>
-            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')"><span>👥</span> Manage Users</button>
-            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')"><span>🔄</span> Users & Renewal</button>
-            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')"><span>🔗</span> Short Link</button>
-            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')"><span>⚙️</span> Settings</button>
+            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
+                <span class="svg-icon"><svg><use href="#icon-dashboard"/></svg></span> Dashboard
+            </button>
+            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Links Manager
+            </button>
+            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
+                <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Link
+            </button>
+            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
+                <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Manage Users
+            </button>
+            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
+                <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Users & Renewal
+            </button>
+            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
+                <span class="svg-icon"><svg><use href="#icon-external-link"/></svg></span> Short Link
+            </button>
+            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
+                <span class="svg-icon"><svg><use href="#icon-settings"/></svg></span> Settings
+            </button>
         </div>
         <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:auto;">
-            <button class="btn btn-danger btn-sm" style="width:100%;" onclick="logout()">🚪 Logout</button>
+            <button class="btn btn-danger btn-sm" style="width:100%;" onclick="logout()">
+                <span class="svg-icon"><svg><use href="#icon-logout"/></svg></span> Logout
+            </button>
         </div>
     </aside>
 
@@ -279,41 +502,69 @@
                 <button class="btn-hamburger" id="hamburgerBtn" onclick="toggleSidebar(true)" title="Open Menu">
                     <span></span><span></span><span></span>
                 </button>
-                <h1>⚡ SOMU ADMIN</h1>
+                <h1><span class="svg-icon" style="width:22px;height:22px;"><svg><use href="#icon-zap"/></svg></span> SOMU ADMIN</h1>
             </div>
             <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="installApp()">📲 Install</button>
+                <button class="btn-install" id="installBtn" onclick="installApp()">
+                    <span class="svg-icon"><svg><use href="#icon-download"/></svg></span> Install
+                </button>
                 <div class="theme-toggle">
-                    <button onclick="setTheme('dark')" id="theme-dark" class="active">🌙</button>
-                    <button onclick="setTheme('light')" id="theme-light">☀️</button>
+                    <button onclick="setTheme('dark')" id="theme-dark" class="active">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-moon"/></svg></span>
+                    </button>
+                    <button onclick="setTheme('light')" id="theme-light">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-sun"/></svg></span>
+                    </button>
                 </div>
-                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                <button class="btn-logout" onclick="logout()">
+                    <span class="svg-icon"><svg><use href="#icon-logout"/></svg></span> Logout
+                </button>
             </div>
         </header>
 
         <nav class="top-nav-bar" id="topNavBar">
-            <button class="top-nav-btn active" id="topnav-dashboard" onclick="showSection('dashboard')"><span>📊</span> Dashboard</button>
-            <button class="top-nav-btn" id="topnav-links" onclick="showSection('links')"><span>🔗</span> Links Manager</button>
-            <button class="top-nav-btn" id="topnav-create" onclick="showSection('create')"><span>➕</span> Create Link</button>
-            <button class="top-nav-btn" id="topnav-users" onclick="showSection('users')"><span>👥</span> Manage Users</button>
-            <button class="top-nav-btn" id="topnav-renewals" onclick="showSection('renewals')"><span>🔄</span> Users & Renewal</button>
-            <button class="top-nav-btn" id="topnav-shortener" onclick="showSection('shortener')"><span>🔗</span> Short Link</button>
-            <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')"><span>⚙️</span> Settings</button>
+            <button class="top-nav-btn active" id="topnav-dashboard" onclick="showSection('dashboard')">
+                <span class="svg-icon"><svg><use href="#icon-dashboard"/></svg></span> Dashboard
+            </button>
+            <button class="top-nav-btn" id="topnav-links" onclick="showSection('links')">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Links Manager
+            </button>
+            <button class="top-nav-btn" id="topnav-create" onclick="showSection('create')">
+                <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Link
+            </button>
+            <button class="top-nav-btn" id="topnav-users" onclick="showSection('users')">
+                <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Manage Users
+            </button>
+            <button class="top-nav-btn" id="topnav-renewals" onclick="showSection('renewals')">
+                <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Users & Renewal
+            </button>
+            <button class="top-nav-btn" id="topnav-shortener" onclick="showSection('shortener')">
+                <span class="svg-icon"><svg><use href="#icon-external-link"/></svg></span> Short Link
+            </button>
+            <button class="top-nav-btn" id="topnav-settings" onclick="showSection('settings')">
+                <span class="svg-icon"><svg><use href="#icon-settings"/></svg></span> Settings
+            </button>
         </nav>
 
         <div class="section active" id="sec-dashboard">
             <div class="share-box">
-                <div class="share-title">🔗 Customer Signup & Renewal Portal Link:</div>
+                <div class="share-title">
+                    <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Customer Signup & Renewal Portal Link:
+                </div>
                 <div class="box-row">
                     <input type="text" id="dashUserPortalUrl" readonly>
-                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
+                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">
+                        <span class="svg-icon"><svg><use href="#icon-copy"/></svg></span> Copy Customer Link
+                    </button>
                 </div>
             </div>
 
             <div class="date-filter-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <div class="date-filter-buttons">
-                        <span style="font-size:12.5px; font-weight:700; color:var(--text-light);">📅 Filter Data:</span>
+                        <span style="font-size:12.5px; font-weight:700; color:var(--text-light); display:inline-flex; align-items:center; gap:6px;">
+                            <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-calendar"/></svg></span> Filter Data:
+                        </span>
                         <button class="btn-filter-pill active" id="pillAll" onclick="setAdminDateFilter('all', this)">All Time</button>
                         <button class="btn-filter-pill" id="pillToday" onclick="setAdminDateFilter('today', this)">Today</button>
                         <button class="btn-filter-pill" id="pillYesterday" onclick="setAdminDateFilter('yesterday', this)">Yesterday</button>
@@ -333,16 +584,36 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card"><div class="number" id="totLinks">0</div><div class="label">Total Links</div></div>
-                <div class="stat-card"><div class="number" id="activeLinks">0</div><div class="label">Active Links</div></div>
-                <div class="stat-card"><div class="number" id="totVisits">0</div><div class="label" id="lblVisits">Total Visits</div></div>
-                <div class="stat-card"><div class="number" id="totClaims">0</div><div class="label" id="lblClaims">Total Claims (Video)</div></div>
-                <div class="stat-card"><div class="number" id="activeLive">0</div><div class="label">Active Live</div></div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg><use href="#icon-link"/></svg></div>
+                    <div class="number" id="totLinks">0</div>
+                    <div class="label">Total Links</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg><use href="#icon-activity"/></svg></div>
+                    <div class="number" id="activeLinks">0</div>
+                    <div class="label">Active Links</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg><use href="#icon-eye"/></svg></div>
+                    <div class="number" id="totVisits">0</div>
+                    <div class="label" id="lblVisits">Total Visits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg><use href="#icon-check"/></svg></div>
+                    <div class="number" id="totClaims">0</div>
+                    <div class="label" id="lblClaims">Total Claims (Video)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg><use href="#icon-zap"/></svg></div>
+                    <div class="number" id="activeLive">0</div>
+                    <div class="label">Active Live</div>
+                </div>
             </div>
 
             <div class="live-visitors">
                 <div class="lv-title">
-                    <span class="dot"></span> 🟢 Real-Time Visitor & Video Claim Stream (24h Unique)
+                    <span class="dot"></span> Real-Time Visitor & Video Claim Stream (24h Unique)
                     <span style="margin-left:auto;font-size:11px;color:var(--text-light);font-weight:400;" id="lastRefreshTime">Updated: Just now</span>
                 </div>
                 <div class="lv-grid">
@@ -356,13 +627,23 @@
             </div>
 
             <div class="card">
-                <h3>⚡ Quick Shortcuts</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-zap"/></svg></span> Quick Shortcuts</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create New Link</button>
-                    <button class="btn btn-sm btn-success" onclick="showSection('links')">🔗 All Tracking Links</button>
-                    <button class="btn btn-sm btn-warning" onclick="showSection('users')">👥 Manage Users</button>
-                    <button class="btn btn-sm btn-secondary" onclick="showSection('renewals')">🔄 Renewal Requests</button>
-                    <button class="btn btn-sm btn-secondary" onclick="showSection('settings')">🛡️ Devices & Settings</button>
+                    <button class="btn btn-sm btn-primary" onclick="showSection('create')">
+                        <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create New Link
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="showSection('links')">
+                        <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> All Tracking Links
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="showSection('users')">
+                        <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Manage Users
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="showSection('renewals')">
+                        <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Renewal Requests
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="showSection('settings')">
+                        <span class="svg-icon"><svg><use href="#icon-shield"/></svg></span> Devices & Settings
+                    </button>
                 </div>
             </div>
         </div>
@@ -370,10 +651,16 @@
         <div class="section" id="sec-links">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">🔍 All Tracking Links</h3>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> All Tracking Links
+                    </h3>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-sm btn-primary" onclick="showSection('create')">➕ Create Link</button>
-                        <button class="btn btn-sm btn-secondary" onclick="loadLinks()">🔄 Refresh</button>
+                        <button class="btn btn-sm btn-primary" onclick="showSection('create')">
+                            <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Link
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadLinks()">
+                            <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Refresh
+                        </button>
                     </div>
                 </div>
                 <div class="search-bar">
@@ -386,20 +673,26 @@
 
         <div class="section" id="sec-create">
             <div class="card">
-                <h3>➕ Create Rewarded Tracking Link</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Rewarded Tracking Link</h3>
 
                 <div class="paste-uid-card">
-                    <div class="paste-label">📋 Quick Duplicate — Paste Existing UID</div>
+                    <div class="paste-label">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-clipboard"/></svg></span> Quick Duplicate — Paste Existing UID
+                    </div>
                     <div class="paste-row">
                         <input type="text" id="pasteUidInput" placeholder="Paste existing UID here (e.g. link_xxxxx...)" autocomplete="off">
-                        <button type="button" class="paste-btn" onclick="pasteAndLoadUid()">⚡ Paste & Load</button>
-                        <button type="button" class="paste-btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);" onclick="pasteFromClipboard()">📥 From Clipboard</button>
+                        <button type="button" class="paste-btn" onclick="pasteAndLoadUid()">
+                            <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-zap"/></svg></span> Paste & Load
+                        </button>
+                        <button type="button" class="paste-btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);" onclick="pasteFromClipboard()">
+                            <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-download"/></svg></span> From Clipboard
+                        </button>
                     </div>
-                    <div class="paste-hint">💡 Copy UID from any existing link's edit page, paste here, and all settings will be auto-filled.</div>
+                    <div class="paste-hint">Copy UID from any existing link's edit page, paste here, and all settings will be auto-filled.</div>
                 </div>
 
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">👤 Client Name / User Name:</label>
+                    <label style="display:block;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;">Client Name / User Name:</label>
                     <input type="text" id="cCampaignName" placeholder="Enter user name (e.g. Rahul Sharma, John Doe...)" style="margin-bottom:8px;">
                     <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:4px;">Or Assign to Registered User (Optional):</label>
                     <select id="cUserSelect" onchange="onUserSelected(this.value)" style="margin:0;padding:10px 14px;font-size:13px;color:#fff;background:#111522;border:1px solid var(--border);border-radius:10px;width:100%;">
@@ -410,7 +703,7 @@
                         <button type="button" onclick="clearSelectedUser()" style="background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;font-size:13px;">✕ Clear</button>
                     </div>
                     <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
-                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🏷️ Enter Link Name (Custom Label):</label>
+                        <label style="display:block;font-size:12.5px;font-weight:700;color:#38bdf8;margin-bottom:6px;">Enter Link Name (Custom Label):</label>
                         <input type="text" id="cLinkName" placeholder="Enter link name..." style="margin-bottom:4px;">
                     </div>
                 </div>
@@ -427,17 +720,23 @@
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                     <div>
                         <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                            <span>🛡️ UID Checking Status:</span>
+                            <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-shield"/></svg></span>
+                            <span>UID Checking Status:</span>
                             <span id="createUidBadge" class="status-badge status-active">ON UID CHECKING</span>
                         </div>
-                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">🟢 <b>ON</b> (UID screen pehle aayegi)</div>
+                        <div id="createUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">ON (UID screen pehle aayegi)</div>
                     </div>
-                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">✅ ON UID CHECKING</button>
+                    <button type="button" id="btnToggleCreateUid" class="btn btn-sm btn-success" onclick="toggleCreateUidChecking()">
+                        <span class="svg-icon"><svg><use href="#icon-check"/></svg></span> ON UID CHECKING
+                    </button>
                     <input type="hidden" id="cUidChecking" value="true">
                 </div>
 
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Aspect Ratio)</h4>
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-image"/></svg></span>
+                        Entrance Popup Settings (16:9 Aspect Ratio)
+                    </h4>
                     <div class="grid-2">
                         <div><label style="font-size:12px;color:var(--text-light);">Popup Title:</label><input type="text" id="cPopTitle" placeholder="Popup Title" value=""></div>
                         <div><label style="font-size:12px;color:var(--text-light);">Popup Button Text:</label><input type="text" id="cPopBtn" placeholder="Popup Button Text" value=""></div>
@@ -448,7 +747,10 @@
                 </div>
 
                 <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;">📅 Schedule Expiry (Optional)</h4>
+                    <h4 style="font-size:13px;color:var(--warning);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-calendar"/></svg></span>
+                        Schedule Expiry (Optional)
+                    </h4>
                     <select id="schedulePreset" onchange="updateSchedulePreset()">
                         <option value="">No Expiry (Lifetime Active)</option>
                         <option value="3">3 Days</option>
@@ -457,12 +759,19 @@
                         <option value="30">30 Days</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">🚀 Generate Tracking Link</button>
+                <button class="btn btn-primary" style="margin-top:16px;" onclick="createLink()">
+                    <span class="svg-icon"><svg><use href="#icon-rocket"/></svg></span> Generate Tracking Link
+                </button>
                 <div id="generatedLinkBox" style="display:none;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:12px;padding:14px;margin-top:14px;">
-                    <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;">✅ Link Created! Copy below:</div>
+                    <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-check"/></svg></span>
+                        Link Created! Copy below:
+                    </div>
                     <div style="display:flex;gap:8px;">
                         <input type="text" id="generatedLinkUrl" readonly>
-                        <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">📋 Copy</button>
+                        <button class="btn btn-sm btn-success" onclick="copyGeneratedLink()">
+                            <span class="svg-icon"><svg><use href="#icon-copy"/></svg></span> Copy
+                        </button>
                     </div>
                 </div>
             </div>
@@ -471,8 +780,12 @@
         <div class="section" id="sec-users">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-                    <h3 style="margin:0;padding:0;border:none;">👥 Registered Users Management</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadAllUsers()">🔄 Refresh Users</button>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Registered Users Management
+                    </h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadAllUsers()">
+                        <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Refresh Users
+                    </button>
                 </div>
                 <div class="stats-grid" style="margin-bottom:16px;">
                     <div class="stat-card"><div class="number" id="statTotUsers">0</div><div class="label">Total Users</div></div>
@@ -490,36 +803,55 @@
 
         <div class="section" id="sec-renewals">
             <div class="share-box">
-                <div class="share-title">🔗 Customer Portal & Signup Link:</div>
+                <div class="share-title">
+                    <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Customer Portal & Signup Link:
+                </div>
                 <div class="box-row">
                     <input type="text" id="renewUserPortalUrl" readonly>
-                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">📋 Copy Customer Link</button>
+                    <button class="btn btn-sm btn-success" onclick="copyPortalUrl()">
+                        <span class="svg-icon"><svg><use href="#icon-copy"/></svg></span> Copy Customer Link
+                    </button>
                 </div>
             </div>
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">👥 Pending User Registration Approvals</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-user-plus"/></svg></span> Pending User Registration Approvals
+                    </h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">
+                        <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Refresh
+                    </button>
                 </div>
                 <div id="usersApprovalList">Loading user requests...</div>
             </div>
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">💳 Pending Renewal & Payment Requests</h3>
-                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">🔄 Refresh</button>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Pending Renewal & Payment Requests
+                    </h3>
+                    <button class="btn btn-sm btn-primary" onclick="loadRenewalSystem()">
+                        <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Refresh
+                    </button>
                 </div>
                 <div id="renewalReqsList">Loading renewal requests...</div>
             </div>
 
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">💰 Plans & Pricing Settings</h3>
-                    <button class="btn btn-sm btn-success" onclick="saveRenewalSettings()">💾 Save All Settings</button>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-dollar"/></svg></span> Plans & Pricing Settings
+                    </h3>
+                    <button class="btn btn-sm btn-success" onclick="saveRenewalSettings()">
+                        <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save All Settings
+                    </button>
                 </div>
                 <div style="font-size:12px;color:var(--text-light);margin-bottom:14px;">Configure all 6 plans — Duration, Active Links, Visitor Limit, and Price.</div>
 
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
-                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:10px;">💳 Payment Settings</h4>
+                    <h4 style="font-size:13px;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-dollar"/></svg></span>
+                        Payment Settings
+                    </h4>
                     <div class="grid-2">
                         <div><label style="font-size:12px;color:var(--text-light);">Admin UPI ID:</label><input type="text" id="setUpiId" placeholder="e.g. admin@upi"></div>
                         <div><label style="font-size:12px;color:var(--text-light);">WhatsApp Number:</label><input type="text" id="setWaNumber" placeholder="e.g. 916372923348"></div>
@@ -527,7 +859,8 @@
                     <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;background:rgba(99,102,241,0.08);border:1px dashed var(--primary);border-radius:10px;padding:12px;">
                         <div>
                             <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
-                                <span>🔒 Show UPI to User:</span>
+                                <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-lock"/></svg></span>
+                                <span>Show UPI to User:</span>
                                 <span id="upiToggleBadge" class="status-badge status-active">VISIBLE</span>
                             </div>
                             <div style="font-size:11px;color:var(--text-light);margin-top:4px;">If OFF, users won't see the UPI ID/QR on the renewal page.</div>
@@ -545,11 +878,14 @@
 
         <div class="section" id="sec-shortener">
             <div class="card">
-                <h3>🔗 URL Shortener</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-external-link"/></svg></span> URL Shortener</h3>
                 <input type="text" id="sUrl" placeholder="Destination URL">
                 <input type="text" id="sTitle" placeholder="Title">
                 <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-                    <label style="font-size:12px;color:var(--text-light);">📱 Open in App:</label>
+                    <label style="font-size:12px;color:var(--text-light);display:flex;align-items:center;gap:6px;">
+                        <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-phone"/></svg></span>
+                        Open in App:
+                    </label>
                     <label class="switch">
                         <input type="checkbox" id="shortAppOpen" onchange="toggleAppScheme()">
                         <span></span>
@@ -558,10 +894,12 @@
                 <div id="appSchemeContainer" style="display:none;margin-top:8px;">
                     <input type="text" id="sScheme" placeholder="App Scheme (e.g. vnd.youtube://, whatsapp://)">
                 </div>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">Create Short Link ➜</button>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="createShortLink()">
+                    <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Short Link
+                </button>
             </div>
             <div class="card">
-                <h3>Active Short Links</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Active Short Links</h3>
                 <div id="shortLinksList">Loading...</div>
             </div>
         </div>
@@ -569,11 +907,19 @@
         <div class="section" id="sec-settings">
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                    <h3 style="margin:0;padding:0;border:none;">🛡️ Blocked & Active Devices</h3>
+                    <h3 style="margin:0;padding:0;border:none;display:flex;align-items:center;gap:8px;">
+                        <span class="svg-icon"><svg><use href="#icon-shield"/></svg></span> Blocked & Active Devices
+                    </h3>
                     <div style="display:flex;gap:6px;">
-                        <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">⛔ Blocked</button>
-                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">🟢 Logged-in Devices</button>
-                        <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">🔄 Refresh</button>
+                        <button class="btn btn-sm" id="tabBtnBlocked" onclick="toggleDeviceTab('blocked')" style="background:var(--danger);color:#fff;">
+                            <span class="svg-icon"><svg><use href="#icon-lock"/></svg></span> Blocked
+                        </button>
+                        <button class="btn btn-sm" id="tabBtnActive" onclick="toggleDeviceTab('active')" style="background:var(--bg);color:var(--text-light);border:1px solid var(--border);">
+                            <span class="svg-icon"><svg><use href="#icon-unlock"/></svg></span> Logged-in Devices
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="refreshDeviceTabs()">
+                            <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Refresh
+                        </button>
                     </div>
                 </div>
                 <div id="deviceViewBlocked">
@@ -586,28 +932,36 @@
                 </div>
             </div>
             <div class="card">
-                <h3>🔐 Change Admin Passcode</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-key"/></svg></span> Change Admin Passcode</h3>
                 <div class="grid-2">
                     <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
                     <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
                 </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">Update Passcode</button>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">
+                    <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Update Passcode
+                </button>
             </div>
             <div class="card">
-                <h3>📱 Contact & OTP Settings</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-phone"/></svg></span> Contact & OTP Settings</h3>
                 <div class="grid-2">
                     <input type="email" id="adminEmail" placeholder="admin@example.com">
                     <input type="text" id="adminPhone" placeholder="+919876543210">
                 </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">💾 Save Contact</button>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">
+                    <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save Contact
+                </button>
             </div>
             <div class="card">
-                <h3>🖼️ UID Background Image (9:16)</h3>
+                <h3><span class="svg-icon"><svg><use href="#icon-image"/></svg></span> UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
                 <div class="image-preview" id="bgImagePreview"><img id="bgPreviewImg" alt="Preview"></div>
                 <div style="display:flex;gap:8px;margin-top:8px;">
-                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">💾 Save</button>
-                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">🗑️ Remove</button>
+                    <button class="btn btn-primary btn-sm" onclick="saveBackground()">
+                        <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="removeBackground()">
+                        <span class="svg-icon"><svg><use href="#icon-trash"/></svg></span> Remove
+                    </button>
                 </div>
             </div>
         </div>
@@ -616,12 +970,16 @@
     <div class="edit-modal" id="editModal">
         <div class="modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <h3 style="margin:0;font-size:18px;">✏️ Edit Rewarded Link</h3>
+                <h3 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px;">
+                    <span class="svg-icon"><svg><use href="#icon-edit"/></svg></span> Edit Rewarded Link
+                </h3>
                 <button onclick="closeEditModal()" style="background:none;border:none;color:var(--text-light);font-size:22px;cursor:pointer;">✕</button>
             </div>
             <div id="editModalBody"></div>
             <div style="margin-top:18px;display:flex;gap:10px;">
-                <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">💾 Save Changes</button>
+                <button class="btn btn-success btn-sm" onclick="saveLinkEdit()">
+                    <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save Changes
+                </button>
                 <button class="btn btn-danger btn-sm" onclick="closeEditModal()">Cancel</button>
             </div>
         </div>
@@ -679,7 +1037,9 @@
             try {
                 let t = document.getElementById('toast');
                 if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
-                t.textContent = msg;
+                const iconMap = { success: 'icon-check', error: 'icon-x', info: 'icon-info' };
+                const iconName = iconMap[type] || 'icon-info';
+                t.innerHTML = `<span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#${iconName}"/></svg></span> ${msg}`;
                 t.className = `toast ${type} show`;
                 setTimeout(() => { if (t) t.className = 'toast'; }, 3500);
             } catch(e) {}
@@ -689,7 +1049,7 @@
             if (!text) return;
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(() => showToast('✅ ' + successMsg, 'success')).catch(() => fallbackCopy(text, successMsg));
+                    navigator.clipboard.writeText(text).then(() => showToast(successMsg, 'success')).catch(() => fallbackCopy(text, successMsg));
                 } else fallbackCopy(text, successMsg);
             } catch(e) { fallbackCopy(text, successMsg); }
         }
@@ -701,7 +1061,7 @@
                 ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0'; ta.style.opacity = '0';
                 document.body.appendChild(ta); ta.focus(); ta.select();
                 const ok = document.execCommand('copy');
-                if (ok) showToast('✅ ' + successMsg, 'success');
+                if (ok) showToast(successMsg, 'success');
                 else prompt('Copy manually:', text);
                 document.body.removeChild(ta);
             } catch(e) {}
@@ -742,7 +1102,6 @@
             } catch(e) {}
         }
 
-        // 🆕 UPDATED: Copy only on button click
         function copyFromInput(inputId, msg) {
             try {
                 const input = document.getElementById(inputId);
@@ -752,8 +1111,8 @@
                 if (wrap) {
                     const btn = wrap.querySelector('.copy-icon-btn');
                     if (btn) {
-                        btn.classList.add('copied'); btn.innerHTML = '✓';
-                        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋'; }, 1500);
+                        btn.classList.add('copied'); btn.innerHTML = '<span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-check"/></svg></span>';
+                        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-copy"/></svg></span>'; }, 1500);
                     }
                 }
             } catch(e) {}
@@ -785,13 +1144,13 @@
                 const hidden = document.getElementById('cUidChecking');
                 if (createUidChecking) {
                     if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
-                    if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen pehle aayegi)';
-                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+                    if (desc) desc.innerHTML = '<b>ON</b> (UID screen pehle aayegi)';
+                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.innerHTML = '<span class="svg-icon"><svg><use href="#icon-check"/></svg></span> ON UID CHECKING'; }
                     if (hidden) hidden.value = 'true';
                 } else {
                     if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
-                    if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
-                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
+                    if (desc) desc.innerHTML = '<b>OFF</b> (Direct 16:9 Popup & Video)';
+                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.innerHTML = '<span class="svg-icon"><svg><use href="#icon-x"/></svg></span> OFF UID CHECKING'; }
                     if (hidden) hidden.value = 'false';
                 }
             } catch(e) {}
@@ -805,12 +1164,12 @@
                 const btn = document.getElementById('btnToggleEditUid');
                 if (editUidChecking) {
                     if (badge) { badge.className = 'status-badge status-active'; badge.textContent = 'ON UID CHECKING'; }
-                    if (desc) desc.innerHTML = '🟢 <b>ON</b> (UID screen aayegi)';
-                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.textContent = '✅ ON UID CHECKING'; }
+                    if (desc) desc.innerHTML = '<b>ON</b> (UID screen aayegi)';
+                    if (btn) { btn.className = 'btn btn-sm btn-success'; btn.innerHTML = '<span class="svg-icon"><svg><use href="#icon-check"/></svg></span> ON UID CHECKING'; }
                 } else {
                     if (badge) { badge.className = 'status-badge status-disabled'; badge.textContent = 'OFF UID CHECKING'; }
-                    if (desc) desc.innerHTML = '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)';
-                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.textContent = '⛔ OFF UID CHECKING'; }
+                    if (desc) desc.innerHTML = '<b>OFF</b> (Direct 16:9 Popup & Video)';
+                    if (btn) { btn.className = 'btn btn-sm btn-danger'; btn.innerHTML = '<span class="svg-icon"><svg><use href="#icon-x"/></svg></span> OFF UID CHECKING'; }
                 }
             } catch(e) {}
         }
@@ -964,9 +1323,15 @@
                                 </div>
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${escapeHTML(linkId)}')">📋 Copy</button>
-                                <button class="btn btn-sm btn-warning" onclick="openEditModal('${escapeHTML(linkId)}')">✏️ Edit</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteLink('${escapeHTML(linkId)}')">🗑️ Delete</button>
+                                <button class="btn btn-sm btn-success" onclick="copyLinkUrl('${escapeHTML(linkId)}')">
+                                    <span class="svg-icon"><svg><use href="#icon-copy"/></svg></span> Copy
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="openEditModal('${escapeHTML(linkId)}')">
+                                    <span class="svg-icon"><svg><use href="#icon-edit"/></svg></span> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteLink('${escapeHTML(linkId)}')">
+                                    <span class="svg-icon"><svg><use href="#icon-trash"/></svg></span> Delete
+                                </button>
                             </div>
                         </div>
                     `;
@@ -987,7 +1352,6 @@
             } catch(e) { showToast('Failed to delete', 'error'); }
         }
 
-        // 🆕 FIXED: Editable URLs with copy button beside
         function openEditModal(id) {
             try {
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(id));
@@ -1002,30 +1366,39 @@
                 const b = document.getElementById('editModalBody');
                 b.innerHTML = `
                     <div class="uid-card">
-                        <div class="uid-label">🔑 <span>Link UID (Secret Key)</span></div>
+                        <div class="uid-label">
+                            <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-key"/></svg></span>
+                            <span>Link UID (Secret Key)</span>
+                        </div>
                         <div class="uid-value-row">
                             <div class="uid-value" onclick="copyText('${escapeHTML(uidValue)}', 'UID Copied!')" title="Click to copy UID">${escapeHTML(uidValue)}</div>
-                            <button type="button" class="uid-copy-btn" onclick="copyText('${escapeHTML(uidValue)}', 'UID Copied!')">📋 Copy UID</button>
+                            <button type="button" class="uid-copy-btn" onclick="copyText('${escapeHTML(uidValue)}', 'UID Copied!')">
+                                <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-copy"/></svg></span> Copy UID
+                            </button>
                         </div>
-                        <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.4;">💡 Copy this UID to duplicate this link's settings.</div>
+                        <div style="font-size:10.5px;color:var(--text-light);margin-top:8px;line-height:1.4;">Copy this UID to duplicate this link's settings.</div>
                     </div>
                     <div class="form-row-2">
-                        <div class="form-group"><label>👤 User Name (Client)</label><input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name"></div>
-                        <div class="form-group"><label style="color:#38bdf8;">🏷️ Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
+                        <div class="form-group"><label>User Name (Client)</label><input type="text" id="eName" value="${escapeHTML(link.name || link.userName || '')}" placeholder="User Name"></div>
+                        <div class="form-group"><label style="color:#38bdf8;">Link Name</label><input type="text" id="eLinkName" value="${escapeHTML(link.linkName || link.title || '')}" placeholder="Enter Link Name"></div>
                     </div>
                     <div class="form-row-2">
                         <div class="form-group">
-                            <label>🎬 Video URL</label>
+                            <label>Video URL</label>
                             <div class="copyable-input-wrap">
                                 <input type="text" id="eVideo" value="${escapeHTML(link.video || '')}" placeholder="Enter Video URL">
-                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eVideo', 'Video URL copied!')" title="Copy">📋</button>
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eVideo', 'Video URL copied!')" title="Copy">
+                                    <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-copy"/></svg></span>
+                                </button>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>🎯 Claim URL</label>
+                            <label>Claim URL</label>
                             <div class="copyable-input-wrap">
                                 <input type="text" id="eClaim" value="${escapeHTML(link.claim || link.url || '')}" placeholder="Enter Claim URL">
-                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eClaim', 'Claim URL copied!')" title="Copy">📋</button>
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('eClaim', 'Claim URL copied!')" title="Copy">
+                                    <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-copy"/></svg></span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1035,17 +1408,24 @@
                     </div>
                     <div class="form-row-2">
                         <div class="form-group"><label>Status</label><select id="eStatus"><option value="active" ${link.status==='active'?'selected':''}>Active</option><option value="suspended" ${link.status==='suspended'?'selected':''}>Suspended</option><option value="disabled" ${link.status==='disabled'?'selected':''}>Disabled</option></select></div>
-                        <div class="form-group"><label style="color:var(--warning);">📅 Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"><div class="lifetime-btn-wrap">${isLifetime ? `<span class="lifetime-active-badge">♾️ Lifetime Active</span>` : `<button type="button" class="btn-lifetime" onclick="setLifetimeActive()">♾️ Make Lifetime Active</button>`}</div></div>
+                        <div class="form-group"><label style="color:var(--warning);">Expiry Date</label><input type="datetime-local" id="eExpiry" value="${expiryVal}"><div class="lifetime-btn-wrap">${isLifetime ? `<span class="lifetime-active-badge"><span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-zap"/></svg></span> Lifetime Active</span>` : `<button type="button" class="btn-lifetime" onclick="setLifetimeActive()"><span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-zap"/></svg></span> Make Lifetime Active</button>`}</div></div>
                     </div>
                     <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                         <div>
-                            <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;"><span>🛡️ UID Checking Control:</span><span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}</span></div>
-                            <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">${editUidChecking ? '🟢 <b>ON</b> (UID screen aayegi)' : '🔴 <b>OFF</b> (Direct 16:9 Popup & Video)'}</div>
+                            <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+                                <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-shield"/></svg></span>
+                                <span>UID Checking Control:</span>
+                                <span id="editUidBadge" class="status-badge ${editUidChecking ? 'status-active' : 'status-disabled'}">${editUidChecking ? 'ON UID CHECKING' : 'OFF UID CHECKING'}</span>
+                            </div>
+                            <div id="editUidDesc" style="font-size:11px;color:var(--text-light);margin-top:4px;">${editUidChecking ? '<b>ON</b> (UID screen aayegi)' : '<b>OFF</b> (Direct 16:9 Popup & Video)'}</div>
                         </div>
-                        <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">${editUidChecking ? '✅ ON UID CHECKING' : '⛔ OFF UID CHECKING'}</button>
+                        <button type="button" id="btnToggleEditUid" class="btn btn-sm ${editUidChecking ? 'btn-success' : 'btn-danger'}" onclick="toggleEditUidChecking()">${editUidChecking ? '<span class="svg-icon"><svg><use href="#icon-check"/></svg></span> ON UID CHECKING' : '<span class="svg-icon"><svg><use href="#icon-x"/></svg></span> OFF UID CHECKING'}</button>
                     </div>
                     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                        <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;">🖼️ Entrance Popup Settings (16:9 Ratio)</h4>
+                        <h4 style="font-size:13px;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                            <span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-image"/></svg></span>
+                            Entrance Popup Settings (16:9 Ratio)
+                        </h4>
                         <div class="form-row-2">
                             <div class="form-group"><label>Popup Title</label><input type="text" id="ePopTitle" value="${escapeHTML(popup.title || '🎁 Claim Your Reward')}"></div>
                             <div class="form-group"><label>Popup Button</label><input type="text" id="ePopBtn" value="${escapeHTML(popup.buttonText || 'Claim Now')}"></div>
@@ -1055,7 +1435,9 @@
                             <label>Popup Image URL (16:9)</label>
                             <div class="copyable-input-wrap">
                                 <input type="text" id="ePopImg" value="${escapeHTML(popup.image || '')}" placeholder="Enter Popup Image URL" oninput="updateEditPopupPreview(this.value)">
-                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')" title="Copy">📋</button>
+                                <button type="button" class="copy-icon-btn" onclick="copyFromInput('ePopImg', 'Popup Image URL copied!')" title="Copy">
+                                    <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-copy"/></svg></span>
+                                </button>
                             </div>
                         </div>
                         <div class="preview-box-16-9" id="editPreviewBox">${popup.image ? `<img src="${escapeHTML(popup.image)}">` : `<span style="color:var(--text-light);font-size:12px;">16:9 Image Preview</span>`}</div>
@@ -1077,9 +1459,9 @@
             try {
                 const expiryInput = document.getElementById('eExpiry');
                 if (expiryInput) expiryInput.value = '';
-                showToast('♾️ Link will be set to Lifetime Active on save', 'success');
+                showToast('Link will be set to Lifetime Active on save', 'success');
                 const wrap = document.querySelector('.lifetime-btn-wrap');
-                if (wrap) wrap.innerHTML = '<span class="lifetime-active-badge">♾️ Lifetime Active (will be saved)</span>';
+                if (wrap) wrap.innerHTML = '<span class="lifetime-active-badge"><span class="svg-icon" style="width:14px;height:14px;"><svg><use href="#icon-zap"/></svg></span> Lifetime Active (will be saved)</span>';
             } catch(e) {}
         }
 
@@ -1112,7 +1494,7 @@
                 if (!res.ok) { const errData = await res.json().catch(() => ({})); return showToast('❌ ' + (errData.error || 'Failed'), 'error'); }
                 const link = allLinks.find(l => l && String(l.id || l._id) === String(editingLinkId));
                 if (link) Object.assign(link, { name, userName: name, linkName, title: linkName, video, claim, buttonText, headline, status, expiryDate, popupSettings, uidChecking });
-                showToast(`✅ Link updated`, 'success');
+                showToast(`Link updated`, 'success');
                 closeEditModal(); 
                 loadLinks();
                 loadStats();
@@ -1145,7 +1527,7 @@
                 setVal('cPopSub', sourceLink.popupSettings?.subtitle || ''); setVal('cPopImg', sourceLink.popupSettings?.image || '');
                 updateCreatePopupPreview(sourceLink.popupSettings?.image || '');
                 input.value = '';
-                showToast('✅ Settings loaded! Fill User & Link Name', 'success');
+                showToast('Settings loaded! Fill User & Link Name', 'success');
                 setTimeout(() => { const c = document.getElementById('cCampaignName'); if (c) c.focus(); }, 300);
             } catch(e) { showToast('Failed to load UID', 'error'); }
         }
@@ -1173,7 +1555,7 @@
                 const selectEl = document.getElementById('cUserSelect');
                 if (!selectEl) return;
                 selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' + 
-                    allUsers.map(u => { const uName = u?.name || 'Unnamed'; return `<option value="${escapeHTML(uName)}">👤 ${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`; }).join('');
+                    allUsers.map(u => { const uName = u?.name || 'Unnamed'; return `<option value="${escapeHTML(uName)}">${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`; }).join('');
             } catch(e) {}
         }
 
@@ -1221,7 +1603,7 @@
                 if (!res.ok) { const errData = await res.json().catch(() => ({})); return showToast('❌ ' + (errData.error || 'Failed'), 'error'); }
                 const d = await res.json();
                 const newId = d?.id || d?.data?.id || d?._id || String(Date.now());
-                showToast(`✅ Link Created`, 'success');
+                showToast(`Link Created`, 'success');
                 const fullUrl = window.location.origin + '/uid?link=' + encodeURIComponent(newId);
                 const genBox = document.getElementById('generatedLinkBox');
                 const genInp = document.getElementById('generatedLinkUrl');
@@ -1265,19 +1647,19 @@
                     const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                     const isVip = u.lifetimeUnlimited === true;
                     const statusBadge = u.status === 'approved' ? '<span class="status-badge status-active">APPROVED</span>' : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
-                    const vipBadge = isVip ? '<span class="status-badge status-vip">👑 LIFETIME VIP</span>' : '';
+                    const vipBadge = isVip ? '<span class="status-badge status-vip">LIFETIME VIP</span>' : '';
                     
                     let actionButtons = '';
                     if (u.status === 'pending') {
-                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Approve</button>
-                        <button class="btn btn-sm btn-danger" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">❌ Reject</button>`;
+                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')"><span class="svg-icon"><svg><use href="#icon-check"/></svg></span> Approve</button>
+                        <button class="btn btn-sm btn-danger" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')"><span class="svg-icon"><svg><use href="#icon-x"/></svg></span> Reject</button>`;
                     } else if (u.status === 'approved') {
-                        actionButtons += `<button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;" onclick="sendWhatsAppApproval('${escapeHTML(uid)}')">📲 Send</button>
+                        actionButtons += `<button class="btn btn-sm" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;" onclick="sendWhatsAppApproval('${escapeHTML(uid)}')"><span class="svg-icon"><svg><use href="#icon-send"/></svg></span> Send</button>
                         <button class="btn btn-sm btn-warning" onclick="setUserStatus('${escapeHTML(uid)}', 'rejected')">Revoke</button>`;
                     } else {
-                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')">✅ Re-Approve</button>`;
+                        actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')"><span class="svg-icon"><svg><use href="#icon-check"/></svg></span> Re-Approve</button>`;
                     }
-                    actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')">🗑️ Remove</button>`;
+                    actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteUser('${escapeHTML(uid)}', '${escapeHTML(u.name || '')}')"><span class="svg-icon"><svg><use href="#icon-trash"/></svg></span> Remove</button>`;
 
                     const vipSwitchHtml = `
                         <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
@@ -1285,7 +1667,7 @@
                                 <input type="checkbox" ${isVip ? 'checked' : ''} data-user-id="${escapeHTML(uid)}" data-user-name="${escapeHTML(u.name || '')}" onchange="toggleLifetimeUnlimited(this)">
                                 <span></span>
                             </label>
-                            <span style="font-size:10.5px; font-weight:700; color:${isVip ? '#fbbf24' : 'var(--text-light)'};">♾️ Lifetime Unlimited</span>
+                            <span style="font-size:10.5px; font-weight:700; color:${isVip ? '#fbbf24' : 'var(--text-light)'};">Lifetime Unlimited</span>
                         </div>
                     `;
 
@@ -1293,15 +1675,18 @@
                         <div class="link-item ${isVip ? 'user-vip-row' : ''}">
                             <div style="flex:1;">
                                 <div class="name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                    <span>👤 ${escapeHTML(u.name || 'User')}</span>${statusBadge}${vipBadge}
+                                    <span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-user"/></svg></span>
+                                    <span>${escapeHTML(u.name || 'User')}</span>${statusBadge}${vipBadge}
                                     <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${escapeHTML(u.currentPlanName || 'Free Trial')}</span>
                                 </div>
                                 <div class="details">
-                                    <span>📧 <b>${escapeHTML(u.email || 'N/A')}</b></span>
-                                    <span>| 📞 <b>${escapeHTML(u.phone || 'N/A')}</b></span>
-                                    <span>| 🔗 Links: <b style="color:var(--primary);">${u.totalLinks || 0}</b></span>
-                                    <span>| 👁️ Visits: <b style="color:#38bdf8;">${u.totalVisits || 0}</b></span>
-                                    <span>| 🎁 Claims: <b style="color:var(--success);">${u.totalClaims || 0}</b></span>
+                                    <span class="svg-icon" style="width:12px;height:12px;"><svg><use href="#icon-mail"/></svg></span>
+                                    <span><b>${escapeHTML(u.email || 'N/A')}</b></span>
+                                    <span class="svg-icon" style="width:12px;height:12px;"><svg><use href="#icon-phone"/></svg></span>
+                                    <span><b>${escapeHTML(u.phone || 'N/A')}</b></span>
+                                    <span>| Links: <b style="color:var(--primary);">${u.totalLinks || 0}</b></span>
+                                    <span>| Visits: <b style="color:#38bdf8;">${u.totalVisits || 0}</b></span>
+                                    <span>| Claims: <b style="color:var(--success);">${u.totalClaims || 0}</b></span>
                                 </div>
                                 ${vipSwitchHtml}
                             </div>
@@ -1319,10 +1704,10 @@
                 const name = checkboxEl.getAttribute('data-user-name');
                 
                 if (enable === true) {
-                    const confirmed = confirm(`⚠️ Make "${name}" LIFETIME UNLIMITED?\n\n✅ Unlimited Links\n✅ Unlimited Visitors\n✅ No Expiry\n✅ All features unlocked`);
+                    const confirmed = confirm(`Make "${name}" LIFETIME UNLIMITED?\n\nUnlimited Links\nUnlimited Visitors\nNo Expiry\nAll features unlocked`);
                     if (!confirmed) { checkboxEl.checked = false; return; }
                 } else {
-                    const confirmed = confirm(`⚠️ Remove Lifetime Unlimited for "${name}"?`);
+                    const confirmed = confirm(`Remove Lifetime Unlimited for "${name}"?`);
                     if (!confirmed) { checkboxEl.checked = true; return; }
                 }
                 
@@ -1333,7 +1718,7 @@
                 const data = await res.json();
                 
                 if (res && res.ok && data.success) {
-                    showToast(enable ? '👑 User set to Lifetime Unlimited!' : 'Lifetime Unlimited removed', 'success');
+                    showToast(enable ? 'User set to Lifetime Unlimited!' : 'Lifetime Unlimited removed', 'success');
                     await loadAllUsers();
                 } else {
                     showToast('❌ ' + (data.error || 'Failed'), 'error');
@@ -1352,7 +1737,7 @@
                     body: JSON.stringify({ action: 'approved' })
                 });
                 const data = await res.json();
-                showToast('✅ User Approved!', 'success');
+                showToast('User Approved!', 'success');
                 await loadAllUsers(); loadRenewalSystem();
                 if (data.whatsappUrl && confirm('Open WhatsApp?')) window.open(data.whatsappUrl, '_blank');
             } catch(e) { showToast('Failed', 'error'); }
@@ -1374,7 +1759,7 @@
             try {
                 await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
                 allUsers = allUsers.filter(u => u && String(u._id || u.id) !== String(id));
-                filterUsersList(); showToast('✅ User removed!', 'success'); loadRenewalSystem();
+                filterUsersList(); showToast('User removed!', 'success'); loadRenewalSystem();
             } catch(e) { showToast('Failed', 'error'); }
         }
 
@@ -1390,12 +1775,12 @@
 
         const PLAN_KEYS_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
         const PLAN_LABELS = {
-            'free-trial': { icon: '🎁', name: 'Free Trial' },
-            'basic': { icon: '📦', name: 'Basic' },
-            'creator': { icon: '⭐', name: 'Creator' },
-            'pro': { icon: '🚀', name: 'Pro' },
-            'business': { icon: '💼', name: 'Business' },
-            'enterprise-vip': { icon: '👑', name: 'Enterprise VIP' }
+            'free-trial': { icon: 'icon-gift', name: 'Free Trial' },
+            'basic': { icon: 'icon-package', name: 'Basic' },
+            'creator': { icon: 'icon-star', name: 'Creator' },
+            'pro': { icon: 'icon-rocket', name: 'Pro' },
+            'business': { icon: 'icon-briefcase', name: 'Business' },
+            'enterprise-vip': { icon: 'icon-crown', name: 'Enterprise VIP' }
         };
 
         function renderPlansEditors(plans) {
@@ -1418,7 +1803,7 @@
                         <div class="plan-editor-card" data-plan-key="${key}">
                             <div class="plan-editor-header">
                                 <div class="plan-editor-name">
-                                    <span>${meta.icon}</span>
+                                    <span class="svg-icon" style="width:20px;height:20px;"><svg><use href="#${meta.icon}"/></svg></span>
                                     <span>${meta.name}</span>
                                     ${plan.badge ? `<span class="plan-editor-badge ${badgeClass}">${escapeHTML(plan.badge)}</span>` : ''}
                                 </div>
@@ -1436,8 +1821,8 @@
                                     <label>Active Links</label>
                                     <input type="number" id="plan-${key}-links" value="${linksVal}" min="1" placeholder="Enter number..." ${linksIsUnlimited ? 'disabled' : ''}>
                                     <div class="limit-toggle-wrap">
-                                        <button type="button" class="limit-toggle-btn ${!linksIsUnlimited ? 'active' : ''}" onclick="setLimitMode('${key}', 'links', 'custom')">✏️ Custom</button>
-                                        <button type="button" class="limit-toggle-btn ${linksIsUnlimited ? 'unlimited-active' : ''}" onclick="setLimitMode('${key}', 'links', 'unlimited')">♾️ Unlimited</button>
+                                        <button type="button" class="limit-toggle-btn ${!linksIsUnlimited ? 'active' : ''}" onclick="setLimitMode('${key}', 'links', 'custom')">Custom</button>
+                                        <button type="button" class="limit-toggle-btn ${linksIsUnlimited ? 'unlimited-active' : ''}" onclick="setLimitMode('${key}', 'links', 'unlimited')">Unlimited</button>
                                     </div>
                                     <input type="hidden" id="plan-${key}-links-mode" value="${linksIsUnlimited ? 'unlimited' : 'custom'}">
                                 </div>
@@ -1445,8 +1830,8 @@
                                     <label>Visitor Limit</label>
                                     <input type="number" id="plan-${key}-visitors" value="${visitorsVal}" min="1" placeholder="Enter number..." ${visitorsIsUnlimited ? 'disabled' : ''}>
                                     <div class="limit-toggle-wrap">
-                                        <button type="button" class="limit-toggle-btn ${!visitorsIsUnlimited ? 'active' : ''}" onclick="setLimitMode('${key}', 'visitors', 'custom')">✏️ Custom</button>
-                                        <button type="button" class="limit-toggle-btn ${visitorsIsUnlimited ? 'unlimited-active' : ''}" onclick="setLimitMode('${key}', 'visitors', 'unlimited')">♾️ Unlimited</button>
+                                        <button type="button" class="limit-toggle-btn ${!visitorsIsUnlimited ? 'active' : ''}" onclick="setLimitMode('${key}', 'visitors', 'custom')">Custom</button>
+                                        <button type="button" class="limit-toggle-btn ${visitorsIsUnlimited ? 'unlimited-active' : ''}" onclick="setLimitMode('${key}', 'visitors', 'unlimited')">Unlimited</button>
                                     </div>
                                     <input type="hidden" id="plan-${key}-visitors-mode" value="${visitorsIsUnlimited ? 'unlimited' : 'custom'}">
                                 </div>
@@ -1547,8 +1932,8 @@
                     const uData = await uRes.json();
                     const uList = document.getElementById('usersApprovalList');
                     const pendingUsers = (uData.users || []).filter(u => u && u.status === 'pending');
-                    if (!pendingUsers.length) uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending user requests.</p>';
-                    else uList.innerHTML = pendingUsers.map(u => `<div class="link-item"><div><div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div><div class="details">📧 ${escapeHTML(u.email || 'N/A')} | 📞 ${escapeHTML(u.phone || 'N/A')}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${u._id || u.id}')">✅ Approve</button><button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')">❌ Reject</button></div></div>`).join('');
+                    if (!pendingUsers.length) uList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No pending user requests.</p>';
+                    else uList.innerHTML = pendingUsers.map(u => `<div class="link-item"><div><div class="name">${escapeHTML(u.name)} <span class="status-badge status-pending">PENDING</span></div><div class="details"><span class="svg-icon" style="width:12px;height:12px;"><svg><use href="#icon-mail"/></svg></span> ${escapeHTML(u.email || 'N/A')} | <span class="svg-icon" style="width:12px;height:12px;"><svg><use href="#icon-phone"/></svg></span> ${escapeHTML(u.phone || 'N/A')}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${u._id || u.id}')"><span class="svg-icon"><svg><use href="#icon-check"/></svg></span> Approve</button><button class="btn btn-sm btn-danger" onclick="setUserStatus('${u._id || u.id}', 'rejected')"><span class="svg-icon"><svg><use href="#icon-x"/></svg></span> Reject</button></div></div>`).join('');
                 }
             } catch(err) {}
 
@@ -1560,8 +1945,8 @@
                     
                     const rList = document.getElementById('renewalReqsList');
                     const pendingReqs = (sData.requests || []).filter(r => r && r.status === 'pending');
-                    if (!pendingReqs.length) rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">✅ No pending renewal requests.</p>';
-                    else rList.innerHTML = pendingReqs.map(r => `<div class="link-item"><div><div class="name">User: ${escapeHTML(r.linkName || r.userId || 'Client')} | Plan: ${escapeHTML(r.plan || '')} (${r.days || 30} Days)</div><div class="details">Link ID: <b>${escapeHTML(r.linkId || 'N/A')}</b> | Amount: ₹${r.amount || 0} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id || r._id}')">✅ Approve</button><button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id || r._id}')">❌ Reject</button></div></div>`).join('');
+                    if (!pendingReqs.length) rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No pending renewal requests.</p>';
+                    else rList.innerHTML = pendingReqs.map(r => `<div class="link-item"><div><div class="name">User: ${escapeHTML(r.linkName || r.userId || 'Client')} | Plan: ${escapeHTML(r.plan || '')} (${r.days || 30} Days)</div><div class="details">Link ID: <b>${escapeHTML(r.linkId || 'N/A')}</b> | Amount: ₹${r.amount || 0} | Ref: <b>${escapeHTML(r.transactionId || 'N/A')}</b></div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="approveRenewal('${r.id || r._id}')"><span class="svg-icon"><svg><use href="#icon-check"/></svg></span> Approve</button><button class="btn btn-sm btn-danger" onclick="rejectRenewal('${r.id || r._id}')"><span class="svg-icon"><svg><use href="#icon-x"/></svg></span> Reject</button></div></div>`).join('');
 
                     if (sData.plans) renderPlansEditors(sData.plans);
 
@@ -1606,8 +1991,8 @@
                     body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, showUpi })
                 });
                 
-                if (res && res.ok) { showToast('✅ All plans & settings saved!', 'success'); loadRenewalSystem(); }
-                else showToast('❌ Failed to save', 'error');
+                if (res && res.ok) { showToast('All plans & settings saved!', 'success'); loadRenewalSystem(); }
+                else showToast('Failed to save', 'error');
             } catch(e) { showToast('Failed to save', 'error'); }
         }
 
@@ -1640,12 +2025,12 @@
                 if (res && res.ok) {
                     const d = await res.json();
                     const devices = d.devices || [];
-                    if (!devices.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">✅ No blocked devices.</p>';
+                    if (!devices.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No blocked devices.</p>';
                     list.innerHTML = devices.map(dev => {
                         const isPermanent = dev.isPermanent === true;
-                        const statusLabel = isPermanent ? '⛔ PERMANENT' : '⚠️ TEMPORARY';
+                        const statusLabel = isPermanent ? 'PERMANENT' : 'TEMPORARY';
                         const statusColor = isPermanent ? '#f87171' : '#fbbf24';
-                        return `<div class="device-card-item blocked"><div><div class="device-title">⛔ ${escapeHTML(dev.deviceName || 'Device')} <span style="font-size:11px;color:#f87171;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div><div class="device-meta"><span>🌐 IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span><span>⚠️ Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span><span>🚨 ${escapeHTML(dev.reason || 'Passcode violations')}</span><span style="color:${statusColor};font-weight:700;">${statusLabel}</span></div></div><button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')">🔓 Unblock</button></div>`;
+                        return `<div class="device-card-item blocked"><div><div class="device-title"><span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#icon-lock"/></svg></span> ${escapeHTML(dev.deviceName || 'Device')} <span style="font-size:11px;color:#f87171;">(${escapeHTML(dev.deviceType || 'Mobile')})</span></div><div class="device-meta"><span>IP: <b>${escapeHTML(dev.ip || 'Unknown')}</b></span><span>Attempts: <b style="color:var(--danger);">${dev.attempts || 3}/3</b></span><span>${escapeHTML(dev.reason || 'Passcode violations')}</span><span style="color:${statusColor};font-weight:700;">${statusLabel}</span></div></div><button class="btn btn-sm btn-success" onclick="unblockDev('${dev._id || dev.id || ''}')"><span class="svg-icon"><svg><use href="#icon-unlock"/></svg></span> Unblock</button></div>`;
                     }).join('');
                 }
             } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
@@ -1655,7 +2040,7 @@
             if (!confirm('Unblock this device?')) return;
             try {
                 const res = await fetchWithAuth('/api/admin/blocked-devices/' + encodeURIComponent(id) + '/unblock', { method: 'POST' });
-                if (res && res.ok) { showToast('✅ Device unblocked!', 'success'); loadBlockedDevices(); }
+                if (res && res.ok) { showToast('Device unblocked!', 'success'); loadBlockedDevices(); }
                 else showToast('Failed', 'error');
             } catch(e) { showToast('Failed', 'error'); }
         }
@@ -1675,10 +2060,10 @@
                         const sid = s._id || s.id || '';
                         const isActiveNow = s.isActive === true;
                         const cardClass = isActiveNow ? 'active-dev' : 'inactive-dev';
-                        const statusIcon = isActiveNow ? '🟢' : '⚪';
+                        const statusIcon = isActiveNow ? 'icon-unlock' : 'icon-lock';
                         const statusText = isActiveNow ? 'ACTIVE NOW' : 'LOGGED OUT';
                         const statusColor = isActiveNow ? '#4ade80' : '#94a3b8';
-                        return `<div class="device-card-item ${cardClass}"><div><div class="device-title">${statusIcon} ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#94a3b8;">(${escapeHTML(s.deviceType || 'Browser')})</span> <span style="font-size:10px;font-weight:800;color:${statusColor};">• ${statusText}</span></div><div class="device-meta"><span>🌐 IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span><span>🕒 Logged In: <b>${loginTime}</b></span><span>⚡ Last Seen: <b>${lastActive}</b></span></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;">${isActiveNow ? `<button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')">🚪 Logout</button>` : ''}<button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')">⛔ Block</button></div></div>`;
+                        return `<div class="device-card-item ${cardClass}"><div><div class="device-title"><span class="svg-icon" style="width:16px;height:16px;"><svg><use href="#${statusIcon}"/></svg></span> ${escapeHTML(s.deviceName || 'Admin Device')} <span style="font-size:11px;color:#94a3b8;">(${escapeHTML(s.deviceType || 'Browser')})</span> <span style="font-size:10px;font-weight:800;color:${statusColor};">• ${statusText}</span></div><div class="device-meta"><span>IP: <b>${escapeHTML(s.ip || '127.0.0.1')}</b></span><span>Logged In: <b>${loginTime}</b></span><span>Last Seen: <b>${lastActive}</b></span></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;">${isActiveNow ? `<button class="btn btn-sm btn-warning" onclick="deleteActiveSession('${sid}')"><span class="svg-icon"><svg><use href="#icon-logout"/></svg></span> Logout</button>` : ''}<button class="btn btn-sm btn-danger" onclick="blockActiveSession('${sid}')"><span class="svg-icon"><svg><use href="#icon-lock"/></svg></span> Block</button></div></div>`;
                     }).join('');
                 }
             } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
@@ -1691,7 +2076,7 @@
 
         async function blockActiveSession(id) {
             if (!confirm('Permanently block this device?')) return;
-            try { await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' }); showToast('✅ Device blocked!', 'success'); loadActiveDevices(); } catch(e) { showToast('Failed', 'error'); }
+            try { await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' }); showToast('Device blocked!', 'success'); loadActiveDevices(); } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function loadContactInfo() {
@@ -1717,7 +2102,7 @@
             const phone = document.getElementById('adminPhone')?.value.trim();
             try {
                 await fetchWithAuth('/api/admin/update-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone }) });
-                showToast('✅ Contact saved!', 'success');
+                showToast('Contact saved!', 'success');
             } catch(e) { showToast('Failed', 'error'); }
         }
 
@@ -1726,7 +2111,7 @@
             try {
                 await fetchWithAuth('/api/admin/background', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ background: bg }) });
                 if (bg) { const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = bg; const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.add('show'); }
-                showToast('✅ Background updated!', 'success');
+                showToast('Background updated!', 'success');
             } catch(e) { showToast('Failed', 'error'); }
         }
 
@@ -1746,7 +2131,7 @@
             try {
                 const res = await fetchWithAuth('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
                 const d = await res.json();
-                if (d.success) showToast('✅ Passcode updated!', 'success');
+                if (d.success) showToast('Passcode updated!', 'success');
                 else showToast('❌ ' + (d.error || 'Failed'), 'error');
             } catch(e) { showToast('Error', 'error'); }
         }
@@ -1766,7 +2151,7 @@
                     const d = await res.json();
                     const sLinks = d.links || [];
                     if (!sLinks.length) return list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
-                    list.innerHTML = sLinks.map(l => `<div class="link-item"><div><div class="name">${escapeHTML(l.title || 'Untitled')}</div><div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || 0}</b></div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="copyShortLink('${escapeHTML(l.code)}')">📋 Copy</button><button class="btn btn-sm btn-danger" onclick="deleteShortLink('${escapeHTML(l._id || l.id)}')">🗑️</button></div></div>`).join('');
+                    list.innerHTML = sLinks.map(l => `<div class="link-item"><div><div class="name">${escapeHTML(l.title || 'Untitled')}</div><div class="details">URL: <b>${window.location.origin}/s/${escapeHTML(l.code)}</b> | Clicks: <b>${l.visits || 0}</b></div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-success" onclick="copyShortLink('${escapeHTML(l.code)}')"><span class="svg-icon"><svg><use href="#icon-copy"/></svg></span> Copy</button><button class="btn btn-sm btn-danger" onclick="deleteShortLink('${escapeHTML(l._id || l.id)}')"><span class="svg-icon"><svg><use href="#icon-trash"/></svg></span></button></div></div>`).join('');
                 }
             } catch(e) { if(list) list.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed.</p>'; }
         }
@@ -1787,7 +2172,7 @@
             try {
                 const res = await fetchWithAuth('/api/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title: title || 'Short Link', appOpen, appScheme }) });
                 if (res && res.ok) {
-                    showToast('✅ Short link created!', 'success');
+                    showToast('Short link created!', 'success');
                     const su = document.getElementById('sUrl'); if(su) su.value = '';
                     const st = document.getElementById('sTitle'); if(st) st.value = '';
                     loadShortLinks();
