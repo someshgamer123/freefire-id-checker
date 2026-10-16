@@ -347,23 +347,49 @@
         
         async function loadLinkData() {
             var linkId = new URLSearchParams(window.location.search).get('link');
+            if (!linkId) {
+                // Try path-based link ID
+                var pathClean = window.location.pathname.replace(/\/+$/, '');
+                var last = pathClean.split('/').pop();
+                if (last && last !== 'uid' && last !== 'uid.html' && last !== 'uid-checker.html') {
+                    linkId = last;
+                }
+            }
             if (linkId) {
                 try {
                     var r = await fetch('/api/link/' + linkId);
                     
+                    // 🆕 EXPIRED / SUSPENDED / DISABLED — go to /expired.html
                     if (r.status === 403) {
-                        var error = await r.json();
-                        var status = error.status || 'suspended';
-                        showErrorPage(status);
+                        try {
+                            var error = await r.json();
+                            if (error && error.expired === true) {
+                                window.location.replace('/expired.html');
+                                return;
+                            }
+                        } catch(e) {}
+                        window.location.replace('/expired.html');
                         return;
                     }
                     
-                    if (r.status === 404 || !r.ok) {
-                        showErrorPage('not_found');
+                    if (r.status === 404) {
+                        window.location.replace('/expired.html');
+                        return;
+                    }
+                    
+                    if (!r.ok) {
+                        window.location.replace('/expired.html');
                         return;
                     }
                     
                     var data = await r.json();
+                    
+                    // 🆕 Double check expired flag
+                    if (data && data.expired === true) {
+                        window.location.replace('/expired.html');
+                        return;
+                    }
+                    
                     if (data && data.id) {
                         linkData = data;
                         document.getElementById('btn1').textContent = data.button1 || 'Watch Video';
@@ -371,10 +397,12 @@
                         document.getElementById('normalContent').style.display = 'block';
                         document.getElementById('errorPage').classList.remove('show');
                     } else {
-                        showErrorPage('not_found');
+                        window.location.replace('/expired.html');
                     }
                 } catch (e) {
-                    showErrorPage('not_found');
+                    // Network error — don't redirect, show form
+                    document.getElementById('normalContent').style.display = 'block';
+                    document.getElementById('errorPage').classList.remove('show');
                 }
             } else {
                 document.getElementById('normalContent').style.display = 'block';
