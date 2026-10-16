@@ -19,11 +19,8 @@ const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
-// 🆕 48 HOURS — for unique visit/claim counting
-const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
-
-// 🆕 5 MINUTES — for "Active Watching/Claiming" (real-time)
-const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours for unique visit/claim counting
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000;       // 5 minutes for "active now" real-time tracking
 
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -110,7 +107,6 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
-// 🆕 VisitorActivity — 48h unique window + active real-time tracking
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -121,7 +117,7 @@ const VisitorActivitySchema = new mongoose.Schema({
 }, { timestamps: true, strict: false });
 
 VisitorActivitySchema.index({ linkId: 1, visitorKey: 1, type: 1, lastSeen: -1 });
-VisitorActivitySchema.index({ type: 1, lastSeen: -1 }); // 🆕 For active watching queries
+VisitorActivitySchema.index({ type: 1, lastSeen: -1 });
 const VisitorActivity = mongoose.models.VisitorActivity || mongoose.model('VisitorActivity', VisitorActivitySchema);
 
 const DEFAULT_PASSCODE = process.env.ADMIN_PASSCODE ? process.env.ADMIN_PASSCODE.toString().trim() : '951753';
@@ -133,6 +129,9 @@ const DISPOSABLE_DOMAINS = [
     'maildrop.cc', 'mohmal.com', 'tempr.email', 'dispostable.com',
     'emailondeck.com', 'mytemp.email', 'burnermail.io', 'mailsac.com'
 ];
+
+// 🆕 PLAN ORDER for hierarchy (small to large)
+const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
 
 const DEFAULT_PLANS = {
     'free-trial': { name: 'Free Trial', icon: '🎁', durationDays: 3, linkLimit: 1, visitorLimit: 150, price: 0, enabled: true, badge: 'FREE', features: ['1 Active Link', '150 Total Visitors', '3 Days Validity', 'Basic Analytics'] },
@@ -249,6 +248,50 @@ function isLinkExpired(link) {
     return false;
 }
 
+// 🆕 Check if plan A is higher tier than plan B
+function isPlanHigher(planA, planB) {
+    const indexA = PLAN_ORDER.indexOf(planA);
+    const indexB = PLAN_ORDER.indexOf(planB);
+    if (indexA === -1 || indexB === -1) return false;
+    return indexA > indexB;
+}
+
+// 🆕 Check if user can purchase a plan (plan must be >= current plan)
+function canUserPurchasePlan(user, targetPlanKey) {
+    if (!user) return { allowed: false, reason: 'NO_USER' };
+    if (user.lifetimeUnlimited === true) {
+        return { allowed: false, reason: 'LIFETIME_UNLIMITED', message: 'You already have Lifetime Unlimited access.' };
+    }
+    
+    const currentPlan = user.currentPlan || 'none';
+    
+    // If user has no plan or expired plan → can buy anything
+    if (currentPlan === 'none' || isPlanExpired(user)) {
+        return { allowed: true };
+    }
+    
+    // If current plan is lifetime-unlimited
+    if (currentPlan === 'lifetime-unlimited') {
+        return { allowed: false, reason: 'LIFETIME_UNLIMITED', message: 'You already have Lifetime Unlimited access.' };
+    }
+    
+    // User can only buy plans HIGHER than current plan
+    const currentIdx = PLAN_ORDER.indexOf(currentPlan);
+    const targetIdx = PLAN_ORDER.indexOf(targetPlanKey);
+    
+    if (currentIdx === -1 || targetIdx === -1) return { allowed: true }; // fallback allow
+    
+    if (targetIdx <= currentIdx) {
+        return { 
+            allowed: false, 
+            reason: 'PLAN_TOO_LOW', 
+            message: `You already have ${currentPlan} plan. You can only upgrade to a higher plan.` 
+        };
+    }
+    
+    return { allowed: true };
+}
+
 function generateWhatsAppApprovalData(user, req) {
     let cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
     if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
@@ -310,6 +353,7 @@ async function getPricingDoc() {
     }
     const currentPlans = pricingDoc.plans || {};
     let needsSave = false;
+    // 🆕 Only add missing plans; DON'T overwrite existing ones (user changes preserved)
     for (const key of Object.keys(DEFAULT_PLANS)) {
         if (!currentPlans[key]) {
             currentPlans[key] = DEFAULT_PLANS[key];
@@ -632,28 +676,36 @@ app.get('/api/link/:id', async (req, res) => {
             }
         }
 
+        // 🆕 STRICT: Check if link owner user still exists
         const ownerName = link.assignedUser || link.userName || link.name || link.creator;
         if (ownerName) {
-            try {
-                const ownerUser = await RenewalUser.findOne({ 
-                    name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
-                }).lean();
-                
-                if (ownerUser) {
-                    if (isPlanExpired(ownerUser)) {
-                        return res.status(403).json({ error: 'plan_expired', message: 'Your plan has expired. Please renew.', status: 'expired', expired: true });
-                    }
-                    if (ownerUser.lifetimeUnlimited !== true) {
-                        const visitorCheck = await canUserGetVisitor(ownerUser);
-                        if (!visitorCheck.allowed) {
-                            return res.status(403).json({ error: 'visitor_limit_reached', message: 'This link has reached its visitor limit.', status: 'expired', expired: true });
-                        }
-                    }
+            const ownerUser = await RenewalUser.findOne({ 
+                name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+            }).lean();
+            
+            // 🆕 If owner user deleted → disable link and return expired
+            if (!ownerUser) {
+                // Auto-delete the orphaned link
+                await Link.collection.deleteOne({ _id: link._id }).catch(() => {});
+                return res.status(403).json({ 
+                    error: 'owner_deleted', 
+                    message: 'The owner of this link no longer exists.', 
+                    status: 'expired', 
+                    expired: true 
+                });
+            }
+            
+            if (isPlanExpired(ownerUser)) {
+                return res.status(403).json({ error: 'plan_expired', message: 'Your plan has expired. Please renew.', status: 'expired', expired: true });
+            }
+            if (ownerUser.lifetimeUnlimited !== true) {
+                const visitorCheck = await canUserGetVisitor(ownerUser);
+                if (!visitorCheck.allowed) {
+                    return res.status(403).json({ error: 'visitor_limit_reached', message: 'This link has reached its visitor limit.', status: 'expired', expired: true });
                 }
-            } catch(e) { console.error('Plan/Visitor check error:', e.message); }
+            }
         }
 
-        // 🆕 48-HOUR UNIQUE VISIT COUNTING
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const today = getISTDate();
@@ -677,7 +729,6 @@ app.get('/api/link/:id', async (req, res) => {
             console.log(`✅ NEW unique visit counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
         }
 
-        // 🆕 Always update lastSeen for ACTIVE WATCHING tracking
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } }, 
@@ -772,7 +823,6 @@ async function executeClaimTracking(rawLinkId, req) {
         console.log(`✅ NEW unique claim counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
     }
 
-    // 🆕 Always update lastSeen for ACTIVE CLAIMING tracking
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
@@ -907,6 +957,51 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     } catch (e) { res.status(401).json({ error: 'Google authentication failed' }); }
 });
 
+// 🆕 VERIFY USER SESSION — called by frontend every 10 sec to check if user still exists
+app.post('/api/user/verify-session', async (req, res) => {
+    try {
+        const { userName, userId } = req.body;
+        if (!userName && !userId) return res.status(400).json({ error: 'User identifier required' });
+        
+        let user = null;
+        if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+            user = await RenewalUser.findById(userId).lean();
+        }
+        if (!user && userName) {
+            user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).lean();
+        }
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                deleted: true, 
+                error: 'Account has been removed by admin.' 
+            });
+        }
+        
+        if (user.status === 'rejected') {
+            return res.status(403).json({ 
+                success: false, 
+                deleted: true, 
+                error: 'Your account has been rejected.' 
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            user: { 
+                id: user._id, 
+                name: user.name, 
+                status: user.status,
+                currentPlan: user.currentPlan,
+                lifetimeUnlimited: user.lifetimeUnlimited === true
+            } 
+        });
+    } catch(e) { 
+        res.status(500).json({ error: 'Verification failed' }); 
+    }
+});
+
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -970,6 +1065,32 @@ app.post('/api/user/link-details', async (req, res) => {
         const cleanUser = (userName || '').trim();
         const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
 
+        // 🆕 STRICT: Check if user still exists
+        const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
+        if (!ownerUser) {
+            return res.status(404).json({
+                success: false,
+                deleted: true,
+                error: 'Your account has been removed by admin. Please contact support.',
+                userLinks: [],
+                planUsage: null,
+                plans: null,
+                hasAnyLink: false
+            });
+        }
+        
+        if (ownerUser.status === 'rejected') {
+            return res.status(403).json({
+                success: false,
+                deleted: true,
+                error: 'Your account has been rejected.',
+                userLinks: [],
+                planUsage: null,
+                plans: null,
+                hasAnyLink: false
+            });
+        }
+
         let rawInput = linkInput || linkId || id || dashboardId || '';
         let searchId = extractCleanId(rawInput);
 
@@ -999,19 +1120,13 @@ app.post('/api/user/link-details', async (req, res) => {
         }
         if (!link && allUserLinks.length > 0) link = allUserLinks[0];
 
-        const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
         const pricingDoc = await getPricingDoc();
         
-        const hasPlan = ownerUser ? userHasActivePlan(ownerUser) : false;
-        const planIsExpired = ownerUser ? isPlanExpired(ownerUser) : false;
+        const hasPlan = userHasActivePlan(ownerUser);
+        const planIsExpired = isPlanExpired(ownerUser);
         const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
         const freeTrialUsed = ownerUser?.freeTrialUsed === true;
         const userCurrentPlan = ownerUser?.currentPlan || 'none';
-        
-        let effectivePlanKey = userCurrentPlan;
-        if (isLifetimeUnlimited) effectivePlanKey = 'lifetime-unlimited';
-        else if (!hasPlan && !planIsExpired) effectivePlanKey = 'no-plan';
-        else if (planIsExpired) effectivePlanKey = 'no-plan';
         
         const plan = getPlanDetails(pricingDoc, hasPlan ? userCurrentPlan : 'free-trial');
         const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
@@ -1106,7 +1221,6 @@ app.post('/api/user/link-details', async (req, res) => {
         const v30d = sumDailyMapBetween(dailyVisitsObj, thirtyDaysAgo, today);
         const c30d = sumDailyMapBetween(dailyClaimsObj, thirtyDaysAgo, today);
 
-        // 🆕 Compute proper daysLeft + expired status
         let daysLeft = null;
         let isEligibleForRenewal = false;
         let linkIsExpired = false;
@@ -1117,7 +1231,6 @@ app.post('/api/user/link-details', async (req, res) => {
             if (daysLeft <= 0) linkIsExpired = true;
             if (daysLeft <= 3) isEligibleForRenewal = true;
         }
-        // 🆕 If no expiryDate but owner's plan is expired → link is effectively expired
         if (!link.expiryDate && planIsExpired) {
             linkIsExpired = true;
         }
@@ -1165,6 +1278,16 @@ app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
         if (!linkId || !plan) return res.status(400).json({ error: 'Link ID and plan required' });
+        
+        // 🆕 Check plan hierarchy: user can only buy plans >= their current plan
+        const user = await RenewalUser.findOne({ name: new RegExp('^' + (userName || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
+        if (user) {
+            const purchaseCheck = canUserPurchasePlan(user, plan);
+            if (!purchaseCheck.allowed) {
+                return res.status(403).json({ error: purchaseCheck.message || 'You cannot purchase this plan.' });
+            }
+        }
+        
         await RenewalRequest.create({
             id: 'req_' + Date.now(), linkId, linkName: linkName || userName || 'Unknown Link',
             plan, days: parseInt(days) || 30, amount: parseInt(amount) || 0,
@@ -1249,27 +1372,94 @@ app.get('/api/admin/users/:id/whatsapp-approval', authMiddleware, async (req, re
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// 🆕 PERMANENT DELETE — User + ALL their links + ALL related data
 app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.params.id;
         const userQuery = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { id: userId };
-        const user = await RenewalUser.findOne(userQuery);
+        const user = await RenewalUser.findOne(userQuery).lean();
         if (!user) return res.status(404).json({ error: 'User not found' });
+        
         const userName = user.name || '';
-        let linksAffected = 0;
+        let linksDeleted = 0;
+        let renewalReqsDeleted = 0;
+        let shortLinksDeleted = 0;
+        let visitorActivityDeleted = 0;
+        
         if (userName) {
             const userRegex = new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-            const updateResult = await Link.updateMany(
-                { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
-                { $set: { status: 'disabled', expiryDate: new Date() } }
-            );
-            linksAffected = updateResult.modifiedCount || updateResult.nModified || 0;
+            
+            // 🆕 1. Get all link IDs first (for cleanup of related collections)
+            const userLinks = await Link.find({
+                $or: [
+                    { assignedUser: userRegex }, 
+                    { userName: userRegex }, 
+                    { creator: userRegex }, 
+                    { name: userRegex }
+                ]
+            }).lean();
+            
+            const linkIds = userLinks.map(l => l.id).filter(Boolean);
+            const linkObjIds = userLinks.map(l => l._id);
+            
+            // 🆕 2. Delete all renewal requests for these links
+            if (linkIds.length > 0) {
+                const renewalRes = await RenewalRequest.deleteMany({ 
+                    $or: [
+                        { linkId: { $in: linkIds } },
+                        { linkName: userRegex }
+                    ]
+                });
+                renewalReqsDeleted = renewalRes.deletedCount || 0;
+            }
+            
+            // 🆕 3. Delete visitor activity for these links
+            if (linkIds.length > 0) {
+                const visitorRes = await VisitorActivity.deleteMany({ 
+                    linkId: { $in: linkIds } 
+                });
+                visitorActivityDeleted = visitorRes.deletedCount || 0;
+            }
+            
+            // 🆕 4. Delete all short links created by this user
+            const shortRes = await ShortLink.deleteMany({ creator: userRegex });
+            shortLinksDeleted = shortRes.deletedCount || 0;
+            
+            // 🆕 5. Delete all links
+            const linkRes = await Link.deleteMany({
+                $or: [
+                    { assignedUser: userRegex }, 
+                    { userName: userRegex }, 
+                    { creator: userRegex }, 
+                    { name: userRegex }
+                ]
+            });
+            linksDeleted = linkRes.deletedCount || 0;
+            
+            console.log(`🗑️ Deleted user "${userName}": ${linksDeleted} links, ${renewalReqsDeleted} renewal requests, ${visitorActivityDeleted} visitor activities, ${shortLinksDeleted} short links`);
         }
-        await RenewalUser.findOneAndDelete(userQuery);
-        res.json({ success: true, message: `User "${userName}" removed. ${linksAffected} link(s) disabled.`, linksAffected });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        
+        // 🆕 6. Delete the user itself (permanent)
+        await RenewalUser.deleteOne({ _id: user._id });
+        
+        res.json({ 
+            success: true, 
+            message: `User "${userName}" and ALL related data permanently deleted.`,
+            stats: {
+                linksDeleted,
+                renewalReqsDeleted,
+                visitorActivityDeleted,
+                shortLinksDeleted,
+                userDeleted: 1
+            }
+        });
+    } catch (e) { 
+        console.error('User permanent delete error:', e);
+        res.status(500).json({ error: 'Failed to delete user: ' + e.message }); 
+    }
 });
 
+// Lifetime Unlimited toggle
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
@@ -1381,6 +1571,7 @@ app.post('/api/admin/users/:id/action', authMiddleware, handleUserApprovalAction
 // ==================== ADMIN RENEWAL ====================
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         const pricingDoc = await getPricingDoc();
         const requests = await RenewalRequest.find({ status: 'pending' }).sort({ createdAt: -1 }).lean();
         res.json({ 
@@ -1393,15 +1584,28 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// 🆕 Save Renewal Settings — Force refresh from DB to ensure latest
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { plans, paymentSettings, upiId, whatsappNumber, showUpi } = req.body;
         let pricingDoc = await Pricing.findOne();
         if (!pricingDoc) pricingDoc = new Pricing();
+        
+        // 🆕 Merge plans properly — replace full plan object, not partial
         if (plans && typeof plans === 'object') {
-            pricingDoc.plans = { ...pricingDoc.plans, ...plans };
+            const currentPlans = pricingDoc.plans || {};
+            for (const [key, incomingPlan] of Object.entries(plans)) {
+                if (incomingPlan && typeof incomingPlan === 'object') {
+                    currentPlans[key] = {
+                        ...(currentPlans[key] || DEFAULT_PLANS[key] || {}),
+                        ...incomingPlan
+                    };
+                }
+            }
+            pricingDoc.plans = currentPlans;
             pricingDoc.markModified('plans');
         }
+        
         if (paymentSettings && typeof paymentSettings === 'object') {
             if (!pricingDoc.paymentSettings) pricingDoc.paymentSettings = {};
             Object.assign(pricingDoc.paymentSettings, paymentSettings);
@@ -1421,8 +1625,21 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
         if (whatsappNumber) pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
         pricingDoc.autoPaymentEnabled = false;
         await pricingDoc.save();
-        res.json({ success: true, message: 'Settings saved', pricing: pricingDoc.toObject() });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+        
+        // 🆕 Fetch fresh from DB to return latest
+        const freshPricing = await Pricing.findOne().lean();
+        
+        console.log(`✅ Renewal settings updated — Plans: ${Object.keys(freshPricing.plans || {}).length}`);
+        
+        res.json({ 
+            success: true, 
+            message: 'Settings saved', 
+            pricing: freshPricing 
+        });
+    } catch (e) { 
+        console.error('Save renewal settings error:', e);
+        res.status(500).json({ error: 'Failed: ' + e.message }); 
+    }
 });
 
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
@@ -1823,15 +2040,27 @@ app.all('/api/links/:id/toggle-uid', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/uid', authMiddleware, handleLinkUpdate);
 app.all('/api/links/:id/toggle', authMiddleware, handleLinkUpdate);
 
+// 🆕 PERMANENT LINK DELETE — with cleanup of related data
 app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res) => {
     try {
         const query = getLinkQuery(extractCleanId(req.params.id));
+        const link = await Link.findOne(query).lean();
+        if (!link) return res.status(404).json({ error: 'Link not found' });
+        
+        const linkId = link.id;
+        
+        // 🆕 Clean up related data
+        await RenewalRequest.deleteMany({ linkId }).catch(() => {});
+        await VisitorActivity.deleteMany({ linkId }).catch(() => {});
+        
         await Link.deleteMany(query);
-        res.json({ success: true });
+        
+        console.log(`🗑️ Link ${linkId} + all related data permanently deleted`);
+        res.json({ success: true, message: 'Link and all related data deleted' });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS — CORRECTED ACTIVE WATCHING ====================
+// ==================== ADMIN ALL STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1868,7 +2097,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
-        // 🆕 FIXED: Active Watching = visitors in last 5 MINUTES (not 48 hours)
         const activeWindow = new Date(Date.now() - ACTIVE_WINDOW_MS);
         
         const activeWatchingAgg = await VisitorActivity.aggregate([
@@ -1878,7 +2106,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
         ]).catch(() => []);
         const activeWatching = activeWatchingAgg[0]?.count || 0;
 
-        // 🆕 FIXED: Active Claiming = claims in last 5 MINUTES (not 48 hours)
         const activeClaimingAgg = await VisitorActivity.aggregate([
             { $match: { type: 'claim', source: 'video', lastSeen: { $gte: activeWindow } } },
             { $group: { _id: '$visitorKey' } },
@@ -2311,7 +2538,11 @@ app.get('/v/:id', async (req, res) => {
             const ownerUser = await RenewalUser.findOne({ 
                 name: new RegExp('^' + ownerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
             }).lean();
-            if (ownerUser && isPlanExpired(ownerUser)) return res.redirect('/expired.html');
+            if (!ownerUser) {
+                await Link.collection.deleteOne({ _id: link._id }).catch(() => {});
+                return res.redirect('/expired.html');
+            }
+            if (isPlanExpired(ownerUser)) return res.redirect('/expired.html');
         }
     } catch(err) {}
     
