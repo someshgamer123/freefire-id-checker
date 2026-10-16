@@ -219,20 +219,13 @@
 
         /* Custom/Unlimited Toggle */
         .limit-toggle-wrap { display: flex; gap: 6px; margin-top: 6px; }
-        .limit-toggle-btn {
-            flex: 1; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
-            background: #090a0f; color: var(--text-light); font-size: 11px; font-weight: 700;
-            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;
-        }
+        .limit-toggle-btn { flex: 1; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: #090a0f; color: var(--text-light); font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .limit-toggle-btn:hover { border-color: var(--primary); color: #fff; }
-        .limit-toggle-btn.active { background: var(--primary); border-color: var(--primary-light); color: #fff; box-shadow: 0 2px 10px var(--primary-glow); }
+        .limit-toggle-btn.active { background: var(--primary); border-color: var(--primary-light); color: #fff; box-shadow: 0 2px 10px rgba(99,102,241,0.3); }
         .limit-toggle-btn.unlimited-active { background: linear-gradient(135deg, #10b981, #059669); border-color: #10b981; color: #fff; }
 
         /* VIP User row highlight */
-        .user-vip-row {
-            border-left: 4px solid #f59e0b !important;
-            background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.04), #090a0f) !important;
-        }
+        .user-vip-row { border-left: 4px solid #f59e0b !important; background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.04), #090a0f) !important; }
 
         @media (max-width: 768px) {
             body { padding: 12px; }
@@ -390,9 +383,7 @@
                         <button type="button" class="paste-btn" onclick="pasteAndLoadUid()">⚡ Paste & Load</button>
                         <button type="button" class="paste-btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);" onclick="pasteFromClipboard()">📥 From Clipboard</button>
                     </div>
-                    <div class="paste-hint">
-                        💡 Copy UID from any existing link's edit page, paste here, and all settings will be auto-filled.
-                    </div>
+                    <div class="paste-hint">💡 Copy UID from any existing link's edit page, paste here, and all settings will be auto-filled.</div>
                 </div>
 
                 <div style="background:#090a0f;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;">
@@ -1249,7 +1240,7 @@
                     const vipSwitchHtml = `
                         <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
                             <label class="switch vip-switch" style="transform:scale(0.85); transform-origin:left;">
-                                <input type="checkbox" ${isVip ? 'checked' : ''} onchange="toggleLifetimeUnlimited('${escapeHTML(uid)}', this.checked, '${escapeHTML(u.name || '')}')">
+                                <input type="checkbox" ${isVip ? 'checked' : ''} data-user-id="${escapeHTML(uid)}" data-user-name="${escapeHTML(u.name || '')}" onchange="toggleLifetimeUnlimited(this)">
                                 <span></span>
                             </label>
                             <span style="font-size:10.5px; font-weight:700; color:${isVip ? '#fbbf24' : 'var(--text-light)'};">♾️ Lifetime Unlimited</span>
@@ -1279,12 +1270,23 @@
             } catch(e) {}
         }
 
-        async function toggleLifetimeUnlimited(id, enable, name) {
+        // 🆕 FIXED: Lifetime Unlimited Toggle — reads from element, proper confirmation
+        async function toggleLifetimeUnlimited(checkboxEl) {
             try {
+                const enable = checkboxEl.checked;
+                const id = checkboxEl.getAttribute('data-user-id');
+                const name = checkboxEl.getAttribute('data-user-name');
+                
                 if (enable === true) {
                     const confirmed = confirm(`⚠️ Are you sure?\n\nMake user "${name}" LIFETIME UNLIMITED?\n\nThis will give them:\n✅ Unlimited Links\n✅ Unlimited Visitors\n✅ No Expiry\n✅ All features unlocked\n\nThey will have NO limitations.`);
                     if (!confirmed) {
-                        loadAllUsers();
+                        checkboxEl.checked = false;
+                        return;
+                    }
+                } else {
+                    const confirmed = confirm(`⚠️ Remove Lifetime Unlimited for "${name}"?\n\nThey will be moved back to Free Trial plan.`);
+                    if (!confirmed) {
+                        checkboxEl.checked = true;
                         return;
                     }
                 }
@@ -1300,9 +1302,12 @@
                     await loadAllUsers();
                 } else {
                     showToast('❌ ' + (data.error || 'Failed'), 'error');
-                    loadAllUsers();
+                    await loadAllUsers();
                 }
-            } catch(e) { showToast('Failed: ' + e.message, 'error'); loadAllUsers(); }
+            } catch(e) { 
+                showToast('Failed: ' + e.message, 'error'); 
+                await loadAllUsers(); 
+            }
         }
 
         async function approveAndPromptWhatsApp(id) {
