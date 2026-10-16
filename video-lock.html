@@ -523,7 +523,7 @@
             const clean = url.trim();
             if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
             const match = clean.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-            return (match && match) ? match : null;
+            return (match && match) ? match[1] : null;
         }
 
         let isUnlocked = false, isExiting = false;
@@ -661,11 +661,11 @@
             let u = url.trim();
             if (u.includes('drive.google.com')) {
                 const m = u.match(/\/d\/([a-zA-Z0-9_-]+)/) || u.match(/id=([a-zA-Z0-9_-]+)/);
-                if (m && m) { return `https://lh3.googleusercontent.com/d/${m}`; }
+                if (m && m[1]) { return `https://lh3.googleusercontent.com/d/${m[1]}`; }
             }
             if (u.includes('imgur.com/') && !u.includes('i.imgur.com') && !u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
                 const m = u.match(/imgur\.com\/([a-zA-Z0-9]+)/);
-                if (m && m) { return `https://i.imgur.com/${m}.png`; }
+                if (m && m[1]) { return `https://i.imgur.com/${m[1]}.png`; }
             }
             if (u.includes('dropbox.com') && u.includes('dl=0')) {
                 return u.replace('dl=0', 'raw=1');
@@ -731,8 +731,21 @@
 
             try {
                 const response = await fetch(`/api/link/${linkId}?nocache=${Date.now()}`);
+                
+                // 🆕 If link expired/disabled — redirect to expired page
+                if (response.status === 403 || response.status === 404) {
+                    window.location.replace('/expired.html');
+                    return;
+                }
+                
                 if (response.ok) {
                     const data = await response.json();
+
+                    // 🆕 Double-check expired flag
+                    if (data && data.expired === true) {
+                        window.location.replace('/expired.html');
+                        return;
+                    }
 
                     if (data.video && data.video.trim().length > 5) videoUrl = fixYouTubeUrl(data.video.trim());
                     if (data.claim && data.claim.trim().length > 1) claimUrl = data.claim.trim();
@@ -878,7 +891,8 @@
             }
         }
 
-        // ✅ ONLY called from main video claim button
+        // ✅ ONLY called from main video claim button — source=video
+        // Popup button NEVER calls this
         function trackClaimOnce() {
             if (isClaimTracked) return;
             isClaimTracked = true;
@@ -922,14 +936,14 @@
             if (isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
             addRipple(e, this);
-            // NO trackClaimOnce() call here!
+            // 🚫 NO trackClaimOnce() call here! Popup claims are DUMMY.
             unlockAndPlay();
         });
 
         document.getElementById('popupCard').addEventListener('click', function(e) {
             if (e.target.closest('.popup-claim-btn') || isPopupClaimed || isPopupClickProcessed) return;
             isPopupClickProcessed = true;
-            // NO trackClaimOnce() call here!
+            // 🚫 NO trackClaimOnce() call here! Popup claims are DUMMY.
             unlockAndPlay();
         });
 
@@ -1129,7 +1143,10 @@
 
         async function init() {
             await loadPopupData();
-            showPopup();
+            // Only show popup if we weren't redirected
+            if (!window.location.pathname.includes('expired')) {
+                showPopup();
+            }
         }
         init();
     </script>
