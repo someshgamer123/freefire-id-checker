@@ -5,7 +5,6 @@
     <title>My Dashboard - Link Management & Renewal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 🛡️ FIXED: Turnstile with explicit rendering -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
@@ -324,30 +323,94 @@
             gap: 14px;
             margin-bottom: 16px;
         }
-        .link-info-box {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+        .link-info-box { display: flex; flex-direction: column; gap: 5px; }
+        .link-title-badge { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #fff; }
+        .link-id-sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+        .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 12.5px; }
+
+        /* 🆕 PLAN USAGE CARD */
+        .plan-usage-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
         }
-        .link-title-badge {
+        .plan-usage-header {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+        }
+        .plan-usage-title {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 15px; font-weight: 800; color: #fff;
+        }
+        .plan-usage-title .plan-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .plan-badge {
+            font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .plan-badge.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .plan-badge.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-badge.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+
+        .usage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 600px) { .usage-grid { grid-template-columns: 1fr; } }
+
+        .usage-item {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .usage-item-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px;
+        }
+        .usage-item-label { font-size: 11.5px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.3px; }
+        .usage-item-count { font-size: 13px; font-weight: 800; color: #fff; }
+        .usage-bar-bg {
+            width: 100%; height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px; overflow: hidden;
+        }
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .usage-bar-fill.safe { background: linear-gradient(90deg, #10b981, #059669); }
+        .usage-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .usage-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+        .usage-limit-warning {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 15px;
-            font-weight: 700;
-            color: #fff;
         }
-        .link-id-sub {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: var(--text-muted);
+        .usage-limit-warning.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
         }
-        .link-id-sub strong {
-            color: var(--accent-cyan);
-            font-family: monospace;
-            font-size: 12.5px;
+        .usage-limit-warning.warn {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.35);
         }
 
         .timeline-card {
@@ -357,34 +420,15 @@
             padding: 16px 20px;
             margin-bottom: 16px;
         }
-        .timeline-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .timeline-label { font-size: 13px; font-weight: 700; color: #fff; }
-        .badge-status {
-            padding: 3px 10px;
-            border-radius: 16px;
-            font-size: 11.5px;
-            font-weight: 700;
-        }
+        .badge-status { padding: 3px 10px; border-radius: 16px; font-size: 11.5px; font-weight: 700; }
         .badge-status.active { background: rgba(16, 185, 129, 0.12); color: var(--success); }
         .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
         .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
-        .progress-bar-bg {
-            width: 100%; height: 7px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.4s ease;
-        }
+        .progress-bar-bg { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
         .progress-bar-fill.active { background: var(--success); }
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
@@ -399,107 +443,68 @@
             flex-direction: column;
             gap: 12px;
         }
-        .date-filter-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .date-pills {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .date-filter-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .date-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .pill-btn {
-            padding: 6px 13px;
-            border-radius: 20px;
-            border: 1px solid var(--border-subtle);
-            background: #080c14;
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border-subtle);
+            background: #080c14; color: var(--text-secondary); font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease;
         }
-        .pill-btn:hover {
-            color: #fff;
-            border-color: var(--primary-light);
-        }
-        .pill-btn.active {
-            background: var(--primary);
-            border-color: var(--primary-light);
-            color: #fff;
-            box-shadow: 0 2px 10px var(--primary-glow);
-        }
+        .pill-btn:hover { color: #fff; border-color: var(--primary-light); }
+        .pill-btn.active { background: var(--primary); border-color: var(--primary-light); color: #fff; box-shadow: 0 2px 10px var(--primary-glow); }
 
-        .custom-date-container {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border-subtle);
-        }
-        .date-input {
-            background: #080c14;
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: #fff;
-            font-size: 13px;
-            outline: none;
-        }
+        .custom-date-container { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px dashed var(--border-subtle); }
+        .date-input { background: #080c14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; }
         .date-input:focus { border-color: var(--primary-light); }
 
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 18px;
-        }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
         @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
 
         .metric-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 14px;
-            position: relative;
-            overflow: hidden;
+            background: var(--surface-1); border: 1px solid var(--border-subtle);
+            border-radius: 12px; padding: 14px; position: relative; overflow: hidden;
         }
-        .metric-card.highlight {
-            border-color: rgba(99, 102, 241, 0.4);
-            background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1));
-        }
-        .metric-card.highlight-success {
-            border-color: rgba(16, 185, 129, 0.4);
-            background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1));
-        }
+        .metric-card.highlight { border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1)); }
+        .metric-card.highlight-success { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1)); }
         .metric-value { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
-        .plan-list-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+        /* 🆕 PROFESSIONAL PLAN CARDS */
+        .plan-list-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
         .plan-row-item {
-            background: var(--surface-2); border: 1.5px solid var(--border-subtle);
-            border-radius: 12px; padding: 12px 16px; display: flex; align-items: center;
-            justify-content: space-between; cursor: pointer; transition: all 0.2s ease;
+            background: var(--surface-2); border: 2px solid var(--border-subtle);
+            border-radius: 14px; padding: 16px 18px; display: flex; align-items: center;
+            justify-content: space-between; cursor: pointer; transition: all 0.25s ease;
+            position: relative; overflow: hidden;
         }
-        .plan-row-item:hover { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.08); }
-        .plan-row-item.selected { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.14); box-shadow: 0 4px 18px rgba(79, 70, 229, 0.22); }
-        .plan-row-left { display: flex; align-items: center; gap: 12px; }
+        .plan-row-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: transparent; transition: 0.3s;
+        }
+        .plan-row-item:hover { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.08); transform: translateY(-2px); }
+        .plan-row-item.selected { border-color: var(--primary-light); background: rgba(79, 70, 229, 0.14); box-shadow: 0 6px 25px rgba(79, 70, 229, 0.28); }
+        .plan-row-item.selected::before { background: linear-gradient(180deg, var(--primary), var(--primary-light)); }
+        .plan-row-item.popular-plan { border-color: rgba(124, 58, 237, 0.5); }
+        .plan-row-item.popular-plan::before { background: linear-gradient(180deg, #7c3aed, #a855f7); }
+        .plan-row-item.best-plan { border-color: rgba(245, 158, 11, 0.5); }
+        .plan-row-item.best-plan::before { background: linear-gradient(180deg, #f59e0b, #fbbf24); }
+        
+        .plan-row-left { display: flex; align-items: center; gap: 14px; flex: 1; }
         .plan-radio-circle {
-            width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-subtle);
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-subtle);
             display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;
+            background: #080c14;
         }
-        .plan-row-item.selected .plan-radio-circle { border-color: var(--primary-light); background: var(--primary); }
-        .plan-row-item.selected .plan-radio-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-        .plan-meta h4 { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
-        .plan-meta p { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
-        .plan-price-tag { font-size: 17px; font-weight: 800; color: var(--accent-cyan); }
-        .plan-badge-pill { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; }
+        .plan-row-item.selected .plan-radio-circle { border-color: var(--primary-light); background: var(--primary); box-shadow: 0 0 12px rgba(99, 102, 241, 0.5); }
+        .plan-row-item.selected .plan-radio-circle::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+        
+        .plan-meta { flex: 1; }
+        .plan-meta h4 { font-size: 15px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .plan-meta .plan-features-preview { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .plan-price-tag { font-size: 20px; font-weight: 800; color: var(--accent-cyan); text-align: right; }
+        .plan-price-tag .price-per-day { display: block; font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+        .plan-badge-pill { font-size: 9.5px; font-weight: 800; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
         .plan-badge-pill.popular { background: rgba(124, 58, 237, 0.25); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.4); }
         .plan-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .plan-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
@@ -533,10 +538,7 @@
             border-radius: 18px; max-width: 520px; width: 100%; padding: 22px;
             max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
         }
-        .modal-header-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;
-        }
+        .modal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; }
         .modal-header-row h3 { font-size: 16px; font-weight: 800; color: #fff; }
         .modal-close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
 
@@ -563,87 +565,22 @@
         .dialog-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
         .dialog-message { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
 
-        /* 🛡️ Turnstile Widget — Compact & Centered */
-        .turnstile-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 12px auto 14px;
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden;
-            min-height: 65px;
-        }
-        .turnstile-wrapper > div {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-        .turnstile-wrapper iframe {
-            max-width: 100% !important;
-        }
-        @media (max-width: 500px) {
-            .turnstile-wrapper { transform: scale(0.95); transform-origin: center center; }
-        }
-        @media (max-width: 380px) {
-            .turnstile-wrapper { transform: scale(0.88); transform-origin: center center; }
-        }
+        .turnstile-wrapper { display: flex; justify-content: center; align-items: center; margin: 12px auto 14px; width: 100%; max-width: 100%; overflow: hidden; min-height: 65px; }
+        .turnstile-wrapper > div { display: flex; justify-content: center; width: 100%; }
+        .turnstile-wrapper iframe { max-width: 100% !important; }
+        @media (max-width: 500px) { .turnstile-wrapper { transform: scale(0.95); transform-origin: center center; } }
+        @media (max-width: 380px) { .turnstile-wrapper { transform: scale(0.88); transform-origin: center center; } }
 
-        /* 🛡️ Google Sign-In Button — Compact & Centered */
-        .google-btn-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 4px;
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden;
-        }
+        .google-btn-wrapper { display: flex; justify-content: center; align-items: center; margin-top: 4px; width: 100%; max-width: 100%; overflow: hidden; }
         .google-btn-wrapper #g_id_onload { display: none; }
-        .google-btn-wrapper .g_id_signin {
-            display: flex;
-            justify-content: center;
-            width: 100% !important;
-            max-width: 340px !important;
-            margin: 0 auto;
-        }
+        .google-btn-wrapper .g_id_signin { display: flex; justify-content: center; width: 100% !important; max-width: 340px !important; margin: 0 auto; }
         .google-btn-wrapper .g_id_signin > div,
-        .google-btn-wrapper .g_id_signin iframe {
-            width: 100% !important;
-            max-width: 340px !important;
-            margin: 0 auto !important;
-        }
-        @media (max-width: 500px) {
-            .google-btn-wrapper .g_id_signin,
-            .google-btn-wrapper .g_id_signin > div,
-            .google-btn-wrapper .g_id_signin iframe {
-                max-width: 100% !important;
-                width: 100% !important;
-            }
-        }
+        .google-btn-wrapper .g_id_signin iframe { width: 100% !important; max-width: 340px !important; margin: 0 auto !important; }
+        @media (max-width: 500px) { .google-btn-wrapper .g_id_signin, .google-btn-wrapper .g_id_signin > div, .google-btn-wrapper .g_id_signin iframe { max-width: 100% !important; width: 100% !important; } }
 
-        /* OR divider */
-        .auth-divider {
-            text-align: center;
-            margin: 16px 0 12px;
-            color: var(--text-muted);
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .auth-divider::before,
-        .auth-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border-subtle);
-        }
-        .auth-divider span {
-            padding: 0 4px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
+        .auth-divider { text-align: center; margin: 16px 0 12px; color: var(--text-muted); font-size: 12px; display: flex; align-items: center; gap: 10px; }
+        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+        .auth-divider span { padding: 0 4px; font-weight: 700; letter-spacing: 0.5px; }
 
         @media (max-width: 400px) {
             .pro-card { padding: 18px 14px; }
@@ -664,41 +601,26 @@
             <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">✕</button>
         </div>
         <div class="sidebar-links-list">
-            <div class="drawer-item" onclick="openShortenerModal()">
-                <span>🔗</span> URL Shortener
-            </div>
-            <div class="drawer-item" onclick="openPlansModal()">
-                <span>💎</span> Renewal Plans
-            </div>
-            <div class="drawer-item" onclick="openGuideModal()">
-                <span>📖</span> How to Use
-            </div>
-            <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
-                <span>💬</span> Support
-            </a>
-            <div class="drawer-item" onclick="openTermsModal()">
-                <span>📜</span> Terms & Rules
-            </div>
-            <div class="drawer-item danger" onclick="performLogout()" style="margin-top:10px; border-top:1px solid var(--border-subtle); padding-top:14px;">
-                <span>🚪</span> Logout
-            </div>
+            <div class="drawer-item" onclick="openPlansModal()"><span>💎</span> Renewal Plans</div>
+            <div class="drawer-item" onclick="openMyPlanModal()"><span>👑</span> My Current Plan</div>
+            <div class="drawer-item" onclick="openShortenerModal()"><span>🔗</span> URL Shortener</div>
+            <div class="drawer-item" onclick="openGuideModal()"><span>📖</span> How to Use</div>
+            <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink"><span>💬</span> Support</a>
+            <div class="drawer-item" onclick="openTermsModal()"><span>📜</span> Terms & Rules</div>
+            <div class="drawer-item danger" onclick="performLogout()" style="margin-top:10px; border-top:1px solid var(--border-subtle); padding-top:14px;"><span>🚪</span> Logout</div>
         </div>
     </aside>
 
     <header class="top-navbar">
         <div style="display:flex; align-items:center; gap:12px;">
             <button class="btn-hamburger" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
             </button>
-
             <a href="#" class="navbar-brand">
                 <div class="brand-badge-icon">⚡</div>
                 <span class="brand-title">MY DASHBOARD</span>
             </a>
         </div>
-
         <div class="navbar-right">
             <div class="user-pill" id="navUserBadge" style="display:none;">
                 <span class="live-indicator"></span>
@@ -708,10 +630,9 @@
     </header>
 
     <main class="content-wrap">
-        <!-- ==================== AUTH SECTION ==================== -->
+        <!-- AUTH SECTION -->
         <div id="authSection" style="max-width:420px; margin:30px auto 0;">
             <div class="pro-card">
-                <!-- ==================== SIGN IN ==================== -->
                 <form id="formSignIn" onsubmit="submitSignIn(event)">
                     <div style="text-align:center; margin-bottom:18px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Sign In</h2>
@@ -725,91 +646,36 @@
                         <label class="form-label">Phone Number</label>
                         <input type="tel" id="inPhone" class="form-input" placeholder="Enter your 10-digit number" required>
                     </div>
-
-                    <!-- 🛡️ Turnstile Sign In -->
-                    <div class="turnstile-wrapper">
-                        <div id="signin-turnstile"></div>
-                    </div>
-
-                    <button type="submit" class="btn-action" id="btnSubmitLogin">
-                        <span>Sign In</span>
-                    </button>
-
+                    <div class="turnstile-wrapper"><div id="signin-turnstile"></div></div>
+                    <button type="submit" class="btn-action" id="btnSubmitLogin"><span>Sign In</span></button>
                     <div class="auth-divider"><span>OR</span></div>
-
-                    <!-- 🛡️ Google Sign In -->
                     <div class="google-btn-wrapper">
-                        <div id="g_id_onload"
-                             data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
-                             data-callback="handleGoogleLogin"
-                             data-auto_prompt="false">
-                        </div>
-                        <div class="g_id_signin"
-                             data-type="standard"
-                             data-size="medium"
-                             data-theme="filled_black"
-                             data-text="signin_with"
-                             data-shape="rectangular"
-                             data-logo_alignment="left"
-                             data-width="280">
-                        </div>
+                        <div id="g_id_onload" data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com" data-callback="handleGoogleLogin" data-auto_prompt="false"></div>
+                        <div class="g_id_signin" data-type="standard" data-size="medium" data-theme="filled_black" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="280"></div>
                     </div>
-
                     <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
                         Don't have an account? <span onclick="switchAuth('register')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign Up</span>
                     </div>
                 </form>
 
-                <!-- ==================== SIGN UP ==================== -->
                 <form id="formSignUp" onsubmit="submitSignUp(event)" style="display:none;">
                     <div style="text-align:center; margin-bottom:18px;">
                         <h2 style="font-size:20px; font-weight:800; color:#fff;">Create Account</h2>
                         <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Register to start managing your active tracking links</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" id="upName" class="form-input" placeholder="Enter your full name" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email Address</label>
-                        <input type="email" id="upEmail" class="form-input" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        <input type="tel" id="upPhone" class="form-input" placeholder="Enter your 10-digit number" required>
-                    </div>
-
+                    <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="upName" class="form-input" placeholder="Enter your full name" required></div>
+                    <div class="form-group"><label class="form-label">Email Address</label><input type="email" id="upEmail" class="form-input" placeholder="Enter your email" required></div>
+                    <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" id="upPhone" class="form-input" placeholder="Enter your 10-digit number" required></div>
                     <label class="checkbox-container">
                         <input type="checkbox" id="upTermsCheck" required>
-                        <span class="checkbox-label">
-                            I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize link management.
-                        </span>
+                        <span class="checkbox-label">I accept the <a onclick="openTermsModal(event)">Terms & Conditions</a> and authorize link management.</span>
                     </label>
-
-                    <!-- 🛡️ Turnstile Sign Up -->
-                    <div class="turnstile-wrapper">
-                        <div id="signup-turnstile"></div>
-                    </div>
-
-                    <button type="submit" class="btn-action" id="btnSubmitRegister">
-                        <span>Create Account</span>
-                    </button>
-
+                    <div class="turnstile-wrapper"><div id="signup-turnstile"></div></div>
+                    <button type="submit" class="btn-action" id="btnSubmitRegister"><span>Create Account</span></button>
                     <div class="auth-divider"><span>OR</span></div>
-
-                    <!-- 🛡️ Google Sign Up -->
                     <div class="google-btn-wrapper">
-                        <div class="g_id_signin"
-                             data-type="standard"
-                             data-size="medium"
-                             data-theme="filled_black"
-                             data-text="signup_with"
-                             data-shape="rectangular"
-                             data-logo_alignment="left"
-                             data-width="280">
-                        </div>
+                        <div class="g_id_signin" data-type="standard" data-size="medium" data-theme="filled_black" data-text="signup_with" data-shape="rectangular" data-logo_alignment="left" data-width="280"></div>
                     </div>
-
                     <div style="text-align:center; margin-top:16px; font-size:13px; color:var(--text-secondary);">
                         Already have an account? <span onclick="switchAuth('login')" style="color:var(--primary-light); cursor:pointer; font-weight:700; text-decoration:underline;">Sign In</span>
                     </div>
@@ -817,43 +683,67 @@
             </div>
         </div>
 
-        <!-- ==================== DASHBOARD SECTION ==================== -->
+        <!-- DASHBOARD SECTION -->
         <div id="dashboardSection">
             <div class="welcome-header">
                 <div class="welcome-title">
                     <h2>Welcome, <span id="labelUserName" style="color:var(--primary-light);">User</span> 👋</h2>
                     <p>Protected Account • Only links registered to your identity are displayed</p>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn-action btn-secondary" onclick="openShortenerModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
-                        <span>🔗 Short Link</span>
-                    </button>
-                    <button class="btn-action" onclick="openPlansModal()" style="width:auto; padding:8px 14px; font-size:12.5px;">
-                        <span>💎 Renewal</span>
-                    </button>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn-action btn-secondary" onclick="openMyPlanModal()" style="width:auto; padding:8px 14px; font-size:12.5px;"><span>👑 My Plan</span></button>
+                    <button class="btn-action btn-secondary" onclick="openShortenerModal()" style="width:auto; padding:8px 14px; font-size:12.5px;"><span>🔗 Short Link</span></button>
+                    <button class="btn-action" onclick="openPlansModal()" style="width:auto; padding:8px 14px; font-size:12.5px;"><span>💎 Renewal</span></button>
                 </div>
+            </div>
+
+            <!-- 🆕 PLAN USAGE CARD -->
+            <div class="plan-usage-card" id="planUsageCard">
+                <div class="plan-usage-header">
+                    <div class="plan-usage-title">
+                        <div class="plan-icon">🎁</div>
+                        <div>
+                            <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Current Plan</div>
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <span id="currentPlanName" style="color:#fff;">Free Trial</span>
+                                <span id="currentPlanBadge" class="plan-badge popular" style="display:none;">POPULAR</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Duration</div>
+                        <div id="currentPlanDuration" style="color:#fff; font-weight:800; font-size:14px;">7 Days</div>
+                    </div>
+                </div>
+                <div class="usage-grid">
+                    <div class="usage-item">
+                        <div class="usage-item-header">
+                            <span class="usage-item-label">🔗 Active Links</span>
+                            <span class="usage-item-count"><span id="linksUsed">0</span> / <span id="linksLimit">1</span></span>
+                        </div>
+                        <div class="usage-bar-bg"><div class="usage-bar-fill safe" id="linksBarFill" style="width:0%;"></div></div>
+                    </div>
+                    <div class="usage-item">
+                        <div class="usage-item-header">
+                            <span class="usage-item-label">👁️ Total Visitors</span>
+                            <span class="usage-item-count"><span id="visitorsUsed">0</span> / <span id="visitorsLimit">1000</span></span>
+                        </div>
+                        <div class="usage-bar-bg"><div class="usage-bar-fill safe" id="visitorsBarFill" style="width:0%;"></div></div>
+                    </div>
+                </div>
+                <div id="planUsageWarnings"></div>
             </div>
 
             <div class="link-selector-card">
                 <div class="link-info-box">
-                    <div class="link-title-badge">
-                        <span>🔗</span>
-                        <span id="displayLinkName" style="color:#fff;">Loading link name...</span>
-                    </div>
-                    <div class="link-id-sub">
-                        <span>ID:</span>
-                        <strong id="displayLinkId">Detecting ID...</strong>
-                    </div>
+                    <div class="link-title-badge"><span>🔗</span><span id="displayLinkName" style="color:#fff;">Loading link name...</span></div>
+                    <div class="link-id-sub"><span>ID:</span><strong id="displayLinkId">Detecting ID...</strong></div>
                 </div>
-                
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:220px; background:#080c14; cursor:pointer;">
                         <option value="">-- Choose Your Link --</option>
                     </select>
-
-                    <button class="btn-action btn-secondary" onclick="refreshCurrentLinkData()" style="width:auto; padding:9px 13px; font-size:12px;">
-                        🔄 Refresh
-                    </button>
+                    <button class="btn-action btn-secondary" onclick="refreshCurrentLinkData()" style="width:auto; padding:9px 13px; font-size:12px;">🔄 Refresh</button>
                 </div>
             </div>
 
@@ -862,9 +752,7 @@
                     <span class="timeline-label">Validity Status</span>
                     <span class="badge-status active" id="badgeExpiry">Active</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div>
-                </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div></div>
                 <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
                     <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
                     <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">Lifetime</strong></span>
@@ -881,19 +769,14 @@
                         <button class="pill-btn" id="pillAll" onclick="selectDateFilter('all', this)">All Time</button>
                         <button class="pill-btn" id="pillCustom" onclick="toggleCustomDateUI(this)">Custom Date ▾</button>
                     </div>
-                    <span id="activeDateLabel" style="font-size:12px; color:var(--accent-cyan); font-weight:700;">
-                        Showing: Today's Unique Activity
-                    </span>
+                    <span id="activeDateLabel" style="font-size:12px; color:var(--accent-cyan); font-weight:700;">Showing: Today's Unique Activity</span>
                 </div>
-
                 <div class="custom-date-container" id="customDateSection">
                     <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">Pick Date:</span>
                     <input type="date" id="customDateInput" class="date-input" onchange="onSingleDatePicked(this.value)">
                     <span style="font-size:12px; color:var(--text-muted);">or Range To:</span>
                     <input type="date" id="customEndDateInput" class="date-input">
-                    <button class="btn-action" onclick="applyCustomDateRange()" style="width:auto; padding:7px 14px; font-size:12px;">
-                        Apply Date
-                    </button>
+                    <button class="btn-action" onclick="applyCustomDateRange()" style="width:auto; padding:7px 14px; font-size:12px;">Apply Date</button>
                 </div>
             </div>
 
@@ -921,43 +804,19 @@
             </div>
 
             <div class="stats-row">
-                <div class="metric-card">
-                    <div class="metric-value" id="metricToday">0</div>
-                    <div class="metric-title">Today Visits (Unique)</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value" id="metricTodayClaims" style="color:var(--success);">0</div>
-                    <div class="metric-title">Today Claims (Unique)</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value" id="metric24h">0</div>
-                    <div class="metric-title">Last 24 Hours (Unique)</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value" id="metric7d">0</div>
-                    <div class="metric-title">Last 7 Days (Unique)</div>
-                </div>
+                <div class="metric-card"><div class="metric-value" id="metricToday">0</div><div class="metric-title">Today Visits (Unique)</div></div>
+                <div class="metric-card"><div class="metric-value" id="metricTodayClaims" style="color:var(--success);">0</div><div class="metric-title">Today Claims (Unique)</div></div>
+                <div class="metric-card"><div class="metric-value" id="metric24h">0</div><div class="metric-title">Last 24 Hours (Unique)</div></div>
+                <div class="metric-card"><div class="metric-value" id="metric7d">0</div><div class="metric-title">Last 7 Days (Unique)</div></div>
             </div>
 
             <div class="pro-card">
                 <h3 style="font-size:15px; font-weight:800; margin-bottom:12px;">Recent Renewal History (Past 7 Records)</h3>
                 <div class="table-container">
                     <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Plan</th>
-                                <th>Amount</th>
-                                <th>Reference ID</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Reference ID</th><th>Status</th></tr></thead>
                         <tbody id="historyTableRows">
-                            <tr>
-                                <td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">
-                                    No transaction records found
-                                </td>
-                            </tr>
+                            <tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -965,24 +824,13 @@
         </div>
     </main>
 
-    <!-- Modals -->
+    <!-- SHORTENER MODAL -->
     <div class="app-modal" id="shortenerModal">
         <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3>🔗 URL Shortener</h3>
-                <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Destination URL</label>
-                <input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Title / Label</label>
-                <input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link">
-            </div>
-            <button class="btn-action" onclick="createUserShortLink()">
-                <span>Create Short Link ➜</span>
-            </button>
+            <div class="modal-header-row"><h3>🔗 URL Shortener</h3><button class="modal-close-btn" onclick="closeShortenerModal()">✕</button></div>
+            <div class="form-group"><label class="form-label">Destination URL</label><input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com" required></div>
+            <div class="form-group"><label class="form-label">Title / Label</label><input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link"></div>
+            <button class="btn-action" onclick="createUserShortLink()"><span>Create Short Link ➜</span></button>
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border-subtle);">
                 <h4 style="font-size:13px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading short links...</div>
@@ -990,174 +838,65 @@
         </div>
     </div>
 
+    <!-- LOCK MODAL -->
     <div class="app-modal" id="lockModal">
         <div class="modal-body-card" style="text-align:center; max-width:400px; padding:32px 24px;">
             <div style="font-size:48px; margin-bottom:12px;">🔒</div>
             <h3 style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">Feature Locked</h3>
-            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">
-                You need at least <strong>3 active links</strong> in your account to unlock the URL Shortener feature.
-            </p>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">You need at least <strong>3 active links</strong> in your account to unlock the URL Shortener feature.</p>
             <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:14px; margin-bottom:20px; text-align:left;">
                 <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">
-                    <span>Active Links Status</span>
-                    <span id="lockCountDisplay">0 / 3</span>
+                    <span>Active Links Status</span><span id="lockCountDisplay">0 / 3</span>
                 </div>
                 <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:10px; overflow:hidden; margin-bottom:6px;">
                     <div id="lockBarFill" style="height:100%; background:linear-gradient(90deg, #f59e0b, var(--primary-light)); width:0%; transition:width 0.3s;"></div>
                 </div>
-                <div id="lockHintText" style="font-size:11.5px; color:var(--text-muted);">
-                    You need 3 more active link(s) to unlock this feature.
-                </div>
+                <div id="lockHintText" style="font-size:11.5px; color:var(--text-muted);">You need 3 more active link(s) to unlock this feature.</div>
             </div>
-            <button class="btn-action" onclick="closeLockModal()">
-                <span>Got it</span>
-            </button>
+            <button class="btn-action" onclick="closeLockModal()"><span>Got it</span></button>
         </div>
     </div>
 
+    <!-- 🆕 MY PLAN MODAL -->
+    <div class="app-modal" id="myPlanModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row"><h3>👑 My Current Plan</h3><button class="modal-close-btn" onclick="closeMyPlanModal()">✕</button></div>
+            <div id="myPlanContent">Loading...</div>
+        </div>
+    </div>
+
+    <!-- PLANS MODAL -->
     <div class="app-modal" id="plansModal">
         <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3>💎 Extension Plans</h3>
-                <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
+            <div class="modal-header-row"><h3>💎 Extension Plans</h3><button class="modal-close-btn" onclick="closePlansModal()">✕</button></div>
+            <div class="plan-list-container" id="plansListContainer">
+                <p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px;">Loading plans...</p>
             </div>
-            <div class="plan-list-container">
-                <div class="plan-row-item" onclick="pickPlan('7days', 7, 100, this)">
-                    <div class="plan-row-left">
-                        <div class="plan-radio-circle"></div>
-                        <div class="plan-meta">
-                            <h4>7 Days Extension</h4>
-                            <p>₹14.2 / day • Starter Pack</p>
-                        </div>
-                    </div>
-                    <div class="plan-row-right">
-                        <div class="plan-price-tag">₹100</div>
-                    </div>
-                </div>
-                <div class="plan-row-item" onclick="pickPlan('15days', 15, 200, this)">
-                    <div class="plan-row-left">
-                        <div class="plan-radio-circle"></div>
-                        <div class="plan-meta">
-                            <h4>15 Days Extension</h4>
-                            <p>₹13.3 / day • Standard Pack</p>
-                        </div>
-                    </div>
-                    <div class="plan-row-right">
-                        <div class="plan-price-tag">₹200</div>
-                    </div>
-                </div>
-                <div class="plan-row-item selected" onclick="pickPlan('30days', 30, 400, this)">
-                    <div class="plan-row-left">
-                        <div class="plan-radio-circle"></div>
-                        <div class="plan-meta">
-                            <h4>30 Days Extension <span class="plan-badge-pill popular">POPULAR</span></h4>
-                            <p>₹13.3 / day • Most Recommended</p>
-                        </div>
-                    </div>
-                    <div class="plan-row-right">
-                        <div class="plan-price-tag">₹400</div>
-                    </div>
-                </div>
-                <div class="plan-row-item" onclick="pickPlan('90days', 90, 1000, this)">
-                    <div class="plan-row-left">
-                        <div class="plan-radio-circle"></div>
-                        <div class="plan-meta">
-                            <h4>90 Days Extension <span class="plan-badge-pill save">SAVE 15%</span></h4>
-                            <p>₹11.1 / day • Quarterly Pack</p>
-                        </div>
-                    </div>
-                    <div class="plan-row-right">
-                        <div class="plan-price-tag">₹1000</div>
-                    </div>
-                </div>
-                <div class="plan-row-item" onclick="pickPlan('1year', 365, 3000, this)">
-                    <div class="plan-row-left">
-                        <div class="plan-radio-circle"></div>
-                        <div class="plan-meta">
-                            <h4>1 Year Extension <span class="plan-badge-pill best">BEST VALUE</span></h4>
-                            <p>₹8.2 / day • Maximum Savings</p>
-                        </div>
-                    </div>
-                    <div class="plan-row-right">
-                        <div class="plan-price-tag">₹3000</div>
-                    </div>
-                </div>
-            </div>
-            <div class="payment-panel">
-                <div class="qr-wrapper">
-                    <img id="qrImageElement" src="" alt="Payment QR">
-                    <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan to Pay</span>
-                </div>
-                <div class="payment-info">
-                    <div class="upi-copy-chip" onclick="copyUpiText()">
-                        <span>UPI: <strong id="upiIdDisplay">admin@upi</strong></span>
-                        <span>📋</span>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
-                        Selected Plan: <strong id="txtSelectedPlanSummary" style="color:#fff;">30 Days (₹400)</strong><br>
-                        Scan QR or pay to UPI ID, then submit your request below.
-                    </div>
-                    <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
-                        <span>📩 Request Admin Renewal via WhatsApp</span>
-                    </button>
-                </div>
-            </div>
+            <div id="plansModalFooter"></div>
         </div>
     </div>
 
+    <!-- GUIDE MODAL -->
     <div class="app-modal" id="guideModal">
         <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3>📖 How to Use Your Dashboard</h3>
-                <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
-            </div>
-            <div class="guide-item">
-                <h4>1. Account Access & Ownership</h4>
-                <p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p>
-            </div>
-            <div class="guide-item">
-                <h4>2. Traffic & Claim Analytics (24h Unique)</h4>
-                <p>Visitors and video claims are calculated on a strict 24-hour unique basis. Duplicate clicks by the same user within 24 hours are excluded.</p>
-            </div>
-            <div class="guide-item">
-                <h4>3. Custom Date Selection</h4>
-                <p>Filter data by specific single dates (such as 17th, 18th) or custom date ranges using the Date Filter bar above the statistics.</p>
-            </div>
-            <div class="guide-item">
-                <h4>4. Selecting an Extension Plan</h4>
-                <p>Choose from 7-day, 15-day, 30-day, 90-day, or 1-year plans. Selected packages will extend your validity duration accordingly.</p>
-            </div>
-            <div class="guide-item">
-                <h4>5. URL Shortener</h4>
-                <p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns (requires 3 active links).</p>
-            </div>
-            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;">
-                <span>Understood, Close Guide</span>
-            </button>
+            <div class="modal-header-row"><h3>📖 How to Use Your Dashboard</h3><button class="modal-close-btn" onclick="closeGuideModal()">✕</button></div>
+            <div class="guide-item"><h4>1. Account Access & Ownership</h4><p>Sign in using your registered credentials. Only links authorized to your account profile will appear in your workspace.</p></div>
+            <div class="guide-item"><h4>2. Traffic & Claim Analytics (24h Unique)</h4><p>Visitors and video claims are calculated on a strict 24-hour unique basis. Duplicate clicks by the same user within 24 hours are excluded.</p></div>
+            <div class="guide-item"><h4>3. Custom Date Selection</h4><p>Filter data by specific single dates or custom date ranges using the Date Filter bar above the statistics.</p></div>
+            <div class="guide-item"><h4>4. Plan Limits</h4><p>Each plan has a duration, link limit, and visitor limit. When you reach the visitor limit, your link expires automatically. Renew or upgrade to continue.</p></div>
+            <div class="guide-item"><h4>5. URL Shortener</h4><p>Click the 3-line menu on the top-left and select "URL Shortener" to create short, clean links for your campaigns (requires 3 active links).</p></div>
+            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:10px;"><span>Understood, Close Guide</span></button>
         </div>
     </div>
 
+    <!-- TERMS MODAL -->
     <div class="app-modal" id="termsModal">
         <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3>📜 Terms & Guidelines</h3>
-                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
-            </div>
-            <div class="guide-item">
-                <h4>1. Account Integrity</h4>
-                <p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p>
-            </div>
-            <div class="guide-item">
-                <h4>2. Extension Policy</h4>
-                <p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p>
-            </div>
-            <div class="guide-item">
-                <h4>3. Support Desk</h4>
-                <p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p>
-            </div>
-            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;">
-                <span>I Understand & Agree</span>
-            </button>
+            <div class="modal-header-row"><h3>📜 Terms & Guidelines</h3><button class="modal-close-btn" onclick="closeTermsModal()">✕</button></div>
+            <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register with legitimate credentials. Each link is private and exclusively managed by its authorized holder.</p></div>
+            <div class="guide-item"><h4>2. Extension Policy</h4><p>Payment verification extends your existing validity timeline. Unexpired days are preserved whenever an active link is renewed.</p></div>
+            <div class="guide-item"><h4>3. Support Desk</h4><p>For any inquiries or manual verification requests, contact our Support desk with your link ID and receipt.</p></div>
+            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:10px;"><span>I Understand & Agree</span></button>
         </div>
     </div>
 
@@ -1177,237 +916,126 @@
         let activePlan = { key: '30days', days: 30, cost: 400 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
+        let showUpiToUser = true;
+        let loadedPlans = null;
+        let currentPlanUsage = null;
 
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
 
-        // ============================================
-        // 🛡️ TURNSTILE — Explicit Rendering Fix
-        // ============================================
-        const TURNSTILE_SITE_KEY = '0x4AAAAAAFWuPkWZgks7bCLe'; // 👈 यहाँ अपनी असली Site Key डालें
-
+        // Turnstile
+        const TURNSTILE_SITE_KEY = '0x4AAAAAAFWuPkWZgks7bCLe';
         let signinWidgetId = null;
         let signupWidgetId = null;
         let currentTurnstileToken = '';
 
-        window.onTurnstileLoad = function() {
-            // Sign In widget render करें (default visible है)
-            renderSignInTurnstile();
-        };
+        window.onTurnstileLoad = function() { renderSignInTurnstile(); };
 
         function renderSignInTurnstile() {
             try {
                 const container = document.getElementById('signin-turnstile');
                 if (!container || !window.turnstile) return;
-
-                // अगर already rendered है, सिर्फ reset करें
-                if (signinWidgetId !== null) {
-                    try { window.turnstile.reset(signinWidgetId); } catch(e) {}
-                    return;
-                }
-
+                if (signinWidgetId !== null) { try { window.turnstile.reset(signinWidgetId); } catch(e) {} return; }
                 signinWidgetId = window.turnstile.render('#signin-turnstile', {
-                    sitekey: TURNSTILE_SITE_KEY,
-                    theme: 'dark',
-                    size: 'normal',
-                    callback: function(token) {
-                        currentTurnstileToken = token;
-                    },
-                    'error-callback': function() {
-                        console.warn('Turnstile error on sign in');
-                    }
+                    sitekey: TURNSTILE_SITE_KEY, theme: 'dark', size: 'normal',
+                    callback: function(token) { currentTurnstileToken = token; }
                 });
-            } catch(e) {
-                console.error('Sign In Turnstile render error:', e);
-            }
+            } catch(e) { console.error('Sign In Turnstile render error:', e); }
         }
 
         function renderSignUpTurnstile() {
             try {
                 const container = document.getElementById('signup-turnstile');
                 if (!container || !window.turnstile) return;
-
-                // अगर already rendered है, सिर्फ reset करें
-                if (signupWidgetId !== null) {
-                    try { window.turnstile.reset(signupWidgetId); } catch(e) {}
-                    return;
-                }
-
+                if (signupWidgetId !== null) { try { window.turnstile.reset(signupWidgetId); } catch(e) {} return; }
                 signupWidgetId = window.turnstile.render('#signup-turnstile', {
-                    sitekey: TURNSTILE_SITE_KEY,
-                    theme: 'dark',
-                    size: 'normal',
-                    callback: function(token) {
-                        currentTurnstileToken = token;
-                    },
-                    'error-callback': function() {
-                        console.warn('Turnstile error on sign up');
-                    }
+                    sitekey: TURNSTILE_SITE_KEY, theme: 'dark', size: 'normal',
+                    callback: function(token) { currentTurnstileToken = token; }
                 });
-            } catch(e) {
-                console.error('Sign Up Turnstile render error:', e);
-            }
+            } catch(e) { console.error('Sign Up Turnstile render error:', e); }
         }
 
         function resetTurnstile() {
             try {
                 currentTurnstileToken = '';
-                if (signinWidgetId !== null && window.turnstile) {
-                    try { window.turnstile.reset(signinWidgetId); } catch(e) {}
-                }
-                if (signupWidgetId !== null && window.turnstile) {
-                    try { window.turnstile.reset(signupWidgetId); } catch(e) {}
-                }
+                if (signinWidgetId !== null && window.turnstile) try { window.turnstile.reset(signinWidgetId); } catch(e) {}
+                if (signupWidgetId !== null && window.turnstile) try { window.turnstile.reset(signupWidgetId); } catch(e) {}
             } catch(e) {}
         }
 
-        function getTurnstileToken() {
-            return currentTurnstileToken || '';
-        }
+        function getTurnstileToken() { return currentTurnstileToken || ''; }
 
-        // ============================================
-        // NOTIFICATION HELPER
-        // ============================================
         function notify(message, title = 'Notification', icon = 'ℹ️') {
             document.getElementById('dialogIcon').textContent = icon;
             document.getElementById('dialogTitle').textContent = title;
             document.getElementById('dialogMessage').textContent = message;
             document.getElementById('customDialog').classList.add('active');
         }
-        function closeCustomDialog() {
-            document.getElementById('customDialog').classList.remove('active');
-        }
+        function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
 
         function initApp() {
             const cached = localStorage.getItem('activeUserSession');
             if (cached) {
-                try {
-                    userProfile = JSON.parse(cached);
-                    showDashboardView();
-                } catch(e) {
-                    localStorage.removeItem('activeUserSession');
-                    hideHamburger();
-                }
-            } else {
-                hideHamburger();
-            }
+                try { userProfile = JSON.parse(cached); showDashboardView(); }
+                catch(e) { localStorage.removeItem('activeUserSession'); hideHamburger(); }
+            } else hideHamburger();
         }
 
-        function hideHamburger() {
-            const btn = document.getElementById('btnHamburger');
-            if (btn) btn.style.display = 'none';
-            toggleSidebar(false);
-        }
-
-        function showHamburger() {
-            const btn = document.getElementById('btnHamburger');
-            if (btn) btn.style.display = 'flex';
-        }
+        function hideHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'none'; toggleSidebar(false); }
+        function showHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'flex'; }
 
         function toggleSidebar(open) {
-            const sb = document.getElementById('sidebarDrawer');
-            const ov = document.getElementById('sidebarOverlay');
-            if (open) {
-                if (sb) sb.classList.add('show');
-                if (ov) ov.classList.add('show');
-            } else {
-                if (sb) sb.classList.remove('show');
-                if (ov) ov.classList.remove('show');
-            }
+            const sb = document.getElementById('sidebarDrawer'); const ov = document.getElementById('sidebarOverlay');
+            if (open) { if (sb) sb.classList.add('show'); if (ov) ov.classList.add('show'); }
+            else { if (sb) sb.classList.remove('show'); if (ov) ov.classList.remove('show'); }
         }
 
-        function openPlansModal() {
-            toggleSidebar(false);
-            document.getElementById('plansModal').classList.add('active');
-            updateQrCode(activePlan.cost);
-        }
-        function closePlansModal() {
-            document.getElementById('plansModal').classList.remove('active');
-        }
-
-        function openGuideModal() {
-            toggleSidebar(false);
-            document.getElementById('guideModal').classList.add('active');
-        }
-        function closeGuideModal() {
-            document.getElementById('guideModal').classList.remove('active');
-        }
-
-        function openTermsModal(e) {
-            if (e) e.preventDefault();
-            toggleSidebar(false);
-            document.getElementById('termsModal').classList.add('active');
-        }
-        function closeTermsModal() {
-            document.getElementById('termsModal').classList.remove('active');
-        }
+        function openPlansModal() { toggleSidebar(false); document.getElementById('plansModal').classList.add('active'); renderPlansList(); }
+        function closePlansModal() { document.getElementById('plansModal').classList.remove('active'); }
+        function openMyPlanModal() { toggleSidebar(false); document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
+        function closeMyPlanModal() { document.getElementById('myPlanModal').classList.remove('active'); }
+        function openGuideModal() { toggleSidebar(false); document.getElementById('guideModal').classList.add('active'); }
+        function closeGuideModal() { document.getElementById('guideModal').classList.remove('active'); }
+        function openTermsModal(e) { if (e) e.preventDefault(); toggleSidebar(false); document.getElementById('termsModal').classList.add('active'); }
+        function closeTermsModal() { document.getElementById('termsModal').classList.remove('active'); }
 
         function openShortenerModal() {
             toggleSidebar(false);
             const activeCount = (myLinksList && myLinksList.length) ? myLinksList.length : 0;
-            if (activeCount < 3) {
-                openLockModal(activeCount);
-            } else {
-                document.getElementById('shortenerModal').classList.add('active');
-                loadUserShortLinks();
-            }
+            if (activeCount < 3) openLockModal(activeCount);
+            else { document.getElementById('shortenerModal').classList.add('active'); loadUserShortLinks(); }
         }
-        function closeShortenerModal() {
-            document.getElementById('shortenerModal').classList.remove('active');
-        }
+        function closeShortenerModal() { document.getElementById('shortenerModal').classList.remove('active'); }
 
         function openLockModal(count) {
-            const needed = Math.max(0, 3 - count);
-            const pct = Math.min(100, Math.round((count / 3) * 100));
+            const needed = Math.max(0, 3 - count); const pct = Math.min(100, Math.round((count / 3) * 100));
             document.getElementById('lockCountDisplay').textContent = `${count} / 3`;
             document.getElementById('lockBarFill').style.width = `${pct}%`;
             document.getElementById('lockHintText').textContent = `You need ${needed} more active link(s) to unlock this feature.`;
             document.getElementById('lockModal').classList.add('active');
         }
-        function closeLockModal() {
-            document.getElementById('lockModal').classList.remove('active');
-        }
+        function closeLockModal() { document.getElementById('lockModal').classList.remove('active'); }
 
-        // 🛡️ FIXED: switchAuth now re-renders Turnstile widget
         function switchAuth(mode) {
             const isLogin = mode === 'login';
             document.getElementById('formSignIn').style.display = isLogin ? 'block' : 'none';
             document.getElementById('formSignUp').style.display = isLogin ? 'none' : 'block';
-
             currentTurnstileToken = '';
-
-            // जब form switch हो, उस form का widget render करें
-            if (isLogin) {
-                setTimeout(() => { renderSignInTurnstile(); }, 100);
-            } else {
-                setTimeout(() => { renderSignUpTurnstile(); }, 100);
-            }
+            if (isLogin) setTimeout(() => renderSignInTurnstile(), 100);
+            else setTimeout(() => renderSignUpTurnstile(), 100);
         }
 
         function validateEmailFormat(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                return { valid: false, error: 'Please enter a valid email format' };
-            }
-            const typoMap = {
-                'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com',
-                'gamil.com': 'gmail.com', 'gmaill.com': 'gmail.com',
-                'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com',
-                'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
-                'outlok.com': 'outlook.com', 'outllok.com': 'outlook.com'
-            };
+            if (!emailRegex.test(email)) return { valid: false, error: 'Please enter a valid email format' };
+            const typoMap = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'yahooo.com': 'yahoo.com', 'hotmial.com': 'hotmail.com', 'outlok.com': 'outlook.com' };
             const domain = email.split('@')[1].toLowerCase();
-            if (typoMap[domain]) {
-                return { valid: false, error: `Did you mean ${email.replace(domain, typoMap[domain])}?` };
-            }
+            if (typoMap[domain]) return { valid: false, error: `Did you mean ${email.replace(domain, typoMap[domain])}?` };
             return { valid: true };
         }
 
-        function isValidMobile(mobile) {
-            const clean = mobile.replace(/[\s\-\(\)\+]/g, '');
-            return /^[6-9]\d{9}$/.test(clean);
-        }
+        function isValidMobile(mobile) { return /^[6-9]\d{9}$/.test(mobile.replace(/[\s\-\(\)\+]/g, '')); }
 
         async function submitSignIn(e) {
             e.preventDefault();
@@ -1415,37 +1043,15 @@
             const phone = document.getElementById('inPhone').value.trim();
             const btn = document.getElementById('btnSubmitLogin');
             const turnstileToken = getTurnstileToken();
-
-            if (!turnstileToken) {
-                notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<span>Verifying...</span>';
-
+            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
+            btn.disabled = true; btn.innerHTML = '<span>Verifying...</span>';
             try {
-                const res = await fetch('/api/user/signin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, phone, turnstileToken })
-                });
+                const res = await fetch('/api/user/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
-
-                if (res.ok && data.success) {
-                    userProfile = data.user;
-                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
-                    showDashboardView();
-                } else {
-                    notify(data.error || 'Authentication failed. Please verify credentials.', 'Sign In Failed', '❌');
-                    resetTurnstile();
-                }
-            } catch (err) {
-                notify('Unable to reach server. Please check your network connection.', 'Connection Error', '⚠️');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span>Sign In</span>';
-            }
+                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); }
+                else { notify(data.error || 'Authentication failed.', 'Sign In Failed', '❌'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️'); }
+            finally { btn.disabled = false; btn.innerHTML = '<span>Sign In</span>'; }
         }
 
         async function submitSignUp(e) {
@@ -1455,82 +1061,30 @@
             const phone = document.getElementById('upPhone').value.trim();
             const termsAgreed = document.getElementById('upTermsCheck').checked;
             const turnstileToken = getTurnstileToken();
-
-            if (!termsAgreed) {
-                notify('Please accept the Terms & Conditions before registering.', 'Terms Required', '⚠️');
-                return;
-            }
-
+            if (!termsAgreed) return notify('Please accept the Terms & Conditions.', 'Terms Required', '⚠️');
             const emailCheck = validateEmailFormat(email);
-            if (!emailCheck.valid) {
-                notify(emailCheck.error, 'Invalid Email', '⚠️');
-                return;
-            }
-
-            if (!isValidMobile(phone)) {
-                notify('Please enter a valid 10-digit Indian mobile number starting with 6-9', 'Invalid Mobile', '⚠️');
-                return;
-            }
-
-            if (!turnstileToken) {
-                notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
-                return;
-            }
-
+            if (!emailCheck.valid) return notify(emailCheck.error, 'Invalid Email', '⚠️');
+            if (!isValidMobile(phone)) return notify('Please enter a valid 10-digit mobile number', 'Invalid Mobile', '⚠️');
+            if (!turnstileToken) return notify('Please complete the CAPTCHA verification', 'CAPTCHA Required', '⚠️');
             const btn = document.getElementById('btnSubmitRegister');
-            btn.disabled = true;
-            btn.innerHTML = '<span>Submitting Registration...</span>';
-
+            btn.disabled = true; btn.innerHTML = '<span>Submitting...</span>';
             try {
-                const res = await fetch('/api/user/signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, phone, turnstileToken })
-                });
+                const res = await fetch('/api/user/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, phone, turnstileToken }) });
                 const data = await res.json().catch(() => ({}));
-
-                if (res.ok && data.success) {
-                    notify('Registration submitted successfully! Your account is pending administrator approval.', 'Registration Sent', '🎉');
-                    resetTurnstile();
-                    switchAuth('login');
-                } else {
-                    let errMsg = data.error || data.message || 'Registration failed. Please try again.';
-                    notify(errMsg, 'Error', '⚠️');
-                    resetTurnstile();
-                }
-            } catch (err) {
-                notify('Unable to reach server. Please try again.', 'Connection Error', '⚠️');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span>Create Account</span>';
-            }
+                if (res.ok && data.success) { notify('Registration submitted! Pending admin approval.', 'Registration Sent', '🎉'); resetTurnstile(); switchAuth('login'); }
+                else { notify(data.error || 'Registration failed.', 'Error', '⚠️'); resetTurnstile(); }
+            } catch (err) { notify('Unable to reach server.', 'Connection Error', '⚠️'); }
+            finally { btn.disabled = false; btn.innerHTML = '<span>Create Account</span>'; }
         }
 
         async function handleGoogleLogin(response) {
-            if (!response || !response.credential) {
-                notify('Google login failed. Please try again.', 'Error', '⚠️');
-                return;
-            }
-
+            if (!response || !response.credential) return notify('Google login failed.', 'Error', '⚠️');
             try {
-                const res = await fetch('/api/user/google-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ credential: response.credential })
-                });
+                const res = await fetch('/api/user/google-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: response.credential }) });
                 const data = await res.json().catch(() => ({}));
-
-                if (res.ok && data.success) {
-                    userProfile = data.user;
-                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
-                    showDashboardView();
-                    notify('Logged in with Google successfully!', 'Success', '✅');
-                } else {
-                    notify(data.error || 'Google login failed', 'Error', '❌');
-                }
-            } catch (err) {
-                notify('Unable to connect to server', 'Connection Error', '⚠️');
-            }
+                if (res.ok && data.success) { userProfile = data.user; localStorage.setItem('activeUserSession', JSON.stringify(userProfile)); showDashboardView(); notify('Logged in with Google!', 'Success', '✅'); }
+                else notify(data.error || 'Google login failed', 'Error', '❌');
+            } catch (err) { notify('Unable to connect to server', 'Connection Error', '⚠️'); }
         }
 
         function showDashboardView() {
@@ -1546,11 +1100,8 @@
         function selectDateFilter(filterType, element) {
             document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
             if (element) element.classList.add('active');
-            const customBox = document.getElementById('customDateSection');
-            customBox.style.display = 'none';
-            currentDateFilter = filterType;
-            currentStartDate = '';
-            currentEndDate = '';
+            document.getElementById('customDateSection').style.display = 'none';
+            currentDateFilter = filterType; currentStartDate = ''; currentEndDate = '';
             const label = document.getElementById('activeDateLabel');
             if (filterType === 'today') label.textContent = "Showing: Today's Unique Activity";
             else if (filterType === 'yesterday') label.textContent = "Showing: Yesterday's Unique Activity";
@@ -1562,98 +1113,272 @@
         function toggleCustomDateUI(element) {
             document.querySelectorAll('.date-pills .pill-btn').forEach(btn => btn.classList.remove('active'));
             if (element) element.classList.add('active');
-            const customBox = document.getElementById('customDateSection');
-            const isOpen = customBox.style.display === 'flex';
-            customBox.style.display = isOpen ? 'none' : 'flex';
-            if (!isOpen) {
-                const todayStr = new Date().toISOString().split('T')[0];
-                if (!document.getElementById('customDateInput').value) {
-                    document.getElementById('customDateInput').value = todayStr;
-                }
-            }
+            const box = document.getElementById('customDateSection');
+            const isOpen = box.style.display === 'flex';
+            box.style.display = isOpen ? 'none' : 'flex';
+            if (!isOpen) { const t = new Date().toISOString().split('T')[0]; if (!document.getElementById('customDateInput').value) document.getElementById('customDateInput').value = t; }
         }
 
         function onSingleDatePicked(dateVal) {
             if (!dateVal) return;
-            currentDateFilter = 'custom';
-            currentStartDate = dateVal;
+            currentDateFilter = 'custom'; currentStartDate = dateVal;
             currentEndDate = document.getElementById('customEndDateInput').value || dateVal;
-            const formatted = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('activeDateLabel').textContent = `Showing: Data for ${formatted}`;
+            const f = new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('activeDateLabel').textContent = `Showing: Data for ${f}`;
             fetchUserLinkData();
         }
 
         function applyCustomDateRange() {
-            const startVal = document.getElementById('customDateInput').value;
-            const endVal = document.getElementById('customEndDateInput').value || startVal;
-            if (!startVal) {
-                notify('Please select at least one date.', 'Date Required', '⚠️');
-                return;
-            }
-            currentDateFilter = 'custom';
-            currentStartDate = startVal;
-            currentEndDate = endVal;
-            const sFmt = new Date(startVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const eFmt = new Date(endVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('activeDateLabel').textContent = `Showing: Range (${sFmt} - ${eFmt})`;
+            const s = document.getElementById('customDateInput').value;
+            const e = document.getElementById('customEndDateInput').value || s;
+            if (!s) return notify('Please select a date.', 'Date Required', '⚠️');
+            currentDateFilter = 'custom'; currentStartDate = s; currentEndDate = e;
+            const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('activeDateLabel').textContent = `Showing: Range (${sF} - ${eF})`;
             fetchUserLinkData();
         }
 
         async function fetchUserLinkData(explicitLinkId) {
-            const displayEl = document.getElementById('displayLinkId');
-            const displayNameEl = document.getElementById('displayLinkName');
-            displayEl.textContent = 'Fetching link details...';
-            displayNameEl.textContent = 'Loading link name...';
-
+            document.getElementById('displayLinkId').textContent = 'Fetching...';
+            document.getElementById('displayLinkName').textContent = 'Loading...';
             const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
-
             try {
                 const res = await fetch('/api/user/link-details', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        userName: userProfile.name, 
-                        linkInput: cachedId,
-                        filter: currentDateFilter,
-                        startDate: currentStartDate,
-                        endDate: currentEndDate
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate })
                 });
                 const data = await res.json().catch(() => ({}));
-
                 if (res.ok && data.success) {
                     activeLinkRecord = data.link;
                     activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
                     adminPhone = data.whatsappNumber || '916372923348';
+                    showUpiToUser = data.paymentSettings?.showUpi !== false;
+                    loadedPlans = data.plans || {};
+                    currentPlanUsage = data.planUsage || null;
                     myLinksList = data.userLinks || [];
-
-                    if (data.pricing) applyLivePricing(data.pricing);
-
-                    const sup = document.getElementById('supportLink');
-                    if (sup) sup.href = `https://wa.me/${adminPhone}`;
+                    const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
                     localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
-
                     populateUserLinksDropdown(myLinksList, activeLinkRecord.id);
                     populateDashboardMetrics(data);
+                    updatePlanUsageUI();
                     fetchHistoryRecords(activeLinkRecord.id);
                 } else {
                     activeLinkRecord = null;
-                    displayEl.textContent = 'None';
-                    displayNameEl.textContent = 'No active link assigned';
+                    document.getElementById('displayLinkId').textContent = 'None';
+                    document.getElementById('displayLinkName').textContent = 'No active link assigned';
                     displayEmptyState(data.error);
+                    if (data.planUsage) { currentPlanUsage = data.planUsage; updatePlanUsageUI(); }
+                    if (data.plans) loadedPlans = data.plans;
                 }
             } catch (err) {
-                displayEl.textContent = 'Offline';
-                displayNameEl.textContent = 'Connection error';
+                document.getElementById('displayLinkId').textContent = 'Offline';
+                document.getElementById('displayLinkName').textContent = 'Connection error';
             }
+        }
+
+        // 🆕 Update Plan Usage Card
+        function updatePlanUsageUI() {
+            if (!currentPlanUsage) return;
+            const pu = currentPlanUsage;
+            document.getElementById('currentPlanName').textContent = pu.planName || 'Free Trial';
+            document.getElementById('currentPlanDuration').textContent = (pu.durationDays || 0) + ' Days';
+            
+            const badgeEl = document.getElementById('currentPlanBadge');
+            if (pu.badge) {
+                badgeEl.textContent = pu.badge;
+                badgeEl.className = 'plan-badge ' + (pu.badge === 'POPULAR' ? 'popular' : (pu.badge === 'SAVE 20%' ? 'save' : (pu.badge === 'BEST VALUE' ? 'best' : 'popular')));
+                badgeEl.style.display = 'inline-block';
+            } else badgeEl.style.display = 'none';
+
+            const linksUsed = pu.linksUsed || 0;
+            const linksLimit = pu.linkLimit;
+            const visitorsUsed = pu.visitorsUsed || 0;
+            const visitorLimit = pu.visitorLimit;
+
+            document.getElementById('linksUsed').textContent = linksUsed;
+            document.getElementById('linksLimit').textContent = (linksLimit === 'unlimited' || linksLimit === -1) ? '∞' : linksLimit;
+            document.getElementById('visitorsUsed').textContent = visitorsUsed;
+            document.getElementById('visitorsLimit').textContent = (visitorLimit === 'unlimited' || visitorLimit === -1) ? '∞' : visitorLimit;
+
+            const linksUnlimited = (linksLimit === 'unlimited' || linksLimit === -1);
+            const visitorsUnlimited = (visitorLimit === 'unlimited' || visitorLimit === -1);
+            
+            const linksPct = linksUnlimited ? 0 : Math.min(100, Math.round((linksUsed / linksLimit) * 100));
+            const visitorsPct = visitorsUnlimited ? 0 : Math.min(100, Math.round((visitorsUsed / visitorLimit) * 100));
+
+            const linksBar = document.getElementById('linksBarFill');
+            const visitorsBar = document.getElementById('visitorsBarFill');
+
+            if (linksUnlimited) { linksBar.style.width = '0%'; }
+            else { linksBar.style.width = linksPct + '%'; linksBar.className = 'usage-bar-fill ' + (linksPct >= 90 ? 'danger' : (linksPct >= 70 ? 'warn' : 'safe')); }
+
+            if (visitorsUnlimited) { visitorsBar.style.width = '0%'; }
+            else { visitorsBar.style.width = visitorsPct + '%'; visitorsBar.className = 'usage-bar-fill ' + (visitorsPct >= 90 ? 'danger' : (visitorsPct >= 70 ? 'warn' : 'safe')); }
+
+            const warningsEl = document.getElementById('planUsageWarnings');
+            let warnings = '';
+            if (pu.linkLimitReached) warnings += `<div class="usage-limit-warning danger">⛔ Link limit reached! You cannot create more links. Please upgrade or renew.</div>`;
+            else if (!linksUnlimited && linksPct >= 70) warnings += `<div class="usage-limit-warning warn">⚠️ You've used ${linksPct}% of your link limit. Upgrade soon.</div>`;
+            if (pu.visitorLimitReached) warnings += `<div class="usage-limit-warning danger">⛔ Visitor limit reached! Your links are now expired. Please renew.</div>`;
+            else if (!visitorsUnlimited && visitorsPct >= 70) warnings += `<div class="usage-limit-warning warn">⚠️ You've used ${visitorsPct}% of your visitor limit. Renew soon.</div>`;
+            warningsEl.innerHTML = warnings;
+        }
+
+        // 🆕 My Plan Modal
+        function renderMyPlan() {
+            const el = document.getElementById('myPlanContent');
+            if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Plan info loading...</p>'; return; }
+            const pu = currentPlanUsage;
+            const linksLimitText = (pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : pu.linkLimit;
+            const visitorLimitText = (pu.visitorLimit === 'unlimited' || pu.visitorLimit === -1) ? 'Unlimited' : pu.visitorLimit;
+
+            let featuresHtml = '';
+            if (Array.isArray(pu.features) && pu.features.length) {
+                featuresHtml = `<ul style="list-style:none; padding:0; margin:12px 0 0;">` +
+                    pu.features.map(f => `<li style="padding:6px 0; color:#cbd5e1; font-size:12.5px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">✓</span> <span>${f}</span></li>`).join('') +
+                    `</ul>`;
+            }
+
+            el.innerHTML = `
+                <div style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08)); border:1px solid rgba(99,102,241,0.35); border-radius:14px; padding:16px; margin-bottom:14px;">
+                    <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
+                    <div style="font-size:22px; font-weight:800; color:#fff; margin-top:4px;">${pu.planName || 'Free Trial'}</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${pu.durationDays || 0} Days</b> • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b></div>
+                    ${featuresHtml}
+                </div>
+                <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
+                    <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Usage Summary</div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
+                        <span style="color:var(--text-secondary); font-size:13px;">🔗 Links Used</span>
+                        <span style="color:#fff; font-weight:700;">${pu.linksUsed} / ${linksLimitText}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0;">
+                        <span style="color:var(--text-secondary); font-size:13px;">👁️ Visitors Used</span>
+                        <span style="color:#fff; font-weight:700;">${pu.visitorsUsed} / ${visitorLimitText}</span>
+                    </div>
+                </div>
+                <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
+                    <span>💎 View All Plans & Upgrade</span>
+                </button>
+            `;
+        }
+
+        // 🆕 Render Plans List (Professional Cards)
+        function renderPlansList() {
+            const container = document.getElementById('plansListContainer');
+            const footer = document.getElementById('plansModalFooter');
+            if (!loadedPlans || !Object.keys(loadedPlans).length) {
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px;">No plans available.</p>';
+                footer.innerHTML = '';
+                return;
+            }
+
+            const planOrder = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
+            const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
+
+            // Default select 'pro' (popular) or first available
+            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key]) {
+                const defKey = availablePlans.find(k => loadedPlans[k].badge === 'POPULAR') || availablePlans[0];
+                if (defKey) {
+                    const p = loadedPlans[defKey];
+                    activePlan = { key: defKey, days: p.durationDays, cost: p.price };
+                }
+            }
+
+            container.innerHTML = availablePlans.map(key => {
+                const p = loadedPlans[key];
+                const isSelected = (key === activePlan.key);
+                const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : ''));
+                const extraClass = p.badge === 'POPULAR' ? 'popular-plan' : (p.badge === 'BEST VALUE' ? 'best-plan' : '');
+                const perDay = p.durationDays > 0 && p.price > 0 ? (p.price / p.durationDays).toFixed(1) : '0';
+                const featuresList = Array.isArray(p.features) ? p.features.slice(0, 2).join(' • ') : '';
+                const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Links`;
+                const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
+                
+                return `
+                    <div class="plan-row-item ${isSelected ? 'selected' : ''} ${extraClass}" onclick="pickDynamicPlan('${key}')">
+                        <div class="plan-row-left">
+                            <div class="plan-radio-circle"></div>
+                            <div class="plan-meta">
+                                <h4>${p.name} ${p.badge ? `<span class="plan-badge-pill ${badgeClass}">${p.badge}</span>` : ''}</h4>
+                                <div class="plan-features-preview">${p.durationDays} Days • ${linksLabel} • ${visitorLabel}</div>
+                            </div>
+                        </div>
+                        <div class="plan-price-tag">
+                            ${p.price === 0 ? 'FREE' : '₹' + p.price}
+                            ${p.price > 0 ? `<span class="price-per-day">₹${perDay}/day</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderPaymentPanel();
+        }
+
+        function renderPaymentPanel() {
+            const footer = document.getElementById('plansModalFooter');
+            if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
+            const p = loadedPlans[activePlan.key];
+            if (!p) { footer.innerHTML = ''; return; }
+
+            let paymentHtml = '';
+            if (showUpiToUser) {
+                const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${p.price}&cu=INR`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
+                paymentHtml = `
+                    <div class="payment-panel">
+                        <div class="qr-wrapper">
+                            <img src="${qrUrl}" alt="Payment QR">
+                            <span style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Scan to Pay</span>
+                        </div>
+                        <div class="payment-info">
+                            <div class="upi-copy-chip" onclick="copyUpiText()">
+                                <span>UPI: <strong>${activeAdminUpi}</strong></span>
+                                <span>📋</span>
+                            </div>
+                            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+                                Selected Plan: <strong style="color:#fff;">${p.name} - ${p.durationDays} Days (₹${p.price})</strong><br>
+                                Scan QR or pay to UPI ID, then submit your request below.
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                paymentHtml = `
+                    <div style="background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; margin-bottom:16px; text-align:center;">
+                        <div style="font-size:24px; margin-bottom:6px;">💬</div>
+                        <div style="font-size:13px; font-weight:700; color:#fbbf24;">Payment info coming soon</div>
+                        <div style="font-size:11.5px; color:var(--text-light); margin-top:4px;">Please contact admin on WhatsApp for payment details and plan activation.</div>
+                    </div>
+                `;
+            }
+
+            footer.innerHTML = `
+                ${paymentHtml}
+                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4; text-align:center;">
+                    Selected Plan: <strong style="color:#fff;">${p.name} - ${p.durationDays} Days (₹${p.price})</strong>
+                </div>
+                <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()">
+                    <span>📩 Request Admin Renewal via WhatsApp</span>
+                </button>
+            `;
+        }
+
+        function pickDynamicPlan(key) {
+            const p = loadedPlans[key];
+            if (!p) return;
+            activePlan = { key: key, days: p.durationDays, cost: p.price };
+            renderPlansList();
+        }
+
+        function copyUpiText() {
+            navigator.clipboard.writeText(activeAdminUpi).then(() => notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋'));
         }
 
         function populateUserLinksDropdown(links, currentActiveId) {
             const selectEl = document.getElementById('userLinkSelect');
-            if (!links || !links.length) {
-                selectEl.innerHTML = '<option value="">No links assigned to your account</option>';
-                return;
-            }
+            if (!links || !links.length) { selectEl.innerHTML = '<option value="">No links assigned</option>'; return; }
             selectEl.innerHTML = links.map(l => {
                 const isSelected = l.id === currentActiveId ? 'selected' : '';
                 const lName = l.name || l.title || l.linkName || 'Untitled Campaign';
@@ -1662,53 +1387,14 @@
             }).join('');
         }
 
-        function onSelectUserLink(selectedId) {
-            if (!selectedId) return;
-            localStorage.setItem('userActiveLinkId', selectedId);
-            fetchUserLinkData(selectedId);
-        }
+        function onSelectUserLink(selectedId) { if (!selectedId) return; localStorage.setItem('userActiveLinkId', selectedId); fetchUserLinkData(selectedId); }
+        function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
 
-        function refreshCurrentLinkData() {
-            const selectEl = document.getElementById('userLinkSelect');
-            const targetId = selectEl.value || localStorage.getItem('userActiveLinkId');
-            fetchUserLinkData(targetId);
-        }
-
-        function applyLivePricing(p) {
-            if (p['7days']) updatePlanRowText('7days', p['7days'], 7);
-            if (p['15days']) updatePlanRowText('15days', p['15days'], 15);
-            if (p['30days']) updatePlanRowText('30days', p['30days'], 30);
-            if (p['90days']) updatePlanRowText('90days', p['90days'], 90);
-            if (p['1year']) updatePlanRowText('1year', p['1year'], 365);
-        }
-
-        function updatePlanRowText(key, cost, days) {
-            const rows = document.querySelectorAll('.plan-row-item');
-            rows.forEach(r => {
-                const onclickStr = r.getAttribute('onclick') || '';
-                if (onclickStr.includes(`'${key}'`)) {
-                    r.setAttribute('onclick', `pickPlan('${key}', ${days}, ${cost}, this)`);
-                    const tag = r.querySelector('.plan-price-tag');
-                    if (tag) tag.textContent = `₹${cost}`;
-                    const sub = r.querySelector('.plan-meta p');
-                    if (sub) sub.textContent = `₹${(cost / days).toFixed(1)} / day`;
-                }
-            });
-        }
-
-        function displayEmptyState(errMsg) {
-            document.getElementById('metricTotalVisits').textContent = '0';
-            document.getElementById('metricTotalClaims').textContent = '0';
-            document.getElementById('metricFilteredVisits').textContent = '0';
-            document.getElementById('metricFilteredClaims').textContent = '0';
-            document.getElementById('metricToday').textContent = '0';
-            document.getElementById('metricTodayClaims').textContent = '0';
-            document.getElementById('metric24h').textContent = '0';
-            document.getElementById('metric7d').textContent = '0';
-            document.getElementById('badgeExpiry').className = 'badge-status expired';
-            document.getElementById('badgeExpiry').textContent = 'Unassigned';
-            document.getElementById('barExpiryProgress').style.width = '0%';
-            document.getElementById('txtExpiryDate').textContent = 'None';
+        function displayEmptyState() {
+            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims','metricToday','metricTodayClaims','metric24h','metric7d'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = '0'; });
+            const be = document.getElementById('badgeExpiry'); if (be) { be.className = 'badge-status expired'; be.textContent = 'Unassigned'; }
+            const bp = document.getElementById('barExpiryProgress'); if (bp) bp.style.width = '0%';
+            const te = document.getElementById('txtExpiryDate'); if (te) te.textContent = 'None';
         }
 
         function populateDashboardMetrics(data) {
@@ -1718,17 +1404,12 @@
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
 
             const totalVisitsVal = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || data.visits || 0);
-            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : 
-                                    ((l.claims !== undefined) ? l.claims : 
-                                    ((data.totalClaims !== undefined) ? data.totalClaims : 
-                                    ((data.claims !== undefined) ? data.claims : (l.todayClaims || 0))));
-
+            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : ((l.claims !== undefined) ? l.claims : ((data.totalClaims !== undefined) ? data.totalClaims : ((data.claims !== undefined) ? data.claims : 0)));
             document.getElementById('metricTotalVisits').textContent = totalVisitsVal;
             document.getElementById('metricTotalClaims').textContent = totalClaimsVal;
 
             const rangeVisits = (data.dateRange && data.dateRange.visits !== undefined) ? data.dateRange.visits : (l.todayVisits || 0);
             const rangeClaims = (data.dateRange && data.dateRange.claims !== undefined) ? data.dateRange.claims : (l.todayClaims || 0);
-
             document.getElementById('metricFilteredVisits').textContent = rangeVisits;
             document.getElementById('metricFilteredClaims').textContent = rangeClaims;
 
@@ -1757,11 +1438,10 @@
                 subFilterLabel.textContent = "Unique in 24h";
             }
 
-            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : (data.todayVisits || 0));
-            document.getElementById('metricTodayClaims').textContent = (l.todayClaims !== undefined ? l.todayClaims : (data.todayClaims || 0));
-            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : (data.v24h || 0));
-            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : (data.v7d || 0));
-
+            document.getElementById('metricToday').textContent = (l.todayVisits !== undefined ? l.todayVisits : 0);
+            document.getElementById('metricTodayClaims').textContent = (l.todayClaims !== undefined ? l.todayClaims : 0);
+            document.getElementById('metric24h').textContent = (l.v24h !== undefined ? l.v24h : 0);
+            document.getElementById('metric7d').textContent = (l.v7d !== undefined ? l.v7d : 0);
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
             const badge = document.getElementById('badgeExpiry');
@@ -1772,91 +1452,47 @@
                 const d = new Date(l.expiryDate);
                 expText.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const left = typeof l.daysLeft === 'number' ? l.daysLeft : 0;
-                if (left <= 0) {
-                    badge.className = 'badge-status expired';
-                    badge.textContent = 'Expired';
-                    progress.className = 'progress-bar-fill expired';
-                    progress.style.width = '100%';
-                } else if (left <= 3) {
-                    badge.className = 'badge-status warning';
-                    badge.textContent = `Expiring (${left} Days Left)`;
-                    progress.className = 'progress-bar-fill warning';
-                    progress.style.width = `${Math.min(100, left * 33)}%`;
-                } else {
-                    badge.className = 'badge-status active';
-                    badge.textContent = `Active (${left} Days Left)`;
-                    progress.className = 'progress-bar-fill active';
-                    progress.style.width = '100%';
-                }
+                if (left <= 0) { badge.className = 'badge-status expired'; badge.textContent = 'Expired'; progress.className = 'progress-bar-fill expired'; progress.style.width = '100%'; }
+                else if (left <= 3) { badge.className = 'badge-status warning'; badge.textContent = `Expiring (${left} Days Left)`; progress.className = 'progress-bar-fill warning'; progress.style.width = `${Math.min(100, left * 33)}%`; }
+                else { badge.className = 'badge-status active'; badge.textContent = `Active (${left} Days Left)`; progress.className = 'progress-bar-fill active'; progress.style.width = '100%'; }
             } else {
-                badge.className = 'badge-status active';
-                badge.textContent = 'Lifetime Active';
-                progress.className = 'progress-bar-fill active';
-                progress.style.width = '100%';
+                badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active';
+                progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
                 expText.textContent = 'Lifetime Active';
             }
         }
 
-        function pickPlan(key, days, cost, elem) {
-            document.querySelectorAll('.plan-row-item').forEach(b => b.classList.remove('selected'));
-            elem.classList.add('selected');
-            activePlan = { key, days, cost };
-            document.getElementById('txtSelectedPlanSummary').textContent = `${days} Days (₹${cost})`;
-            updateQrCode(cost);
-        }
-
-        function updateQrCode(cost) {
-            document.getElementById('upiIdDisplay').textContent = activeAdminUpi;
-            const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${cost}&cu=INR`;
-            document.getElementById('qrImageElement').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
-        }
-
-        function copyUpiText() {
-            navigator.clipboard.writeText(activeAdminUpi).then(() => {
-                notify(`UPI ID copied: ${activeAdminUpi}`, 'Copied', '📋');
-            });
-        }
-
         async function requestAdminRenewal() {
             const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-            if (!currentId) {
-                notify('Please select your Link ID before requesting renewal.', 'Link Required', '⚠️');
-                return;
-            }
+            if (!currentId) return notify('Please select your Link ID before renewal.', 'Link Required', '⚠️');
             const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
+            const p = loadedPlans ? loadedPlans[activePlan.key] : null;
+            const planName = p ? p.name : activePlan.key;
+
             try {
                 fetch('/api/user/renew-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        linkId: currentId,
-                        linkName: currentLinkTitle,
-                        userName: userProfile.name,
-                        plan: activePlan.key,
-                        days: activePlan.days,
-                        amount: activePlan.cost,
-                        refNo: 'Manual-WhatsApp'
-                    })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ linkId: currentId, linkName: currentLinkTitle, userName: userProfile.name, plan: activePlan.key, days: activePlan.days, amount: activePlan.cost, refNo: 'Manual-WhatsApp' })
                 }).catch(() => {});
             } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const message = 
-`Hello Admin, I want to renew my link:
+`Hello Admin, I want to renew my plan:
+
 👤 User Name: ${userProfile.name}
 🔗 Link Name: ${currentLinkTitle}
 🆔 Link ID: ${currentId}
-💎 Extension Plan: ${activePlan.days} Days (${activePlan.key.toUpperCase()})
-💰 Total Amount: ₹${activePlan.cost}
+💎 Plan: ${planName} (${activePlan.days} Days)
+💰 Amount: ₹${activePlan.cost}
 📅 Date: ${today}
 
-Please verify my payment and approve my extension. Thank you!`;
+Please verify and approve. Thank you!`;
 
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
             window.open(waUrl, '_blank');
-
             closePlansModal();
-            setTimeout(() => { fetchHistoryRecords(currentId); }, 1500);
+            setTimeout(() => fetchHistoryRecords(currentId), 1500);
         }
 
         async function fetchHistoryRecords(linkId) {
@@ -1866,135 +1502,74 @@ Please verify my payment and approve my extension. Thank you!`;
                     const data = await res.json().catch(() => ({}));
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
-                    const pastSeven = list.slice(0, 7);
-                    if (pastSeven.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>';
-                        return;
-                    }
-                    tbody.innerHTML = pastSeven.map(record => {
+                    const past = list.slice(0, 7);
+                    if (!past.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>'; return; }
+                    tbody.innerHTML = past.map(record => {
                         const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
-                        return `
-                            <tr>
-                                <td>${dateStr}</td>
-                                <td><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td>
-                                <td>₹${record.amount || 0}</td>
-                                <td><code style="font-family:monospace; color:var(--accent-cyan);">${record.transactionId || 'N/A'}</code></td>
-                                <td><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td>
-                            </tr>
-                        `;
+                        return `<tr><td>${dateStr}</td><td><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td><td>₹${record.amount || 0}</td><td><code style="font-family:monospace; color:var(--accent-cyan);">${record.transactionId || 'N/A'}</code></td><td><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td></tr>`;
                     }).join('');
                 }
             } catch(e) {}
         }
 
         async function loadUserShortLinks() {
-            const container = document.getElementById('userShortLinksList');
-            container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading short links...</p>';
+            const c = document.getElementById('userShortLinksList');
+            c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
                 const res = await fetch(`/api/user/short-links?userName=${encodeURIComponent(userProfile.name)}`);
                 const data = await res.json().catch(() => ({}));
                 const links = data.links || [];
-                if (!links.length) {
-                    return container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created yet.</p>';
-                }
-                container.innerHTML = links.map(l => `
+                if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links created yet.</p>';
+                c.innerHTML = links.map(l => `
                     <div class="short-item">
                         <div>
                             <div style="font-weight:700;font-size:13px;color:#fff;">${l.title || 'Untitled'}</div>
-                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-                                <b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b>
-                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
                         </div>
                         <div style="display:flex;gap:6px;">
-                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Short Link Copied!','Copied','📋'))" style="width:auto;padding:5px 10px;font-size:11px;">
-                                📋 Copy
-                            </button>
-                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">
-                                🗑️
-                            </button>
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>notify('Copied!','Copied','📋'))" style="width:auto;padding:5px 10px;font-size:11px;">📋</button>
+                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--danger);">🗑️</button>
                         </div>
                     </div>
                 `).join('');
-            } catch(e) {
-                container.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load short links.</p>';
-            }
+            } catch(e) { c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
         }
 
         async function createUserShortLink() {
             const originalUrl = document.getElementById('uShortUrl').value.trim();
             const title = document.getElementById('uShortTitle').value.trim();
-            if (!originalUrl) {
-                notify('Please enter a destination URL', 'URL Required', '⚠️');
-                return;
-            }
+            if (!originalUrl) return notify('Please enter a destination URL', 'URL Required', '⚠️');
             try {
-                const res = await fetch('/api/user/short-links', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ originalUrl, title, userName: userProfile.name })
-                });
+                const res = await fetch('/api/user/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title, userName: userProfile.name }) });
                 const data = await res.json().catch(() => ({}));
-                if (data.success) {
-                    notify('Short link created successfully!', 'Success', '🎉');
-                    document.getElementById('uShortUrl').value = '';
-                    document.getElementById('uShortTitle').value = '';
-                    loadUserShortLinks();
-                } else {
-                    notify(data.error || 'Failed to create short link', 'Error', '❌');
-                }
-            } catch(e) {
-                notify('Server connection error', 'Error', '⚠️');
-            }
+                if (data.success) { notify('Short link created!', 'Success', '🎉'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
+                else notify(data.error || 'Failed', 'Error', '❌');
+            } catch(e) { notify('Server error', 'Error', '⚠️'); }
         }
 
         async function deleteUserShortLink(id) {
-            if (!confirm('Are you sure you want to delete this short link?')) return;
-            try {
-                await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' });
-                notify('Short link deleted', 'Removed', '🗑️');
-                loadUserShortLinks();
-            } catch(e) {}
+            if (!confirm('Delete this short link?')) return;
+            try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); notify('Deleted', 'Removed', '🗑️'); loadUserShortLinks(); } catch(e) {}
         }
 
-        function performLogout() {
-            localStorage.removeItem('activeUserSession');
-            localStorage.removeItem('userActiveLinkId');
-            window.location.reload();
-        }
+        function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
-                const selectEl = document.getElementById('userLinkSelect');
-                const targetId = selectEl?.value || localStorage.getItem('userActiveLinkId');
+                const s = document.getElementById('userLinkSelect');
+                const targetId = s?.value || localStorage.getItem('userActiveLinkId');
                 if (targetId) {
-                    fetch('/api/user/link-details', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            userName: userProfile.name, 
-                            linkInput: targetId,
-                            filter: currentDateFilter,
-                            startDate: currentStartDate,
-                            endDate: currentEndDate
-                        })
-                    })
+                    fetch('/api/user/link-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName: userProfile.name, linkInput: targetId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate }) })
                     .then(r => r.json().catch(() => ({})))
-                    .then(data => {
-                        if (data && data.success) {
-                            populateDashboardMetrics(data);
-                        }
-                    })
+                    .then(data => { if (data && data.success) { currentPlanUsage = data.planUsage || currentPlanUsage; loadedPlans = data.plans || loadedPlans; populateDashboardMetrics(data); updatePlanUsageUI(); } })
                     .catch(() => {});
                 }
             }
         }, 10000);
 
-        // 🛡️ Ensure Sign In Turnstile renders after DOM is ready
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (window.turnstile) renderSignInTurnstile();
-            }, 500);
+            setTimeout(() => { if (window.turnstile) renderSignInTurnstile(); }, 500);
         });
 
         initApp();
