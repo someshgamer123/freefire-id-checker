@@ -19,6 +19,10 @@ const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
+// 🆕 48 HOURS in milliseconds
+const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;  // 48 hours
+const UNIQUE_WINDOW_DAYS = 2;
+
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
     googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -78,7 +82,6 @@ const Stats = safeLoadModel('Stats', { totalVisitors: { type: Number, default: 0
 const PopupSettings = safeLoadModel('PopupSettings', { image: String, title: { type: String, default: '🎁 Claim Your Reward' }, buttonText: { type: String, default: 'Claim Now' }, subtitle: { type: String, default: 'Tap below to unlock your reward' }, uidChecking: { type: Boolean, default: true } });
 const RenewalRequest = safeLoadModel('RenewalRequest', { id: String, linkId: String, linkName: String, plan: String, days: Number, amount: Number, transactionId: String, status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }, approvedAt: Date });
 
-// 🆕 RenewalUser with freeTrialUsed flag
 const RenewalUser = safeLoadModel('RenewalUser', {
     name: String, email: String, phone: String, googleId: String,
     authMethod: { type: String, default: 'email' },
@@ -105,6 +108,7 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
+// 🆕 VisitorActivity — 48h unique window
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
     visitorKey: { type: String, required: true, index: true },
@@ -597,7 +601,7 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER ====================
+// ==================== VISITOR LINK RESOLVER — 48H UNIQUE ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -647,18 +651,35 @@ app.get('/api/link/:id', async (req, res) => {
             } catch(e) { console.error('Plan/Visitor check error:', e.message); }
         }
 
+        // 🆕 48-HOUR UNIQUE VISIT COUNTING
         const { ip, deviceKey } = getDeviceId(req);
         const visitorKey = deviceKey || ip;
         const today = getISTDate();
+        
+        // Check if this visitor visited in last 48 hours
+        const uniqueWindowStart = new Date(Date.now() - UNIQUE_WINDOW_MS);
+        const recentUniqueVisit = await VisitorActivity.findOne({
+            linkId: { $in: [link.id, String(link._id), rawId] },
+            visitorKey: visitorKey,
+            type: 'visit',
+            lastSeen: { $gte: uniqueWindowStart }
+        }).maxTimeMS(1500).catch(() => null);
 
-        await Link.collection.updateOne({ _id: link._id },
-            { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
-        ).catch(err => console.error('Link visit update error:', err));
-        await Stats.collection.updateOne({},
-            { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
-            { upsert: true }
-        ).catch(err => console.error('Stats visit update error:', err));
+        // 🆕 Only increment count if NOT already visited in 48h
+        if (!recentUniqueVisit) {
+            await Link.collection.updateOne({ _id: link._id },
+                { $inc: { visits: 1, [`dailyVisits.${today}`]: 1 } }
+            ).catch(err => console.error('Link visit update error:', err));
+            await Stats.collection.updateOne({},
+                { $inc: { totalVisitors: 1, [`dailyVisitors.${today}`]: 1 } },
+                { upsert: true }
+            ).catch(err => console.error('Stats visit update error:', err));
+            console.log(`✅ NEW unique visit counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
+        } else {
+            console.log(`⏭️ Duplicate visit skipped (within 48h) for ${visitorKey.substring(0, 12)}...`);
+        }
 
+        // Always update lastSeen so 48h window resets
         await VisitorActivity.findOneAndUpdate(
             { linkId: link.id, visitorKey: visitorKey, type: 'visit' },
             { $set: { lastSeen: new Date() } }, 
@@ -715,13 +736,14 @@ app.post('/api/submit-uid/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== CLAIM TRACKING ====================
+// ==================== CLAIM TRACKING — 48H UNIQUE ====================
 async function executeClaimTracking(rawLinkId, req) {
     const cleanId = extractCleanId(rawLinkId);
     if (!cleanId) return { success: false, error: 'Link ID missing' };
 
     const sourceParam = (req.query.source || req.body?.source || '').toString().toLowerCase().trim();
     
+    // 🆕 STRICT: Only source=video counts. Popup claims are DUMMY.
     if (sourceParam !== 'video') {
         return { success: true, ignored: true, reason: 'Only main video claim button counts' };
     }
@@ -732,22 +754,39 @@ async function executeClaimTracking(rawLinkId, req) {
     const { ip, deviceKey } = getDeviceId(req);
     const visitorKey = deviceKey || ip;
     const today = getISTDate();
+    const uniqueWindowStart = new Date(Date.now() - UNIQUE_WINDOW_MS);
 
-    await Link.collection.updateOne({ _id: link._id },
-        { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
-    ).catch(err => console.error('Link claim update error:', err));
-    await Stats.collection.updateOne({},
-        { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
-        { upsert: true }
-    ).catch(err => console.error('Stats claim update error:', err));
+    // 🆕 Check if this visitor claimed in last 48 hours
+    const recentUniqueClaim = await VisitorActivity.findOne({
+        linkId: { $in: [link.id, String(link._id), cleanId] },
+        visitorKey: visitorKey,
+        type: 'claim',
+        source: 'video',
+        lastSeen: { $gte: uniqueWindowStart }
+    }).maxTimeMS(1500).catch(() => null);
 
+    // 🆕 Only increment claim if NOT already claimed in 48h
+    if (!recentUniqueClaim) {
+        await Link.collection.updateOne({ _id: link._id },
+            { $inc: { claims: 1, [`dailyClaims.${today}`]: 1 } }
+        ).catch(err => console.error('Link claim update error:', err));
+        await Stats.collection.updateOne({},
+            { $inc: { totalClaims: 1, [`dailyClaims.${today}`]: 1 } },
+            { upsert: true }
+        ).catch(err => console.error('Stats claim update error:', err));
+        console.log(`✅ NEW unique claim counted for ${visitorKey.substring(0, 12)}... on link ${link.id}`);
+    } else {
+        console.log(`⏭️ Duplicate claim skipped (within 48h) for ${visitorKey.substring(0, 12)}...`);
+    }
+
+    // Always update lastSeen so 48h window resets
     await VisitorActivity.findOneAndUpdate(
         { linkId: link.id, visitorKey: visitorKey, type: 'claim' },
         { $set: { lastSeen: new Date(), source: 'video' } },
         { upsert: true }
     ).catch(() => {});
 
-    return { success: true, linkId: link.id, counted: true };
+    return { success: true, linkId: link.id, counted: !recentUniqueClaim, duplicate: !!recentUniqueClaim };
 }
 
 const handleClaimTrackingRequest = async (req, res) => {
@@ -813,7 +852,6 @@ app.post('/api/user/signup', authLimiter, async (req, res) => {
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
         if (phoneExists) return res.status(400).json({ error: 'Phone already registered.' });
 
-        // 🆕 Create user with NO plan — user must activate manually
         await RenewalUser.create({ 
             name: cleanName, 
             email: cleanEmail, 
@@ -857,7 +895,6 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
         let user = await RenewalUser.findOne({ email: cleanEmail });
         if (!user) {
             if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
-            // 🆕 Create with NO plan
             user = await RenewalUser.create({
                 name: payload.name || 'Google User', 
                 email: cleanEmail, 
@@ -877,7 +914,6 @@ app.post('/api/user/google-login', authLimiter, async (req, res) => {
     } catch (e) { res.status(401).json({ error: 'Google authentication failed' }); }
 });
 
-// 🆕 FREE PLAN ACTIVATION — one-time only
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -885,7 +921,6 @@ app.post('/api/user/select-free-plan', async (req, res) => {
         const user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        // 🆕 Check if free trial already used
         if (user.freeTrialUsed === true) {
             return res.status(403).json({ error: 'Free trial already used. Please purchase a paid plan.' });
         }
@@ -897,7 +932,6 @@ app.post('/api/user/select-free-plan', async (req, res) => {
         const planExpiry = new Date();
         planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
         
-        // 🚀 DIRECT MongoDB update — bypass Mongoose strict
         const updateResult = await RenewalUser.collection.updateOne(
             { _id: user._id },
             { $set: {
@@ -946,7 +980,6 @@ app.post('/api/user/link-details', async (req, res) => {
         let rawInput = linkInput || linkId || id || dashboardId || '';
         let searchId = extractCleanId(rawInput);
 
-        // 🆕 STRICT: Only fetch links where the user is the OWNER
         const allUserLinks = await Link.find({
             $or: [
                 { assignedUser: userRegex },
@@ -960,7 +993,6 @@ app.post('/api/user/link-details', async (req, res) => {
             return { id: l.id, name: lTitle, title: lTitle, linkName: lTitle, status: l.status || 'active', expiryDate: l.expiryDate || null, visits: l.visits || 0, claims: l.claims || 0 };
         });
 
-        // 🆕 STRICT: Only allow selecting one of the user's own links
         let link = null;
         if (searchId && searchId !== cleanUser) {
             const candidateLink = await Link.findOne(getLinkQuery(searchId)).lean();
@@ -977,14 +1009,12 @@ app.post('/api/user/link-details', async (req, res) => {
         const ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
         const pricingDoc = await getPricingDoc();
         
-        // Determine plan state
         const hasPlan = ownerUser ? userHasActivePlan(ownerUser) : false;
         const planIsExpired = ownerUser ? isPlanExpired(ownerUser) : false;
         const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
         const freeTrialUsed = ownerUser?.freeTrialUsed === true;
         const userCurrentPlan = ownerUser?.currentPlan || 'none';
         
-        // Plan key for display
         let effectivePlanKey = userCurrentPlan;
         if (isLifetimeUnlimited) effectivePlanKey = 'lifetime-unlimited';
         else if (!hasPlan && !planIsExpired) effectivePlanKey = 'no-plan';
@@ -1000,7 +1030,6 @@ app.post('/api/user/link-details', async (req, res) => {
             planDaysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
-        // Plan Usage object
         let planUsage;
         if (hasPlan || isLifetimeUnlimited) {
             planUsage = {
@@ -1048,7 +1077,6 @@ app.post('/api/user/link-details', async (req, res) => {
             };
         }
 
-        // If no link owned by user — return empty state
         if (!link) {
             return res.status(404).json({
                 success: false,
@@ -1262,14 +1290,8 @@ app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, 
         } else {
             $set.lifetimeUnlimited = false;
             if (user.currentPlan === 'lifetime-unlimited') {
-                // Revert to none if free trial used, else free-trial but not activated
-                if (user.freeTrialUsed) {
-                    $set.currentPlan = 'none';
-                    $set.planExpiryDate = null;
-                } else {
-                    $set.currentPlan = 'none';
-                    $set.planExpiryDate = null;
-                }
+                $set.currentPlan = 'none';
+                $set.planExpiryDate = null;
             }
         }
         
@@ -1331,7 +1353,6 @@ const handleUserApprovalAction = async (req, res) => {
         
         if (targetAction === 'approved') {
             $set.approvedAt = user.approvedAt || new Date();
-            // 🆕 Do NOT auto-assign free-trial. User must click "Activate Free Plan".
             if (!user.currentPlan || user.currentPlan === 'lifetime-unlimited') {
                 $set.currentPlan = 'none';
             }
@@ -1668,7 +1689,6 @@ app.post('/api/links', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to create link' }); }
 });
 
-// Link update handler — direct MongoDB write
 async function handleLinkUpdate(req, res) {
     try {
         let rawId = req.params.id;
@@ -1720,7 +1740,6 @@ async function handleLinkUpdate(req, res) {
         let incomingUidVal = req.body.uidChecking ?? req.body.uidCheck ?? req.body.checkUid ?? req.body.enableUid;
         if (incomingUidVal !== undefined) $set.uidChecking = !isUidCheckDisabled(incomingUidVal);
 
-        // CRITICAL: Make Lifetime Active handling
         const makeLifetimeFlag = req.body.makeLifetime === true || req.body.lifetimeActive === true;
         const hasExpiryField = ('expiryDate' in req.body) || ('expiry' in req.body) || ('expDate' in req.body);
         
@@ -1811,7 +1830,7 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS ====================
+// ==================== ADMIN ALL STATS — 48h unique window ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -1848,15 +1867,17 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
             };
         });
         
+        // 🆕 Active Watching — 48 HOURS unique window (using visitorKey dedup)
         const activeWatchingAgg = await VisitorActivity.aggregate([
-            { $match: { type: 'visit', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } } },
+            { $match: { type: 'visit', lastSeen: { $gte: new Date(Date.now() - UNIQUE_WINDOW_MS) } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
         const activeWatching = activeWatchingAgg[0]?.count || 0;
 
+        // 🆕 Active Claiming — 48 HOURS unique window
         const activeClaimingAgg = await VisitorActivity.aggregate([
-            { $match: { type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) } } },
+            { $match: { type: 'claim', source: 'video', lastSeen: { $gte: new Date(Date.now() - UNIQUE_WINDOW_MS) } } },
             { $group: { _id: '$visitorKey' } },
             { $count: 'count' }
         ]).catch(() => []);
@@ -2098,6 +2119,7 @@ app.get('/admin/login.html', async (req, res) => {
     sendAppFile(res, 'login.html', 'admin/login.html');
 });
 
+// 🆕 EXPIRED PAGE — "Return to Home" button REMOVED
 app.get('/expired.html', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -2179,7 +2201,6 @@ app.get('/expired.html', (req, res) => {
             border: 1px solid rgba(239, 68, 68, 0.25);
             border-radius: 14px;
             padding: 16px;
-            margin-bottom: 24px;
             text-align: left;
         }
         .info-row {
@@ -2193,29 +2214,6 @@ app.get('/expired.html', (req, res) => {
         .info-row:last-child { margin-bottom: 0; }
         .info-row .emoji { font-size: 16px; }
         .info-row strong { color: #fff; font-weight: 700; margin-left: auto; }
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            color: #fff;
-            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
-            transition: all 0.25s ease;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 18px 40px rgba(79, 70, 229, 0.55);
-        }
-        .action-btn:active { transform: scale(0.98); }
         @media (max-width: 480px) {
             .expired-card { padding: 32px 22px; }
             .expired-title { font-size: 24px; }
@@ -2249,9 +2247,6 @@ app.get('/expired.html', (req, res) => {
                 <strong>Contact Owner</strong>
             </div>
         </div>
-        <button class="action-btn" onclick="window.location.href='/'">
-            <span>🏠</span> Return to Home
-        </button>
     </div>
 </body>
 </html>`);
