@@ -193,6 +193,42 @@
         .welcome-title h2 { font-size: 20px; font-weight: 800; color: #fff; }
         .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
+        /* ============ NO PLAN / ACTIVATE BANNER ============ */
+        .activate-banner {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.10));
+            border: 2px solid rgba(99, 102, 241, 0.5);
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: pulseBorder 3s ease-in-out infinite;
+        }
+        @keyframes pulseBorder {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 0 35px rgba(99, 102, 241, 0.45); }
+        }
+        .activate-banner::before {
+            content: '🎁';
+            position: absolute; top: -30px; right: -20px;
+            font-size: 140px; opacity: 0.08; pointer-events: none;
+        }
+        .activate-banner .activate-icon { font-size: 48px; display: block; margin-bottom: 10px; }
+        .activate-banner .activate-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .activate-banner .activate-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; max-width: 480px; margin-left: auto; margin-right: auto; }
+        .activate-banner .activate-btn {
+            padding: 14px 32px; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+            transition: all 0.25s ease;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .activate-banner .activate-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(79, 70, 229, 0.55); }
+        .activate-banner .activate-btn:active { transform: scale(0.97); }
+
         /* ============ PLAN USAGE CARD ============ */
         .plan-usage-card {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
@@ -216,6 +252,10 @@
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.08));
             border-color: rgba(239, 68, 68, 0.5);
         }
+        .plan-usage-card.no-plan-mode {
+            background: linear-gradient(135deg, rgba(100, 116, 139, 0.15), rgba(71, 85, 105, 0.08));
+            border-color: rgba(100, 116, 139, 0.35);
+        }
 
         .plan-usage-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -237,6 +277,9 @@
         .plan-usage-card.expired-mode .plan-usage-title .plan-icon {
             background: linear-gradient(135deg, #ef4444, #dc2626);
         }
+        .plan-usage-card.no-plan-mode .plan-usage-title .plan-icon {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
         .plan-badge {
             font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px;
             text-transform: uppercase; letter-spacing: 0.5px;
@@ -246,6 +289,7 @@
         .plan-badge.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
         .plan-badge.vip { background: linear-gradient(135deg, rgba(245,158,11,0.4), rgba(251,191,36,0.25)); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.6); }
         .plan-badge.expired { background: rgba(239,68,68,0.25); color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); }
+        .plan-badge.free { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
 
         .usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         @media (max-width: 600px) { .usage-grid { grid-template-columns: 1fr; } }
@@ -285,6 +329,7 @@
         .usage-limit-warning.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
         .usage-limit-warning.warn { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.35); }
         .usage-limit-warning.success { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .usage-limit-warning.info { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.35); }
 
         .link-selector-card {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
@@ -305,6 +350,7 @@
         .badge-status.warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
         .badge-status.expired { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
         .badge-status.lifetime { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.1)); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+        .badge-status.none { background: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
 
         .progress-bar-bg { width: 100%; height: 7px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; overflow: hidden; }
         .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
@@ -312,6 +358,7 @@
         .progress-bar-fill.warning { background: var(--warning); }
         .progress-bar-fill.expired { background: var(--danger); }
         .progress-bar-fill.lifetime { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .progress-bar-fill.none { background: rgba(100, 116, 139, 0.3); width: 0%; }
 
         .date-filter-box {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
@@ -341,11 +388,12 @@
         }
         .metric-card.highlight { border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(145deg, rgba(79, 70, 229, 0.12), var(--surface-1)); }
         .metric-card.highlight-success { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), var(--surface-1)); }
+        .metric-card.disabled { opacity: 0.4; }
         .metric-value { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 2px; }
         .metric-title { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
         .metric-subtitle { font-size: 10.5px; color: var(--accent-cyan); margin-top: 4px; font-weight: 600; }
 
-        /* ============ PLAN CARDS — 4:5 RATIO with proper features display ============ */
+        /* ============ PLAN CARDS ============ */
         .plans-carousel-wrap {
             position: relative;
             margin-bottom: 18px;
@@ -371,7 +419,7 @@
         }
         .plans-carousel::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.7); }
 
-        /* 🆕 4:5 ratio with flex layout — features always visible */
+        /* 🆕 FIXED HEIGHT (Not 4:5 aspect ratio) */
         .plan-card-screenshot {
             flex: 0 0 320px;
             scroll-snap-align: center;
@@ -385,13 +433,16 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative; 
             overflow: hidden;
-            aspect-ratio: 4 / 5;
+            height: 520px;
+            min-height: 520px;
             max-height: 520px;
         }
         @media (max-width: 500px) {
             .plan-card-screenshot { 
                 flex: 0 0 82%; 
                 padding: 18px 16px;
+                height: 480px;
+                min-height: 480px;
                 max-height: 480px;
             }
         }
@@ -399,6 +450,8 @@
             .plan-card-screenshot {
                 flex: 0 0 88%;
                 padding: 16px 14px;
+                height: 440px;
+                min-height: 440px;
                 max-height: 440px;
             }
         }
@@ -454,6 +507,7 @@
         .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
         .plan-card-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .plan-card-badge-pill.free { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
 
         .plan-card-price-section {
             margin-bottom: 10px; padding-bottom: 10px;
@@ -510,33 +564,33 @@
             flex-shrink: 0;
         }
 
-        /* 🆕 Features — flex:1 and scrollable to fill 4:5 card */
+        /* 🆕 Features List with scroll inside fixed-height card */
         .plan-features-list { 
             display: flex; 
             flex-direction: column; 
             gap: 7px; 
-            flex: 1 1 auto; 
+            flex: 1 1 auto;
             overflow-y: auto;
-            padding-right: 4px;
+            padding-right: 3px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(99,102,241,0.4) transparent;
+            scrollbar-color: rgba(99,102,241,0.3) transparent;
             min-height: 0;
         }
-        .plan-features-list::-webkit-scrollbar { width: 4px; }
+        .plan-features-list::-webkit-scrollbar { width: 3px; }
         .plan-features-list::-webkit-scrollbar-track { background: transparent; }
-        .plan-features-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 4px; }
-        
-        .plan-feature-item { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; color: #cbd5e1; line-height: 1.35; }
+        .plan-features-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 3px; }
+
+        .plan-feature-item { display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px; color: #cbd5e1; line-height: 1.35; }
         .plan-feature-item .check-icon {
-            width: 17px; height: 17px; border-radius: 50%;
+            width: 16px; height: 16px; border-radius: 50%;
             background: rgba(16, 185, 129, 0.18); color: #10b981;
-            font-size: 10px; font-weight: 800;
+            font-size: 9px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; margin-top: 1px;
         }
         .plan-card-screenshot.selected .plan-feature-item .check-icon { background: rgba(99, 102, 241, 0.25); color: #818cf8; }
 
-        /* ============ PAYMENT PANEL — QR centered ============ */
+        /* ============ PAYMENT PANEL ============ */
         .payment-panel-screenshot {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
             border: 1px solid rgba(99, 102, 241, 0.3);
@@ -566,8 +620,6 @@
             display: block;
         }
         .payment-info { 
-            flex: 1; 
-            min-width: 220px; 
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -770,8 +822,20 @@
                 </div>
             </div>
 
+            <!-- 🆕 ACTIVATE BANNER (shown only when no plan) -->
+            <div class="activate-banner" id="activateBanner" style="display:none;">
+                <span class="activate-icon">🎁</span>
+                <div class="activate-title" id="activateTitle">Activate Your Plan</div>
+                <div class="activate-subtitle" id="activateSubtitle">
+                    You don't have an active plan yet. Start with a <strong style="color:#34d399;">Free Trial</strong> (3 days) or choose a paid plan to get started!
+                </div>
+                <button class="activate-btn" onclick="openPlansModal()">
+                    <span>⚡</span> Activate Your Plan Now
+                </button>
+            </div>
+
             <!-- PLAN USAGE CARD -->
-            <div class="plan-usage-card" id="planUsageCard">
+            <div class="plan-usage-card" id="planUsageCard" style="display:none;">
                 <div class="plan-usage-header">
                     <div class="plan-usage-title">
                         <div class="plan-icon" id="planIconDisplay">🎁</div>
@@ -785,7 +849,7 @@
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Duration</div>
-                        <div id="currentPlanDuration" style="color:#fff; font-weight:800; font-size:14px;">7 Days</div>
+                        <div id="currentPlanDuration" style="color:#fff; font-weight:800; font-size:14px;">3 Days</div>
                     </div>
                 </div>
                 <div class="usage-grid">
@@ -799,7 +863,7 @@
                     <div class="usage-item">
                         <div class="usage-item-header">
                             <span class="usage-item-label">👁️ Total Visitors</span>
-                            <span class="usage-item-count"><span id="visitorsUsed">0</span> / <span id="visitorsLimit">1000</span></span>
+                            <span class="usage-item-count"><span id="visitorsUsed">0</span> / <span id="visitorsLimit">150</span></span>
                         </div>
                         <div class="usage-bar-bg"><div class="usage-bar-fill safe" id="visitorsBarFill" style="width:0%;"></div></div>
                     </div>
@@ -809,8 +873,8 @@
 
             <div class="link-selector-card">
                 <div class="link-info-box">
-                    <div class="link-title-badge"><span>🔗</span><span id="displayLinkName" style="color:#fff;">Loading link name...</span></div>
-                    <div class="link-id-sub"><span>ID:</span><strong id="displayLinkId">Detecting ID...</strong></div>
+                    <div class="link-title-badge"><span>🔗</span><span id="displayLinkName" style="color:#fff;">No link assigned yet</span></div>
+                    <div class="link-id-sub"><span>ID:</span><strong id="displayLinkId">--</strong></div>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <select id="userLinkSelect" class="form-input" onchange="onSelectUserLink(this.value)" style="padding:9px 12px; font-size:13px; width:auto; min-width:220px; background:#080c14; cursor:pointer;">
@@ -823,12 +887,12 @@
             <div class="timeline-card">
                 <div class="timeline-header">
                     <span class="timeline-label">Validity Status</span>
-                    <span class="badge-status active" id="badgeExpiry">Active</span>
+                    <span class="badge-status none" id="badgeExpiry">No Link</span>
                 </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill active" id="barExpiryProgress" style="width:100%;"></div></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill none" id="barExpiryProgress" style="width:0%;"></div></div>
                 <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
                     <span>Created: <strong id="txtCreatedDate" style="color:#fff;">--</strong></span>
-                    <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">Lifetime</strong></span>
+                    <span>Valid Until: <strong id="txtExpiryDate" style="color:#fff;">No link yet</strong></span>
                 </div>
             </div>
 
@@ -1223,42 +1287,96 @@
                     body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate })
                 });
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data.success) {
-                    activeLinkRecord = data.link;
-                    activeAdminUpi = (data.paymentSettings?.details?.upiId) || 'admin@upi';
-                    adminPhone = data.whatsappNumber || '916372923348';
+                
+                // Store plan/pricing info regardless
+                if (data.planUsage) {
+                    currentPlanUsage = data.planUsage;
+                    updatePlanUsageUI();
+                }
+                if (data.plans) loadedPlans = data.plans;
+                if (data.paymentSettings) {
+                    activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi';
                     showUpiToUser = data.paymentSettings?.showUpi !== false;
-                    loadedPlans = data.plans || {};
-                    currentPlanUsage = data.planUsage || null;
+                }
+                if (data.whatsappNumber) adminPhone = data.whatsappNumber;
+                const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
+                
+                // 🆕 HAS LINK case
+                if (res.ok && data.success && data.hasAnyLink === true && data.link) {
+                    activeLinkRecord = data.link;
                     myLinksList = data.userLinks || [];
-                    const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
                     localStorage.setItem('userActiveLinkId', activeLinkRecord.id);
                     populateUserLinksDropdown(myLinksList, activeLinkRecord.id);
                     populateDashboardMetrics(data);
-                    updatePlanUsageUI();
                     fetchHistoryRecords(activeLinkRecord.id);
-                } else {
+                } 
+                // 🆕 NO LINK case
+                else {
                     activeLinkRecord = null;
-                    document.getElementById('displayLinkId').textContent = 'None';
-                    document.getElementById('displayLinkName').textContent = 'No active link assigned';
+                    myLinksList = data.userLinks || [];
                     displayEmptyState();
-                    if (data.planUsage) { currentPlanUsage = data.planUsage; updatePlanUsageUI(); }
-                    if (data.plans) loadedPlans = data.plans;
+                    const sel = document.getElementById('userLinkSelect');
+                    if (sel) sel.innerHTML = '<option value="">-- No Links Yet --</option>';
                 }
             } catch (err) {
                 document.getElementById('displayLinkId').textContent = 'Offline';
                 document.getElementById('displayLinkName').textContent = 'Connection error';
+                displayEmptyState();
             }
+        }
+
+        // 🆕 Display empty state - no link, no plan
+        function displayEmptyState() {
+            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims','metricToday','metricTodayClaims','metric24h','metric7d'].forEach(id => { 
+                const e = document.getElementById(id); 
+                if (e) e.textContent = '0'; 
+            });
+            
+            document.getElementById('displayLinkName').textContent = 'No Active Link';
+            document.getElementById('displayLinkId').textContent = '--';
+            
+            const be = document.getElementById('badgeExpiry'); 
+            if (be) { be.className = 'badge-status none'; be.textContent = 'No Link'; }
+            const bp = document.getElementById('barExpiryProgress'); 
+            if (bp) { bp.className = 'progress-bar-fill none'; bp.style.width = '0%'; }
+            const te = document.getElementById('txtExpiryDate'); 
+            if (te) te.textContent = 'No link yet';
+            const tc = document.getElementById('txtCreatedDate'); 
+            if (tc) tc.textContent = '--';
         }
 
         function updatePlanUsageUI() {
             if (!currentPlanUsage) return;
             const pu = currentPlanUsage;
+            
+            // 🆕 NO PLAN state
+            const isNoPlan = pu.planKey === 'no-plan' || (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0));
+            
+            const cardEl = document.getElementById('planUsageCard');
+            const bannerEl = document.getElementById('activateBanner');
+            
+            if (isNoPlan) {
+                // Show banner, hide usage card
+                cardEl.style.display = 'none';
+                bannerEl.style.display = 'block';
+                if (pu.planIsExpired) {
+                    document.getElementById('activateTitle').textContent = 'Plan Expired — Renew Now';
+                    document.getElementById('activateSubtitle').innerHTML = 'Your previous plan has expired. Choose a new plan below to continue using your dashboard.';
+                } else {
+                    document.getElementById('activateTitle').textContent = 'Activate Your Plan';
+                    document.getElementById('activateSubtitle').innerHTML = 'You don\'t have an active plan yet. Start with a <strong style="color:#34d399;">Free Trial</strong> (3 days) or choose a paid plan to get started!';
+                }
+                return;
+            }
+            
+            // Has plan — show card, hide banner
+            cardEl.style.display = 'block';
+            bannerEl.style.display = 'none';
+            
             const isVip = pu.lifetimeUnlimited === true;
             const isExpired = pu.planIsExpired === true;
             
-            const cardEl = document.getElementById('planUsageCard');
-            cardEl.classList.remove('vip-mode', 'expired-mode');
+            cardEl.classList.remove('vip-mode', 'expired-mode', 'no-plan-mode');
             if (isVip) cardEl.classList.add('vip-mode');
             else if (isExpired) cardEl.classList.add('expired-mode');
             
@@ -1278,7 +1396,7 @@
                 durEl.style.color = '#fca5a5';
             } else if (pu.planDaysLeft !== null && pu.planDaysLeft !== undefined && pu.planDaysLeft !== 'lifetime') {
                 durEl.textContent = (pu.durationDays || 0) + ' Days (' + pu.planDaysLeft + ' left)';
-                durEl.style.color = pu.planDaysLeft <= 3 ? '#fbbf24' : '#fff';
+                durEl.style.color = pu.planDaysLeft <= 1 ? '#fbbf24' : '#fff';
             } else {
                 durEl.textContent = (pu.durationDays || 0) + ' Days';
                 durEl.style.color = '#fff';
@@ -1288,7 +1406,7 @@
             const badgeVal = isVip ? 'VIP' : (isExpired ? 'EXPIRED' : (pu.badge || ''));
             if (badgeVal) {
                 badgeEl.textContent = badgeVal;
-                const badgeClass = badgeVal === 'POPULAR' ? 'popular' : (badgeVal === 'SAVE 20%' ? 'save' : (badgeVal === 'BEST VALUE' ? 'best' : (badgeVal === 'VIP' ? 'vip' : 'expired')));
+                const badgeClass = badgeVal === 'POPULAR' ? 'popular' : (badgeVal === 'SAVE 20%' ? 'save' : (badgeVal === 'BEST VALUE' ? 'best' : (badgeVal === 'VIP' ? 'vip' : (badgeVal === 'FREE' ? 'free' : 'expired'))));
                 badgeEl.className = 'plan-badge ' + badgeClass;
                 badgeEl.style.display = 'inline-block';
             } else badgeEl.style.display = 'none';
@@ -1345,6 +1463,20 @@
             const el = document.getElementById('myPlanContent');
             if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Plan info loading...</p>'; return; }
             const pu = currentPlanUsage;
+            
+            // No plan state
+            if (pu.planKey === 'no-plan' || (!pu.lifetimeUnlimited && !pu.planIsExpired && (!pu.durationDays || pu.durationDays === 0))) {
+                el.innerHTML = `
+                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:14px; padding:20px; margin-bottom:14px; text-align:center;">
+                        <div style="font-size:42px; margin-bottom:8px;">🎁</div>
+                        <div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:6px;">No Active Plan</div>
+                        <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">You don't have an active plan yet. Choose a plan below to get started!</div>
+                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>⚡ Activate Your Plan Now</span></button>
+                    </div>
+                `;
+                return;
+            }
+            
             const isVip = pu.lifetimeUnlimited === true;
             const isExpired = pu.planIsExpired === true;
             const linksLimitText = isVip ? 'Unlimited' : ((pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : (pu.linkLimit || 0));
@@ -1398,19 +1530,26 @@
 
             const planOrder = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
             const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
+            
+            // 🆕 Hide Free Trial if already used
+            const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
+            const plansToShow = availablePlans.filter(k => {
+                if (k === 'free-trial' && freeTrialUsed) return false;
+                return true;
+            });
 
-            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key]) {
-                const defKey = availablePlans.find(k => loadedPlans[k].badge === 'POPULAR') || availablePlans[0];
+            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || (activePlan.key === 'free-trial' && freeTrialUsed)) {
+                const defKey = plansToShow.find(k => loadedPlans[k].badge === 'POPULAR') || plansToShow[0];
                 if (defKey) {
                     const p = loadedPlans[defKey];
                     activePlan = { key: defKey, days: p.durationDays, cost: p.price };
                 }
             }
 
-            container.innerHTML = availablePlans.map(key => {
+            container.innerHTML = plansToShow.map(key => {
                 const p = loadedPlans[key];
                 const isSelected = (key === activePlan.key);
-                const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : ''));
+                const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : (p.badge === 'FREE' ? 'free' : '')));
                 const extraClass = p.badge === 'POPULAR' ? 'popular-plan' : (p.badge === 'BEST VALUE' ? 'best-plan' : '');
                 const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Active Links`;
                 const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
@@ -1467,7 +1606,7 @@
             renderPaymentPanel();
         }
 
-        // 🆕 QR centered vertically with UPI below
+        // 🆕 Payment panel — QR centered, UPI below
         function renderPaymentPanel() {
             const footer = document.getElementById('plansModalFooter');
             if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
@@ -1500,16 +1639,28 @@
                     </div>
                 `;
             } else if (showUpiToUser && p.price === 0) {
-                paymentHtml = `
-                    <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08)); border:1px solid rgba(16,185,129,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
-                        <div style="font-size:32px; margin-bottom:8px;">🎉</div>
-                        <div style="font-size:14px; font-weight:800; color:#34d399;">This plan is FREE!</div>
-                        <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to activate instantly.</div>
-                    </div>
-                    <button class="btn-action btn-whatsapp" onclick="activateFreePlan()">
-                        <span>⚡ Activate Free Plan Instantly</span>
-                    </button>
-                `;
+                // 🆕 Free plan — but check if already used
+                const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
+                if (freeTrialUsed) {
+                    paymentHtml = `
+                        <div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
+                            <div style="font-size:24px; margin-bottom:6px;">⛔</div>
+                            <div style="font-size:13px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div>
+                            <div style="font-size:11.5px; color:var(--text-light); margin-top:4px;">You've already used your Free Trial. Please choose a paid plan.</div>
+                        </div>
+                    `;
+                } else {
+                    paymentHtml = `
+                        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08)); border:1px solid rgba(16,185,129,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
+                            <div style="font-size:32px; margin-bottom:8px;">🎉</div>
+                            <div style="font-size:14px; font-weight:800; color:#34d399;">This plan is FREE!</div>
+                            <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Click below to activate instantly (One-time only).</div>
+                        </div>
+                        <button class="btn-action btn-whatsapp" onclick="activateFreePlan()">
+                            <span>⚡ Activate Free Plan Instantly</span>
+                        </button>
+                    `;
+                }
             } else {
                 paymentHtml = `
                     <div style="background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.4); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
@@ -1535,10 +1686,14 @@
             try {
                 if (!activePlan || !activePlan.key) return notify('No plan selected', 'Error', '❌');
                 
+                if (currentPlanUsage?.freeTrialUsed === true) {
+                    return notify('You have already used your free trial. Please purchase a paid plan.', 'Free Trial Used', '⚠️');
+                }
+                
                 const p = loadedPlans[activePlan.key];
                 if (!p || p.price !== 0) return notify('This is not a free plan', 'Error', '❌');
 
-                if (!confirm(`Activate "${p.name}" for FREE?\n\nThis will give you:\n✅ ${p.linkLimit === 'unlimited' ? 'Unlimited' : p.linkLimit} Active Links\n✅ ${p.visitorLimit === 'unlimited' ? 'Unlimited' : p.visitorLimit.toLocaleString()} Visitors\n✅ ${p.durationDays} Days Validity`)) return;
+                if (!confirm(`Activate "${p.name}" for FREE?\n\nThis will give you:\n✅ ${p.linkLimit === 'unlimited' ? 'Unlimited' : p.linkLimit} Active Links\n✅ ${p.visitorLimit === 'unlimited' ? 'Unlimited' : p.visitorLimit.toLocaleString()} Visitors\n✅ ${p.durationDays} Days Validity\n\n⚠️ This can be used ONLY ONCE per account.`)) return;
 
                 const res = await fetch('/api/user/select-free-plan', {
                     method: 'POST',
@@ -1583,13 +1738,6 @@
 
         function onSelectUserLink(selectedId) { if (!selectedId) return; localStorage.setItem('userActiveLinkId', selectedId); fetchUserLinkData(selectedId); }
         function refreshCurrentLinkData() { const s = document.getElementById('userLinkSelect'); fetchUserLinkData(s.value || localStorage.getItem('userActiveLinkId')); }
-
-        function displayEmptyState() {
-            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims','metricToday','metricTodayClaims','metric24h','metric7d'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = '0'; });
-            const be = document.getElementById('badgeExpiry'); if (be) { be.className = 'badge-status expired'; be.textContent = 'Unassigned'; }
-            const bp = document.getElementById('barExpiryProgress'); if (bp) bp.style.width = '0%';
-            const te = document.getElementById('txtExpiryDate'); if (te) te.textContent = 'None';
-        }
 
         function populateDashboardMetrics(data) {
             const l = data.link || data;
