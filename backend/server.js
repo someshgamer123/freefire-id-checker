@@ -361,17 +361,15 @@ function getPlanDetails(pricingDoc, planKey) {
 
 function isUnlimited(val) { return val === 'unlimited' || val === -1 || val === 'null' || val === null || val === 'Unlimited'; }
 
-// 🆕 FIXED: Proper plan expiry check
 function isPlanExpired(user) {
     if (!user) return false;
     if (user.lifetimeUnlimited === true) return false;
-    if (!user.planExpiryDate) return true; // No expiry date → treat as expired/no-plan
+    if (!user.planExpiryDate) return true;
     try {
         return new Date(user.planExpiryDate) < new Date();
     } catch(e) { return true; }
 }
 
-// 🆕 FIXED: Proper active plan check
 function userHasActivePlan(user) {
     if (!user) return false;
     if (user.lifetimeUnlimited === true) return true;
@@ -986,7 +984,7 @@ app.post('/api/user/verify-session', async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Verification failed' }); }
 });
 
-// 🆕 FIXED: Free plan activation — sets planStartDate
+// ==================== 🆕 FIXED: Free Plan Activation ====================
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -1023,7 +1021,7 @@ app.post('/api/user/select-free-plan', async (req, res) => {
             return res.status(404).json({ error: 'User not found during update' });
         }
         
-        console.log(`✅ Free trial activated for: ${user.name} (starts: ${planStart.toISOString()}, expires: ${planExpiry.toISOString()})`);
+        console.log(`✅ Free trial activated for: ${user.name} (expires: ${planExpiry.toISOString()})`);
         
         res.json({ 
             success: true, 
@@ -1039,7 +1037,7 @@ app.post('/api/user/select-free-plan', async (req, res) => {
     }
 });
 
-// ==================== USER LINK CREATION — FIXED ====================
+// ==================== 🆕 FIXED: User Link Creation ====================
 app.post('/api/user/create-link', async (req, res) => {
     try {
         const {
@@ -1074,17 +1072,26 @@ app.post('/api/user/create-link', async (req, res) => {
         
         console.log(`   Plan active? lifetime=${isLifetimeUnlimited}, expired=${planIsExpired}, planKey=${currentPlan}`);
         
+        // ✅ FIX: More permissive check
         if (!isLifetimeUnlimited) {
-            if (currentPlan === 'none' || currentPlan === 'no-plan') {
+            const hasPlan = currentPlan && currentPlan !== 'none' && currentPlan !== 'no-plan';
+            const hasValidExpiry = planExpiryDate && !planIsExpired;
+            
+            if (!hasPlan && !hasValidExpiry) {
+                console.log(`❌ No active plan for user`);
                 return res.status(403).json({ 
                     error: 'You need an active plan to create links. Please activate a plan.', 
-                    reason: 'NO_ACTIVE_PLAN' 
+                    reason: 'NO_ACTIVE_PLAN',
+                    hint: 'Go to Renewal Plans → Activate Free Trial or purchase a plan'
                 });
             }
-            if (planIsExpired) {
+            
+            if (hasPlan && planIsExpired) {
+                console.log(`❌ Plan expired for user`);
                 return res.status(403).json({ 
                     error: 'Your plan has expired. Please renew to create links.', 
-                    reason: 'PLAN_EXPIRED' 
+                    reason: 'PLAN_EXPIRED',
+                    hint: 'Go to Renewal Plans → Choose a plan'
                 });
             }
         }
@@ -1425,7 +1432,7 @@ app.delete('/api/user/delete-link/:linkId', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to delete link' }); }
 });
 
-// 🆕 CRITICAL FIX: Renewal payment — link is OPTIONAL
+// ==================== 🆕 FIXED: Renewal Payment (No Link Required) ====================
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
@@ -1445,7 +1452,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
         
         console.log(`✅ User found: ${user.name}`);
         
-        // 🆕 FIX: Only check plan hierarchy if user has an active plan
+        // Only check plan hierarchy if user has active plan
         if (user.currentPlan && user.currentPlan !== 'none' && !isPlanExpired(user)) {
             const purchaseCheck = canUserPurchasePlan(user, plan);
             if (!purchaseCheck.allowed) {
@@ -1454,7 +1461,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
             }
         }
         
-        // 🆕 FIX: Link is optional — allow renewal without any link
+        // 🆕 FIX: Link is OPTIONAL — allow renewal without any link
         const finalLinkId = linkId || 'pending_' + user._id;
         const finalLinkName = linkName || `${user.name} (New User - No Link Yet)`;
         
@@ -1670,7 +1677,6 @@ app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// 🆕 FIXED: User approval — sets planStartDate
 const handleUserApprovalAction = async (req, res) => {
     try {
         const { action } = req.body;
@@ -1766,7 +1772,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed: ' + e.message }); }
 });
 
-// 🆕 CRITICAL FIX: Renewal approval — handles pending linkId
+// ==================== 🆕 FIXED: Renewal Approval (Handles Pending Link) ====================
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
@@ -1774,8 +1780,9 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
         
         console.log(`📥 Approving renewal: ${reqDoc.id}, plan: ${reqDoc.plan}, linkId: ${reqDoc.linkId}`);
         
-        // 🆕 FIX: Only try to update link if it's a real link (not pending)
         let ownerName = null;
+        
+        // Only try to update link if it's a real link (not pending)
         if (reqDoc.linkId && !reqDoc.linkId.startsWith('pending_')) {
             const link = await Link.findOne(getLinkQuery(reqDoc.linkId));
             if (link) {
@@ -1788,7 +1795,7 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
             }
         }
         
-        // 🆕 FIX: Extract user name from linkName (fallback)
+        // Extract user name from linkName (fallback)
         if (!ownerName && reqDoc.linkName) {
             const cleanName = reqDoc.linkName.replace(/\s*\(New User.*\)$/, '').replace(/\s*\(Pending\)$/, '').trim();
             if (cleanName) ownerName = cleanName;
@@ -1827,7 +1834,7 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
                         { $set: { expiryDate: planExpiry, status: 'active' } }
                     );
                     
-                    console.log(`✅ User "${ownerUser.name}" plan updated to: ${reqDoc.plan} (starts: ${planStart.toISOString()})`);
+                    console.log(`✅ User "${ownerUser.name}" plan updated to: ${reqDoc.plan}`);
                 }
             } else {
                 console.log(`❌ Owner user not found: ${ownerName}`);
