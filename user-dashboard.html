@@ -460,7 +460,6 @@
         .plan-card-screenshot.popular-plan.selected { border-color: #a855f7; box-shadow: 0 20px 55px rgba(168, 85, 247, 0.4); }
         .plan-card-screenshot.best-plan { border-color: rgba(245, 158, 11, 0.5); }
         .plan-card-screenshot.best-plan.selected { border-color: #f59e0b; box-shadow: 0 20px 55px rgba(245, 158, 11, 0.4); }
-        /* 🆕 Owned card style — subtle green glow */
         .plan-card-screenshot.owned-plan {
             border-color: rgba(16, 185, 129, 0.6) !important;
             background: linear-gradient(165deg, #1a2e28 0%, #0f1f1a 100%) !important;
@@ -568,7 +567,6 @@
             border-color: #f59e0b;
             box-shadow: 0 8px 20px rgba(245, 158, 11, 0.5);
         }
-        /* 🆕 Owned plan button */
         .plan-card-screenshot.owned-plan .plan-card-btn {
             background: linear-gradient(135deg, #10b981, #059669) !important;
             border-color: #10b981 !important;
@@ -1346,7 +1344,6 @@
         let loadedPlans = null;
         let currentPlanUsage = null;
 
-        // 🆕 Plan order for hierarchy
         const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
 
         let currentDateFilter = 'today';
@@ -1411,7 +1408,6 @@
         }
         function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
 
-        // 🆕 SHOW ACCOUNT DELETED SCREEN
         function showAccountDeletedScreen() {
             localStorage.removeItem('activeUserSession');
             localStorage.removeItem('userActiveLinkId');
@@ -1444,7 +1440,48 @@
             else { if (sb) sb.classList.remove('show'); if (ov) ov.classList.remove('show'); }
         }
 
-        function openPlansModal() { toggleSidebar(false); document.getElementById('plansModal').classList.add('active'); renderPlansList(); }
+        // 🆕 FETCH FRESH PRICING FROM SERVER
+        async function refreshPricingData() {
+            try {
+                const res = await fetch('/api/pricing?nocache=' + Date.now(), {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.plans && Object.keys(data.plans).length > 0) {
+                        loadedPlans = data.plans;
+                    }
+                    if (data.paymentSettings) {
+                        activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi';
+                        showUpiToUser = data.paymentSettings?.showUpi !== false;
+                    }
+                    if (data.whatsappNumber) {
+                        adminPhone = data.whatsappNumber;
+                        const sup = document.getElementById('supportLink');
+                        if (sup) sup.href = `https://wa.me/${adminPhone}`;
+                    }
+                    return true;
+                }
+            } catch(e) { console.error('Failed to refresh pricing:', e); }
+            return false;
+        }
+
+        // 🆕 OPEN PLANS MODAL — Always fetch fresh pricing first
+        async function openPlansModal() {
+            toggleSidebar(false);
+            document.getElementById('plansModal').classList.add('active');
+            
+            // Show loading state while fetching
+            document.getElementById('plansCarousel').innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">Loading plans...</p>';
+            
+            // Fetch fresh pricing
+            await refreshPricingData();
+            
+            // Now render
+            renderPlansList();
+        }
+        
         function closePlansModal() { document.getElementById('plansModal').classList.remove('active'); }
         function openMyPlanModal() { toggleSidebar(false); document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
         function closeMyPlanModal() { document.getElementById('myPlanModal').classList.remove('active'); }
@@ -1470,7 +1507,10 @@
         }
         function closeLockModal() { document.getElementById('lockModal').classList.remove('active'); }
 
-        function openActivateFreePlan() {
+        async function openActivateFreePlan() {
+            // Refresh pricing before checking
+            await refreshPricingData();
+            
             if (!loadedPlans || !loadedPlans['free-trial']) {
                 return notify('Free trial plan not available at the moment.', 'Not Available', '⚠️');
             }
@@ -1667,7 +1707,6 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 
-                // 🆕 If user was deleted by admin → logout immediately
                 if (data && data.deleted === true) {
                     showAccountDeletedScreen();
                     return;
@@ -1677,7 +1716,10 @@
                     currentPlanUsage = data.planUsage;
                     updatePlanUsageUI();
                 }
-                if (data.plans) loadedPlans = data.plans;
+                // 🆕 ALWAYS replace loadedPlans with fresh data
+                if (data.plans && Object.keys(data.plans).length > 0) {
+                    loadedPlans = data.plans;
+                }
                 if (data.paymentSettings) {
                     activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi';
                     showUpiToUser = data.paymentSettings?.showUpi !== false;
@@ -1912,12 +1954,11 @@
             `;
         }
 
-        // 🆕 RENDER PLANS with hierarchy lock
         function renderPlansList() {
             const container = document.getElementById('plansCarousel');
             const footer = document.getElementById('plansModalFooter');
             if (!loadedPlans || !Object.keys(loadedPlans).length) {
-                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">No plans available.</p>';
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">No plans available. Please try again.</p>';
                 footer.innerHTML = '';
                 return;
             }
@@ -1931,15 +1972,10 @@
             const planIsExpired = currentPlanUsage?.planIsExpired === true;
             const hasActivePlan = !planIsExpired && currentPlanKey !== 'none' && currentPlanKey !== 'no-plan';
             
-            // 🆕 Determine current plan index
             let currentPlanIndex = -1;
-            if (isLifetimeUnlimited) currentPlanIndex = 999; // Highest
+            if (isLifetimeUnlimited) currentPlanIndex = 999;
             else if (hasActivePlan) currentPlanIndex = PLAN_ORDER.indexOf(currentPlanKey);
 
-            // 🆕 Filter plans:
-            // - Hide free-trial if already used
-            // - If lifetime unlimited → hide ALL plans (nothing to buy)
-            // - If user has active plan → show current plan + higher plans only
             const plansToShow = availablePlans.filter(k => {
                 if (k === 'free-trial' && freeTrialUsed) return false;
                 if (isLifetimeUnlimited) return false;
@@ -1950,7 +1986,6 @@
                 return true;
             });
 
-            // 🆕 If lifetime unlimited — show special message
             if (isLifetimeUnlimited || plansToShow.length === 0) {
                 container.innerHTML = `
                     <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
@@ -1965,7 +2000,6 @@
                 return;
             }
 
-            // 🆕 Auto-select first available plan (current plan or higher)
             if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || !plansToShow.includes(activePlan.key)) {
                 const defKey = plansToShow[0];
                 if (defKey) {
@@ -2044,7 +2078,6 @@
             const p = loadedPlans[activePlan.key];
             if (!p) { footer.innerHTML = ''; return; }
             
-            // 🆕 Check if this is user's current plan
             const currentPlanKey = currentPlanUsage?.planKey || 'none';
             const planIsExpired = currentPlanUsage?.planIsExpired === true;
             const isOwned = currentPlanKey === activePlan.key && !planIsExpired;
@@ -2227,16 +2260,24 @@
         }
 
         async function requestAdminRenewal() {
-            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId');
-            if (!currentId) return notify('Please select your Link ID before renewal.', 'Link Required', '⚠️', 'warning');
-            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || 'Campaign Link';
+            // 🆕 Allow renewal without link (user will create after admin approves)
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId') || null;
+            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || `${userProfile.name}'s New Link (Pending)`;
             const p = loadedPlans ? loadedPlans[activePlan.key] : null;
             const planName = p ? p.name : activePlan.key;
 
             try {
                 const res = await fetch('/api/user/renew-payment', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ linkId: currentId, linkName: currentLinkTitle, userName: userProfile.name, plan: activePlan.key, days: activePlan.days, amount: activePlan.cost, refNo: 'Manual-WhatsApp' })
+                    body: JSON.stringify({ 
+                        linkId: currentId, 
+                        linkName: currentLinkTitle, 
+                        userName: userProfile.name, 
+                        plan: activePlan.key, 
+                        days: activePlan.days, 
+                        amount: activePlan.cost, 
+                        refNo: 'Manual-WhatsApp' 
+                    })
                 });
                 if (res.status === 403) {
                     const errData = await res.json().catch(() => ({}));
@@ -2245,12 +2286,13 @@
             } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const linkIdDisplay = currentId || 'Pending (will be created after plan activation)';
             const message = 
 `Hello Admin, I want to renew my plan:
 
 👤 User Name: ${userProfile.name}
 🔗 Link Name: ${currentLinkTitle}
-🆔 Link ID: ${currentId}
+🆔 Link ID: ${linkIdDisplay}
 💎 Plan: ${planName} (${activePlan.days} Days)
 💰 Amount: ₹${activePlan.cost}
 📅 Date: ${today}
@@ -2260,10 +2302,11 @@ Please verify and approve. Thank you!`;
             const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
             window.open(waUrl, '_blank');
             closePlansModal();
-            setTimeout(() => fetchHistoryRecords(currentId), 1500);
+            if (currentId) setTimeout(() => fetchHistoryRecords(currentId), 1500);
         }
 
         async function fetchHistoryRecords(linkId) {
+            if (!linkId) return;
             try {
                 const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
                 if (res.ok) {
@@ -2374,12 +2417,12 @@ Please verify and approve. Thank you!`;
                         if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                         if (data && data.success) { 
                             currentPlanUsage = data.planUsage || currentPlanUsage; 
-                            loadedPlans = data.plans || loadedPlans; 
+                            if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
                             populateDashboardMetrics(data); 
                             updatePlanUsageUI(); 
                         } else if (data && data.planUsage) {
                             currentPlanUsage = data.planUsage;
-                            loadedPlans = data.plans || loadedPlans;
+                            if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
                             updatePlanUsageUI();
                         }
                     })
@@ -2395,7 +2438,7 @@ Please verify and approve. Thank you!`;
                         if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                         if (data && data.planUsage) {
                             currentPlanUsage = data.planUsage;
-                            loadedPlans = data.plans || loadedPlans;
+                            if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
                             updatePlanUsageUI();
                         }
                     })
