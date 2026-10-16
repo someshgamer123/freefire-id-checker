@@ -460,6 +460,16 @@
         .plan-card-screenshot.popular-plan.selected { border-color: #a855f7; box-shadow: 0 20px 55px rgba(168, 85, 247, 0.4); }
         .plan-card-screenshot.best-plan { border-color: rgba(245, 158, 11, 0.5); }
         .plan-card-screenshot.best-plan.selected { border-color: #f59e0b; box-shadow: 0 20px 55px rgba(245, 158, 11, 0.4); }
+        /* 🆕 Owned card style — subtle green glow */
+        .plan-card-screenshot.owned-plan {
+            border-color: rgba(16, 185, 129, 0.6) !important;
+            background: linear-gradient(165deg, #1a2e28 0%, #0f1f1a 100%) !important;
+            box-shadow: 0 15px 45px rgba(16, 185, 129, 0.3) !important;
+            cursor: not-allowed;
+        }
+        .plan-card-screenshot.owned-plan:hover {
+            transform: none;
+        }
         .plan-card-screenshot.selected::before {
             content: '✓';
             position: absolute; top: 14px; right: 14px;
@@ -468,6 +478,16 @@
             color: #fff; font-size: 16px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.5);
+            z-index: 5;
+        }
+        .plan-card-screenshot.owned-plan::before {
+            content: '👑';
+            position: absolute; top: 14px; right: 14px;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff; font-size: 18px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.6);
             z-index: 5;
         }
 
@@ -483,6 +503,7 @@
         }
         .plan-card-screenshot.popular-plan .plan-card-icon-wrap { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); }
         .plan-card-screenshot.best-plan .plan-card-icon-wrap { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); }
+        .plan-card-screenshot.owned-plan .plan-card-icon-wrap { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); }
 
         .plan-card-name {
             font-size: 16px; font-weight: 800; color: #fff;
@@ -499,6 +520,7 @@
         .plan-card-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
         .plan-card-badge-pill.free { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .plan-card-badge-pill.owned { background: linear-gradient(135deg, rgba(16,185,129,0.35), rgba(5,150,105,0.25)); color: #34d399; border: 1px solid rgba(16,185,129,0.6); }
 
         .plan-card-price-section {
             margin-bottom: 10px; padding-bottom: 10px;
@@ -545,6 +567,14 @@
             background: linear-gradient(135deg, #d97706, #f59e0b);
             border-color: #f59e0b;
             box-shadow: 0 8px 20px rgba(245, 158, 11, 0.5);
+        }
+        /* 🆕 Owned plan button */
+        .plan-card-screenshot.owned-plan .plan-card-btn {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+            cursor: not-allowed;
+            opacity: 0.9;
         }
 
         .plan-card-includes-title {
@@ -1115,7 +1145,6 @@
                 </div>
             </div>
 
-            <!-- ONLY 4 METRIC CARDS -->
             <div class="stats-row">
                 <div class="metric-card highlight">
                     <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
@@ -1317,6 +1346,9 @@
         let loadedPlans = null;
         let currentPlanUsage = null;
 
+        // 🆕 Plan order for hierarchy
+        const PLAN_ORDER = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
+
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
@@ -1378,6 +1410,22 @@
             document.getElementById('customDialog').classList.add('active');
         }
         function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
+
+        // 🆕 SHOW ACCOUNT DELETED SCREEN
+        function showAccountDeletedScreen() {
+            localStorage.removeItem('activeUserSession');
+            localStorage.removeItem('userActiveLinkId');
+            document.body.innerHTML = `
+                <div style="position:fixed; inset:0; background:#080c16; display:flex; align-items:center; justify-content:center; padding:20px; z-index:99999; font-family:'Plus Jakarta Sans',sans-serif;">
+                    <div style="background:rgba(17,23,38,0.95); border:1px solid rgba(239,68,68,0.35); border-radius:24px; padding:36px 28px; max-width:400px; width:100%; text-align:center; backdrop-filter:blur(20px);">
+                        <div style="width:80px; height:80px; margin:0 auto 14px; border-radius:50%; background:linear-gradient(135deg, rgba(239,68,68,0.25), rgba(220,38,38,0.15)); border:2px solid rgba(239,68,68,0.5); display:flex; align-items:center; justify-content:center; font-size:42px;">⛔</div>
+                        <div style="font-size:20px; font-weight:800; color:#ef4444; margin-bottom:10px;">Account Removed</div>
+                        <div style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:20px;">Your account has been removed by the administrator. All your links and data have been permanently deleted. Please contact support if you believe this is a mistake.</div>
+                        <button onclick="localStorage.clear(); window.location.reload();" style="padding:12px 28px; border:none; border-radius:10px; background:linear-gradient(135deg, #4f46e5, #6366f1); color:#fff; font-size:14px; font-weight:700; cursor:pointer; width:100%;">Return to Login</button>
+                    </div>
+                </div>
+            `;
+        }
 
         function initApp() {
             const cached = localStorage.getItem('activeUserSession');
@@ -1619,6 +1667,12 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 
+                // 🆕 If user was deleted by admin → logout immediately
+                if (data && data.deleted === true) {
+                    showAccountDeletedScreen();
+                    return;
+                }
+                
                 if (data.planUsage) {
                     currentPlanUsage = data.planUsage;
                     updatePlanUsageUI();
@@ -1845,12 +1899,20 @@
                         <span style="color:#fff; font-weight:700;">${pu.visitorsUsed} / ${visitorLimitText}</span>
                     </div>
                 </div>
-                <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
-                    <span>💎 View All Plans & Upgrade</span>
-                </button>
+                ${isVip ? `
+                    <div style="margin-top:14px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; text-align:center;">
+                        <div style="font-size:13px; font-weight:700; color:#fbbf24;">👑 You have Lifetime Unlimited access!</div>
+                        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">No renewal needed — you have access to everything forever.</div>
+                    </div>
+                ` : `
+                    <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
+                        <span>💎 View All Plans & Upgrade</span>
+                    </button>
+                `}
             `;
         }
 
+        // 🆕 RENDER PLANS with hierarchy lock
         function renderPlansList() {
             const container = document.getElementById('plansCarousel');
             const footer = document.getElementById('plansModalFooter');
@@ -1864,18 +1926,48 @@
             const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
             
             const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
+            const currentPlanKey = currentPlanUsage?.planKey || 'none';
+            const isLifetimeUnlimited = currentPlanUsage?.lifetimeUnlimited === true;
+            const planIsExpired = currentPlanUsage?.planIsExpired === true;
+            const hasActivePlan = !planIsExpired && currentPlanKey !== 'none' && currentPlanKey !== 'no-plan';
+            
+            // 🆕 Determine current plan index
+            let currentPlanIndex = -1;
+            if (isLifetimeUnlimited) currentPlanIndex = 999; // Highest
+            else if (hasActivePlan) currentPlanIndex = PLAN_ORDER.indexOf(currentPlanKey);
+
+            // 🆕 Filter plans:
+            // - Hide free-trial if already used
+            // - If lifetime unlimited → hide ALL plans (nothing to buy)
+            // - If user has active plan → show current plan + higher plans only
             const plansToShow = availablePlans.filter(k => {
                 if (k === 'free-trial' && freeTrialUsed) return false;
+                if (isLifetimeUnlimited) return false;
+                if (currentPlanIndex >= 0) {
+                    const planIdx = PLAN_ORDER.indexOf(k);
+                    return planIdx >= currentPlanIndex;
+                }
                 return true;
             });
 
-            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || (activePlan.key === 'free-trial' && freeTrialUsed)) {
-                let defKey = null;
-                if (!freeTrialUsed && plansToShow.includes('free-trial')) {
-                    defKey = 'free-trial';
-                } else {
-                    defKey = plansToShow.find(k => loadedPlans[k].badge === 'POPULAR') || plansToShow[0];
-                }
+            // 🆕 If lifetime unlimited — show special message
+            if (isLifetimeUnlimited || plansToShow.length === 0) {
+                container.innerHTML = `
+                    <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 64px; margin-bottom: 16px;">👑</div>
+                        <div style="font-size: 22px; font-weight: 800; color: #fbbf24; margin-bottom: 8px;">Lifetime Unlimited Active</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">
+                            You have the highest plan available. No upgrade or renewal needed — you have unlimited access to everything forever!
+                        </div>
+                    </div>
+                `;
+                footer.innerHTML = '';
+                return;
+            }
+
+            // 🆕 Auto-select first available plan (current plan or higher)
+            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || !plansToShow.includes(activePlan.key)) {
+                const defKey = plansToShow[0];
                 if (defKey) {
                     const p = loadedPlans[defKey];
                     activePlan = { key: defKey, days: p.durationDays, cost: p.price };
@@ -1885,8 +1977,12 @@
             container.innerHTML = plansToShow.map(key => {
                 const p = loadedPlans[key];
                 const isSelected = (key === activePlan.key);
+                const planIdx = PLAN_ORDER.indexOf(key);
+                const isCurrentPlan = currentPlanKey === key && !planIsExpired;
+                const isOwned = isCurrentPlan;
                 const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : (p.badge === 'FREE' ? 'free' : '')));
                 const extraClass = p.badge === 'POPULAR' ? 'popular-plan' : (p.badge === 'BEST VALUE' ? 'best-plan' : '');
+                const ownedClass = isOwned ? 'owned-plan' : '';
                 const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Active Links`;
                 const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
                 const perDay = p.durationDays > 0 && p.price > 0 ? (p.price / p.durationDays).toFixed(1) : '0';
@@ -1900,11 +1996,11 @@
                 ).join('');
 
                 return `
-                    <div class="plan-card-screenshot ${isSelected ? 'selected' : ''} ${extraClass}" data-plan-key="${key}" onclick="pickDynamicPlan('${key}')">
+                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `notify('This is your current plan. It is already active.', 'Already Owned', '👑', 'info')` : `pickDynamicPlan('${key}')`}">
                         <div class="plan-card-icon-wrap">${p.icon || '🎁'}</div>
                         <div class="plan-card-name">
                             <span>${escapeHTML(p.name)}</span>
-                            ${p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : ''}
+                            ${isOwned ? `<span class="plan-card-badge-pill owned">✓ OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
                         </div>
                         
                         <div class="plan-card-price-section">
@@ -1915,8 +2011,8 @@
                             <div class="plan-card-duration">📅 ${p.durationDays} Days Validity</div>
                         </div>
 
-                        <button class="plan-card-btn" onclick="event.stopPropagation(); pickDynamicPlan('${key}')">
-                            ${isSelected ? '✓ Selected' : 'Choose Plan'}
+                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `notify('This is your current plan. It is already active.', 'Already Owned', '👑', 'info')` : `pickDynamicPlan('${key}')`}">
+                            ${isOwned ? '👑 Current Plan' : (isSelected ? '✓ Selected' : 'Choose Plan')}
                         </button>
 
                         <div class="plan-card-includes-title">✨ WHAT'S INCLUDED</div>
@@ -1947,6 +2043,22 @@
             if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
             const p = loadedPlans[activePlan.key];
             if (!p) { footer.innerHTML = ''; return; }
+            
+            // 🆕 Check if this is user's current plan
+            const currentPlanKey = currentPlanUsage?.planKey || 'none';
+            const planIsExpired = currentPlanUsage?.planIsExpired === true;
+            const isOwned = currentPlanKey === activePlan.key && !planIsExpired;
+            
+            if (isOwned) {
+                footer.innerHTML = `
+                    <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1px dashed rgba(16,185,129,0.4); border-radius:12px; padding:16px; text-align:center;">
+                        <div style="font-size:32px; margin-bottom:8px;">👑</div>
+                        <div style="font-size:14px; font-weight:800; color:#34d399;">This is your Current Plan</div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Your plan is active. Choose a higher plan to upgrade.</div>
+                    </div>
+                `;
+                return;
+            }
 
             let paymentHtml = '';
             if (showUpiToUser && p.price > 0) {
@@ -2088,7 +2200,6 @@
             const progress = document.getElementById('barExpiryProgress');
             const expText = document.getElementById('txtExpiryDate');
 
-            // 🆕 Handle expired link properly (via link.isExpired flag OR daysLeft <= 0)
             if (l.isExpired === true) {
                 badge.className = 'badge-status expired';
                 badge.textContent = 'Expired';
@@ -2123,10 +2234,14 @@
             const planName = p ? p.name : activePlan.key;
 
             try {
-                fetch('/api/user/renew-payment', {
+                const res = await fetch('/api/user/renew-payment', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ linkId: currentId, linkName: currentLinkTitle, userName: userProfile.name, plan: activePlan.key, days: activePlan.days, amount: activePlan.cost, refNo: 'Manual-WhatsApp' })
-                }).catch(() => {});
+                });
+                if (res.status === 403) {
+                    const errData = await res.json().catch(() => ({}));
+                    return notify(errData.error || 'Cannot purchase this plan.', 'Not Allowed', '⛔', 'error');
+                }
             } catch(e) {}
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -2213,6 +2328,28 @@ Please verify and approve. Thank you!`;
 
         function performLogout() { localStorage.removeItem('activeUserSession'); localStorage.removeItem('userActiveLinkId'); window.location.reload(); }
 
+        // 🆕 SESSION VERIFICATION — check every 10 sec if user still exists
+        setInterval(async () => {
+            if (!userProfile || !userProfile.name) return;
+            if (document.getElementById('dashboardSection').style.display === 'none') return;
+            if (document.getElementById('activatePopup').classList.contains('active')) return;
+            
+            try {
+                const res = await fetch('/api/user/verify-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName: userProfile.name })
+                });
+                
+                if (res.status === 404 || res.status === 403) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data && data.deleted === true) {
+                        showAccountDeletedScreen();
+                    }
+                }
+            } catch(e) { /* Network error — ignore */ }
+        }, 10000);
+
         // Auto-refresh every 8 seconds
         setInterval(() => {
             if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
@@ -2234,6 +2371,7 @@ Please verify and approve. Thank you!`;
                     })
                     .then(r => r.json().catch(() => ({})))
                     .then(data => { 
+                        if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                         if (data && data.success) { 
                             currentPlanUsage = data.planUsage || currentPlanUsage; 
                             loadedPlans = data.plans || loadedPlans; 
@@ -2254,6 +2392,7 @@ Please verify and approve. Thank you!`;
                     })
                     .then(r => r.json().catch(() => ({})))
                     .then(data => { 
+                        if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                         if (data && data.planUsage) {
                             currentPlanUsage = data.planUsage;
                             loadedPlans = data.plans || loadedPlans;
