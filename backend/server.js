@@ -984,7 +984,7 @@ app.post('/api/user/verify-session', async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Verification failed' }); }
 });
 
-// ==================== 🆕 FIXED: Free Plan Activation ====================
+// ==================== FREE PLAN ACTIVATION ====================
 app.post('/api/user/select-free-plan', async (req, res) => {
     try {
         const { userName } = req.body;
@@ -1037,7 +1037,7 @@ app.post('/api/user/select-free-plan', async (req, res) => {
     }
 });
 
-// ==================== 🆕 FIXED: User Link Creation ====================
+// ==================== USER LINK CREATION (FIXED) ====================
 app.post('/api/user/create-link', async (req, res) => {
     try {
         const {
@@ -1432,7 +1432,7 @@ app.delete('/api/user/delete-link/:linkId', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to delete link' }); }
 });
 
-// ==================== 🆕 FIXED: Renewal Payment (No Link Required) ====================
+// ==================== RENEWAL PAYMENT (LINK OPTIONAL) ====================
 app.post('/api/user/renew-payment', async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
@@ -1461,7 +1461,7 @@ app.post('/api/user/renew-payment', async (req, res) => {
             }
         }
         
-        // 🆕 FIX: Link is OPTIONAL — allow renewal without any link
+        // Link is OPTIONAL — allow renewal without any link
         const finalLinkId = linkId || 'pending_' + user._id;
         const finalLinkName = linkName || `${user.name} (New User - No Link Yet)`;
         
@@ -1772,7 +1772,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed: ' + e.message }); }
 });
 
-// ==================== 🆕 FIXED: Renewal Approval (Handles Pending Link) ====================
+// ==================== RENEWAL APPROVAL (HANDLES PENDING LINK) ====================
 app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, res) => {
     try {
         const reqDoc = await RenewalRequest.findOne({ id: req.params.id });
