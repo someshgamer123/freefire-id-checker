@@ -16,7 +16,6 @@ const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
-// ✅ NEW: Email Helper
 const emailHelper = require('./emailHelper');
 
 const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -89,7 +88,7 @@ const RenewalUser = safeLoadModel('RenewalUser', {
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, default: '', trim: true },
     googleId: { type: String, default: null },
-    authMethod: { type: String, default: 'otp' },
+    authMethod: { type: String, enum: ['email', 'google', 'otp'], default: 'otp' },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     currentPlan: { type: String, default: 'none' },
     planStartDate: { type: Date, default: null },
@@ -121,7 +120,7 @@ const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: S
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
 
-// ✅ NEW: OTP Model (for email OTP)
+// ✅ OTP Model (email-based, 1 min expiry)
 const Otp = safeLoadModel('Otp', {
     email: { type: String, required: true, lowercase: true, trim: true },
     otp: { type: String, required: true },
@@ -686,7 +685,6 @@ const authLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
-// ✅ NEW: OTP limiter — 3 OTPs per hour per IP
 const otpSendLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 3,
@@ -824,10 +822,10 @@ app.get('/api/pricing', async (req, res) => {
 
 // ==================== NEW: OTP AUTH ROUTES ====================
 
-// SEND OTP
+// SEND OTP — for both Sign Up and Sign In
 app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
     try {
-        const { email, purpose } = req.body;
+        const { email, purpose, name, phone } = req.body;
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
         const cleanEmail = email.toString().trim().toLowerCase();
@@ -838,7 +836,42 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
             return res.status(500).json({ error: 'Email service not configured. Contact admin.' });
         }
 
-        // Rate limit: max 3 OTPs per email per hour (extra safety)
+        const mode = (purpose || 'signin').toString().toLowerCase();
+
+        // ============ SIGN UP FLOW ============
+        if (mode === 'signup') {
+            if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Please enter your full name' });
+            if (!phone || !isValidMobile(phone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+
+            const cleanName = name.trim();
+            const cleanPhone = phone.trim();
+
+            const existingUser = await RenewalUser.findOne({ email: cleanEmail });
+            if (existingUser) {
+                return res.status(400).json({
+                    error: 'This email is already registered. Please Sign In instead.',
+                    alreadyRegistered: true
+                });
+            }
+
+            const phoneExists = await RenewalUser.findOne({ phone: cleanPhone });
+            if (phoneExists) {
+                return res.status(400).json({ error: 'This phone number is already registered.' });
+            }
+        }
+
+        // ============ SIGN IN FLOW ============
+        if (mode === 'signin') {
+            const existingUser = await RenewalUser.findOne({ email: cleanEmail });
+            if (!existingUser) {
+                return res.status(404).json({
+                    error: 'No account found with this email. Please Sign Up first.',
+                    needsSignup: true
+                });
+            }
+        }
+
+        // Rate limit: max 3 OTPs per email per hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const recentOtpCount = await Otp.countDocuments({
             email: cleanEmail,
@@ -848,11 +881,11 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
             return res.status(429).json({ error: 'Too many OTP requests for this email. Please wait 1 hour.' });
         }
 
-        // Generate 6-digit OTP
+        // ✅ OTP expires in 1 minute (60 seconds)
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+        const OTP_VALID_MS = 60 * 1000; // 60 seconds
+        const expiresAt = new Date(Date.now() + OTP_VALID_MS);
 
-        // Invalidate previous unused OTPs for this email
         await Otp.updateMany(
             { email: cleanEmail, verified: false },
             { $set: { verified: true } }
@@ -861,23 +894,23 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
         await Otp.create({
             email: cleanEmail,
             otp: otpCode,
-            purpose: purpose === 'signup' ? 'signup' : 'signin',
+            purpose: mode === 'signup' ? 'signup' : 'signin',
             expiresAt
         });
 
-        // Send email
-        const result = await emailHelper.sendOtpEmail(cleanEmail, otpCode, purpose || 'signin');
+        const result = await emailHelper.sendOtpEmail(cleanEmail, otpCode, mode, 60);
         if (!result.success) {
             return res.status(500).json({ error: 'Failed to send OTP email. Please try again.' });
         }
 
-        console.log(`📧 OTP sent to: ${cleanEmail}`);
+        console.log(`📧 OTP sent to: ${cleanEmail} (${mode}) - expires in 60s`);
 
         res.json({
             success: true,
             message: 'OTP sent to your email',
             spamWarning: true,
-            spamMessage: "If you don't see the OTP in your Inbox, please check your Spam / Junk folder."
+            spamMessage: "If you don't see the OTP in your Inbox, please check your Spam / Junk folder.",
+            expiresInSeconds: 60
         });
     } catch (err) {
         console.error('Send OTP error:', err);
@@ -885,18 +918,18 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
     }
 });
 
-// VERIFY OTP
+// VERIFY OTP — for both Sign Up and Sign In
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp, purpose, name, phone } = req.body;
         if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
 
         const cleanEmail = email.toString().trim().toLowerCase();
         const cleanOtp = otp.toString().trim();
+        const mode = (purpose || 'signin').toString().toLowerCase();
 
         if (!/^\d{6}$/.test(cleanOtp)) return res.status(400).json({ error: 'OTP must be 6 digits' });
 
-        // Find latest valid OTP
         const otpRecord = await Otp.findOne({
             email: cleanEmail,
             verified: false,
@@ -907,33 +940,36 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             return res.status(400).json({ error: 'OTP expired or not found. Please request a new one.' });
         }
 
-        // Check attempts
         if (otpRecord.attempts >= 5) {
             await Otp.updateOne({ _id: otpRecord._id }, { $set: { verified: true } });
             return res.status(400).json({ error: 'Too many wrong attempts. Please request a new OTP.' });
         }
 
-        // Verify OTP
         if (otpRecord.otp !== cleanOtp) {
             await Otp.updateOne({ _id: otpRecord._id }, { $inc: { attempts: 1 } });
             return res.status(400).json({ error: `Invalid OTP. ${4 - otpRecord.attempts} attempts remaining.` });
         }
 
-        // Mark verified
         await Otp.updateOne({ _id: otpRecord._id }, { $set: { verified: true } });
 
-        // Find or create user
-        let user = await RenewalUser.findOne({ email: cleanEmail });
+        // ============ SIGN UP — Create new account ============
+        if (mode === 'signup') {
+            if (!name || !phone) {
+                return res.status(400).json({ error: 'Name and phone required for signup' });
+            }
 
-        if (!user) {
-            // New signup
-            const emailPrefix = cleanEmail.split('@')[0] || 'User';
-            const initialName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+            const cleanName = name.trim();
+            const cleanPhone = phone.trim();
 
-            user = await RenewalUser.create({
-                name: initialName,
+            let existing = await RenewalUser.findOne({ email: cleanEmail });
+            if (existing) {
+                return res.status(400).json({ error: 'Email already registered. Please Sign In.', alreadyRegistered: true });
+            }
+
+            const user = await RenewalUser.create({
+                name: cleanName,
                 email: cleanEmail,
-                phone: '',
+                phone: cleanPhone,
                 googleId: null,
                 authMethod: 'otp',
                 status: 'pending',
@@ -942,49 +978,49 @@ app.post('/api/auth/verify-otp', async (req, res) => {
                 planExpiryDate: null,
                 lifetimeUnlimited: false,
                 freeTrialUsed: false,
-                profileCompleted: false,
+                profileCompleted: true,
                 createdAt: new Date()
             });
 
-            console.log(`🆕 New user created via OTP: ${cleanEmail}`);
+            console.log(`🆕 New user via OTP signup: ${cleanEmail} (${cleanName})`);
 
-            // Send welcome email
-            emailHelper.sendWelcomeEmail(cleanEmail, initialName).catch(() => {});
+            // Welcome email
+            emailHelper.sendWelcomeEmail(cleanEmail, cleanName).catch(() => {});
 
             return res.json({
                 success: true,
-                needsProfile: true,
+                needsApproval: true,
+                hoursRemaining: 24,
                 user: {
                     id: user._id,
                     email: user.email,
                     name: user.name,
-                    phone: ''
+                    phone: user.phone,
+                    status: 'pending'
                 }
             });
         }
 
-        // Existing user
+        // ============ SIGN IN — Existing user login ============
+        let user = await RenewalUser.findOne({ email: cleanEmail });
+        if (!user) {
+            return res.status(404).json({ error: 'Account not found. Please Sign Up.', needsSignup: true });
+        }
+
         user = await autoFixUserFields(user);
 
         if (user.status === 'rejected') {
             return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
         }
 
-        // Needs profile completion?
-        if (!user.profileCompleted || !user.phone || user.phone.length < 10) {
-            return res.json({
-                success: true,
-                needsProfile: true,
-                user: {
-                    id: user._id,
-                    email: user.email,
-                    name: user.name || '',
-                    phone: user.phone || ''
-                }
-            });
+        // 🔑 SIGN IN me phone verify karo
+        if (phone) {
+            const cleanPhone = phone.trim();
+            if (user.phone !== cleanPhone) {
+                return res.status(401).json({ error: 'Phone number does not match our records.' });
+            }
         }
 
-        // Pending approval
         if (user.status === 'pending') {
             const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
             const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60);
@@ -997,14 +1033,12 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             });
         }
 
-        // Approved — auto activate free trial if needed
         user = await autoActivateFreeTrialIfNeeded(user);
 
         console.log(`✅ OTP login success: ${user.name} (${user.email})`);
 
         return res.json({
             success: true,
-            needsProfile: false,
             needsApproval: false,
             user: {
                 id: user._id,
@@ -1240,16 +1274,10 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== REMOVED: /api/user/google-auth ====================
-// Google Sign-In completely removed.
-
-// Complete Profile
+// Complete Profile — NOT NEEDED anymore (Sign Up takes name & phone). Kept for safety.
 app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
     try {
         const { userId, name, phone } = req.body;
-
-        console.log(`\n📥 Complete Profile: userId=${userId}`);
-
         if (!userId || !name || !phone) return res.status(400).json({ error: 'Name and phone are required' });
 
         const cleanName = name.trim();
@@ -1264,23 +1292,15 @@ app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone, _id: { $ne: user._id } });
         if (phoneExists) return res.status(400).json({ error: 'This phone number is already registered.' });
 
-        const nameExists = await RenewalUser.findOne({
-            name: new RegExp('^' + cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'),
-            _id: { $ne: user._id }
+        await RenewalUser.collection.updateOne({ _id: user._id }, {
+            $set: {
+                name: cleanName,
+                phone: cleanPhone,
+                profileCompleted: true,
+                status: 'pending',
+                createdAt: new Date()
+            }
         });
-        if (nameExists) return res.status(400).json({ error: 'This name is already taken.' });
-
-        const updateData = {
-            name: cleanName,
-            phone: cleanPhone,
-            profileCompleted: true,
-            status: 'pending',
-            createdAt: new Date()
-        };
-
-        await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updateData });
-
-        console.log(`✅ Profile completed: ${cleanName} (pending admin approval)`);
 
         res.json({
             success: true,
@@ -1295,8 +1315,6 @@ app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
     }
 });
 
-// REMOVED: /api/user/signup and /api/user/signin (Google removed)
-// These routes now return 410
 app.post('/api/user/signup', authLimiter, (req, res) => {
     res.status(410).json({ error: 'Signup is via OTP. Please use /api/auth/send-otp.', useOtp: true });
 });
@@ -1346,8 +1364,6 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
         const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        console.log(`\n📥 Select Free Plan: ${user.name || user.email}`);
-
         if (user.status === 'pending') {
             return res.status(403).json({ error: 'Your account is pending approval. Please wait for admin approval.', reason: 'PENDING_APPROVAL' });
         }
@@ -1371,7 +1387,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
         const planExpiry = new Date();
         planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
 
-        const updateResult = await RenewalUser.collection.updateOne(
+        await RenewalUser.collection.updateOne(
             { _id: user._id },
             { $set: {
                 currentPlan: 'free-trial',
@@ -1385,8 +1401,6 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
                 approvedAt: user.approvedAt || new Date()
             }}
         );
-
-        console.log(`✅ Free trial activated for: ${user.name || user.email}`);
 
         const verifyUser = await RenewalUser.findById(user._id).lean();
 
@@ -1411,8 +1425,6 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
 // ==================== USER LINK CREATION ====================
 app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
     try {
-        console.log(`\n📥 ============ CREATE LINK REQUEST ============`);
-
         const {
             userName, userEmail, userId,
             linkName, video, claim, buttonText, headline, uidChecking,
@@ -1425,16 +1437,9 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
 
         let user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
 
-        if (!user) {
-            return res.status(404).json({ error: 'User not found. Please login again.' });
-        }
-
-        if (user.status === 'pending') {
-            return res.status(403).json({ error: 'Your account is pending admin approval.', reason: 'PENDING_APPROVAL' });
-        }
-        if (user.status === 'rejected') {
-            return res.status(403).json({ error: 'Your account has been rejected.' });
-        }
+        if (!user) return res.status(404).json({ error: 'User not found. Please login again.' });
+        if (user.status === 'pending') return res.status(403).json({ error: 'Your account is pending admin approval.', reason: 'PENDING_APPROVAL' });
+        if (user.status === 'rejected') return res.status(403).json({ error: 'Your account has been rejected.' });
 
         user = await autoFixUserFields(user);
         user = await autoActivateFreeTrialIfNeeded(user);
@@ -1456,11 +1461,7 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
                 errorMsg = 'Your plan has expired. Please renew to create new links.';
                 reason = 'PLAN_EXPIRED';
             }
-            return res.status(403).json({
-                error: errorMsg,
-                reason: reason,
-                hint: 'Go to "Renewal Plans" → Activate Free Trial'
-            });
+            return res.status(403).json({ error: errorMsg, reason: reason, hint: 'Go to "Renewal Plans" → Activate Free Trial' });
         }
 
         let linkLimit = 'unlimited';
@@ -1482,10 +1483,7 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
 
         if (!isLifetimeUnlimited && !isUnlimited(linkLimit)) {
             if (currentLinkCount >= linkLimit) {
-                return res.status(403).json({
-                    error: `Link limit reached (${currentLinkCount}/${linkLimit}). Please upgrade.`,
-                    reason: 'LINK_LIMIT_REACHED'
-                });
+                return res.status(403).json({ error: `Link limit reached (${currentLinkCount}/${linkLimit}). Please upgrade.`, reason: 'LINK_LIMIT_REACHED' });
             }
         }
 
@@ -1530,9 +1528,6 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
 
         await Link.collection.insertOne(linkDoc);
 
-        console.log(`✅ Link created: ${linkId} for user: ${finalUserName}`);
-
-        // ✅ NEW: Send email notification
         if (user.email) {
             const fullUrl = `${process.env.APP_URL || 'http://localhost:3001'}/uid?link=${linkId}`;
             emailHelper.sendLinkCreatedEmail(user.email, finalUserName, cleanLinkName, fullUrl).catch(() => {});
@@ -1567,26 +1562,13 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
         let ownerUser = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
 
         if (!ownerUser) {
-            return res.status(404).json({
-                success: false, deleted: true,
-                error: 'Your account has been removed by admin.',
-                userLinks: [], planUsage: null, plans: null, hasAnyLink: false
-            });
+            return res.status(404).json({ success: false, deleted: true, error: 'Your account has been removed by admin.', userLinks: [], planUsage: null, plans: null, hasAnyLink: false });
         }
-
         if (ownerUser.status === 'pending') {
-            return res.status(403).json({
-                success: false,
-                pendingApproval: true,
-                error: 'Your account is pending admin approval.',
-                userLinks: [], planUsage: null, plans: null, hasAnyLink: false
-            });
+            return res.status(403).json({ success: false, pendingApproval: true, error: 'Your account is pending admin approval.', userLinks: [], planUsage: null, plans: null, hasAnyLink: false });
         }
         if (ownerUser.status === 'rejected') {
-            return res.status(403).json({
-                success: false, deleted: true, error: 'Your account has been rejected.',
-                userLinks: [], planUsage: null, plans: null, hasAnyLink: false
-            });
+            return res.status(403).json({ success: false, deleted: true, error: 'Your account has been rejected.', userLinks: [], planUsage: null, plans: null, hasAnyLink: false });
         }
 
         ownerUser = await autoFixUserFields(ownerUser);
@@ -2101,7 +2083,6 @@ const handleUserApprovalAction = async (req, res) => {
         const updatedUser = await RenewalUser.findOne({ _id: user._id }).lean();
         const waData = generateWhatsAppApprovalData(updatedUser, req);
 
-        // ✅ NEW: Send approval/rejection email
         if (updatedUser.email) {
             if (targetAction === 'approved') {
                 emailHelper.sendApprovalEmail(updatedUser.email, updatedUser.name).catch(() => {});
@@ -2238,7 +2219,6 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
                         { $set: { expiryDate: planExpiry, status: 'active' } }
                     );
 
-                    // ✅ NEW: Send payment approved email
                     if (ownerUser.email) {
                         emailHelper.sendPaymentEmail(ownerUser.email, ownerUser.name, 'approved', planDetails.name, reqDoc.amount).catch(() => {});
                     }
