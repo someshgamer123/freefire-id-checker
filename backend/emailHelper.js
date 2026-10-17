@@ -101,7 +101,7 @@ async function sendMail(to, subject, html) {
 
 // ==================== EMAIL TYPES ====================
 
-// 1. OTP Email (WITH Copy Button + Live Timer)
+// 1. OTP Email (FIXED Copy Button + EXPIRED Timer)
 async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
     const minutes = Math.floor(validSeconds / 60);
     const timerText = minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : `${validSeconds} seconds`;
@@ -123,16 +123,16 @@ async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
                 </table>
                 
                 <div style="margin-top:16px;">
-                    <a href="#" onclick="navigator.clipboard.writeText('${otp}');this.innerHTML='✅ Copied!';this.style.background='rgba(16,185,129,0.3)';setTimeout(()=>{this.innerHTML='📋 Copy OTP';this.style.background='rgba(99,102,241,0.15)'},2000);return false;" 
-                       style="display:inline-block;padding:10px 22px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;text-decoration:none;font-size:13px;font-weight:800;border-radius:10px;letter-spacing:0.3px;">
+                    <button id="copyOtpBtn" onclick="copyOtpFunction(this)" data-otp="${otp}"
+                       style="display:inline-block;padding:10px 22px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;font-size:13px;font-weight:800;border-radius:10px;letter-spacing:0.3px;cursor:pointer;font-family:inherit;">
                         📋 Copy OTP
-                    </a>
+                    </button>
                 </div>
 
                 <div style="margin-top:14px;">
                     <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;">⏱ Expires In</div>
                     <div id="otpTimer" style="font-size:18px;font-weight:900;color:#fbbf24;font-family:'Courier New',monospace;margin-top:4px;">00:${validSeconds.toString().padStart(2, '0')}</div>
-                    <div style="font-size:10px;color:#64748b;margin-top:2px;">(This OTP expires after 1 minute)</div>
+                    <div style="font-size:10px;color:#64748b;margin-top:2px;">(This OTP expires after ${timerText})</div>
                 </div>
             </div>
             <p style="margin:16px 0 0;font-size:13px;color:#94a3b8;">If you didn't request this code, please ignore this email.</p>
@@ -143,9 +143,11 @@ async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
         accentColor: '#6366f1'
     });
 
-    const htmlWithTimer = html.replace('</body>', `
+    // Timer + Copy Script Injection
+    const htmlWithScripts = html.replace('</body>', `
         <script>
         (function(){
+            // 1. Timer Logic
             var remaining = ${validSeconds};
             var timerEl = document.getElementById('otpTimer');
             if (timerEl) {
@@ -155,6 +157,8 @@ async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
                         clearInterval(iv);
                         timerEl.textContent = 'EXPIRED';
                         timerEl.style.color = '#ef4444';
+                        var copyBtn = document.getElementById('copyOtpBtn');
+                        if (copyBtn) { copyBtn.style.opacity = '0.5'; copyBtn.style.pointerEvents = 'none'; }
                         return;
                     }
                     var m = Math.floor(remaining / 60);
@@ -162,11 +166,59 @@ async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
                     timerEl.textContent = '0' + m + ':' + (s < 10 ? '0' : '') + s;
                 }, 1000);
             }
+
+            // 2. Copy Logic (Fallback for Email Clients)
+            window.copyOtpFunction = function(btn) {
+                var otpText = btn.getAttribute('data-otp');
+                
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(otpText).then(function() {
+                        showCopied(btn);
+                    }).catch(function() {
+                        fallbackCopy(otpText, btn);
+                    });
+                } else {
+                    fallbackCopy(otpText, btn);
+                }
+            };
+
+            function fallbackCopy(text, btn) {
+                // Create temporary textarea for execCommand fallback
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, 99999);
+                
+                try {
+                    var successful = document.execCommand('copy');
+                    if (successful) { showCopied(btn); } 
+                    else { alert('Manual Copy: ' + text); }
+                } catch(err) {
+                    alert('Manual Copy: ' + text);
+                }
+                document.body.removeChild(ta);
+            }
+
+            function showCopied(btn) {
+                var originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                btn.style.background = 'rgba(16,185,129,0.3)';
+                btn.style.borderColor = 'rgba(16,185,129,0.6)';
+                setTimeout(function() {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'rgba(99,102,241,0.15)';
+                    btn.style.borderColor = 'rgba(99,102,241,0.4)';
+                }, 2000);
+            }
         })();
         </script>
     </body>`);
 
-    return sendMail(email, `Your ${APP_NAME} OTP Code: ${otp}`, htmlWithTimer);
+    return sendMail(email, `Your ${APP_NAME} OTP Code: ${otp}`, htmlWithScripts);
 }
 
 // 2. Welcome / Account Created
