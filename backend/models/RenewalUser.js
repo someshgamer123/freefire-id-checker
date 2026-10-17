@@ -22,8 +22,8 @@ const RenewalUserSchema = new mongoose.Schema({
     },
     googleId: {
         type: String,
-        default: null,
-        sparse: true           // ✅ Unique index with sparse (null allowed)
+        default: null
+        // ✅ FIX: Removed "sparse: true" from here. It's handled in schema.index() below.
     },
     authMethod: {
         type: String,
@@ -90,7 +90,7 @@ const RenewalUserSchema = new mongoose.Schema({
 });
 
 // ==================== INDEXES (No Duplicates) ====================
-// ✅ Email index (not unique — allows same email? No, unique hai)
+// ✅ Email index (unique)
 RenewalUserSchema.index({ email: 1 }, { unique: true });
 
 // ✅ googleId sparse index (allows multiple null)
