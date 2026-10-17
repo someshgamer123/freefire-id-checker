@@ -302,8 +302,47 @@
             margin-left: auto;
             margin-right: auto;
         }
-        
-        .google-btn {
+
+        /* ========== REAL GOOGLE BUTTON CONTAINER ========== */
+        .google-btn-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+            min-height: 48px;
+        }
+        .google-btn-container > div {
+            width: 100% !important;
+            max-width: 340px !important;
+        }
+        .google-btn-container iframe {
+            margin: 0 auto !important;
+            display: block !important;
+            border-radius: 12px !important;
+        }
+
+        /* Loading state while Google SDK loads */
+        .google-loading {
+            width: 100%;
+            max-width: 340px;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 12px;
+            color: #3c4043;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            opacity: 0.7;
+        }
+
+        /* Fallback custom button — shown only if Google SDK fails */
+        .google-btn-fallback {
             width: 100%;
             max-width: 340px;
             margin: 0 auto 16px;
@@ -324,10 +363,8 @@
             z-index: 1;
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        .google-btn:active { transform: scale(0.98); background: #f1f3f4; }
-        .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .google-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
-        .google-btn .btn-text { font-weight: 700; color: #3c4043; }
+        .google-btn-fallback:active { transform: scale(0.98); background: #f1f3f4; }
+        .google-btn-fallback svg { width: 22px; height: 22px; flex-shrink: 0; }
 
         .auth-switch-text {
             font-size: 13.5px;
@@ -368,7 +405,7 @@
         }
         .auth-security-badge svg { width: 12px; height: 12px; color: #34d399; }
 
-        /* 🆕 Auth Footer — Terms + How To Use (fills empty space) */
+        /* ========== AUTH FOOTER — Terms + How to Use ========== */
         .auth-footer-section {
             max-width: 440px;
             margin: 18px auto 0;
@@ -1302,7 +1339,6 @@
             .metric-value { font-size: 18px; }
             .auth-card { padding: 28px 20px 22px; }
             .auth-title { font-size: 21px; }
-            .google-btn { padding: 13px 16px; font-size: 14.5px; }
         }
     </style>
 </head>
@@ -1517,10 +1553,13 @@
                     <h2 class="auth-title">Welcome Back</h2>
                     <p class="auth-subtitle">Sign in with your Google account to access your dashboard</p>
                     
-                    <button type="button" class="google-btn" onclick="triggerGoogleAuth('signin')" id="googleSignInBtn">
-                        <svg><use href="#icon-google"/></svg>
-                        <span class="btn-text">Sign in with Google</span>
-                    </button>
+                    <!-- REAL GOOGLE BUTTON (works on mobile + desktop) -->
+                    <div class="google-btn-container" id="googleSignInContainer">
+                        <div class="google-loading" id="googleSignInLoading">
+                            <svg style="width:22px;height:22px;"><use href="#icon-google"/></svg>
+                            Loading Google Sign-In...
+                        </div>
+                    </div>
                     
                     <div class="auth-switch-text">
                         Don't have an account?
@@ -1532,10 +1571,13 @@
                     <h2 class="auth-title">Create Account</h2>
                     <p class="auth-subtitle">Sign up with Google to start your journey</p>
                     
-                    <button type="button" class="google-btn" onclick="triggerGoogleAuth('signup')" id="googleSignUpBtn">
-                        <svg><use href="#icon-google"/></svg>
-                        <span class="btn-text">Sign up with Google</span>
-                    </button>
+                    <!-- REAL GOOGLE BUTTON (works on mobile + desktop) -->
+                    <div class="google-btn-container" id="googleSignUpContainer">
+                        <div class="google-loading" id="googleSignUpLoading">
+                            <svg style="width:22px;height:22px;"><use href="#icon-google"/></svg>
+                            Loading Google Sign-In...
+                        </div>
+                    </div>
                     
                     <div class="auth-switch-text">
                         Already have an account?
@@ -1732,7 +1774,7 @@
         </div>
     </main>
 
-    <!-- 🆕 AUTH FOOTER — Terms + How to Use (fills empty space) -->
+    <!-- AUTH FOOTER — Terms + How to Use (SIMPLIFIED) -->
     <div id="authFooterSection" class="auth-footer-section">
         <div class="auth-footer-card">
             <div class="auth-footer-title">
@@ -1741,7 +1783,6 @@
             </div>
             <ul class="auth-footer-list">
                 <li><strong>Sign up</strong> with Google to create your account</li>
-                <li>Complete your <strong>profile</strong></li>
                 <li>Get <strong>3-day Free Trial</strong></li>
                 <li>Create tracking links and start earning</li>
             </ul>
@@ -1769,13 +1810,13 @@
         </div>
     </div>
 
+    <!-- HIDDEN GOOGLE CONTAINER (required by GSI) -->
     <div id="googleHiddenContainer">
         <div id="g_id_onload"
              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
              data-callback="handleGoogleAuth"
              data-auto_prompt="false">
         </div>
-        <div id="googleBtnHidden"></div>
     </div>
 
     <!-- PROFILE MODAL -->
@@ -2075,6 +2116,7 @@
         let pendingProfileUser = null;
         let currentAuthMode = 'signin';
         let googleInitialized = false;
+        let googleButtonsRendered = false;
         
         let currentDateFilter = 'today';
         let currentStartDate = '';
@@ -2220,113 +2262,140 @@
             }
         }
 
-        // ============ 🔥 GOOGLE AUTH — MOBILE + DESKTOP FIXED ============
-        function triggerGoogleAuth(action) {
-            currentAuthMode = action;
-            
-            const btn1 = document.getElementById('googleSignInBtn');
-            const btn2 = document.getElementById('googleSignUpBtn');
-            
-            // 🔥 Detect mobile
-            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            
-            console.log(`🔵 Google Auth: action=${action}, isMobile=${isMobile}`);
-            
-            // Wait for Google SDK
+        // ============ 🔥 GOOGLE AUTH — RENDER REAL BUTTON (WORKS ON MOBILE) ============
+        function renderGoogleButtons() {
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
-                showToast('Google Sign-In loading... Please wait', 'info');
-                let attempts = 0;
-                const waitInterval = setInterval(() => {
-                    attempts++;
-                    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-                        clearInterval(waitInterval);
-                        triggerGoogleAuth(action);
-                    } else if (attempts > 15) {
-                        clearInterval(waitInterval);
-                        showToast('Google Sign-In failed to load. Please refresh.', 'error');
-                        if (btn1) btn1.disabled = false;
-                        if (btn2) btn2.disabled = false;
-                    }
-                }, 300);
+                console.log('⏳ Google SDK not ready, retrying...');
+                setTimeout(renderGoogleButtons, 400);
                 return;
             }
             
-            if (btn1) btn1.disabled = true;
-            if (btn2) btn2.disabled = true;
+            if (googleButtonsRendered) return;
             
-            // 🔥 MOBILE: Use hidden Google button click (most reliable on mobile)
-            if (isMobile) {
-                try {
-                    // Try to find the hidden Google button and click it
-                    const hiddenGoogleBtn = document.querySelector('#googleBtnHidden div[role="button"]') || 
-                                           document.querySelector('#googleBtnHidden iframe') ||
-                                           document.querySelector('#googleBtnHidden > div');
-                    
-                    if (hiddenGoogleBtn) {
-                        // Create and dispatch click event
-                        const clickEvent = new MouseEvent('click', { 
-                            bubbles: true, 
-                            cancelable: true, 
-                            view: window 
-                        });
-                        hiddenGoogleBtn.dispatchEvent(clickEvent);
-                        
-                        // Re-enable buttons after a delay
-                        setTimeout(() => {
-                            if (btn1) btn1.disabled = false;
-                            if (btn2) btn2.disabled = false;
-                        }, 2000);
-                        return;
-                    }
-                    
-                    // Fallback: Try prompt (works on some mobile browsers)
-                    google.accounts.id.prompt((notification) => {
-                        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
-                            if (btn1) btn1.disabled = false;
-                            if (btn2) btn2.disabled = false;
-                            showToast('Please tap again or use desktop browser', 'warning');
-                        }
-                    });
-                } catch(err) {
-                    console.error('Mobile Google auth error:', err);
-                    if (btn1) btn1.disabled = false;
-                    if (btn2) btn2.disabled = false;
-                    showToast('Google Sign-In error. Please try again.', 'error');
-                }
-                return;
-            }
-            
-            // 🔥 DESKTOP: Use standard prompt
             try {
-                google.accounts.id.prompt((notification) => {
-                    if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
-                        if (btn1) btn1.disabled = false;
-                        if (btn2) btn2.disabled = false;
-                        
-                        // Try hidden button click as fallback
-                        if (notification.isNotDisplayed()) {
-                            const hiddenBtn = document.querySelector('#googleBtnHidden div[role="button"]');
-                            if (hiddenBtn) hiddenBtn.click();
-                        }
-                    }
+                // Initialize
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleAuth,
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                    use_fedcm_for_prompt: false,
+                    ux_mode: 'popup'  // ← Force popup (best for mobile)
                 });
-            } catch(err) {
-                console.error('Google prompt error:', err);
-                showToast('Google Sign-In error. Please try again.', 'error');
-                if (btn1) btn1.disabled = false;
-                if (btn2) btn2.disabled = false;
+                googleInitialized = true;
+                
+                // Render REAL Google button for Sign In
+                const signInContainer = document.getElementById('googleSignInContainer');
+                const signInLoading = document.getElementById('googleSignInLoading');
+                if (signInContainer && signInLoading) {
+                    // Clear the loading state
+                    signInContainer.innerHTML = '';
+                    
+                    // Create a new div for Google button
+                    const btnDiv = document.createElement('div');
+                    btnDiv.id = 'googleSignInBtn';
+                    btnDiv.style.width = '100%';
+                    btnDiv.style.display = 'flex';
+                    btnDiv.style.justifyContent = 'center';
+                    signInContainer.appendChild(btnDiv);
+                    
+                    google.accounts.id.renderButton(btnDiv, {
+                        type: 'standard',
+                        theme: 'filled_black',
+                        size: 'large',
+                        text: 'signin_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'left',
+                        width: 340
+                    });
+                }
+                
+                // Render REAL Google button for Sign Up
+                const signUpContainer = document.getElementById('googleSignUpContainer');
+                const signUpLoading = document.getElementById('googleSignUpLoading');
+                if (signUpContainer && signUpLoading) {
+                    signUpContainer.innerHTML = '';
+                    
+                    const btnDiv2 = document.createElement('div');
+                    btnDiv2.id = 'googleSignUpBtn';
+                    btnDiv2.style.width = '100%';
+                    btnDiv2.style.display = 'flex';
+                    btnDiv2.style.justifyContent = 'center';
+                    signUpContainer.appendChild(btnDiv2);
+                    
+                    google.accounts.id.renderButton(btnDiv2, {
+                        type: 'standard',
+                        theme: 'filled_black',
+                        size: 'large',
+                        text: 'signup_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'left',
+                        width: 340
+                    });
+                }
+                
+                googleButtonsRendered = true;
+                console.log('✅ Google buttons rendered (real, mobile-friendly)');
+            } catch(e) {
+                console.error('❌ Google button render error:', e);
+                showGoogleFallback();
             }
         }
 
+        function showGoogleFallback() {
+            // Show fallback custom buttons if Google SDK fails
+            const signInContainer = document.getElementById('googleSignInContainer');
+            const signUpContainer = document.getElementById('googleSignUpContainer');
+            
+            if (signInContainer) {
+                signInContainer.innerHTML = `
+                    <button type="button" class="google-btn-fallback" onclick="fallbackGoogleAuth('signin')">
+                        <svg><use href="#icon-google"/></svg>
+                        <span>Sign in with Google</span>
+                    </button>
+                `;
+            }
+            if (signUpContainer) {
+                signUpContainer.innerHTML = `
+                    <button type="button" class="google-btn-fallback" onclick="fallbackGoogleAuth('signup')">
+                        <svg><use href="#icon-google"/></svg>
+                        <span>Sign up with Google</span>
+                    </button>
+                `;
+            }
+        }
+
+        function fallbackGoogleAuth(action) {
+            currentAuthMode = action;
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+                showToast('Google Sign-In not available. Please check connection.', 'error');
+                return;
+            }
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    showToast('Please allow popups and try again', 'warning');
+                }
+            });
+        }
+
+        // ✅ Handle Google response
         async function handleGoogleAuth(response) {
             console.log('📥 Google auth response received');
             
+            // 🔒 TERMS CHECK FOR SIGNUP
+            if (currentAuthMode === 'signup') {
+                const termsCheck = document.getElementById('authTermsCheck');
+                if (!termsCheck || !termsCheck.checked) {
+                    showToast('⚠️ Please accept Terms & Conditions first!', 'warning', 4000);
+                    // Re-render buttons so user can try again after ticking
+                    googleButtonsRendered = false;
+                    renderGoogleButtons();
+                    return;
+                }
+            }
+            
             if (!response || !response.credential) {
                 showToast('Google authentication failed. Please try again.', 'error');
-                const btn1 = document.getElementById('googleSignInBtn');
-                const btn2 = document.getElementById('googleSignUpBtn');
-                if (btn1) btn1.disabled = false;
-                if (btn2) btn2.disabled = false;
                 return;
             }
             
@@ -2340,11 +2409,6 @@
                     body: JSON.stringify({ credential, action })
                 });
                 const data = await res.json().catch(() => ({}));
-                
-                const btn1 = document.getElementById('googleSignInBtn');
-                const btn2 = document.getElementById('googleSignUpBtn');
-                if (btn1) btn1.disabled = false;
-                if (btn2) btn2.disabled = false;
                 
                 // SIGN IN
                 if (action === 'signin') {
@@ -2398,10 +2462,6 @@
             } catch(err) {
                 console.error('Google auth error:', err);
                 showToast('Connection error. Please try again.', 'error');
-                const btn1 = document.getElementById('googleSignInBtn');
-                const btn2 = document.getElementById('googleSignUpBtn');
-                if (btn1) btn1.disabled = false;
-                if (btn2) btn2.disabled = false;
             }
         }
 
@@ -2416,10 +2476,6 @@
         function cancelProfile() {
             pendingProfileUser = null;
             document.getElementById('profileOverlay').classList.remove('active');
-            const btn1 = document.getElementById('googleSignInBtn');
-            const btn2 = document.getElementById('googleSignUpBtn');
-            if (btn1) btn1.disabled = false;
-            if (btn2) btn2.disabled = false;
         }
 
         async function submitProfile() {
@@ -3434,39 +3490,31 @@
             window.location.reload(); 
         }
 
-        // ============ GOOGLE GSI INIT ============
+        // ============ INIT GOOGLE GSI ============
         window.handleGoogleAuth = handleGoogleAuth;
 
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                if (typeof google !== 'undefined' && google.accounts && google.accounts.id && !googleInitialized) {
-                    try {
-                        google.accounts.id.initialize({
-                            client_id: GOOGLE_CLIENT_ID,
-                            callback: handleGoogleAuth,
-                            auto_select: false,
-                            cancel_on_tap_outside: true,
-                            use_fedcm_for_prompt: false
-                        });
-                        googleInitialized = true;
-                        
-                        const hiddenBtn = document.getElementById('googleBtnHidden');
-                        if (hiddenBtn) {
-                            google.accounts.id.renderButton(hiddenBtn, {
-                                type: 'standard',
-                                size: 'large',
-                                theme: 'filled_black',
-                                text: 'signin_with',
-                                shape: 'rectangular'
-                            });
-                        }
-                        
-                        console.log('✅ Google GSI initialized');
-                    } catch(e) {
-                        console.error('GSI init error:', e);
-                    }
+        // Wait for Google SDK and render buttons
+        function waitForGoogleAndRender() {
+            let attempts = 0;
+            const maxAttempts = 50; // 15 seconds total
+            
+            const check = () => {
+                attempts++;
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                    renderGoogleButtons();
+                } else if (attempts < maxAttempts) {
+                    setTimeout(check, 300);
+                } else {
+                    console.warn('⚠️ Google SDK failed to load — showing fallback');
+                    showGoogleFallback();
                 }
-            }, 800);
+            };
+            check();
+        }
+
+        // Start waiting for Google SDK
+        window.addEventListener('load', () => {
+            waitForGoogleAndRender();
         });
 
         // Session verification
