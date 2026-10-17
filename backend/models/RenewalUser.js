@@ -1,38 +1,48 @@
 const mongoose = require('mongoose');
 
 const RenewalUserSchema = new mongoose.Schema({
+    // 👤 Basic Info
     name: {
         type: String,
-        required: false,
+        required: false,       // ✅ Google signup ke waqt empty ho sakta hai
         default: '',
         trim: true
     },
     email: {
         type: String,
-        required: true,
+        required: true,        // ✅ Email always required (Google se milta hai)
         trim: true,
         lowercase: true
     },
     phone: {
         type: String,
-        required: false,  // ✅ FIX: ab required nahi
+        required: false,       // ✅ Profile complete hone tak empty rahega
         default: '',
         trim: true
     },
     googleId: {
         type: String,
-        default: null
+        default: null,
+        sparse: true           // ✅ Unique index with sparse (null allowed)
     },
     authMethod: {
         type: String,
         enum: ['email', 'google'],
         default: 'google'
     },
+
+    // 📊 Account Status
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
+    profileCompleted: {
+        type: Boolean,
+        default: false
+    },
+
+    // 💎 Plan Info
     currentPlan: {
         type: String,
         default: 'none'
@@ -57,6 +67,8 @@ const RenewalUserSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+
+    // 📈 Usage Tracking
     linksCreatedThisCycle: {
         type: Number,
         default: 0
@@ -65,10 +77,8 @@ const RenewalUserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    profileCompleted: {
-        type: Boolean,
-        default: false
-    },
+
+    // 🕒 Timestamps
     createdAt: {
         type: Date,
         default: Date.now
@@ -79,10 +89,20 @@ const RenewalUserSchema = new mongoose.Schema({
     }
 });
 
-// Indexes
-RenewalUserSchema.index({ email: 1 }, { unique: true, sparse: true });
+// ==================== INDEXES (No Duplicates) ====================
+// ✅ Email index (not unique — allows same email? No, unique hai)
+RenewalUserSchema.index({ email: 1 }, { unique: true });
+
+// ✅ googleId sparse index (allows multiple null)
 RenewalUserSchema.index({ googleId: 1 }, { sparse: true });
+
+// ✅ Status index (for quick filter)
 RenewalUserSchema.index({ status: 1 });
+
+// ✅ Created date index (for sorting)
 RenewalUserSchema.index({ createdAt: -1 });
+
+// ✅ Compound index for common queries
+RenewalUserSchema.index({ status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('RenewalUser', RenewalUserSchema);
