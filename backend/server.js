@@ -98,6 +98,8 @@ const RenewalUser = safeLoadModel('RenewalUser', {
     freeTrialUsed: { type: Boolean, default: false },
     freeTrialActivatedAt: { type: Date, default: null },
     linksCreatedThisCycle: { type: Number, default: 0 },
+    // ✅ नया फील्ड: हमेशा के लिए बने लिंक का काउंट
+    totalLinksCreated: { type: Number, default: 0 },
     visitorsThisCycle: { type: Number, default: 0 },
     profileCompleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
@@ -405,15 +407,8 @@ async function getUserLinkLimit(user) {
             : DEFAULT_PLANS[currentPlan] || DEFAULT_PLANS['free-trial'];
         const linkLimit = planDetails.linkLimit;
 
-        const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-        const usedCount = await Link.countDocuments({
-            $or: [
-                { assignedUser: userRegex },
-                { userName: userRegex },
-                { creator: userRegex },
-                { name: userRegex }
-            ]
-        });
+        // ✅ FIX: Permanent link limit logic (using totalLinksCreated)
+        const usedCount = user.totalLinksCreated || 0;
 
         return {
             limit: isUnlimited(linkLimit) ? 'unlimited' : linkLimit,
@@ -496,6 +491,14 @@ async function autoFixUserFields(user) {
         updates.profileCompleted = !!(user.name && user.phone && user.phone.length >= 10);
         needsUpdate = true;
     }
+    // ✅ Auto-fix totalLinksCreated
+    if (user.totalLinksCreated === undefined || user.totalLinksCreated === null) {
+        const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const count = await Link.countDocuments({ $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] });
+        updates.totalLinksCreated = count;
+        needsUpdate = true;
+    }
+
     if (needsUpdate) {
         await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updates });
         const freshUser = await RenewalUser.findById(user._id);
@@ -523,7 +526,10 @@ async function autoActivateFreeTrialIfNeeded(user) {
     const userCurrentPlan = (user.currentPlan || 'none').toString().trim();
     const hasPlanKey = userCurrentPlan && userCurrentPlan !== 'none' && userCurrentPlan !== 'no-plan';
     if (hasPlanKey && planNotExpired) return user;
+    
+    // ✅ FIX: Strict Free Trial logic (FreeTrialUsed flag check)
     if (user.freeTrialUsed === true) return user;
+    
     if (user.status === 'approved' && !hasPlanKey) {
         const pricingDoc = await getPricingDoc();
         const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
@@ -822,8 +828,6 @@ app.get('/api/pricing', async (req, res) => {
 });
 
 // ==================== NEW: AUTH ROUTES ====================
-
-// SEND OTP — for Sign Up
 app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
     try {
         const { email, purpose, name, phone } = req.body;
@@ -839,7 +843,6 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
 
         const mode = (purpose || 'signin').toString().toLowerCase();
 
-        // ============ SIGN UP FLOW ============
         if (mode === 'signup') {
             if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Please enter your full name' });
             if (!phone || !isValidMobile(phone)) return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
@@ -861,7 +864,6 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
             }
         }
 
-        // Rate limit: max 3 OTPs per email per hour
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const recentOtpCount = await Otp.countDocuments({
             email: cleanEmail,
@@ -871,9 +873,8 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
             return res.status(429).json({ error: 'Too many OTP requests for this email. Please wait 1 hour.' });
         }
 
-        // ✅ OTP expires in 1 minute (60 seconds)
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const OTP_VALID_MS = 60 * 1000; // 60 seconds
+        const OTP_VALID_MS = 60 * 1000;
         const expiresAt = new Date(Date.now() + OTP_VALID_MS);
 
         await Otp.updateMany(
@@ -908,7 +909,6 @@ app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
     }
 });
 
-// VERIFY OTP — for Sign Up
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         const { email, otp, purpose, name, phone } = req.body;
@@ -942,59 +942,61 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         await Otp.updateOne({ _id: otpRecord._id }, { $set: { verified: true } });
 
-        // ============ SIGN UP — Create new account ============
-        if (!name || !phone) {
-            return res.status(400).json({ error: 'Name and phone required for signup' });
-        }
-
-        const cleanName = name.trim();
-        const cleanPhone = phone.trim();
-
-        let existing = await RenewalUser.findOne({ email: cleanEmail });
-        if (existing) {
-            return res.status(400).json({ error: 'Email already registered. Please Sign In.', alreadyRegistered: true });
-        }
-
-        const user = await RenewalUser.create({
-            name: cleanName,
-            email: cleanEmail,
-            phone: cleanPhone,
-            googleId: null,
-            authMethod: 'otp',
-            status: 'pending',
-            currentPlan: 'none',
-            planStartDate: null,
-            planExpiryDate: null,
-            lifetimeUnlimited: false,
-            freeTrialUsed: false,
-            profileCompleted: true,
-            createdAt: new Date()
-        });
-
-        console.log(`🆕 New user via OTP signup: ${cleanEmail} (${cleanName})`);
-
-        // Welcome email
-        emailHelper.sendWelcomeEmail(cleanEmail, cleanName).catch(() => {});
-
-        return res.json({
-            success: true,
-            needsApproval: true,
-            hoursRemaining: 24,
-            user: {
-                id: user._id,
-                email: user.email,
-                name: user.name,
-                phone: user.phone,
-                status: 'pending'
+        if (mode === 'signup') {
+            if (!name || !phone) {
+                return res.status(400).json({ error: 'Name and phone required for signup' });
             }
-        });
+
+            const cleanName = name.trim();
+            const cleanPhone = phone.trim();
+
+            let existing = await RenewalUser.findOne({ email: cleanEmail });
+            if (existing) {
+                return res.status(400).json({ error: 'Email already registered. Please Sign In.', alreadyRegistered: true });
+            }
+
+            const user = await RenewalUser.create({
+                name: cleanName,
+                email: cleanEmail,
+                phone: cleanPhone,
+                googleId: null,
+                authMethod: 'otp',
+                status: 'pending',
+                currentPlan: 'none',
+                planStartDate: null,
+                planExpiryDate: null,
+                lifetimeUnlimited: false,
+                freeTrialUsed: false,
+                totalLinksCreated: 0, // ✅ Init
+                profileCompleted: true,
+                createdAt: new Date()
+            });
+
+            console.log(`🆕 New user via OTP signup: ${cleanEmail} (${cleanName})`);
+
+            emailHelper.sendWelcomeEmail(cleanEmail, cleanName).catch(() => {});
+
+            return res.json({
+                success: true,
+                needsApproval: true,
+                hoursRemaining: 24,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name,
+                    phone: user.phone,
+                    status: 'pending'
+                }
+            });
+        }
+        
+        return res.status(400).json({ error: 'Invalid purpose' });
     } catch (err) {
         console.error('Verify OTP error:', err);
         res.status(500).json({ error: 'Verification failed: ' + err.message });
     }
 });
 
-// ✅ NEW: Direct Sign-In (Email + Phone, No OTP)
 app.post('/api/auth/direct-signin', async (req, res) => {
     try {
         const { email, phone } = req.body;
@@ -1256,7 +1258,6 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Complete Profile — NOT NEEDED anymore (Sign Up takes name & phone). Kept for safety.
 app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
     try {
         const { userId, name, phone } = req.body;
@@ -1337,7 +1338,7 @@ app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Verification failed' }); }
 });
 
-// ==================== FREE PLAN ACTIVATION ====================
+// ✅ FIXED: Free Plan Activation strictly once
 app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
     try {
         const { userName, userEmail, userId } = req.body;
@@ -1358,6 +1359,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
                 reason: 'LIFETIME_UNLIMITED'
             });
         }
+        // ✅ Check strictly if freeTrialUsed is true
         if (user.freeTrialUsed === true) {
             return res.status(403).json({ error: 'Free trial already used. Please purchase a paid plan.' });
         }
@@ -1376,7 +1378,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
                 planStartDate: planStart,
                 planExpiryDate: planExpiry,
                 lifetimeUnlimited: false,
-                freeTrialUsed: true,
+                freeTrialUsed: true, // ✅ Lock it forever
                 freeTrialActivatedAt: planStart,
                 profileCompleted: true,
                 status: 'approved',
@@ -1455,13 +1457,8 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
             linkLimit = planDetails.linkLimit;
         }
 
-        const userRegex = new RegExp('^' + (user.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-        const currentLinkCount = await Link.countDocuments({
-            $or: [
-                { assignedUser: userRegex }, { userName: userRegex },
-                { creator: userRegex }, { name: userRegex }
-            ]
-        });
+        // ✅ FIXED: Strict Limit check using `totalLinksCreated`
+        const currentLinkCount = user.totalLinksCreated || 0;
 
         if (!isLifetimeUnlimited && !isUnlimited(linkLimit)) {
             if (currentLinkCount >= linkLimit) {
@@ -1509,6 +1506,12 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         };
 
         await Link.collection.insertOne(linkDoc);
+
+        // ✅ Increment totalLinksCreated in user profile (Permanent Deduction)
+        await RenewalUser.collection.updateOne(
+            { _id: user._id },
+            { $inc: { totalLinksCreated: 1 } }
+        );
 
         if (user.email) {
             const fullUrl = `${process.env.APP_URL || 'http://localhost:3001'}/uid?link=${linkId}`;
@@ -1624,7 +1627,8 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
         }
 
         const linkLimitRaw = isLifetimeUnlimited ? 'unlimited' : plan.linkLimit;
-        const linksUsed = allUserLinks.length;
+        // ✅ FIXED: Use permanent totalLinksCreated for usage
+        const linksUsed = ownerUser?.totalLinksCreated || 0; 
         const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimitRaw)) ? 'unlimited' : Math.max(0, linkLimitRaw - linksUsed);
         const linkLimitReached = isLifetimeUnlimited ? false : (!isUnlimited(linkLimitRaw) && linksUsed >= linkLimitRaw);
         const canCreateMoreLinks = hasPlan && !linkLimitReached;
@@ -1871,7 +1875,9 @@ app.get('/api/admin/all-users', authMiddleware, async (req, res) => {
 
             const isLifetimeUnlimited = u.lifetimeUnlimited === true;
             const linkLimit = isLifetimeUnlimited ? 'unlimited' : plan.linkLimit;
-            const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimit)) ? 'unlimited' : Math.max(0, linkLimit - userLinks.length);
+            // ✅ Admin panel me bhi used count permanent logic se dikhao
+            const usedCount = u.totalLinksCreated || 0;
+            const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimit)) ? 'unlimited' : Math.max(0, linkLimit - usedCount);
 
             return {
                 ...u, totalLinks: userLinks.length, totalVisits, totalClaims,
@@ -2037,6 +2043,7 @@ const handleUserApprovalAction = async (req, res) => {
             const hasNoPlan = !user.currentPlan || user.currentPlan === 'none' || user.currentPlan === 'no-plan';
             const planIsExpired = user.planExpiryDate && new Date(user.planExpiryDate) < new Date();
 
+            // ✅ Auto Assign Free Trial only if never used
             if (!user.lifetimeUnlimited && (hasNoPlan || planIsExpired) && !user.freeTrialUsed) {
                 const pricingDoc = await getPricingDoc();
                 const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
@@ -2456,6 +2463,15 @@ app.post('/api/links', authMiddleware, async (req, res) => {
         };
 
         await Link.collection.insertOne(linkDoc);
+
+        // ✅ Admin link creation bhi count hoga permanent limit me
+        if (assignedUser) {
+            await RenewalUser.collection.updateOne(
+                { _id: assignedUser._id },
+                { $inc: { totalLinksCreated: 1 } }
+            );
+        }
+
         res.json({ ...linkDoc, name: cleanUserName, userName: cleanUserName, linkName: cleanLinkName, title: cleanLinkName, uidChecking: cleanUidChecking, claims: 0, visits: 0, image: finalBanner, popupSettings: finalPopup });
     } catch (e) {
         console.error('Admin create link error:', e);
