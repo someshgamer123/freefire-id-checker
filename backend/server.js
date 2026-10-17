@@ -588,7 +588,7 @@ async function initializeDatabase() {
 // ==========================================
 async function startServer() {
     try {
-        const conn = await connectDB();
+        await connectDB();
         await initializeDatabase();
         
         app.listen(port, '0.0.0.0', () => {
@@ -604,6 +604,14 @@ startServer();
 // ==================== MIDDLEWARE ====================
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
+
+// ✅ GOOGLE POPUP FIX: Cross-Origin and Referrer Headers
+app.use((req, res, next) => {
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+});
+
 app.use(helmet({ contentSecurityPolicy: false, frameguard: false, referrerPolicy: { policy: 'strict-origin-when-cross-origin' } }));
 app.use(cors({ origin: true, credentials: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Admin-Token', 'token'] }));
 app.use(express.json({ limit: '10mb' }));
@@ -634,7 +642,6 @@ function injectionProtection(req, res, next) {
 app.use(injectionProtection);
 
 app.use((req, res, next) => {
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     const blocked = ['.env', '.log', '.json', '.md'];
     const p = req.path.toLowerCase();
     if (p === '/manifest.json') return next();
