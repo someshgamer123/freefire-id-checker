@@ -23,7 +23,6 @@ const RenewalUserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    // ✅ FIX: Added 'otp' to allowed enum values
     authMethod: {
         type: String,
         enum: ['email', 'google', 'otp'],
@@ -63,6 +62,11 @@ const RenewalUserSchema = new mongoose.Schema({
         default: null
     },
     linksCreatedThisCycle: {
+        type: Number,
+        default: 0
+    },
+    // ✅ नया फील्ड: हमेशा के लिए बने लिंक का काउंट
+    totalLinksCreated: {
         type: Number,
         default: 0
     },
