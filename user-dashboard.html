@@ -131,7 +131,7 @@
         }
         .nav-left { display: flex; align-items: center; gap: 14px; }
         
-        /* ✅ Fixed Menu Button Visible */
+        /* Fixed Menu Button Visible */
         .btn-menu-toggle {
             width: 42px; height: 42px;
             background: var(--bg-panel);
@@ -419,7 +419,7 @@
         .custom-date-row input[type="date"] { flex: 1; min-width: 130px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; transition: 0.2s; }
         .custom-date-row input[type="date"]:focus { border-color: var(--primary); }
         
-        /* ✅ FIXED: Apply Custom Range Button Size */
+        /* Apply Custom Range Button */
         .custom-date-apply-btn { width: auto; min-width: 200px; padding: 10px 20px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; align-self: flex-start; }
         .custom-date-apply-btn:hover { background: var(--primary-hover); }
         .custom-date-apply-btn svg { width: 16px; height: 16px; }
@@ -505,7 +505,7 @@
         .form-control { width: 100%; padding: 14px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; outline: none; transition: 0.2s; }
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         
-        /* ✅ Fixed UID Toggle Switch */
+        /* Fixed UID Toggle Switch */
         .uid-toggle-wrapper { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
         .uid-toggle-wrapper input { opacity: 0; width: 0; height: 0; }
         .uid-toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: #334155; transition: .4s; border-radius: 24px; border: 1px solid var(--border-color); }
@@ -593,26 +593,24 @@
             <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
         </div>
         <div class="sidebar-menu">
-            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
+            <!-- ✅ Working Sidebar Buttons -->
+            <button class="sidebar-btn" onclick="goToSection('dashboardSection')">
                 <span class="svg-icon"><svg><use href="#icon-user"/></svg></span> Dashboard
             </button>
-            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
-                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Links Manager
+            <button class="sidebar-btn" onclick="goToSection('linkSelectorCard')">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Link Manager
             </button>
-            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
+            <button class="sidebar-btn" onclick="openCreateLinkModal()">
                 <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Link
             </button>
-            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
-                <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Manage Users
+            <button class="sidebar-btn" onclick="goToSection('planDaysCard')">
+                <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> User Renewal
             </button>
-            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
-                <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Users & Renewal
+            <button class="sidebar-btn" onclick="openMyPlanModal()">
+                <span class="svg-icon"><svg><use href="#icon-crown"/></svg></span> My Plans
             </button>
-            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
-                <span class="svg-icon"><svg><use href="#icon-external-link"/></svg></span> Short Link
-            </button>
-            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
-                <span class="svg-icon"><svg><use href="#icon-settings"/></svg></span> Settings
+            <button class="sidebar-btn" onclick="openShortenerModal()">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Short Link
             </button>
         </div>
         <!-- ✅ Logout Button placed at the bottom of the sidebar menu -->
@@ -626,7 +624,7 @@
     <!-- NAVBAR -->
     <header class="top-navbar">
         <div class="nav-left">
-            <!-- ✅ Fixed Menu Button added here -->
+            <!-- Fixed Menu Button added here -->
             <button class="btn-menu-toggle" onclick="toggleSidebar(true)" title="Menu">
                 <span class="line l1"></span>
                 <span class="line l2"></span>
@@ -674,12 +672,14 @@
 
                     <div class="input-group">
                         <label class="input-label">Email Address</label>
-                        <input type="email" id="authEmailInput" class="form-input" placeholder="you@gmail.com" autocomplete="email">
+                        <!-- ✅ Fixed Placeholder -->
+                        <input type="email" id="authEmailInput" class="form-input" placeholder="Enter your email" autocomplete="email">
                     </div>
 
                     <div class="input-group" id="phoneInputGroup">
                         <label class="input-label">Phone Number</label>
-                        <input type="tel" id="authPhoneInput" class="form-input" placeholder="Enter 10-digit mobile number" maxlength="10" inputmode="numeric" autocomplete="tel">
+                        <!-- ✅ Fixed Placeholder -->
+                        <input type="tel" id="authPhoneInput" class="form-input" placeholder="Enter your number" maxlength="10" inputmode="numeric" autocomplete="tel">
                     </div>
 
                     <!-- OTP fields (only for Sign Up) -->
@@ -850,7 +850,7 @@
                         <label>To:</label>
                         <input type="date" id="customEndDateInput">
                     </div>
-                    <!-- ✅ Fixed button size -->
+                    <!-- Fixed button size -->
                     <button class="custom-date-apply-btn" onclick="applyCustomDateRange()">
                         <svg><use href="#icon-check"/></svg> Apply Custom Range
                     </button>
@@ -929,7 +929,7 @@
                 <input type="text" id="clHeadline" class="form-control" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150">
             </div>
             
-            <!-- ✅ Fixed UID Toggle Switch -->
+            <!-- Fixed UID Toggle Switch -->
             <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div>
                     <div style="font-size:14px; font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
@@ -1015,24 +1015,6 @@
                 <button class="modal-close-btn" onclick="closeMyPlanModal()">✕</button>
             </div>
             <div id="myPlanContent">Loading...</div>
-        </div>
-    </div>
-
-    <!-- TERMS MODAL -->
-    <div class="app-modal" id="termsModal">
-        <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
-                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
-            </div>
-            <div style="font-size:14px; color:var(--text-muted); line-height:1.7;">
-                <p style="margin-bottom:12px;"><strong>1. Account Integrity</strong><br>Users must register via Email OTP. Each link is private and exclusively managed by its owner.</p>
-                <p style="margin-bottom:12px;"><strong>2. Link Ownership</strong><br>All links you create are permanently associated with your account.</p>
-                <p style="margin-bottom:12px;"><strong>3. Plan Expiry</strong><br>When plan expires, all your links become inactive immediately. Renew to continue.</p>
-                <p style="margin-bottom:12px;"><strong>4. Content Policy</strong><br>Do not create links for illegal or misleading content. Violation leads to account termination.</p>
-                <p style="margin-bottom:24px;"><strong>5. Data Privacy</strong><br>Your visitor analytics are computed using IP + device fingerprint.</p>
-            </div>
-            <button onclick="closeTermsModal()" class="btn-primary"><span>I Understand</span></button>
         </div>
     </div>
 
@@ -1160,7 +1142,7 @@
             else { sb.classList.remove('show'); ov.classList.remove('show'); }
         }
 
-        function closeSidebarAndScroll(id) {
+        function goToSection(id) {
             toggleSidebar(false);
             const el = document.getElementById(id);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
