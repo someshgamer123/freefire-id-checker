@@ -68,6 +68,55 @@
         }
         .animate-entry { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+        /* ============ SIDEBAR OVERLAY & MENU ============ */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(11, 17, 32, 0.8); backdrop-filter: blur(4px);
+            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
+        
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: 290px; height: 100vh;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            z-index: 9999; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            padding: 24px 20px;
+            box-shadow: 10px 0 40px rgba(0,0,0,0.5);
+        }
+        .sidebar.show { transform: translateX(0); }
+        
+        .sidebar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .sidebar-header h2 .svg-icon { width: 20px; height: 20px; color: var(--primary); }
+        
+        .sidebar-close {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            width: 32px; height: 32px; border-radius: 8px;
+            color: var(--text-muted); font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .sidebar-close:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        
+        .sidebar-menu { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+        .sidebar-btn {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; border-radius: 10px;
+            background: transparent; color: var(--text-muted);
+            font-size: 14px; font-weight: 600;
+            border: 1px solid transparent; cursor: pointer;
+            transition: 0.2s; text-align: left; width: 100%;
+        }
+        .sidebar-btn:hover { background: var(--bg-input); color: var(--text-main); }
+        .sidebar-btn .svg-icon { width: 20px; height: 20px; }
+
         /* ============ TOP NAVBAR ============ */
         .top-navbar {
             position: sticky; top: 0; z-index: 100;
@@ -133,55 +182,6 @@
         }
         .user-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-
-        /* ============ SIDEBAR ============ */
-        .sidebar-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(11, 17, 32, 0.8); backdrop-filter: blur(4px);
-            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-        }
-        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
-        
-        .sidebar {
-            position: fixed; top: 0; left: 0;
-            width: 280px; height: 100vh;
-            background: var(--bg-panel);
-            border-right: 1px solid var(--border-color);
-            z-index: 9999; transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column;
-            padding: 24px 20px;
-            box-shadow: 10px 0 40px rgba(0,0,0,0.5);
-        }
-        .sidebar.show { transform: translateX(0); }
-        
-        .sidebar-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 24px; padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
-        .sidebar-header h2 .svg-icon { width: 20px; height: 20px; color: var(--primary); }
-        
-        .sidebar-close {
-            background: var(--bg-input); border: 1px solid var(--border-color);
-            width: 32px; height: 32px; border-radius: 8px;
-            color: var(--text-muted); font-size: 18px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: 0.2s;
-        }
-        .sidebar-close:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
-        
-        .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
-        .sidebar-btn {
-            display: flex; align-items: center; gap: 14px;
-            padding: 14px 16px; border-radius: 10px;
-            background: transparent; color: var(--text-muted);
-            font-size: 14px; font-weight: 600;
-            border: 1px solid transparent; cursor: pointer;
-            transition: 0.2s; text-align: left; width: 100%;
-        }
-        .sidebar-btn:hover { background: var(--bg-input); color: var(--text-main); }
-        .sidebar-btn .svg-icon { width: 20px; height: 20px; }
 
         /* ============ MAIN CONTENT ============ */
         .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -589,23 +589,33 @@
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2><span class="svg-icon"><svg><use href="#icon-flash"/></svg></span> Menu</h2>
+            <h2><span class="svg-icon"><svg><use href="#icon-flash"/></svg></span> Control Menu</h2>
             <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
         </div>
         <div class="sidebar-menu">
-            <button class="sidebar-btn" onclick="closeSidebarAndScroll('dashboardSection')">
+            <button class="sidebar-btn active" id="btn-nav-dashboard" onclick="showSection('dashboard')">
                 <span class="svg-icon"><svg><use href="#icon-user"/></svg></span> Dashboard
             </button>
-            <button class="sidebar-btn" onclick="closeSidebarAndScroll('planDaysCard')">
-                <span class="svg-icon"><svg><use href="#icon-crown"/></svg></span> My Plan
+            <button class="sidebar-btn" id="btn-nav-links" onclick="showSection('links')">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> Links Manager
             </button>
-            <button class="sidebar-btn" onclick="closeSidebarAndScroll('linkSelectorCard')">
-                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> My Links
+            <button class="sidebar-btn" id="btn-nav-create" onclick="showSection('create')">
+                <span class="svg-icon"><svg><use href="#icon-plus"/></svg></span> Create Link
             </button>
-            <button class="sidebar-btn" onclick="closeSidebarAndScroll('dateFilterBox')">
-                <span class="svg-icon"><svg><use href="#icon-filter"/></svg></span> Filter Stats
+            <button class="sidebar-btn" id="btn-nav-users" onclick="showSection('users')">
+                <span class="svg-icon"><svg><use href="#icon-users"/></svg></span> Manage Users
+            </button>
+            <button class="sidebar-btn" id="btn-nav-renewals" onclick="showSection('renewals')">
+                <span class="svg-icon"><svg><use href="#icon-refresh"/></svg></span> Users & Renewal
+            </button>
+            <button class="sidebar-btn" id="btn-nav-shortener" onclick="showSection('shortener')">
+                <span class="svg-icon"><svg><use href="#icon-external-link"/></svg></span> Short Link
+            </button>
+            <button class="sidebar-btn" id="btn-nav-settings" onclick="showSection('settings')">
+                <span class="svg-icon"><svg><use href="#icon-settings"/></svg></span> Settings
             </button>
         </div>
+        <!-- ✅ Logout Button placed at the bottom of the sidebar menu -->
         <div style="padding-top:20px;border-top:1px solid var(--border-color);margin-top:auto;">
             <button class="btn-secondary" style="color: var(--danger); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="performLogout()">
                 <span class="svg-icon" style="width:18px;height:18px;"><svg><use href="#icon-log-out"/></svg></span> Logout
@@ -994,6 +1004,35 @@
                 <h4 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:200px; overflow-y:auto; font-size:13px;">Loading...</div>
             </div>
+        </div>
+    </div>
+
+    <!-- MY PLAN MODAL -->
+    <div class="app-modal" id="myPlanModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-crown"/></svg> My Current Plan</h3>
+                <button class="modal-close-btn" onclick="closeMyPlanModal()">✕</button>
+            </div>
+            <div id="myPlanContent">Loading...</div>
+        </div>
+    </div>
+
+    <!-- TERMS MODAL -->
+    <div class="app-modal" id="termsModal">
+        <div class="modal-body-card">
+            <div class="modal-header-row">
+                <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
+                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
+            </div>
+            <div style="font-size:14px; color:var(--text-muted); line-height:1.7;">
+                <p style="margin-bottom:12px;"><strong>1. Account Integrity</strong><br>Users must register via Email OTP. Each link is private and exclusively managed by its owner.</p>
+                <p style="margin-bottom:12px;"><strong>2. Link Ownership</strong><br>All links you create are permanently associated with your account.</p>
+                <p style="margin-bottom:12px;"><strong>3. Plan Expiry</strong><br>When plan expires, all your links become inactive immediately. Renew to continue.</p>
+                <p style="margin-bottom:12px;"><strong>4. Content Policy</strong><br>Do not create links for illegal or misleading content. Violation leads to account termination.</p>
+                <p style="margin-bottom:24px;"><strong>5. Data Privacy</strong><br>Your visitor analytics are computed using IP + device fingerprint.</p>
+            </div>
+            <button onclick="closeTermsModal()" class="btn-primary"><span>I Understand</span></button>
         </div>
     </div>
 
