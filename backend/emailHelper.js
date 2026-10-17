@@ -101,16 +101,39 @@ async function sendMail(to, subject, html) {
 
 // ==================== EMAIL TYPES ====================
 
-// 1. OTP Email
-async function sendOtpEmail(email, otp, purpose = 'signin') {
+// 1. OTP Email (WITH Copy Button + Live Timer)
+async function sendOtpEmail(email, otp, purpose = 'signin', validSeconds = 60) {
+    const minutes = Math.floor(validSeconds / 60);
+    const timerText = minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : `${validSeconds} seconds`;
+    const otpDigits = otp.split('');
+
     const html = wrapEmail({
         title: '🔐 Your Verification Code',
-        subtitle: `Use this OTP to ${purpose === 'signup' ? 'create your account' : 'sign in'}. Valid for 10 minutes.`,
+        subtitle: `Use this OTP to ${purpose === 'signup' ? 'create your account' : 'sign in'}. Valid for ${timerText}.`,
         bodyHtml: `
-            <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:24px;text-align:center;margin:20px 0;">
-                <div style="font-size:11px;color:#a5b4fc;text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:10px;">Your OTP Code</div>
-                <div style="font-size:38px;font-weight:900;letter-spacing:10px;color:#ffffff;font-family:'Courier New',monospace;">${otp}</div>
-                <div style="font-size:11px;color:#64748b;margin-top:12px;">⏱ Expires in 10 minutes</div>
+            <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:24px 20px;text-align:center;margin:20px 0;">
+                <div style="font-size:11px;color:#a5b4fc;text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:14px;">Your OTP Code</div>
+                
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;border-collapse:separate;border-spacing:6px;">
+                    <tr>
+                        ${otpDigits.map(d => `
+                            <td style="width:44px;height:56px;background:#080c14;border:2px solid rgba(99,102,241,0.4);border-radius:10px;text-align:center;font-size:28px;font-weight:900;color:#ffffff;font-family:'Courier New',monospace;vertical-align:middle;padding:0;">${d}</td>
+                        `).join('')}
+                    </tr>
+                </table>
+                
+                <div style="margin-top:16px;">
+                    <a href="#" onclick="navigator.clipboard.writeText('${otp}');this.innerHTML='✅ Copied!';this.style.background='rgba(16,185,129,0.3)';setTimeout(()=>{this.innerHTML='📋 Copy OTP';this.style.background='rgba(99,102,241,0.15)'},2000);return false;" 
+                       style="display:inline-block;padding:10px 22px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;text-decoration:none;font-size:13px;font-weight:800;border-radius:10px;letter-spacing:0.3px;">
+                        📋 Copy OTP
+                    </a>
+                </div>
+
+                <div style="margin-top:14px;">
+                    <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:1px;">⏱ Expires In</div>
+                    <div id="otpTimer" style="font-size:18px;font-weight:900;color:#fbbf24;font-family:'Courier New',monospace;margin-top:4px;">00:${validSeconds.toString().padStart(2, '0')}</div>
+                    <div style="font-size:10px;color:#64748b;margin-top:2px;">(This OTP expires after 1 minute)</div>
+                </div>
             </div>
             <p style="margin:16px 0 0;font-size:13px;color:#94a3b8;">If you didn't request this code, please ignore this email.</p>
             <div style="background:rgba(245,158,11,0.1);border:1px dashed rgba(245,158,11,0.4);border-radius:10px;padding:12px;margin-top:16px;font-size:12px;color:#fcd34d;">
@@ -119,7 +142,31 @@ async function sendOtpEmail(email, otp, purpose = 'signin') {
         `,
         accentColor: '#6366f1'
     });
-    return sendMail(email, `Your ${APP_NAME} OTP Code: ${otp}`, html);
+
+    const htmlWithTimer = html.replace('</body>', `
+        <script>
+        (function(){
+            var remaining = ${validSeconds};
+            var timerEl = document.getElementById('otpTimer');
+            if (timerEl) {
+                var iv = setInterval(function(){
+                    remaining--;
+                    if (remaining <= 0) {
+                        clearInterval(iv);
+                        timerEl.textContent = 'EXPIRED';
+                        timerEl.style.color = '#ef4444';
+                        return;
+                    }
+                    var m = Math.floor(remaining / 60);
+                    var s = remaining % 60;
+                    timerEl.textContent = '0' + m + ':' + (s < 10 ? '0' : '') + s;
+                }, 1000);
+            }
+        })();
+        </script>
+    </body>`);
+
+    return sendMail(email, `Your ${APP_NAME} OTP Code: ${otp}`, htmlWithTimer);
 }
 
 // 2. Welcome / Account Created
