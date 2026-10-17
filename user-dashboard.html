@@ -238,40 +238,268 @@
             z-index: 1;
         }
 
-        .pro-card {
-            background: var(--surface-1); border: 1px solid var(--border-subtle);
-            border-radius: 16px; padding: 20px; margin-bottom: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        /* ============ GOOGLE AUTH ============ */
+        .auth-screen {
+            max-width: 440px;
+            margin: 60px auto 0;
+            padding: 0 14px;
+            position: relative;
+            z-index: 1;
+        }
+        @media (max-width: 480px) {
+            .auth-screen { margin: 40px auto 0; }
+        }
+        .auth-card {
+            background: linear-gradient(165deg, rgba(17, 23, 38, 0.9) 0%, rgba(15, 20, 32, 0.95) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            padding: 36px 28px 28px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            pointer-events: none;
         }
 
-        .form-group { margin-bottom: 12px; }
-        .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-input {
-            width: 100%; padding: 12px 14px;
-            background: #080c14; border: 1px solid var(--border-subtle);
-            border-radius: 10px; color: #fff; font-size: 15px; font-weight: 600;
-            outline: none; transition: all 0.2s;
-            -webkit-appearance: none;
-        }
-        .form-input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-glow); }
-        .form-input:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .btn-action {
-            width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 14.5px; font-weight: 700; cursor: pointer;
+        .auth-logo {
+            width: 72px; height: 72px;
+            margin: 0 auto 18px;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff; transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            -webkit-tap-highlight-color: transparent;
+            border-radius: 22px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff;
+            box-shadow: 0 12px 32px var(--primary-glow);
+            position: relative;
+            z-index: 1;
         }
-        .btn-action:active:not(:disabled) { transform: scale(0.98); }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-action svg { width: 18px; height: 18px; }
+        .auth-logo svg { width: 34px; height: 34px; }
 
-        .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
-        .btn-whatsapp { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+        .auth-title { 
+            font-size: 24px; 
+            font-weight: 800; 
+            color: #fff; 
+            margin-bottom: 8px; 
+            letter-spacing: -0.4px;
+            position: relative;
+            z-index: 1;
+        }
+        .auth-subtitle { 
+            font-size: 13.5px; 
+            color: var(--text-secondary); 
+            margin-bottom: 28px; 
+            line-height: 1.55;
+            position: relative;
+            z-index: 1;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .google-btn {
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto 16px;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 12px;
+            color: #3c4043;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .google-btn:active { transform: scale(0.98); background: #f1f3f4; }
+        .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .google-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+        .google-btn .btn-text { font-weight: 700; color: #3c4043; }
 
+        .auth-switch-text {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            margin-top: 22px;
+            position: relative;
+            z-index: 1;
+            line-height: 1.5;
+        }
+        .auth-switch-text a {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 4px;
+            transition: 0.2s;
+            padding: 4px 2px;
+            display: inline-block;
+        }
+        .auth-switch-text a:hover {
+            color: #a5b4fc;
+            text-decoration: underline;
+        }
+
+        .auth-security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 24px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            position: relative;
+            z-index: 1;
+        }
+        .auth-security-badge svg { width: 12px; height: 12px; color: #34d399; }
+
+        /* 🆕 Auth Footer — Terms + How To Use (fills empty space) */
+        .auth-footer-section {
+            max-width: 440px;
+            margin: 18px auto 0;
+            padding: 0 14px 40px;
+            position: relative;
+            z-index: 1;
+        }
+        @media (max-width: 480px) {
+            .auth-footer-section { padding: 0 14px 30px; }
+        }
+
+        .auth-footer-card {
+            background: rgba(17, 23, 38, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-footer-title {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .auth-footer-title svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary-light);
+        }
+
+        .auth-footer-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .auth-footer-list li {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            padding-left: 20px;
+            position: relative;
+        }
+        .auth-footer-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #34d399;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .auth-footer-list li strong {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .auth-terms-agree {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .auth-terms-agree input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: #4f46e5;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .auth-terms-agree label {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .auth-terms-agree label a {
+            color: var(--primary-light);
+            text-decoration: underline;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .auth-footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .auth-footer-links a {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+        .auth-footer-links a:hover {
+            color: var(--primary-light);
+        }
+        .auth-footer-links .sep {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        /* ============ DASHBOARD ============ */
         #dashboardSection { display: none; }
+        #authSection { display: none; }
+        #authFooterSection { display: none; }
 
         .welcome-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -281,7 +509,6 @@
         .welcome-title h2 span { color: var(--primary-light); }
         .welcome-title p { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
 
-        /* HERO CARD */
         .hero-card {
             background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(139,92,246,0.08));
             border: 1px solid rgba(99,102,241,0.3);
@@ -342,7 +569,6 @@
         }
         .hero-limit-info strong { color: #a5b4fc; font-weight: 800; }
 
-        /* PLAN DAYS */
         .plan-days-card {
             background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04));
             border: 1px solid rgba(16,185,129,0.25);
@@ -368,7 +594,6 @@
         .plan-days-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600; gap: 8px; flex-wrap: wrap; }
         .plan-days-meta strong { color: #fff; font-weight: 700; }
 
-        /* LINK SELECTOR */
         .link-selector-card {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
             border-radius: 14px; padding: 14px 16px;
@@ -411,7 +636,6 @@
         .icon-btn.danger:active { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
         .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* TIMELINE */
         .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
         .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
         .timeline-label { font-size: 12.5px; font-weight: 700; color: #fff; }
@@ -428,7 +652,6 @@
         .progress-bar-fill.expired { background: var(--danger); }
         .progress-bar-fill.none { background: rgba(100, 116, 139, 0.3); width: 0%; }
 
-        /* DATE FILTER DROPDOWN */
         .date-filter-box {
             background: var(--surface-2); border: 1px solid var(--border-subtle);
             border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;
@@ -535,7 +758,6 @@
         }
         .custom-date-apply-btn svg { width: 14px; height: 14px; }
 
-        /* STATS */
         .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
         @media (min-width: 640px) { .stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; } }
 
@@ -549,7 +771,12 @@
         .metric-title { font-size: 10.5px; font-weight: 600; color: var(--text-muted); line-height: 1.3; }
         .metric-subtitle { font-size: 9.5px; color: var(--accent-cyan); margin-top: 3px; font-weight: 600; }
 
-        /* MODALS */
+        .pro-card {
+            background: var(--surface-1); border: 1px solid var(--border-subtle);
+            border-radius: 16px; padding: 20px; margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        }
+
         .app-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             height: 100dvh;
@@ -593,7 +820,6 @@
             border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
-        /* CREATE FORM */
         .create-link-form { display: flex; flex-direction: column; gap: 12px; }
         .create-form-section {
             background: rgba(0,0,0,0.2);
@@ -641,7 +867,6 @@
         .switch-toggle input:checked + span { background: linear-gradient(135deg, #10b981, #059669); }
         .switch-toggle input:checked + span:before { transform: translateX(20px); }
 
-        /* PLANS */
         .plans-carousel-wrap { position: relative; margin-bottom: 16px; overflow: hidden; }
         .plans-carousel {
             display: flex;
@@ -778,7 +1003,6 @@
             flex-shrink: 0; margin-top: 1px;
         }
 
-        /* PAYMENT PANEL */
         .payment-panel-screenshot {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
             border: 1px solid rgba(99, 102, 241, 0.3);
@@ -804,7 +1028,6 @@
         }
         .upi-copy-chip:active { border-color: var(--primary-light); }
 
-        /* ACTIVATE POPUP */
         .activate-popup-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             height: 100dvh;
@@ -890,7 +1113,6 @@
         .activate-popup-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .activate-popup-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 12.5px; padding: 10px; }
 
-        /* CUSTOM DIALOG */
         .custom-dialog-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             height: 100dvh;
@@ -966,131 +1188,6 @@
             border: 1px solid var(--border-subtle);
         }
 
-        /* GOOGLE AUTH */
-        .auth-screen {
-            max-width: 440px;
-            margin: 30px auto 0;
-            padding: 0 4px;
-        }
-        .auth-card {
-            background: linear-gradient(165deg, rgba(17, 23, 38, 0.9) 0%, rgba(15, 20, 32, 0.95) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 24px;
-            padding: 36px 28px 28px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .auth-card::before {
-            content: '';
-            position: absolute;
-            top: -80px; right: -80px;
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .auth-logo {
-            width: 72px; height: 72px;
-            margin: 0 auto 18px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 22px;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff;
-            box-shadow: 0 12px 32px var(--primary-glow);
-            position: relative;
-            z-index: 1;
-        }
-        .auth-logo svg { width: 34px; height: 34px; }
-
-        .auth-title { 
-            font-size: 24px; 
-            font-weight: 800; 
-            color: #fff; 
-            margin-bottom: 8px; 
-            letter-spacing: -0.4px;
-            position: relative;
-            z-index: 1;
-        }
-        .auth-subtitle { 
-            font-size: 13.5px; 
-            color: var(--text-secondary); 
-            margin-bottom: 28px; 
-            line-height: 1.55;
-            position: relative;
-            z-index: 1;
-            max-width: 320px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .google-btn {
-            width: 100%;
-            max-width: 340px;
-            margin: 0 auto 16px;
-            padding: 14px 18px;
-            background: #ffffff;
-            border: 1px solid #dadce0;
-            border-radius: 12px;
-            color: #3c4043;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            position: relative;
-            z-index: 1;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .google-btn:active { transform: scale(0.98); background: #f1f3f4; }
-        .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .google-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
-        .google-btn .btn-text { font-weight: 700; color: #3c4043; }
-
-        .auth-switch-text {
-            font-size: 13.5px;
-            color: var(--text-secondary);
-            margin-top: 22px;
-            position: relative;
-            z-index: 1;
-            line-height: 1.5;
-        }
-        .auth-switch-text a {
-            color: var(--primary-light);
-            text-decoration: none;
-            font-weight: 700;
-            cursor: pointer;
-            margin-left: 4px;
-            transition: 0.2s;
-            padding: 4px 2px;
-            display: inline-block;
-        }
-        .auth-switch-text a:hover {
-            color: #a5b4fc;
-            text-decoration: underline;
-        }
-
-        .auth-security-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 24px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            border: 1px solid var(--border-subtle);
-            position: relative;
-            z-index: 1;
-        }
-        .auth-security-badge svg { width: 12px; height: 12px; color: #34d399; }
-
         #googleHiddenContainer {
             position: absolute;
             width: 1px;
@@ -1103,7 +1200,6 @@
             left: 0;
         }
 
-        /* PROFILE MODAL */
         .profile-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             height: 100dvh;
@@ -1163,7 +1259,6 @@
         }
         .profile-email-badge svg { width: 16px; height: 16px; flex-shrink: 0; color: #34d399; }
 
-        /* TOAST NOTIFICATION */
         .toast-notification {
             position: fixed;
             top: 20px;
@@ -1637,7 +1732,43 @@
         </div>
     </main>
 
-    <!-- Hidden Google container -->
+    <!-- 🆕 AUTH FOOTER — Terms + How to Use (fills empty space) -->
+    <div id="authFooterSection" class="auth-footer-section">
+        <div class="auth-footer-card">
+            <div class="auth-footer-title">
+                <svg><use href="#icon-book"/></svg>
+                <span>How to Use</span>
+            </div>
+            <ul class="auth-footer-list">
+                <li><strong>Sign up</strong> with Google to create your account</li>
+                <li>Complete your <strong>profile</strong> (name + phone)</li>
+                <li>Get <strong>3-day Free Trial</strong> automatically</li>
+                <li>Create tracking links and start earning</li>
+            </ul>
+        </div>
+
+        <div class="auth-footer-card">
+            <div class="auth-footer-title">
+                <svg><use href="#icon-shield"/></svg>
+                <span>Terms & Conditions</span>
+            </div>
+            <div class="auth-terms-agree">
+                <input type="checkbox" id="authTermsCheck">
+                <label for="authTermsCheck">
+                    I agree to the <a onclick="openTermsModal(event)">Terms & Conditions</a> and <a onclick="openTermsModal(event)">Privacy Policy</a> of this service.
+                </label>
+            </div>
+        </div>
+
+        <div class="auth-footer-links">
+            <a onclick="openTermsModal(event)">Terms & Rules</a>
+            <span class="sep"></span>
+            <a onclick="openGuideModal()">How to Use</a>
+            <span class="sep"></span>
+            <a href="https://wa.me/916372923348" target="_blank">Support</a>
+        </div>
+    </div>
+
     <div id="googleHiddenContainer">
         <div id="g_id_onload"
              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
@@ -1661,18 +1792,18 @@
 
             <div class="form-group">
                 <label class="form-label">Your Full Name</label>
-                <input type="text" id="profileName" class="form-input" placeholder="Enter your full name" maxlength="50">
+                <input type="text" id="profileName" class="form-input" placeholder="Enter your full name" maxlength="50" style="width:100%; padding:12px 14px; background:#080c14; border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-size:15px; font-weight:600; outline:none;">
             </div>
-            <div class="form-group">
-                <label class="form-label">Phone Number (10 digits)</label>
-                <input type="tel" id="profilePhone" class="form-input" placeholder="Enter your 10-digit mobile number" maxlength="10" inputmode="numeric">
+            <div class="form-group" style="margin-top:12px;">
+                <label class="form-label" style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Phone Number (10 digits)</label>
+                <input type="tel" id="profilePhone" placeholder="Enter your 10-digit mobile number" maxlength="10" inputmode="numeric" style="width:100%; padding:12px 14px; background:#080c14; border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-size:15px; font-weight:600; outline:none;">
             </div>
 
-            <button class="btn-action" id="btnCompleteProfile" onclick="submitProfile()" style="margin-top:8px;">
-                <svg><use href="#icon-check-circle"/></svg>
+            <button class="btn-action" id="btnCompleteProfile" onclick="submitProfile()" style="width:100%; padding:14px; border:none; border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px;">
+                <svg style="width:18px;height:18px;"><use href="#icon-check-circle"/></svg>
                 <span>Complete & Get Free Trial</span>
             </button>
-            <button class="btn-action btn-secondary" onclick="cancelProfile()" style="margin-top:8px;">
+            <button class="btn-action btn-secondary" onclick="cancelProfile()" style="width:100%; padding:14px; border:1px solid var(--border-subtle); border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:var(--surface-2); color:var(--text-primary); display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">
                 <span>Cancel</span>
             </button>
         </div>
@@ -1689,12 +1820,12 @@
                 <div class="create-form-section">
                     <div class="create-form-section-title"><svg><use href="#icon-user"/></svg> Basic Info</div>
                     <div class="form-group">
-                        <label class="form-label">Your Name (Client)</label>
-                        <input type="text" id="clClientName" class="form-input" disabled>
+                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Your Name (Client)</label>
+                        <input type="text" id="clClientName" disabled style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Link Name / Label *</label>
-                        <input type="text" id="clLinkName" class="form-input" placeholder="e.g. My Campaign Link" required maxlength="100">
+                    <div class="form-group" style="margin-top:12px;">
+                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Link Name / Label *</label>
+                        <input type="text" id="clLinkName" placeholder="e.g. My Campaign Link" required maxlength="100" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
                 </div>
 
@@ -1702,22 +1833,22 @@
                     <div class="create-form-section-title"><svg><use href="#icon-video"/></svg> Video & Claim</div>
                     <div class="create-form-grid-2">
                         <div class="form-group">
-                            <label class="form-label">Video URL *</label>
-                            <input type="url" id="clVideo" class="form-input" placeholder="https://youtu.be/..." required>
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video URL *</label>
+                            <input type="url" id="clVideo" placeholder="https://youtu.be/..." required style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Claim Destination URL</label>
-                            <input type="url" id="clClaim" class="form-input" placeholder="https://...">
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Claim Destination URL</label>
+                            <input type="url" id="clClaim" placeholder="https://..." style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
-                    <div class="create-form-grid-2">
+                    <div class="create-form-grid-2" style="margin-top:12px;">
                         <div class="form-group">
-                            <label class="form-label">Video Button Text</label>
-                            <input type="text" id="clButtonText" class="form-input" placeholder="Claim Now" value="Claim Now" maxlength="50">
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video Button Text</label>
+                            <input type="text" id="clButtonText" placeholder="Claim Now" value="Claim Now" maxlength="50" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Headline</label>
-                            <input type="text" id="clHeadline" class="form-input" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150">
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Headline</label>
+                            <input type="text" id="clHeadline" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
                 </div>
@@ -1739,26 +1870,26 @@
                     <div class="create-form-section-title"><svg><use href="#icon-image"/></svg> Popup Settings</div>
                     <div class="create-form-grid-2">
                         <div class="form-group">
-                            <label class="form-label">Popup Title</label>
-                            <input type="text" id="clPopTitle" class="form-input" placeholder="Claim Your Reward" value="Claim Your Reward" maxlength="100">
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Title</label>
+                            <input type="text" id="clPopTitle" placeholder="Claim Your Reward" value="Claim Your Reward" maxlength="100" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Popup Button Text</label>
-                            <input type="text" id="clPopBtn" class="form-input" placeholder="Claim Now" value="Claim Now" maxlength="50">
+                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Button Text</label>
+                            <input type="text" id="clPopBtn" placeholder="Claim Now" value="Claim Now" maxlength="50" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Popup Subtitle</label>
-                        <input type="text" id="clPopSub" class="form-input" placeholder="Tap below to unlock your reward" value="Tap below to unlock your reward" maxlength="200">
+                    <div class="form-group" style="margin-top:12px;">
+                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Subtitle</label>
+                        <input type="text" id="clPopSub" placeholder="Tap below to unlock your reward" value="Tap below to unlock your reward" maxlength="200" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Popup Image URL (16:9)</label>
-                        <input type="text" id="clPopImg" class="form-input" placeholder="https://.../image.jpg">
+                    <div class="form-group" style="margin-top:12px;">
+                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Image URL (16:9)</label>
+                        <input type="text" id="clPopImg" placeholder="https://.../image.jpg" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
                 </div>
 
-                <button class="btn-action" id="btnCreateLink" onclick="submitCreateLink()">
-                    <svg><use href="#icon-rocket"/></svg> Generate My Link
+                <button class="btn-action" id="btnCreateLink" onclick="submitCreateLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <svg style="width:18px;height:18px;"><use href="#icon-rocket"/></svg> Generate My Link
                 </button>
             </div>
         </div>
@@ -1799,9 +1930,9 @@
                 <h3><svg><use href="#icon-link"/></svg> URL Shortener</h3>
                 <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
             </div>
-            <div class="form-group"><label class="form-label">Destination URL</label><input type="url" id="uShortUrl" class="form-input" placeholder="https://your-long-link.com"></div>
-            <div class="form-group"><label class="form-label">Title / Label</label><input type="text" id="uShortTitle" class="form-input" placeholder="e.g. My Campaign Link"></div>
-            <button class="btn-action" onclick="createUserShortLink()"><span>Create Short Link</span></button>
+            <div class="form-group" style="margin-bottom:12px;"><label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Destination URL</label><input type="url" id="uShortUrl" placeholder="https://your-long-link.com" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Title / Label</label><input type="text" id="uShortTitle" placeholder="e.g. My Campaign Link" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
+            <button class="btn-action" onclick="createUserShortLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Create Short Link</span></button>
             <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);">
                 <h4 style="font-size:12.5px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading...</div>
@@ -1825,7 +1956,7 @@
                     <div id="lockBarFill" style="height:100%; background:linear-gradient(90deg, #f59e0b, #6366f1); width:0%;"></div>
                 </div>
             </div>
-            <button class="btn-action" onclick="closeLockModal()"><span>Got it</span></button>
+            <button class="btn-action" onclick="closeLockModal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
         </div>
     </div>
 
@@ -1841,7 +1972,7 @@
             <div class="guide-item"><h4>3. UID Checking</h4><p>Enable UID to require visitors to enter player UID before watching the video.</p></div>
             <div class="guide-item"><h4>4. Popup Settings</h4><p>Customize entrance popup title, subtitle, button text, and image.</p></div>
             <div class="guide-item"><h4>5. Analytics (48h Unique)</h4><p>Visits and claims are counted on strict 48-hour unique basis.</p></div>
-            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:8px;"><span>Got it</span></button>
+            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
         </div>
     </div>
 
@@ -1857,7 +1988,7 @@
             <div class="guide-item"><h4>3. Plan Expiry</h4><p>When plan expires, all your links become inactive immediately. Renew to continue.</p></div>
             <div class="guide-item"><h4>4. Content Policy</h4><p>Do not create links for illegal or misleading content. Violation leads to account termination.</p></div>
             <div class="guide-item"><h4>5. Data Privacy</h4><p>Your visitor analytics are computed using IP + device fingerprint.</p></div>
-            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:8px;"><span>I Understand</span></button>
+            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>I Understand</span></button>
         </div>
     </div>
 
@@ -1943,10 +2074,13 @@
         let currentPlanUsage = null;
         let pendingProfileUser = null;
         let currentAuthMode = 'signin';
+        let googleInitialized = false;
         
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
+
+        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
         // ============ TOAST ============
         function showToast(message, type = 'info', duration = 3000) {
@@ -2040,6 +2174,7 @@
             }
             hideHamburger();
             document.getElementById('authSection').style.display = 'block';
+            document.getElementById('authFooterSection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
         }
 
@@ -2085,12 +2220,19 @@
             }
         }
 
+        // ============ 🔥 GOOGLE AUTH — MOBILE + DESKTOP FIXED ============
         function triggerGoogleAuth(action) {
             currentAuthMode = action;
             
             const btn1 = document.getElementById('googleSignInBtn');
             const btn2 = document.getElementById('googleSignUpBtn');
             
+            // 🔥 Detect mobile
+            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            
+            console.log(`🔵 Google Auth: action=${action}, isMobile=${isMobile}`);
+            
+            // Wait for Google SDK
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
                 showToast('Google Sign-In loading... Please wait', 'info');
                 let attempts = 0;
@@ -2112,6 +2254,49 @@
             if (btn1) btn1.disabled = true;
             if (btn2) btn2.disabled = true;
             
+            // 🔥 MOBILE: Use hidden Google button click (most reliable on mobile)
+            if (isMobile) {
+                try {
+                    // Try to find the hidden Google button and click it
+                    const hiddenGoogleBtn = document.querySelector('#googleBtnHidden div[role="button"]') || 
+                                           document.querySelector('#googleBtnHidden iframe') ||
+                                           document.querySelector('#googleBtnHidden > div');
+                    
+                    if (hiddenGoogleBtn) {
+                        // Create and dispatch click event
+                        const clickEvent = new MouseEvent('click', { 
+                            bubbles: true, 
+                            cancelable: true, 
+                            view: window 
+                        });
+                        hiddenGoogleBtn.dispatchEvent(clickEvent);
+                        
+                        // Re-enable buttons after a delay
+                        setTimeout(() => {
+                            if (btn1) btn1.disabled = false;
+                            if (btn2) btn2.disabled = false;
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Fallback: Try prompt (works on some mobile browsers)
+                    google.accounts.id.prompt((notification) => {
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+                            if (btn1) btn1.disabled = false;
+                            if (btn2) btn2.disabled = false;
+                            showToast('Please tap again or use desktop browser', 'warning');
+                        }
+                    });
+                } catch(err) {
+                    console.error('Mobile Google auth error:', err);
+                    if (btn1) btn1.disabled = false;
+                    if (btn2) btn2.disabled = false;
+                    showToast('Google Sign-In error. Please try again.', 'error');
+                }
+                return;
+            }
+            
+            // 🔥 DESKTOP: Use standard prompt
             try {
                 google.accounts.id.prompt((notification) => {
                     if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
@@ -2297,6 +2482,7 @@
 
         function showDashboardView() {
             document.getElementById('authSection').style.display = 'none';
+            document.getElementById('authFooterSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('navUserBadge').style.display = 'flex';
             showHamburger();
@@ -2469,8 +2655,6 @@
                     popupButtonText: document.getElementById('clPopBtn').value.trim() || 'Claim Now',
                     popupImage: document.getElementById('clPopImg').value.trim() || null
                 };
-                
-                console.log('📤 Creating link:', payload);
 
                 const res = await fetch('/api/user/create-link', {
                     method: 'POST',
@@ -2481,7 +2665,6 @@
                 const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.success) {
-                    // Update name if server auto-fixed it
                     if (data.userName && data.userName !== userProfile.name) {
                         userProfile.name = data.userName;
                         localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
@@ -2748,7 +2931,7 @@
                     <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:22px; margin-bottom:14px; text-align:center;">
                         <div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
                         <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">Activate a plan to start creating links.</div>
-                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();"><span>Activate Plan</span></button>
+                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Activate Plan</span></button>
                     </div>
                 `;
                 return;
@@ -2799,7 +2982,7 @@
                         <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div>
                     </div>
                 ` : `
-                    <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">
+                    <button class="btn-action" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;" onclick="closeMyPlanModal(); openPlansModal();">
                         <span>View Plans & Upgrade</span>
                     </button>
                 `}
@@ -2956,7 +3139,7 @@
                             <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">
                                 Pay <strong style="color:#38bdf8;">₹${p.price}</strong> then send screenshot on WhatsApp.
                             </div>
-                            <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;">
+                            <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;background:linear-gradient(135deg, #10b981, #059669);color:#fff;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;">
                                 <span>Send Screenshot on WhatsApp</span>
                             </button>
                         </div>
@@ -2967,10 +3150,10 @@
                 if (freeTrialUsed) {
                     paymentHtml = `<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:12.5px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>`;
                 } else {
-                    paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();"><span>Activate Free Trial</span></button>`;
+                    paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Activate Free Trial</span></button>`;
                 }
             } else {
-                paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()"><span>Contact Admin on WhatsApp</span></button>`;
+                paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Contact Admin on WhatsApp</span></button>`;
             }
 
             footer.innerHTML = `
@@ -3256,21 +3439,25 @@
 
         window.addEventListener('load', () => {
             setTimeout(() => {
-                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id && !googleInitialized) {
                     try {
                         google.accounts.id.initialize({
-                            client_id: '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com',
+                            client_id: GOOGLE_CLIENT_ID,
                             callback: handleGoogleAuth,
                             auto_select: false,
-                            cancel_on_tap_outside: true
+                            cancel_on_tap_outside: true,
+                            use_fedcm_for_prompt: false
                         });
+                        googleInitialized = true;
                         
                         const hiddenBtn = document.getElementById('googleBtnHidden');
                         if (hiddenBtn) {
                             google.accounts.id.renderButton(hiddenBtn, {
                                 type: 'standard',
                                 size: 'large',
-                                theme: 'filled_black'
+                                theme: 'filled_black',
+                                text: 'signin_with',
+                                shape: 'rectangular'
                             });
                         }
                         
