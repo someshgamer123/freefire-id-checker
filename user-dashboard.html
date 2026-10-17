@@ -1298,26 +1298,22 @@
 
     <script>
         // ==============================================
-        // 🔧 REPLACE THIS with your actual Google Client ID
+        // 🔧 REPLACE WITH YOUR GOOGLE CLIENT ID
         // ==============================================
         const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
         // ==============================================
-        // 🔧 REPLACE THIS with your support email
+        // 🔧 REPLACE WITH YOUR SUPPORT EMAIL
         // ==============================================
         const SUPPORT_EMAIL = 'somuandsagar@gmail.com';
 
-        // ==============================================
-        // 🔧 FIX: Auto-inject support email into all mailto links
-        // ==============================================
-        (function injectSupportEmail() {
-            document.addEventListener('DOMContentLoaded', function() {
-                const links = document.querySelectorAll('a[href^="mailto:"]');
-                links.forEach(function(a) {
-                    a.setAttribute('href', 'mailto:' + SUPPORT_EMAIL);
-                });
+        // Auto-inject support email into all mailto links
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('a[href^="mailto:"]');
+            links.forEach(function(a) {
+                a.setAttribute('href', 'mailto:' + SUPPORT_EMAIL);
             });
-        })();
+        });
 
         let userProfile = null;
         let activeLinkRecord = null;
@@ -1462,9 +1458,7 @@
         }
 
         // ==============================================
-        // 🔧 CRITICAL FIX: Google Auth
-        // The OLD code had g_id_onload + renderButton conflict
-        // NEW code: only ONE initialize call, handle callback properly
+        // 🔧 CRITICAL FIX: Google Auth Integration
         // ==============================================
         function handleGoogleCredential(response) {
             console.log('🔐 Google credential received');
@@ -1554,8 +1548,7 @@
         }
 
         // ==============================================
-        // 🔧 Google Button Renderer — SINGLE call
-        // No g_id_onload div — clean integration
+        // 🔧 Google Button Renderer
         // ==============================================
         function setupGoogleButtons() {
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
@@ -1607,9 +1600,6 @@
             }
         }
 
-        // ==============================================
-        // 🔧 Profile Modal
-        // ==============================================
         function openProfileModal(user) {
             document.getElementById('profileEmailDisplay').textContent = user.email;
             document.getElementById('profileName').value = user.name || '';
@@ -1666,9 +1656,6 @@
             });
         }
 
-        // ==============================================
-        // 🔧 Pending Approval Screen
-        // ==============================================
         function showPendingApprovalScreen(hoursRemaining, email) {
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('authFooterSection').style.display = 'block';
@@ -1704,7 +1691,6 @@
             fetchUserLinkData();
         }
 
-        // ============ DATE FILTER ============
         function toggleDateDropdown(event) {
             if (event) event.stopPropagation();
             document.getElementById('dateFilterDropdown').classList.toggle('open');
@@ -1758,7 +1744,6 @@
             fetchUserLinkData();
         }
 
-        // ============ CREATE LINK MODAL ============
         async function openCreateLinkModal() {
             toggleSidebar(false);
             if (!currentPlanUsage) {
@@ -1873,7 +1858,6 @@
             });
         }
 
-        // ============ PLANS MODAL ============
         async function openPlansModal() {
             toggleSidebar(false);
             document.getElementById('plansModal').classList.add('active');
@@ -1949,7 +1933,6 @@
             }
         }
 
-        // ============ FETCH DATA ============
         async function fetchUserLinkData(explicitLinkId) {
             document.getElementById('displayLinkId').textContent = 'Fetching...';
             document.getElementById('displayLinkName').textContent = 'Loading...';
