@@ -117,7 +117,7 @@ const Pricing = safeLoadModel('Pricing', {
     plans: { type: Object, default: {} },
     paymentSettings: { type: Object, default: {} },
     whatsappNumber: { type: String, default: '916372923348' },
-    supportEmail: { type: String, default: '' },  // 🆕
+    supportEmail: { type: String, default: '' },
     autoPaymentEnabled: { type: Boolean, default: false }
 });
 
@@ -486,7 +486,7 @@ async function autoFixUserFields(user) {
         needsUpdate = true;
     }
     if (user.phone === undefined || user.phone === null) { updates.phone = ''; needsUpdate = true; }
-    if (!user.status || user.status === 'undefined') { updates.status = 'approved'; needsUpdate = true; }
+    if (!user.status || user.status === 'undefined') { updates.status = 'pending'; needsUpdate = true; }
     if (user.currentPlan === undefined || user.currentPlan === null || user.currentPlan === '') { updates.currentPlan = 'none'; needsUpdate = true; }
     if (user.lifetimeUnlimited === undefined || user.lifetimeUnlimited === null) { updates.lifetimeUnlimited = false; needsUpdate = true; }
     if (user.freeTrialUsed === undefined || user.freeTrialUsed === null) { updates.freeTrialUsed = false; needsUpdate = true; }
@@ -1139,7 +1139,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
         if (user) {
             // Profile complete → already registered
             if (user.name && user.phone && user.profileCompleted === true) {
-                // If approved, tell them to sign in
+                // If approved or pending, tell them to sign in
                 if (user.status === 'approved' || user.status === 'pending') {
                     return res.status(400).json({
                         error: 'This Google account is already registered. Please Sign In instead.',
@@ -2091,6 +2091,7 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
                 whatsappNumber: pricingDoc.whatsappNumber,
                 supportEmail: pricingDoc.supportEmail
             },
+            supportEmail: pricingDoc.supportEmail || '',
             requests
         });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -2131,7 +2132,7 @@ app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
             pricingDoc.markModified('paymentSettings');
         }
         if (whatsappNumber) pricingDoc.whatsappNumber = whatsappNumber.toString().trim();
-        if (supportEmail !== undefined) pricingDoc.supportEmail = (supportEmail || '').toString().trim();  // ✅ NEW
+        if (supportEmail !== undefined) pricingDoc.supportEmail = (supportEmail || '').toString().trim();
         pricingDoc.autoPaymentEnabled = false;
         await pricingDoc.save();
 
