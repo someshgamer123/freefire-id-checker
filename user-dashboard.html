@@ -2,12 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <title>LinkForge — Creator Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0a0e17">
-
-    <!-- ✅ Google Sign-In Script -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,7 +216,7 @@
         /* ============ CONTENT ============ */
         .content-wrap { max-width: 900px; margin: 18px auto 0; padding: 0 14px; position: relative; z-index: 1; }
 
-        /* ============ GOOGLE AUTH ============ */
+        /* ============ AUTH SCREEN ============ */
         .auth-screen {
             max-width: 420px;
             margin: 30px auto 20px;
@@ -258,36 +255,13 @@
         .auth-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.3px; position: relative; z-index: 1; }
         .auth-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5; position: relative; z-index: 1; }
 
-        .google-btn-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-            min-height: 44px;
-        }
-        .google-btn-container > div {
-            width: 100% !important;
-            max-width: 300px !important;
-        }
-        .google-btn-container iframe {
-            margin: 0 auto !important;
-            display: block !important;
-            border-radius: 10px !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
-        }
-        .google-loading {
-            width: 100%; max-width: 300px; padding: 12px;
-            background: #ffffff; border: 1px solid #dadce0; border-radius: 10px;
-            color: #3c4043; font-size: 14px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+        /* OTP Boxes */
+        .otp-box:focus {
+            border-color: var(--primary-light) !important;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
         }
 
-        .auth-switch-text { font-size: 13px; color: var(--text-secondary); position: relative; z-index: 1; line-height: 1.5; }
-        .auth-switch-text a { color: var(--primary-light); text-decoration: none; font-weight: 700; cursor: pointer; margin-left: 4px; }
-
-        /* ============ PENDING SCREEN ============ */
+        /* PENDING SCREEN */
         .pending-screen { display: none; text-align: center; padding: 20px 0; position: relative; z-index: 1; }
         .pending-icon {
             width: 70px; height: 70px; margin: 0 auto 16px;
@@ -673,7 +647,6 @@
         <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
         <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
         <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
-        <symbol id="icon-google" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></symbol>
         <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
         <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
         <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
@@ -686,8 +659,8 @@
             <div class="sb-logo">
                 <div class="sb-logo-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
-                    <h2>DASHBOARD</h2>
-                    <p>User Control Center</p>
+                    <h2>LINKFORGE</h2>
+                    <p>Creator Control Center</p>
                 </div>
             </div>
             <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">
@@ -749,8 +722,8 @@
             <a href="#" class="navbar-brand">
                 <div class="brand-badge-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
-                    <div class="brand-title">DASHBOARD</div>
-                    <div class="brand-subtitle">Control Center</div>
+                    <div class="brand-title">LINKFORGE</div>
+                    <div class="brand-subtitle">Creator Dashboard</div>
                 </div>
             </a>
         </div>
@@ -763,48 +736,80 @@
     </header>
 
     <main class="content-wrap">
-        <!-- AUTH SECTION -->
+        <!-- AUTH SECTION (OTP) -->
         <div id="authSection" class="auth-screen">
             <div class="auth-card">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
 
-                <div id="signInView">
-                    <h2 class="auth-title">Welcome Back</h2>
-                    <p class="auth-subtitle">Sign in with your Google account</p>
+                <!-- STEP 1: EMAIL ENTRY -->
+                <div id="emailStepView">
+                    <h2 class="auth-title">Welcome to LinkForge</h2>
+                    <p class="auth-subtitle">Enter your email address to receive a one-time password</p>
 
-                    <div class="google-btn-container" id="googleSignInContainer">
-                        <div class="google-loading">
-                            <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
-                            Loading...
-                        </div>
+                    <div style="margin-bottom:16px; text-align:left;">
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Email Address</label>
+                        <input type="email" id="authEmailInput" placeholder="you@gmail.com" autocomplete="email" style="width:100%; padding:14px 16px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:15px; font-weight:600; outline:none; transition:0.2s;">
                     </div>
 
-                    <div class="auth-switch-text">
-                        Don't have an account? <a onclick="switchAuthView('signup')">Sign Up</a>
+                    <button id="btnSendOtp" onclick="sendOtp()" style="width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:800; cursor:pointer; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 28px rgba(79,70,229,0.4); transition:0.2s;">
+                        <svg style="width:18px;height:18px;"><use href="#icon-mail"/></svg>
+                        <span>Send OTP</span>
+                    </button>
+
+                    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border-subtle); text-align:left;">
+                        <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
+                            <span>No password needed</span>
+                        </div>
+                        <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
+                            <span>Secure OTP-based login</span>
+                        </div>
+                        <div style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
+                            <span>Free trial available after approval</span>
+                        </div>
                     </div>
                 </div>
 
-                <div id="signUpView" style="display:none;">
-                    <h2 class="auth-title">Create Account</h2>
-                    <p class="auth-subtitle">Sign up with Google to request access</p>
+                <!-- STEP 2: OTP VERIFICATION -->
+                <div id="otpStepView" style="display:none;">
+                    <h2 class="auth-title">Check Your Email</h2>
+                    <p class="auth-subtitle">We sent a 6-digit code to<br><strong id="otpEmailDisplay" style="color:var(--primary-light);"></strong></p>
 
-                    <div class="google-btn-container" id="googleSignUpContainer">
-                        <div class="google-loading">
-                            <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
-                            Loading...
-                        </div>
+                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:24px;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                        <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                     </div>
 
-                    <div class="auth-switch-text">
-                        Already have an account? <a onclick="switchAuthView('signin')">Sign In</a>
+                    <button id="btnVerifyOtp" onclick="verifyOtp()" style="width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:800; cursor:pointer; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 28px rgba(16,185,129,0.4); transition:0.2s;">
+                        <svg style="width:18px;height:18px;"><use href="#icon-check-circle"/></svg>
+                        <span>Verify & Continue</span>
+                    </button>
+
+                    <div style="margin-top:18px; text-align:center;">
+                        <button id="btnResendOtp" onclick="resendOtp()" disabled style="background:none; border:none; color:var(--text-muted); font-size:13px; font-weight:600; cursor:not-allowed; padding:8px;">Resend in <span id="resendTimer">45</span>s</button>
+                    </div>
+
+                    <div style="margin-top:12px; text-align:center;">
+                        <button onclick="backToEmail()" style="background:none; border:none; color:var(--primary-light); font-size:13px; font-weight:700; cursor:pointer; padding:8px;">✏️ Change Email</button>
+                    </div>
+
+                    <div style="margin-top:16px; padding:12px; background:rgba(245,158,11,0.1); border:1px dashed rgba(245,158,11,0.4); border-radius:10px; font-size:12px; color:#fcd34d; text-align:left; line-height:1.5;">
+                        ⚠️ <strong>Can't find the OTP?</strong> Please check your <strong>Spam / Junk</strong> folder.
                     </div>
                 </div>
 
-                <div id="pendingView" class="pending-screen">
+                <!-- PENDING APPROVAL VIEW -->
+                <div id="pendingView" class="pending-screen" style="display:none;">
                     <div class="pending-icon">⏳</div>
                     <div class="pending-title">Pending Approval</div>
                     <div class="pending-sub">Your registration request has been sent to the Admin.<br>Please wait for approval before signing in.</div>
-                    <button class="pending-btn" onclick="switchAuthView('signin')">Back to Sign In</button>
+                    <button class="pending-btn" onclick="backToEmail()">Back to Login</button>
                 </div>
             </div>
         </div>
@@ -999,7 +1004,7 @@
                 <span>How to Use</span>
             </div>
             <ul class="auth-footer-list">
-                <li><strong>Sign up</strong> with Google to request an account</li>
+                <li><strong>Enter your email</strong> to receive OTP</li>
                 <li>Wait for <strong>Admin Approval</strong> to activate your account</li>
                 <li>Create tracking links and start earning</li>
             </ul>
@@ -1026,20 +1031,20 @@
                 <span id="profileEmailDisplay">user@example.com</span>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Your Full Name</label>
-                <input type="text" id="profileName" class="form-input" placeholder="Enter your full name" maxlength="50" style="width:100%; padding:12px 14px; background:#080c14; border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-size:15px; font-weight:600; outline:none;">
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Your Full Name</label>
+                <input type="text" id="profileName" placeholder="Enter your full name" maxlength="50" style="width:100%; padding:12px 14px; background:#080c14; border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-size:15px; font-weight:600; outline:none;">
             </div>
-            <div class="form-group" style="margin-top:12px;">
-                <label class="form-label" style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Phone Number (10 digits)</label>
+            <div>
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Phone Number (10 digits)</label>
                 <input type="tel" id="profilePhone" placeholder="Enter your 10-digit mobile number" maxlength="10" inputmode="numeric" style="width:100%; padding:12px 14px; background:#080c14; border:1px solid var(--border-subtle); border-radius:10px; color:#fff; font-size:15px; font-weight:600; outline:none;">
             </div>
 
-            <button class="btn-action" id="btnCompleteProfile" onclick="submitProfile()" style="width:100%; padding:14px; border:none; border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px;">
+            <button id="btnCompleteProfile" onclick="submitProfile()" style="width:100%; padding:14px; border:none; border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px;">
                 <svg style="width:18px;height:18px;"><use href="#icon-check-circle"/></svg>
                 <span>Submit Request</span>
             </button>
-            <button class="btn-action btn-secondary" onclick="cancelProfile()" style="width:100%; padding:14px; border:1px solid var(--border-subtle); border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:var(--surface-2); color:var(--text-primary); display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">
+            <button onclick="cancelProfile()" style="width:100%; padding:14px; border:1px solid var(--border-subtle); border-radius:12px; font-size:14.5px; font-weight:700; cursor:pointer; background:var(--surface-2); color:var(--text-primary); display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">
                 <span>Cancel</span>
             </button>
         </div>
@@ -1055,12 +1060,12 @@
             <div class="create-link-form">
                 <div class="create-form-section">
                     <div class="create-form-section-title"><svg><use href="#icon-user"/></svg> Basic Info</div>
-                    <div class="form-group">
-                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Your Name (Client)</label>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Your Name (Client)</label>
                         <input type="text" id="clClientName" disabled style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
-                    <div class="form-group" style="margin-top:12px;">
-                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Link Name / Label *</label>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Link Name / Label *</label>
                         <input type="text" id="clLinkName" placeholder="e.g. My Campaign Link" required maxlength="100" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
                 </div>
@@ -1068,22 +1073,22 @@
                 <div class="create-form-section">
                     <div class="create-form-section-title"><svg><use href="#icon-video"/></svg> Video & Claim</div>
                     <div class="create-form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video URL *</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video URL *</label>
                             <input type="url" id="clVideo" placeholder="https://youtu.be/..." required style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Claim Destination URL</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Claim Destination URL</label>
                             <input type="url" id="clClaim" placeholder="https://..." style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
                     <div class="create-form-grid-2" style="margin-top:12px;">
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video Button Text</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Video Button Text</label>
                             <input type="text" id="clButtonText" placeholder="Claim Now" value="Claim Now" maxlength="50" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Headline</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Headline</label>
                             <input type="text" id="clHeadline" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
@@ -1094,7 +1099,7 @@
                         <div class="uid-title"><svg><use href="#icon-shield"/></svg> UID Checking</div>
                         <div class="uid-desc" id="uidToggleDesc">ON — Visitors must enter UID first</div>
                     </div>
-                    <div class="uid-toggle-switch">
+                    <div>
                         <label class="switch-toggle">
                             <input type="checkbox" id="clUidChecking" checked onchange="toggleUidDesc()">
                             <span></span>
@@ -1105,26 +1110,26 @@
                 <div class="create-form-section">
                     <div class="create-form-section-title"><svg><use href="#icon-image"/></svg> Popup Settings</div>
                     <div class="create-form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Title</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Title</label>
                             <input type="text" id="clPopTitle" placeholder="Claim Your Reward" value="Claim Your Reward" maxlength="100" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Button Text</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Button Text</label>
                             <input type="text" id="clPopBtn" placeholder="Claim Now" value="Claim Now" maxlength="50" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                         </div>
                     </div>
-                    <div class="form-group" style="margin-top:12px;">
-                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Subtitle</label>
+                    <div style="margin-top:12px;">
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Subtitle</label>
                         <input type="text" id="clPopSub" placeholder="Tap below to unlock your reward" value="Tap below to unlock your reward" maxlength="200" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
-                    <div class="form-group" style="margin-top:12px;">
-                        <label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Image URL (16:9)</label>
+                    <div style="margin-top:12px;">
+                        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Popup Image URL (16:9)</label>
                         <input type="text" id="clPopImg" placeholder="https://.../image.jpg" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;font-weight:600;">
                     </div>
                 </div>
 
-                <button class="btn-action" id="btnCreateLink" onclick="submitCreateLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <button id="btnCreateLink" onclick="submitCreateLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;">
                     <svg style="width:18px;height:18px;"><use href="#icon-rocket"/></svg> Generate My Link
                 </button>
             </div>
@@ -1166,9 +1171,9 @@
                 <h3><svg><use href="#icon-link"/></svg> URL Shortener</h3>
                 <button class="modal-close-btn" onclick="closeShortenerModal()">✕</button>
             </div>
-            <div class="form-group" style="margin-bottom:12px;"><label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Destination URL</label><input type="url" id="uShortUrl" placeholder="https://your-long-link.com" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
-            <div class="form-group" style="margin-bottom:12px;"><label class="form-label" style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Title / Label</label><input type="text" id="uShortTitle" placeholder="e.g. My Campaign Link" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
-            <button class="btn-action" onclick="createUserShortLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Create Short Link</span></button>
+            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Destination URL</label><input type="url" id="uShortUrl" placeholder="https://your-long-link.com" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
+            <div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Title / Label</label><input type="text" id="uShortTitle" placeholder="e.g. My Campaign Link" style="width:100%;padding:12px 14px;background:#080c14;border:1px solid var(--border-subtle);border-radius:10px;color:#fff;font-size:15px;"></div>
+            <button onclick="createUserShortLink()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Create Short Link</span></button>
             <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);">
                 <h4 style="font-size:12.5px;font-weight:700;margin-bottom:8px;color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:180px;overflow-y:auto;">Loading...</div>
@@ -1192,7 +1197,7 @@
                     <div id="lockBarFill" style="height:100%; background:linear-gradient(90deg, #f59e0b, #6366f1); width:0%;"></div>
                 </div>
             </div>
-            <button class="btn-action" onclick="closeLockModal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
+            <button onclick="closeLockModal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
         </div>
     </div>
 
@@ -1203,12 +1208,13 @@
                 <h3><svg><use href="#icon-book"/></svg> How to Use</h3>
                 <button class="modal-close-btn" onclick="closeGuideModal()">✕</button>
             </div>
-            <div class="guide-item"><h4>1. Create Your Links</h4><p>Your plan determines how many links you can create. Fill details and generate tracking link instantly.</p></div>
-            <div class="guide-item"><h4>2. Plan Validity</h4><p>Links are active as long as your plan is active. When plan expires, links stop working.</p></div>
-            <div class="guide-item"><h4>3. UID Checking</h4><p>Enable UID to require visitors to enter player UID before watching the video.</p></div>
-            <div class="guide-item"><h4>4. Popup Settings</h4><p>Customize entrance popup title, subtitle, button text, and image.</p></div>
-            <div class="guide-item"><h4>5. Analytics (48h Unique)</h4><p>Visits and claims are counted on strict 48-hour unique basis.</p></div>
-            <button class="btn-action" onclick="closeGuideModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
+            <div class="guide-item"><h4>1. Login with Email OTP</h4><p>Enter your email, receive a 6-digit code, and verify it to access your dashboard.</p></div>
+            <div class="guide-item"><h4>2. Create Your Links</h4><p>Your plan determines how many links you can create. Fill details and generate tracking link instantly.</p></div>
+            <div class="guide-item"><h4>3. Plan Validity</h4><p>Links are active as long as your plan is active. When plan expires, links stop working.</p></div>
+            <div class="guide-item"><h4>4. UID Checking</h4><p>Enable UID to require visitors to enter player UID before watching the video.</p></div>
+            <div class="guide-item"><h4>5. Popup Settings</h4><p>Customize entrance popup title, subtitle, button text, and image.</p></div>
+            <div class="guide-item"><h4>6. Analytics (48h Unique)</h4><p>Visits and claims are counted on strict 48-hour unique basis.</p></div>
+            <button onclick="closeGuideModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Got it</span></button>
         </div>
     </div>
 
@@ -1219,12 +1225,12 @@
                 <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
                 <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
             </div>
-            <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register via Google. Each link is private and exclusively managed by its owner.</p></div>
+            <div class="guide-item"><h4>1. Account Integrity</h4><p>Users must register via Email OTP. Each link is private and exclusively managed by its owner.</p></div>
             <div class="guide-item"><h4>2. Link Ownership</h4><p>All links you create are permanently associated with your account.</p></div>
             <div class="guide-item"><h4>3. Plan Expiry</h4><p>When plan expires, all your links become inactive immediately. Renew to continue.</p></div>
             <div class="guide-item"><h4>4. Content Policy</h4><p>Do not create links for illegal or misleading content. Violation leads to account termination.</p></div>
             <div class="guide-item"><h4>5. Data Privacy</h4><p>Your visitor analytics are computed using IP + device fingerprint.</p></div>
-            <button class="btn-action" onclick="closeTermsModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>I Understand</span></button>
+            <button onclick="closeTermsModal()" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>I Understand</span></button>
         </div>
     </div>
 
@@ -1292,6 +1298,23 @@
         </div>
     </div>
 
+    <!-- SPAM WARNING MODAL -->
+    <div class="custom-dialog-overlay" id="spamWarningModal">
+        <div class="custom-dialog-card warning">
+            <div class="custom-dialog-icon-wrap warning">
+                <svg><use href="#icon-mail"/></svg>
+            </div>
+            <div class="custom-dialog-title">📬 OTP Sent Successfully!</div>
+            <div class="custom-dialog-message">
+                We've sent a 6-digit code to your email.<br><br>
+                <strong>If you don't see it in your Inbox, please check your Spam / Junk folder.</strong>
+            </div>
+            <div class="custom-dialog-actions">
+                <button class="custom-dialog-btn primary" onclick="closeSpamWarning()">Got it, Thanks!</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST -->
     <div class="toast-notification" id="toastNotification">
         <svg id="toastIcon"><use href="#icon-info"/></svg>
@@ -1299,17 +1322,8 @@
     </div>
 
     <script>
-        // ==============================================
-        // 🔧 REPLACE WITH YOUR GOOGLE CLIENT ID
-        // ==============================================
-        const GOOGLE_CLIENT_ID = '793442201657-co9do15e7gdbau7doqfp0t4c3olf92bc.apps.googleusercontent.com';
-
-        // ==============================================
-        // 🔧 REPLACE WITH YOUR SUPPORT EMAIL
-        // ==============================================
         const SUPPORT_EMAIL = 'REPLACE_WITH_YOUR_SUPPORT_EMAIL';
 
-        // Auto-inject support email into all mailto links
         document.addEventListener('DOMContentLoaded', function() {
             const links = document.querySelectorAll('a[href^="mailto:"]');
             links.forEach(function(a) {
@@ -1327,13 +1341,13 @@
         let loadedPlans = null;
         let currentPlanUsage = null;
         let pendingProfileUser = null;
-        let currentAuthMode = 'signin';
-        let googleInitialized = false;
-        let googleButtonsRendered = false;
 
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
+
+        let currentEmailForOtp = '';
+        let resendCountdownInterval = null;
 
         function showToast(message, type = 'info', duration = 3000) {
             try {
@@ -1385,6 +1399,7 @@
         }
 
         function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
+        function closeSpamWarning() { document.getElementById('spamWarningModal').classList.remove('active'); }
 
         function showAccountDeletedScreen() {
             localStorage.removeItem('activeUserSession');
@@ -1418,6 +1433,12 @@
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('authFooterSection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
+            const emailView = document.getElementById('emailStepView');
+            const otpView = document.getElementById('otpStepView');
+            const pendingView = document.getElementById('pendingView');
+            if (emailView) emailView.style.display = 'block';
+            if (otpView) otpView.style.display = 'none';
+            if (pendingView) pendingView.style.display = 'none';
         }
 
         function hideHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'none'; toggleSidebar(false); }
@@ -1448,159 +1469,231 @@
             return false;
         }
 
-        function switchAuthView(mode) {
-            currentAuthMode = mode;
-            document.getElementById('pendingView').style.display = 'none';
-            if (mode === 'signup') {
-                document.getElementById('signInView').style.display = 'none';
-                document.getElementById('signUpView').style.display = 'block';
-            } else {
-                document.getElementById('signInView').style.display = 'block';
-                document.getElementById('signUpView').style.display = 'none';
-            }
-        }
-
-        // ==============================================
-        // 🔧 CRITICAL FIX: Google Auth Integration
-        // ==============================================
-        function handleGoogleCredential(response) {
-            console.log('🔐 Google credential received');
-            if (!response || !response.credential) {
-                showToast('Google authentication failed. Please try again.', 'error');
-                return;
-            }
-            const credential = response.credential;
-            const action = currentAuthMode === 'signup' ? 'signup' : 'signin';
-            console.log('   Action:', action);
-
-            fetch('/api/user/google-auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ credential, action })
-            })
-            .then(function(res) {
-                return res.json().then(function(data) {
-                    return { ok: res.ok, status: res.status, data: data };
+        // ==================== OTP AUTH FLOW ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.getElementById('authEmailInput');
+            if (emailInput) {
+                emailInput.addEventListener('focus', function() {
+                    this.style.borderColor = '#6366f1';
+                    this.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
                 });
-            })
-            .then(function(result) {
-                const res = result;
-                const data = result.data;
-
-                if (action === 'signin') {
-                    if (res.status === 404 || data.needsSignup) {
-                        notify(
-                            'No account found with this Google email.<br><br>Please <strong>Sign Up</strong> first to create your account.',
-                            'Account Not Found', 'info', null,
-                            function() { closeCustomDialog(); switchAuthView('signup'); },
-                            'Go to Sign Up'
-                        );
-                        return;
-                    }
-                    if (!res.ok) {
-                        showToast(data.error || 'Sign in failed', 'error');
-                        return;
-                    }
-                    if (data.needsApproval === true) {
-                        showPendingApprovalScreen(data.hoursRemaining || 24, data.user && data.user.email || '');
-                        return;
-                    }
-                    if (data.needsProfile === true) {
-                        pendingProfileUser = data.user;
-                        openProfileModal(data.user);
-                        return;
-                    }
-                    if (data.success && data.user) {
-                        userProfile = data.user;
-                        localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
-                        showDashboardView();
-                        showToast('Welcome back, ' + userProfile.name + '!', 'success');
-                        return;
-                    }
-                }
-
-                if (action === 'signup') {
-                    if (data.alreadyRegistered) {
-                        notify(
-                            'This Google account is already registered.<br><br>Please use <strong>Sign In</strong> instead.',
-                            'Already Registered', 'info', null,
-                            function() { closeCustomDialog(); switchAuthView('signin'); },
-                            'Go to Sign In'
-                        );
-                        return;
-                    }
-                    if (!res.ok) {
-                        showToast(data.error || 'Sign up failed', 'error');
-                        return;
-                    }
-                    if (data.needsProfile === true) {
-                        pendingProfileUser = data.user;
-                        openProfileModal(data.user);
-                        return;
-                    }
-                    if (data.needsApproval === true) {
-                        showPendingApprovalScreen(data.hoursRemaining || 24, data.user && data.user.email || '');
-                        return;
-                    }
-                }
-            })
-            .catch(function(err) {
-                console.error('Google auth error:', err);
-                showToast('Connection error. Please try again.', 'error');
-            });
-        }
-
-        // ==============================================
-        // 🔧 Google Button Renderer
-        // ==============================================
-        function setupGoogleButtons() {
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
-                setTimeout(setupGoogleButtons, 200);
-                return;
+                emailInput.addEventListener('blur', function() {
+                    this.style.borderColor = 'var(--border-subtle)';
+                    this.style.boxShadow = 'none';
+                });
+                emailInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') sendOtp();
+                });
             }
+
+            const otpBoxes = document.querySelectorAll('.otp-box');
+            otpBoxes.forEach((box, i) => {
+                box.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.value.length === 1 && i < otpBoxes.length - 1) {
+                        otpBoxes[i + 1].focus();
+                    }
+                    if (Array.from(otpBoxes).every(b => b.value.length === 1)) {
+                        verifyOtp();
+                    }
+                });
+                box.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !this.value && i > 0) {
+                        otpBoxes[i - 1].focus();
+                    }
+                    if (e.key === 'Enter') verifyOtp();
+                });
+                box.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                    if (pasted.length >= 6) {
+                        for (let j = 0; j < 6; j++) {
+                            otpBoxes[j].value = pasted[j] || '';
+                        }
+                        otpBoxes[5].focus();
+                        verifyOtp();
+                    }
+                });
+                box.addEventListener('focus', function() {
+                    this.style.borderColor = '#6366f1';
+                    this.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
+                });
+                box.addEventListener('blur', function() {
+                    this.style.borderColor = 'var(--border-subtle)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+        });
+
+        async function sendOtp() {
+            const emailInput = document.getElementById('authEmailInput');
+            const email = emailInput?.value.trim().toLowerCase() || '';
+            const btn = document.getElementById('btnSendOtp');
+
+            if (!email) return showToast('Please enter your email', 'warning');
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address', 'warning');
+
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>⏳ Sending OTP...</span>';
 
             try {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleGoogleCredential,
-                    auto_select: false,
-                    cancel_on_tap_outside: true,
-                    ux_mode: 'popup',
-                    use_fedcm_for_prompt: false
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, purpose: 'signin' })
                 });
-                googleInitialized = true;
+                const data = await res.json();
 
-                var btnWidth = Math.min(300, Math.max(220, window.innerWidth - 100));
+                if (res.ok && data.success) {
+                    currentEmailForOtp = email;
+                    document.getElementById('otpEmailDisplay').textContent = email;
+                    document.getElementById('emailStepView').style.display = 'none';
+                    document.getElementById('otpStepView').style.display = 'block';
+                    document.getElementById('pendingView').style.display = 'none';
 
-                function renderOne(containerId, textKey) {
-                    var container = document.getElementById(containerId);
-                    if (!container) return;
-                    container.innerHTML = '';
-                    var wrapper = document.createElement('div');
-                    wrapper.style.width = '100%';
-                    wrapper.style.display = 'flex';
-                    wrapper.style.justifyContent = 'center';
-                    container.appendChild(wrapper);
-                    try {
-                        google.accounts.id.renderButton(wrapper, {
-                            type: 'standard',
-                            theme: 'filled_black',
-                            size: 'large',
-                            text: textKey,
-                            shape: 'rectangular',
-                            logo_alignment: 'left',
-                            width: btnWidth
-                        });
-                    } catch(e) {
-                        console.error('Render failed:', e);
-                    }
+                    document.querySelectorAll('.otp-box').forEach(b => b.value = '');
+                    document.querySelectorAll('.otp-box')[0]?.focus();
+
+                    document.getElementById('spamWarningModal').classList.add('active');
+
+                    startResendCountdown();
+
+                    showToast('OTP sent to your email', 'success');
+                } else {
+                    showToast(data.error || 'Failed to send OTP', 'error');
+                }
+            } catch(e) {
+                showToast('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function verifyOtp() {
+            const otpBoxes = document.querySelectorAll('.otp-box');
+            const otp = Array.from(otpBoxes).map(b => b.value).join('');
+            const btn = document.getElementById('btnVerifyOtp');
+
+            if (otp.length !== 6) return showToast('Please enter all 6 digits', 'warning');
+            if (!currentEmailForOtp) return showToast('Email missing. Please start over.', 'error');
+
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>⏳ Verifying...</span>';
+
+            try {
+                const res = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmailForOtp, otp })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(data.error || 'Invalid OTP', 'error');
+                    otpBoxes.forEach(b => b.value = '');
+                    otpBoxes[0]?.focus();
+                    return;
                 }
 
-                renderOne('googleSignInContainer', 'signin_with');
-                renderOne('googleSignUpContainer', 'signup_with');
+                if (data.needsProfile === true) {
+                    pendingProfileUser = data.user;
+                    openProfileModal(data.user);
+                    return;
+                }
+
+                if (data.needsApproval === true) {
+                    showPendingApprovalScreen(data.hoursRemaining || 24, currentEmailForOtp);
+                    return;
+                }
+
+                if (data.success && data.user) {
+                    userProfile = data.user;
+                    localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                    showDashboardView();
+                    showToast('Welcome back, ' + userProfile.name + '!', 'success');
+                }
             } catch(e) {
-                console.error('Google init error:', e);
+                showToast('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
+        }
+
+        function startResendCountdown() {
+            const btn = document.getElementById('btnResendOtp');
+            let seconds = 45;
+
+            if (resendCountdownInterval) clearInterval(resendCountdownInterval);
+
+            btn.disabled = true;
+            btn.style.cursor = 'not-allowed';
+            btn.style.color = 'var(--text-muted)';
+            btn.innerHTML = `Resend in <span id="resendTimer">${seconds}</span>s`;
+
+            resendCountdownInterval = setInterval(() => {
+                seconds--;
+                const t = document.getElementById('resendTimer');
+                if (t) t.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(resendCountdownInterval);
+                    resendCountdownInterval = null;
+                    btn.disabled = false;
+                    btn.style.cursor = 'pointer';
+                    btn.style.color = 'var(--primary-light)';
+                    btn.innerHTML = '🔄 Resend OTP';
+                }
+            }, 1000);
+        }
+
+        async function resendOtp() {
+            if (!currentEmailForOtp) return;
+            const btn = document.getElementById('btnResendOtp');
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Sending...';
+
+            try {
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmailForOtp, purpose: 'signin' })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    document.querySelectorAll('.otp-box').forEach(b => b.value = '');
+                    document.querySelectorAll('.otp-box')[0]?.focus();
+                    startResendCountdown();
+                    document.getElementById('spamWarningModal').classList.add('active');
+                    showToast('New OTP sent!', 'success');
+                } else {
+                    showToast(data.error || 'Failed to resend', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '🔄 Resend OTP';
+                }
+            } catch(e) {
+                showToast('Network error', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '🔄 Resend OTP';
+            }
+        }
+
+        function backToEmail() {
+            if (resendCountdownInterval) {
+                clearInterval(resendCountdownInterval);
+                resendCountdownInterval = null;
+            }
+            currentEmailForOtp = '';
+            document.getElementById('emailStepView').style.display = 'block';
+            document.getElementById('otpStepView').style.display = 'none';
+            document.getElementById('pendingView').style.display = 'none';
+            document.getElementById('authEmailInput').value = '';
+            document.getElementById('authEmailInput').focus();
         }
 
         function openProfileModal(user) {
@@ -1634,7 +1727,6 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: pendingProfileUser.id,
-                    googleId: pendingProfileUser.googleId,
                     name: name,
                     phone: phone
                 })
@@ -1663,8 +1755,8 @@
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('authFooterSection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
-            document.getElementById('signInView').style.display = 'none';
-            document.getElementById('signUpView').style.display = 'none';
+            document.getElementById('emailStepView').style.display = 'none';
+            document.getElementById('otpStepView').style.display = 'none';
 
             var pendingView = document.getElementById('pendingView');
             if (pendingView) {
@@ -1990,7 +2082,6 @@
                 var cnt = document.getElementById('menuLinkCount');
                 if (cnt) cnt.textContent = myLinksList.length;
             } catch (err) {
-                console.error('fetchUserLinkData error:', err);
                 document.getElementById('displayLinkId').textContent = 'Offline';
                 document.getElementById('displayLinkName').textContent = 'Connection error';
                 displayEmptyState();
@@ -2086,7 +2177,7 @@
                 el.innerHTML = '<div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:22px; margin-bottom:14px; text-align:center;">' +
                     '<div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>' +
                     '<div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">Activate a plan to start creating links.</div>' +
-                    '<button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Activate Plan</span></button></div>';
+                    '<button onclick="closeMyPlanModal(); openPlansModal();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Activate Plan</span></button></div>';
                 return;
             }
             var isVip = pu.lifetimeUnlimited === true;
@@ -2115,7 +2206,7 @@
                 (isVip ?
                     '<div style="margin-top:14px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; text-align:center;"><div style="font-size:13px; font-weight:700; color:#fbbf24;">Lifetime Unlimited access!</div><div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div></div>'
                     :
-                    '<button class="btn-action" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;" onclick="closeMyPlanModal(); openPlansModal();"><span>View Plans & Upgrade</span></button>');
+                    '<button style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;" onclick="closeMyPlanModal(); openPlansModal();"><span>View Plans & Upgrade</span></button>');
         }
 
         function renderPlansList() {
@@ -2206,22 +2297,22 @@
             }
             var paymentHtml = '';
             if (showUpiToUser && p.price > 0) {
-                var upiString = 'upi://pay?pa=' + encodeURIComponent(activeAdminUpi) + '&pn=Dashboard_Extension&am=' + p.price + '&cu=INR';
+                var upiString = 'upi://pay?pa=' + encodeURIComponent(activeAdminUpi) + '&pn=LinkForge&am=' + p.price + '&cu=INR';
                 var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' + encodeURIComponent(upiString);
                 paymentHtml = '<div class="payment-panel-screenshot"><div class="qr-wrapper"><img src="' + qrUrl + '" alt="Payment QR"><span style="font-size:11px; color:var(--text-muted); font-weight:600;">Scan to Pay ₹' + p.price + '</span></div>' +
                     '<div class="payment-info"><div style="font-size:13.5px; font-weight:800; color:#fff; margin-bottom:10px;">Complete Your Payment</div>' +
                     '<div class="upi-copy-chip" onclick="copyUpiText()"><span>UPI: <strong>' + activeAdminUpi + '</strong></span></div>' +
                     '<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">Pay <strong style="color:#38bdf8;">₹' + p.price + '</strong> then send screenshot on WhatsApp.</div>' +
-                    '<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;background:linear-gradient(135deg, #10b981, #059669);color:#fff;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;"><span>Send Screenshot on WhatsApp</span></button></div></div>';
+                    '<button onclick="requestAdminRenewal()" style="max-width:340px;background:linear-gradient(135deg, #10b981, #059669);color:#fff;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;"><span>Send Screenshot on WhatsApp</span></button></div></div>';
             } else if (p.price === 0) {
                 var freeTrialUsed = currentPlanUsage && currentPlanUsage.freeTrialUsed === true;
                 if (freeTrialUsed) {
                     paymentHtml = '<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:12.5px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>';
                 } else {
-                    paymentHtml = '<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Activate Free Trial</span></button>';
+                    paymentHtml = '<button onclick="closePlansModal(); openActivateFreePlan();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Activate Free Trial</span></button>';
                 }
             } else {
-                paymentHtml = '<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Contact Admin on WhatsApp</span></button>';
+                paymentHtml = '<button onclick="requestAdminRenewal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Contact Admin on WhatsApp</span></button>';
             }
             footer.innerHTML = '<div style="background:rgba(99,102,241,0.08); border:1px dashed rgba(99,102,241,0.4); border-radius:12px; padding:12px; margin-bottom:14px; text-align:center; font-size:11.5px; color:var(--text-secondary);">Selected: <strong style="color:#fff;">' + p.name + ' - ' + p.durationDays + ' Days</strong> • Amount: <strong style="color:#38bdf8;">₹' + p.price + '</strong></div>' + paymentHtml;
         }
@@ -2346,8 +2437,10 @@
                 else if (left <= 3) { badge.className = 'badge-status warning'; badge.textContent = 'Expiring (' + left + 'd)'; progress.className = 'progress-bar-fill warning'; progress.style.width = Math.min(100, left * 33) + '%'; }
                 else { badge.className = 'badge-status active'; badge.textContent = 'Active (' + left + 'd)'; progress.className = 'progress-bar-fill active'; progress.style.width = '100%'; }
             } else {
-                badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active';
-                progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
+                badge.className = 'badge-status active';
+                badge.textContent = 'Lifetime Active';
+                progress.className = 'progress-bar-fill active';
+                progress.style.width = '100%';
                 expText.textContent = 'Lifetime Active';
             }
         }
@@ -2375,7 +2468,7 @@
                 });
                 var data = await res.json().catch(function() { return {}; });
                 if (res.status === 403) return showToast(data.error || 'Cannot purchase this plan', 'error');
-            } catch(e) { console.warn('Renewal request error:', e); }
+            } catch(e) {}
             var today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             var message = 'Hello Admin, I want to activate/renew my plan:\n\n';
             message += '👤 User: ' + userProfile.name + '\n';
@@ -2428,7 +2521,7 @@
                 var links = data.links || [];
                 if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
                 c.innerHTML = links.map(function(l) {
-                    return '<div class="short-item"><div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (l.title || 'Untitled') + '</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;word-break:break-all;"><b>' + window.location.origin + '/s/' + l.code + '</b> | Clicks: <b style="color:var(--accent-cyan);">' + (l.visits || 0) + '</b></div></div><div style="display:flex;gap:6px;flex-shrink:0;"><button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText(\'' + window.location.origin + '/s/' + l.code + '\').then(function(){showToast(\'Copied!\',\'success\');})" style="width:auto;padding:6px 10px;font-size:11px;">Copy</button><button class="btn-action" onclick="deleteUserShortLink(\'' + l._id + '\')" style="width:auto;padding:6px 10px;font-size:11px;background:var(--danger);">Delete</button></div></div>';
+                    return '<div class="short-item"><div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (l.title || 'Untitled') + '</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;word-break:break-all;"><b>' + window.location.origin + '/s/' + l.code + '</b> | Clicks: <b style="color:var(--accent-cyan);">' + (l.visits || 0) + '</b></div></div><div style="display:flex;gap:6px;flex-shrink:0;"><button onclick="navigator.clipboard.writeText(\'' + window.location.origin + '/s/' + l.code + '\').then(function(){showToast(\'Copied!\',\'success\');})" style="width:auto;padding:6px 10px;font-size:11px;background:#080c14;border:1px solid var(--border-subtle);border-radius:8px;color:#fff;cursor:pointer;">Copy</button><button onclick="deleteUserShortLink(\'' + l._id + '\')" style="width:auto;padding:6px 10px;font-size:11px;background:var(--danger);border:none;border-radius:8px;color:#fff;cursor:pointer;">Delete</button></div></div>';
                 }).join('');
             } catch(e) { c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
         }
@@ -2473,7 +2566,6 @@
 
         // ============ INIT ============
         window.addEventListener('load', function() {
-            setupGoogleButtons();
             refreshPricingData();
         });
 
