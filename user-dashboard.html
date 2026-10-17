@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0a0e17">
 
+    <!-- ✅ Google Sign-In Script -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -644,6 +645,7 @@
 <body>
     <div class="ambient-layer"></div>
 
+    <!-- SVG ICONS -->
     <svg style="display:none;">
         <symbol id="icon-flash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/></symbol>
         <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
@@ -714,7 +716,7 @@
                 <span class="drawer-icon"><svg><use href="#icon-book"/></svg></span>
                 <span>How to Use</span>
             </div>
-            <a href="mailto:somuandsagar@gmail.com" class="drawer-item">
+            <a href="mailto:REPLACE_WITH_YOUR_SUPPORT_EMAIL" class="drawer-item">
                 <span class="drawer-icon"><svg><use href="#icon-headphones"/></svg></span>
                 <span>Support</span>
             </a>
@@ -1008,7 +1010,7 @@
             <span class="sep"></span>
             <a onclick="openGuideModal()">How to Use</a>
             <span class="sep"></span>
-            <a href="mailto:somuandsagar@gmail.com">Support</a>
+            <a href="mailto:REPLACE_WITH_YOUR_SUPPORT_EMAIL">Support</a>
         </div>
     </div>
 
@@ -1305,7 +1307,7 @@
         // ==============================================
         // 🔧 REPLACE WITH YOUR SUPPORT EMAIL
         // ==============================================
-        const SUPPORT_EMAIL = 'somuandsagar@gmail.com';
+        const SUPPORT_EMAIL = 'REPLACE_WITH_YOUR_SUPPORT_EMAIL';
 
         // Auto-inject support email into all mailto links
         document.addEventListener('DOMContentLoaded', function() {
@@ -1327,6 +1329,7 @@
         let pendingProfileUser = null;
         let currentAuthMode = 'signin';
         let googleInitialized = false;
+        let googleButtonsRendered = false;
 
         let currentDateFilter = 'today';
         let currentStartDate = '';
