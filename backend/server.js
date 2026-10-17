@@ -442,6 +442,139 @@ async function canUserGetVisitor(user) {
     } catch(e) { return { allowed: true }; }
 }
 
+// ==================== USER LOOKUP (ROBUST) ====================
+async function findRenewalUserByIdentifiers({ userId, userEmail, userName }) {
+    let user = null;
+    
+    // 1. Try by userId
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        user = await RenewalUser.findById(userId);
+        if (user) return user;
+    }
+    
+    // 2. Try by email (exact, case-insensitive)
+    if (userEmail) {
+        const cleanEmail = userEmail.toString().trim().toLowerCase();
+        if (cleanEmail) {
+            user = await RenewalUser.findOne({ email: cleanEmail });
+            if (user) return user;
+        }
+    }
+    
+    // 3. Try by name (case-insensitive exact)
+    if (userName) {
+        const cleanName = userName.toString().trim();
+        if (cleanName && cleanName !== 'undefined') {
+            user = await RenewalUser.findOne({ 
+                name: new RegExp('^' + cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+            });
+            if (user) return user;
+        }
+    }
+    
+    // 4. Try by email partial match
+    if (userEmail) {
+        const cleanEmail = userEmail.toString().trim().toLowerCase();
+        if (cleanEmail) {
+            user = await RenewalUser.findOne({ 
+                email: new RegExp('^' + cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
+            });
+            if (user) return user;
+        }
+    }
+    
+    return null;
+}
+
+// ==================== AUTO-FIX USER FIELDS ====================
+async function autoFixUserFields(user) {
+    if (!user) return null;
+    
+    const updates = {};
+    let needsUpdate = false;
+    
+    // Auto-fix name
+    if (!user.name || user.name.trim() === '' || user.name === 'undefined') {
+        const emailPrefix = (user.email || '').split('@')[0] || 'User';
+        updates.name = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+        needsUpdate = true;
+    }
+    
+    // Auto-fix status (if user logged in and isn't rejected, set approved)
+    if (!user.status || user.status === 'undefined') {
+        updates.status = 'approved';
+        needsUpdate = true;
+    }
+    
+    // Normalize plan fields
+    if (user.currentPlan === undefined || user.currentPlan === null || user.currentPlan === '') {
+        updates.currentPlan = 'none';
+        needsUpdate = true;
+    }
+    if (user.lifetimeUnlimited === undefined || user.lifetimeUnlimited === null) {
+        updates.lifetimeUnlimited = false;
+        needsUpdate = true;
+    }
+    if (user.freeTrialUsed === undefined || user.freeTrialUsed === null) {
+        updates.freeTrialUsed = false;
+        needsUpdate = true;
+    }
+    if (user.profileCompleted === undefined || user.profileCompleted === null) {
+        updates.profileCompleted = !!(user.name && user.phone);
+        needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+        await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updates });
+        const freshUser = await RenewalUser.findById(user._id);
+        return freshUser;
+    }
+    
+    return user;
+}
+
+// ==================== AUTO-ACTIVATE FREE TRIAL ====================
+async function autoActivateFreeTrialIfNeeded(user) {
+    if (!user) return user;
+    
+    const isLifetimeUnlimited = user.lifetimeUnlimited === true;
+    const planExpiryDate = user.planExpiryDate ? new Date(user.planExpiryDate) : null;
+    const now = new Date();
+    const planNotExpired = planExpiryDate ? (planExpiryDate > now) : false;
+    const userCurrentPlan = (user.currentPlan || 'none').toString().trim();
+    const hasPlanKey = userCurrentPlan && userCurrentPlan !== 'none' && userCurrentPlan !== 'no-plan';
+    
+    let planIsActive = isLifetimeUnlimited || (hasPlanKey && planNotExpired);
+    
+    // If no active plan, auto Free Trial
+    if (!planIsActive && !user.freeTrialUsed) {
+        const pricingDoc = await getPricingDoc();
+        const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
+        const planStart = new Date();
+        const planExpiry = new Date();
+        planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
+        
+        await RenewalUser.collection.updateOne(
+            { _id: user._id },
+            { $set: {
+                currentPlan: 'free-trial',
+                planStartDate: planStart,
+                planExpiryDate: planExpiry,
+                lifetimeUnlimited: false,
+                freeTrialUsed: true,
+                freeTrialActivatedAt: planStart,
+                status: 'approved',
+                profileCompleted: true
+            }}
+        );
+        
+        console.log(`   🎁 Auto Free Trial activated for: ${user.name || user.email} (expires: ${planExpiry.toISOString()})`);
+        return await RenewalUser.findById(user._id);
+    }
+    
+    return user;
+}
+
 // ==================== Database Init ====================
 async function initializeDatabase() {
     try {
@@ -563,14 +696,14 @@ const googleAuthLimiter = rateLimit({
 const createLinkLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 20,
-    keyGenerator: (req) => req.body?.userName || req.ip,
+    keyGenerator: (req) => req.body?.userName || req.body?.userEmail || req.ip,
     message: { error: 'Too many link creations. Please wait a moment.' }
 });
 
 const userApiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 100,
-    keyGenerator: (req) => req.body?.userName || req.ip,
+    keyGenerator: (req) => req.body?.userName || req.body?.userEmail || req.ip,
     message: { error: 'Too many requests. Please slow down.' }
 });
 
@@ -898,47 +1031,6 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== 🔥 FIX: NORMALIZE USER PLAN FIELDS ====================
-// Ye function kisi bhi user ke missing plan fields ko default values se fill karta hai
-async function normalizeUserPlanFields(user) {
-    if (!user) return null;
-    
-    const updates = {};
-    let needsUpdate = false;
-    
-    // currentPlan default
-    if (user.currentPlan === undefined || user.currentPlan === null || user.currentPlan === '') {
-        updates.currentPlan = 'none';
-        needsUpdate = true;
-    }
-    
-    // lifetimeUnlimited default
-    if (user.lifetimeUnlimited === undefined || user.lifetimeUnlimited === null) {
-        updates.lifetimeUnlimited = false;
-        needsUpdate = true;
-    }
-    
-    // freeTrialUsed default
-    if (user.freeTrialUsed === undefined || user.freeTrialUsed === null) {
-        updates.freeTrialUsed = false;
-        needsUpdate = true;
-    }
-    
-    // profileCompleted default
-    if (user.profileCompleted === undefined || user.profileCompleted === null) {
-        updates.profileCompleted = (user.name && user.phone) ? true : false;
-        needsUpdate = true;
-    }
-    
-    if (needsUpdate) {
-        console.log(`🔧 Normalizing plan fields for: ${user.name}`, updates);
-        await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updates });
-        return { ...user, ...updates };
-    }
-    
-    return user;
-}
-
 // ==================== GOOGLE-ONLY AUTH ====================
 app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
     try {
@@ -966,8 +1058,10 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
         
         const cleanEmail = payload.email.toLowerCase();
         const googleSub = payload.sub;
+        const googleName = payload.name || '';
         
         console.log(`   Email: ${cleanEmail}`);
+        console.log(`   Name: ${googleName}`);
         
         if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
         
@@ -984,6 +1078,10 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                     googleId: googleSub, 
                     authMethod: 'google'
                 };
+                // 🔥 Auto-fix name from Google if missing
+                if (!user.name || user.name.trim() === '' || user.name === 'undefined') {
+                    if (googleName) autoLinkUpdate.name = googleName;
+                }
                 if (user.name && user.phone && user.name.trim().length > 0 && user.phone.trim().length > 0) {
                     autoLinkUpdate.profileCompleted = true;
                 }
@@ -995,9 +1093,9 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
             }
         }
         
-        // Normalize plan fields
+        // Auto-fix fields
         if (user) {
-            user = await normalizeUserPlanFields(user);
+            user = await autoFixUserFields(user);
         }
         
         // SIGN IN
@@ -1008,13 +1106,19 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
             if (user.status === 'rejected') {
                 return res.status(403).json({ error: 'Your account has been rejected.' });
             }
-            if (!user.profileCompleted || !user.name || !user.phone) {
+            
+            // 🔥 Check if profile complete
+            if (!user.name || !user.phone) {
                 return res.json({
                     success: true,
                     needsProfile: true,
                     user: { id: user._id, email: user.email, name: user.name || '', phone: user.phone || '', googleId: googleSub }
                 });
             }
+            
+            // 🔥 Auto-activate Free Trial if approved but no plan
+            user = await autoActivateFreeTrialIfNeeded(user);
+            
             if (user.status === 'pending') {
                 return res.status(403).json({ error: 'Pending admin approval. Please wait.' });
             }
@@ -1032,19 +1136,21 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
         
         // SIGN UP
         if (user) {
+            // If profile already complete → already registered
             if (user.name && user.phone && user.profileCompleted === true) {
                 return res.status(400).json({ error: 'This Google account is already registered. Please Sign In instead.', alreadyRegistered: true });
             }
             return res.json({
                 success: true,
                 needsProfile: true,
-                user: { id: user._id, email: user.email, name: user.name || '', phone: user.phone || '', googleId: googleSub }
+                user: { id: user._id, email: user.email, name: user.name || googleName || '', phone: user.phone || '', googleId: googleSub }
             });
         }
         
         console.log(`🆕 Creating new user: ${cleanEmail}`);
         const newUser = await RenewalUser.create({
-            name: '', email: cleanEmail, phone: '',
+            name: googleName || '',
+            email: cleanEmail, phone: '',
             googleId: googleSub, authMethod: 'google',
             status: 'pending', currentPlan: 'none',
             lifetimeUnlimited: false, freeTrialUsed: false,
@@ -1054,7 +1160,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
         res.json({
             success: true,
             needsProfile: true,
-            user: { id: newUser._id, email: newUser.email, name: '', phone: '', googleId: googleSub }
+            user: { id: newUser._id, email: newUser.email, name: newUser.name || '', phone: '', googleId: googleSub }
         });
     } catch (e) {
         console.error('❌ Google auth error:', e);
@@ -1066,6 +1172,8 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
 app.post('/api/user/complete-profile', userApiLimiter, async (req, res) => {
     try {
         const { userId, googleId, name, phone } = req.body;
+        
+        console.log(`\n📥 Complete Profile: userId=${userId}, name=${name}, phone=${phone}`);
         
         if (!userId || !name || !phone) return res.status(400).json({ error: 'Name and phone are required' });
         
@@ -1087,23 +1195,39 @@ app.post('/api/user/complete-profile', userApiLimiter, async (req, res) => {
         });
         if (nameExists) return res.status(400).json({ error: 'This name is already taken.' });
         
-        await RenewalUser.collection.updateOne(
-            { _id: user._id },
-            { $set: {
-                name: cleanName, phone: cleanPhone,
-                profileCompleted: true, status: 'pending',
-                currentPlan: user.currentPlan || 'none',
-                lifetimeUnlimited: user.lifetimeUnlimited === true ? true : false,
-                freeTrialUsed: user.freeTrialUsed === true ? true : false
-            }}
-        );
+        // 🔥 AUTO-ACTIVATE FREE TRIAL on profile completion
+        const pricingDoc = await getPricingDoc();
+        const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
+        const planStart = new Date();
+        const planExpiry = new Date();
+        planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
+        
+        const updateData = {
+            name: cleanName, phone: cleanPhone,
+            profileCompleted: true, 
+            status: 'approved',  // 🔥 AUTO-APPROVE for immediate use
+            approvedAt: new Date()
+        };
+        
+        // Only auto-activate free trial if not already used
+        if (!user.freeTrialUsed && (!user.currentPlan || user.currentPlan === 'none')) {
+            updateData.currentPlan = 'free-trial';
+            updateData.planStartDate = planStart;
+            updateData.planExpiryDate = planExpiry;
+            updateData.freeTrialUsed = true;
+            updateData.freeTrialActivatedAt = planStart;
+            updateData.lifetimeUnlimited = false;
+            console.log(`   🎁 Auto Free Trial on profile complete`);
+        }
+        
+        await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updateData });
         
         console.log(`✅ Profile completed: ${cleanName}`);
         
         res.json({
             success: true,
-            message: 'Profile completed! Waiting for admin approval.',
-            user: { id: user._id, name: cleanName, email: user.email, phone: cleanPhone, status: 'pending' }
+            message: 'Profile completed! Free Trial activated.',
+            user: { id: user._id, name: cleanName, email: user.email, phone: cleanPhone, status: 'approved' }
         });
     } catch (e) {
         console.error('Complete profile error:', e);
@@ -1120,14 +1244,10 @@ app.post('/api/user/signin', authLimiter, (req, res) => {
 
 app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
     try {
-        const { userName, userId } = req.body;
-        if (!userName && !userId) return res.status(400).json({ error: 'User identifier required' });
+        const { userName, userId, userEmail } = req.body;
+        if (!userName && !userId && !userEmail) return res.status(400).json({ error: 'User identifier required' });
         
-        let user = null;
-        if (userId && mongoose.Types.ObjectId.isValid(userId)) user = await RenewalUser.findById(userId).lean();
-        if (!user && userName) {
-            user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }).lean();
-        }
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         
         if (!user) return res.status(404).json({ success: false, deleted: true, error: 'Account has been removed by admin.' });
         if (user.status === 'rejected') return res.status(403).json({ success: false, deleted: true, error: 'Your account has been rejected.' });
@@ -1146,9 +1266,10 @@ app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
 // ==================== FREE PLAN ACTIVATION ====================
 app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
     try {
-        const { userName } = req.body;
-        if (!userName) return res.status(400).json({ error: 'User name required' });
-        const user = await RenewalUser.findOne({ name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
+        const { userName, userEmail, userId } = req.body;
+        if (!userName && !userEmail && !userId) return res.status(400).json({ error: 'User identifier required' });
+        
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         if (user.freeTrialUsed === true) {
@@ -1162,7 +1283,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
         const planExpiry = new Date();
         planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
         
-        const updateResult = await RenewalUser.collection.updateOne(
+        await RenewalUser.collection.updateOne(
             { _id: user._id },
             { $set: {
                 currentPlan: 'free-trial',
@@ -1177,9 +1298,7 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
             }}
         );
         
-        if (updateResult.matchedCount === 0) return res.status(404).json({ error: 'User not found during update' });
-        
-        console.log(`✅ Free trial activated for: ${user.name}`);
+        console.log(`✅ Free trial activated for: ${user.name || user.email}`);
         
         res.json({ 
             success: true, 
@@ -1192,40 +1311,57 @@ app.post('/api/user/select-free-plan', userApiLimiter, async (req, res) => {
     }
 });
 
-// ==================== 🔥 CREATE LINK — MAJOR FIX: LIFETIME & APPROVED FALLBACK ====================
+// ==================== 🔥 CREATE LINK — WITH FULL ROBUST FALLBACK ====================
 app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
     try {
         console.log(`\n📥 ============ CREATE LINK REQUEST ============`);
         
         const {
-            userName, linkName, video, claim, buttonText, headline, uidChecking,
+            userName, userEmail, userId,
+            linkName, video, claim, buttonText, headline, uidChecking,
             popupTitle, popupSubtitle, popupButtonText, popupImage
         } = req.body;
         
-        if (!userName) return res.status(400).json({ error: 'User name required' });
+        console.log(`   userName: "${userName}"`);
+        console.log(`   userEmail: "${userEmail}"`);
+        console.log(`   userId: "${userId}"`);
         
-        let user = await RenewalUser.findOne({ 
-            name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
-        });
+        if (!userName && !userEmail && !userId) {
+            return res.status(400).json({ error: 'User identifier required' });
+        }
         
-        if (!user) return res.status(404).json({ error: 'User not found. Please login again.' });
+        // 🔥 ROBUST LOOKUP
+        let user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         
-        // 🔥 Normalize plan fields FIRST
-        user = await normalizeUserPlanFields(user);
+        if (!user) {
+            console.log(`   ❌ User NOT FOUND with any identifier`);
+            return res.status(404).json({ error: 'User not found. Please login again.' });
+        }
         
-        console.log(`✅ User: ${user.name}`);
-        console.log(`   status: ${user.status}`);
-        console.log(`   currentPlan: ${user.currentPlan}`);
-        console.log(`   lifetimeUnlimited: ${user.lifetimeUnlimited}`);
-        console.log(`   planStartDate: ${user.planStartDate}`);
-        console.log(`   planExpiryDate: ${user.planExpiryDate}`);
-        console.log(`   freeTrialUsed: ${user.freeTrialUsed}`);
+        console.log(`   ✅ Found user: ${user.name || user.email}`);
+        console.log(`      _id: ${user._id}`);
+        console.log(`      name: "${user.name}"`);
+        console.log(`      email: "${user.email}"`);
+        console.log(`      status: "${user.status}"`);
+        console.log(`      currentPlan: "${user.currentPlan}"`);
+        
+        // 🔥 AUTO-FIX FIELDS
+        user = await autoFixUserFields(user);
+        
+        console.log(`   📋 After auto-fix:`);
+        console.log(`      name: "${user.name}"`);
+        console.log(`      status: "${user.status}"`);
+        console.log(`      currentPlan: "${user.currentPlan}"`);
+        console.log(`      lifetimeUnlimited: ${user.lifetimeUnlimited}`);
         
         if (user.status === 'rejected') {
             return res.status(403).json({ error: 'Your account has been rejected.' });
         }
         
-        // 🔥🔥🔥 CRITICAL FIX: Plan check with FALLBACK for approved users
+        // 🔥 AUTO-ACTIVATE FREE TRIAL if needed
+        user = await autoActivateFreeTrialIfNeeded(user);
+        
+        // 🔥 Plan check
         const isLifetimeUnlimited = user.lifetimeUnlimited === true;
         const planExpiryDate = user.planExpiryDate ? new Date(user.planExpiryDate) : null;
         const now = new Date();
@@ -1233,46 +1369,10 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         const userCurrentPlan = (user.currentPlan || 'none').toString().trim();
         const hasPlanKey = userCurrentPlan && userCurrentPlan !== 'none' && userCurrentPlan !== 'no-plan';
         
-        let planIsActive = isLifetimeUnlimited || (hasPlanKey && planNotExpired);
-        
-        // 🔥 FALLBACK: If approved but no plan → give Free Trial automatically
-        if (!planIsActive && user.status === 'approved' && !user.freeTrialUsed) {
-            console.log(`🎁 AUTO-ACTIVATING FREE TRIAL (fallback)`);
-            const pricingDoc = await getPricingDoc();
-            const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
-            const planStart = new Date();
-            const planExpiry = new Date();
-            planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
-            
-            await RenewalUser.collection.updateOne(
-                { _id: user._id },
-                { $set: {
-                    currentPlan: 'free-trial',
-                    planStartDate: planStart,
-                    planExpiryDate: planExpiry,
-                    lifetimeUnlimited: false,
-                    freeTrialUsed: true,
-                    freeTrialActivatedAt: planStart                }}
-            );
-            
-            user.currentPlan = 'free-trial';
-            user.planStartDate = planStart;
-            user.planExpiryDate = planExpiry;
-            user.freeTrialUsed = true;
-            planIsActive = true;
-            
-            console.log(`✅ Free Trial auto-activated (expires: ${planExpiry.toISOString()})`);
-        }
-        
-        // 🔥 FINAL fallback: If pending admin approval but user trying to create link
-        if (!planIsActive && user.status === 'pending') {
-            return res.status(403).json({ 
-                error: 'Your account is pending admin approval. Please wait.',
-                reason: 'PENDING_APPROVAL'
-            });
-        }
+        const planIsActive = isLifetimeUnlimited || (hasPlanKey && planNotExpired);
         
         console.log(`   Plan active: ${planIsActive}`);
+        console.log(`      lifetime: ${isLifetimeUnlimited}, hasPlanKey: ${hasPlanKey}, notExpired: ${planNotExpired}`);
         
         if (!planIsActive) {
             let errorMsg = 'You need an active plan to create links.';
@@ -1283,7 +1383,7 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
                 reason = 'PLAN_EXPIRED';
             }
             
-            console.log(`❌ Blocked: ${reason}`);
+            console.log(`   ❌ Blocked: ${reason}`);
             return res.status(403).json({ 
                 error: errorMsg, 
                 reason: reason,
@@ -1339,11 +1439,12 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         if (isLifetimeUnlimited) linkExpiry = null;
         
         const linkId = 'link_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
+        const finalUserName = user.name;
         
         const linkDoc = {
             id: linkId,
-            name: user.name, userName: user.name,
-            assignedUser: user.name, creator: user.name,
+            name: finalUserName, userName: finalUserName,
+            assignedUser: finalUserName, creator: finalUserName,
             linkName: cleanLinkName, title: cleanLinkName,
             video: cleanVideo, claim: cleanClaim,
             buttonText: cleanButtonText, headline: cleanHeadline,
@@ -1361,7 +1462,7 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         
         await Link.collection.insertOne(linkDoc);
         
-        console.log(`✅ Link created: ${linkId}`);
+        console.log(`✅ Link created: ${linkId} for user: ${finalUserName}`);
         
         res.json({
             success: true,
@@ -1372,7 +1473,8 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
                 headline: cleanHeadline, expiryDate: linkExpiry,
                 uidChecking: cleanUidChecking, status: 'active',
                 popupSettings: linkDoc.popupSettings
-            }
+            },
+            userName: finalUserName
         });
     } catch (e) {
         console.error('❌❌❌ CREATE LINK ERROR:', e);
@@ -1380,18 +1482,22 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
     }
 });
 
-// ==================== USER LINK DETAILS ====================
+// ==================== USER LINK DETAILS — ROBUST ====================
 app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        const { userName, linkInput, linkId, id, dashboardId, filter, startDate, endDate } = req.body;
-        const cleanUser = (userName || '').trim();
-        const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-
-        let ownerUser = await RenewalUser.findOne({ name: userRegex }).lean();
+        
+        const { userName, userEmail, userId, linkInput, linkId, id, dashboardId, filter, startDate, endDate } = req.body;
+        
+        console.log(`\n📥 Link Details: userName="${userName}", userEmail="${userEmail}", userId="${userId}"`);
+        
+        // 🔥 ROBUST LOOKUP
+        let ownerUser = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
+        
         if (!ownerUser) {
+            console.log(`   ❌ User NOT FOUND`);
             return res.status(404).json({
                 success: false, deleted: true,
                 error: 'Your account has been removed by admin.',
@@ -1399,8 +1505,13 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
             });
         }
         
-        // 🔥 Normalize plan fields
-        ownerUser = await normalizeUserPlanFields(ownerUser);
+        console.log(`   ✅ Found: ${ownerUser.name || ownerUser.email}`);
+        
+        // 🔥 AUTO-FIX FIELDS
+        ownerUser = await autoFixUserFields(ownerUser);
+        
+        // 🔥 AUTO-ACTIVATE FREE TRIAL if needed
+        ownerUser = await autoActivateFreeTrialIfNeeded(ownerUser);
         
         if (ownerUser.status === 'rejected') {
             return res.status(403).json({
@@ -1408,21 +1519,24 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
                 userLinks: [], planUsage: null, plans: null, hasAnyLink: false
             });
         }
-
+        
+        const cleanUser = ownerUser.name || '';
+        const userRegex = new RegExp('^' + cleanUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        
         let rawInput = linkInput || linkId || id || dashboardId || '';
         let searchId = extractCleanId(rawInput);
-
+        
         const allUserLinks = await Link.find({
             $or: [
                 { assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }
             ]
         }).sort({ created: -1 }).lean();
-
+        
         const formattedUserLinks = allUserLinks.map(l => {
             const lTitle = l.linkName || l.title || l.name || 'Untitled Campaign';
             return { id: l.id, name: lTitle, title: lTitle, linkName: lTitle, status: l.status || 'active', expiryDate: l.expiryDate || null, visits: l.visits || 0, claims: l.claims || 0 };
         });
-
+        
         let link = null;
         if (searchId && searchId !== cleanUser) {
             const candidateLink = await Link.findOne(getLinkQuery(searchId)).lean();
@@ -1433,58 +1547,27 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
             }
         }
         if (!link && allUserLinks.length > 0) link = allUserLinks[0];
-
+        
         const pricingDoc = await getPricingDoc();
         
         const isLifetimeUnlimited = ownerUser?.lifetimeUnlimited === true;
         const userCurrentPlan = (ownerUser?.currentPlan || 'none').toString().trim();
-        const hasPlanKey = userCurrentPlan && userCurrentPlan !== 'none' && userCurrentPlan !== 'no-plan' && userCurrentPlan !== '';
+        const hasPlanKey = userCurrentPlan && userCurrentPlan !== 'none' && userCurrentPlan !== 'no-plan';
         
         const planStartDate = ownerUser?.planStartDate ? new Date(ownerUser.planStartDate) : null;
         const planExpiryDate = ownerUser?.planExpiryDate ? new Date(ownerUser.planExpiryDate) : null;
         const now = new Date();
         const planNotExpired = planExpiryDate ? (planExpiryDate > now) : false;
         
-        // 🔥 FIX: Approved user with no plan → auto Free Trial fallback
-        let hasPlan = isLifetimeUnlimited || (hasPlanKey && planNotExpired);
-        let effectivePlanKey = userCurrentPlan;
-        let effectivePlanStart = planStartDate;
-        let effectivePlanExpiry = planExpiryDate;
-        
-        if (!hasPlan && ownerUser.status === 'approved' && !ownerUser.freeTrialUsed) {
-            // Auto-activate Free Trial
-            const ftPlan = getPlanDetails(pricingDoc, 'free-trial');
-            const planStart = new Date();
-            const planExpiry = new Date();
-            planExpiry.setDate(planExpiry.getDate() + (ftPlan.durationDays || 3));
-            
-            await RenewalUser.collection.updateOne(
-                { _id: ownerUser._id },
-                { $set: {
-                    currentPlan: 'free-trial',
-                    planStartDate: planStart,
-                    planExpiryDate: planExpiry,
-                    lifetimeUnlimited: false,
-                    freeTrialUsed: true,
-                    freeTrialActivatedAt: planStart
-                }}
-            );
-            
-            effectivePlanKey = 'free-trial';
-            effectivePlanStart = planStart;
-            effectivePlanExpiry = planExpiry;
-            hasPlan = true;
-            
-            console.log(`🎁 Auto Free Trial for: ${cleanUser}`);
-        }
-        
+        const hasPlan = isLifetimeUnlimited || (hasPlanKey && planNotExpired);
         const planIsExpired = !isLifetimeUnlimited && hasPlanKey && planExpiryDate && planExpiryDate < now;
-        const freeTrialUsed = ownerUser?.freeTrialUsed === true || (hasPlan && effectivePlanKey === 'free-trial');
         
-        const plan = getPlanDetails(pricingDoc, hasPlan ? effectivePlanKey : 'free-trial');
+        const freeTrialUsed = ownerUser?.freeTrialUsed === true;
+        
+        const plan = getPlanDetails(pricingDoc, hasPlan ? userCurrentPlan : 'free-trial');
         const totalUserVisits = allUserLinks.reduce((sum, l) => sum + (parseInt(l.visits) || 0), 0);
         const totalUserClaims = allUserLinks.reduce((sum, l) => sum + (parseInt(l.claims) || 0), 0);
-
+        
         let planDaysLeft = null;
         let planHoursLeft = null;
         let planTotalDays = 0;
@@ -1493,12 +1576,12 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
         
         if (isLifetimeUnlimited) {
             planDaysLeft = 'lifetime';
-        } else if (effectivePlanExpiry && effectivePlanStart) {
-            const diffMs = effectivePlanExpiry - now;
+        } else if (planExpiryDate && planStartDate) {
+            const diffMs = planExpiryDate - now;
             planDaysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
             planHoursLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
             planTotalDays = plan.durationDays || 0;
-            const elapsedMs = now - effectivePlanStart;
+            const elapsedMs = now - planStartDate;
             planDaysElapsed = Math.max(0, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)));
             planProgressPct = planTotalDays > 0 ? Math.min(100, Math.round((planDaysElapsed / planTotalDays) * 100)) : 0;
         }
@@ -1508,11 +1591,11 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
         const linksRemaining = (isLifetimeUnlimited || isUnlimited(linkLimitRaw)) ? 'unlimited' : Math.max(0, linkLimitRaw - linksUsed);
         const linkLimitReached = isLifetimeUnlimited ? false : (!isUnlimited(linkLimitRaw) && linksUsed >= linkLimitRaw);
         const canCreateMoreLinks = hasPlan && !linkLimitReached;
-
+        
         let planUsage;
         if (hasPlan) {
             planUsage = {
-                planKey: isLifetimeUnlimited ? 'lifetime-unlimited' : effectivePlanKey,
+                planKey: isLifetimeUnlimited ? 'lifetime-unlimited' : userCurrentPlan,
                 planName: isLifetimeUnlimited ? 'Lifetime Unlimited' : plan.name,
                 durationDays: isLifetimeUnlimited ? '∞' : (plan.durationDays || 0),
                 price: isLifetimeUnlimited ? 0 : plan.price,
@@ -1527,8 +1610,8 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
                 visitorLimitReached: isLifetimeUnlimited ? false : (!isUnlimited(plan.visitorLimit) && totalUserVisits >= plan.visitorLimit),
                 canCreateMoreLinks,
                 lifetimeUnlimited: isLifetimeUnlimited,
-                planExpiryDate: effectivePlanExpiry || null,
-                planStartDate: effectivePlanStart || null,
+                planExpiryDate: planExpiryDate || null,
+                planStartDate: planStartDate || null,
                 planIsExpired: false,
                 planDaysLeft, planHoursLeft,
                 planTotalDays, planDaysElapsed,
@@ -1551,9 +1634,9 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
                 freeTrialUsed
             };
         }
-
+        
         const freshPlans = pricingDoc?.plans || DEFAULT_PLANS;
-
+        
         if (!link) {
             return res.status(404).json({
                 success: false, error: `No link found for user "${cleanUser}".`,
@@ -1563,17 +1646,17 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
                 hasAnyLink: false
             });
         }
-
+        
         if (cleanUser && (!link.assignedUser || link.assignedUser === '')) {
             await Link.collection.updateOne({ _id: link._id }, { $set: { assignedUser: cleanUser, userName: cleanUser } });
         }
-
+        
         const today = getISTDate();
         const yesterday = getISTDateMinus(1);
         const dateRangeInfo = parseDateRange(filter, startDate, endDate);
         const dailyVisitsObj = link.dailyVisits || {};
         const dailyClaimsObj = link.dailyClaims || {};
-
+        
         const mappedRangeVisits = sumDailyMapBetween(dailyVisitsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const mappedRangeClaims = sumDailyMapBetween(dailyClaimsObj, dateRangeInfo.startStr, dateRangeInfo.endStr);
         const vToday = getDailyValue(dailyVisitsObj, today);
@@ -1586,7 +1669,7 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
         const c7d = sumDailyMapBetween(dailyClaimsObj, sevenDaysAgo, today);
         const v30d = sumDailyMapBetween(dailyVisitsObj, thirtyDaysAgo, today);
         const c30d = sumDailyMapBetween(dailyClaimsObj, thirtyDaysAgo, today);
-
+        
         let daysLeft = null;
         let isEligibleForRenewal = false;
         let linkIsExpired = false;
@@ -1598,10 +1681,10 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
             if (daysLeft <= 3) isEligibleForRenewal = true;
         }
         if (!link.expiryDate && planIsExpired) linkIsExpired = true;
-
+        
         const lName = link.linkName || link.title || link.name || 'Untitled Campaign';
         const isUidOn = !isUidCheckDisabled(link.uidChecking);
-
+        
         res.json({
             success: true, hasAnyLink: true,
             id: link.id, linkId: link.id, name: lName, title: lName, linkName: lName,
@@ -1640,21 +1723,19 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
 // ==================== USER DELETE OWN LINK ====================
 app.delete('/api/user/delete-link/:linkId', userApiLimiter, async (req, res) => {
     try {
-        const { userName } = req.body;
+        const { userName, userEmail, userId } = req.body;
         const { linkId } = req.params;
         
-        if (!userName || !linkId) return res.status(400).json({ error: 'User name and link ID required' });
+        if (!linkId) return res.status(400).json({ error: 'Link ID required' });
         
-        const user = await RenewalUser.findOne({ 
-            name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
-        });
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         const link = await Link.findOne(getLinkQuery(linkId)).lean();
         if (!link) return res.status(404).json({ error: 'Link not found' });
         
         const ownerName = (link.assignedUser || link.userName || link.creator || '').toLowerCase();
-        if (ownerName !== user.name.toLowerCase()) {
+        if (ownerName !== (user.name || '').toLowerCase()) {
             return res.status(403).json({ error: 'You do not own this link' });
         }
         
@@ -1669,14 +1750,11 @@ app.delete('/api/user/delete-link/:linkId', userApiLimiter, async (req, res) => 
 // ==================== RENEWAL PAYMENT ====================
 app.post('/api/user/renew-payment', userApiLimiter, async (req, res) => {
     try {
-        const { linkId, linkName, plan, days, amount, refNo, userName } = req.body;
+        const { linkId, linkName, plan, days, amount, refNo, userName, userEmail, userId } = req.body;
         
         if (!plan) return res.status(400).json({ error: 'Plan required' });
-        if (!userName) return res.status(400).json({ error: 'User name required' });
         
-        const user = await RenewalUser.findOne({ 
-            name: new RegExp('^' + userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') 
-        });
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         if (user.currentPlan && user.currentPlan !== 'none' && !isPlanExpired(user)) {
@@ -1704,18 +1782,28 @@ app.post('/api/user/renew-payment', userApiLimiter, async (req, res) => {
 
 app.get('/api/user/short-links', userApiLimiter, async (req, res) => {
     try {
-        const { userName } = req.query;
-        const filter = userName ? { creator: userName } : {};
-        const links = await ShortLink.find(filter).sort({ createdAt: -1 }).lean();
+        const { userName, userEmail, userId } = req.query;
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
+        if (!user) return res.json({ success: true, links: [] });
+        
+        const links = await ShortLink.find({ creator: user.name }).sort({ createdAt: -1 }).lean();
         res.json({ success: true, links });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/user/short-links', userApiLimiter, async (req, res) => {
     try {
-        const { originalUrl, title, userName, appOpen, appScheme } = req.body;
+        const { originalUrl, title, userName, userEmail, userId, appOpen, appScheme } = req.body;
         if (!originalUrl) return res.status(400).json({ error: 'URL required' });
-        const link = new ShortLink({ code: Math.random().toString(36).substring(2, 8), originalUrl, title: title || 'Untitled', creator: userName || 'User', appOpen: !!appScheme, appScheme: appScheme || '' });
+        
+        const user = await findRenewalUserByIdentifiers({ userId, userEmail, userName });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        const link = new ShortLink({ 
+            code: Math.random().toString(36).substring(2, 8), 
+            originalUrl, title: title || 'Untitled', 
+            creator: user.name, appOpen: !!appScheme, appScheme: appScheme || '' 
+        });
         await link.save();
         res.json({ success: true, link, shortUrl: `${req.protocol}://${req.get('host')}/s/${link.code}` });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
@@ -1882,7 +1970,6 @@ app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== 🔥 FIX: APPROVE USER — AUTO FREE TRIAL ====================
 const handleUserApprovalAction = async (req, res) => {
     try {
         const { action } = req.body;
