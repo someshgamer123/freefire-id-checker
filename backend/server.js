@@ -583,9 +583,23 @@ async function initializeDatabase() {
     }
 }
 
-connectDB().then((conn) => {
-    if (conn) initializeDatabase();
-}).catch(() => {});
+// ==========================================
+// ✅ MAIN START (Fixes the Connection Crash)
+// ==========================================
+async function startServer() {
+    try {
+        const conn = await connectDB();
+        await initializeDatabase();
+        
+        app.listen(port, '0.0.0.0', () => {
+            console.log(`🚀 Server running on port ${port}`);
+        });
+    } catch (err) {
+        console.error('❌ Failed to start server:', err.message);
+        process.exit(1);
+    }
+}
+startServer();
 
 // ==================== MIDDLEWARE ====================
 app.set('trust proxy', 1);
@@ -2978,5 +2992,3 @@ setInterval(async () => {
         await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
-
-app.listen(port, '0.0.0.0', () => console.log(`🚀 Server running on port ${port}`));
