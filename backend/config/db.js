@@ -19,13 +19,7 @@ const connectDB = async () => {
         const maskedUri = uri.replace(/:([^:@]+)@/, ':****@');
         console.log('═══════════════════════════════════════');
         console.log('🔍 MONGODB_URI exists:', !!process.env.MONGODB_URI);
-        console.log('🔍 URI length:', uri.length);
         console.log('🔍 Masked URI:', maskedUri);
-        console.log('🔍 Starts with mongodb+srv:', uri.startsWith('mongodb+srv://'));
-        console.log('🔍 Starts with mongodb://:', uri.startsWith('mongodb://'));
-
-        const userMatch = uri.match(/mongodb\+srv:\/\/([^:]+):/);
-        if (userMatch) console.log('🔍 Username in URI:', userMatch[1]);
         console.log('═══════════════════════════════════════');
 
         if (!uri) {
@@ -38,8 +32,7 @@ const connectDB = async () => {
             process.exit(1);
         }
 
-        mongoose.set('bufferCommands', false);
-        mongoose.set('bufferTimeoutMS', 5000);
+        // ✅ IMPORTANT: Removed "bufferCommands = false" to prevent crashes
         mongoose.set('strictQuery', false);
 
         console.log('⏳ Connecting to MongoDB...');
