@@ -186,12 +186,12 @@
         /* ============ MAIN CONTENT ============ */
         .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 
-        /* ============ AUTH SCREEN (Fitted) ============ */
+        /* ============ AUTH SCREEN (Perfectly Fitted) ============ */
         .auth-screen {
             width: 100%;
             max-width: 420px;
             margin: auto;
-            padding: 0 16px;
+            padding: 20px 0;
             position: relative;
             z-index: 1;
             display: flex;
@@ -202,11 +202,12 @@
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 30px 24px;
+            padding: 32px 24px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
             text-align: center;
             position: relative;
             overflow: hidden;
+            width: 100%;
         }
         .auth-logo {
             width: 64px; height: 64px;
@@ -596,7 +597,6 @@
             <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
         </div>
         <div class="sidebar-menu">
-            <!-- ✅ Working Sidebar Buttons -->
             <button class="sidebar-btn" onclick="goToSection('dashboardSection')">
                 <span class="svg-icon"><svg><use href="#icon-user"/></svg></span> Dashboard
             </button>
@@ -628,7 +628,6 @@
     <!-- NAVBAR -->
     <header class="top-navbar">
         <div class="nav-left">
-            <!-- Fixed Menu Button added here -->
             <button class="btn-menu-toggle" onclick="toggleSidebar(true)" title="Menu">
                 <span class="line l1"></span>
                 <span class="line l2"></span>
@@ -651,7 +650,7 @@
     </header>
 
     <main class="content-wrap">
-        <!-- AUTH SECTION -->
+        <!-- AUTH SECTION (Centered and Fitted) -->
         <div id="authSection" class="auth-screen">
             <div class="auth-card animate-entry">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
@@ -852,7 +851,6 @@
                         <label>To:</label>
                         <input type="date" id="customEndDateInput">
                     </div>
-                    <!-- Fixed button size -->
                     <button class="custom-date-apply-btn" onclick="applyCustomDateRange()">
                         <svg><use href="#icon-check"/></svg> Apply Custom Range
                     </button>
