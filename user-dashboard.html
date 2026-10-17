@@ -966,7 +966,7 @@
             border: 1px solid var(--border-subtle);
         }
 
-        /* ============ GOOGLE AUTH (NEW DESIGN) ============ */
+        /* GOOGLE AUTH */
         .auth-screen {
             max-width: 440px;
             margin: 30px auto 0;
@@ -977,9 +977,7 @@
             border: 1px solid rgba(99, 102, 241, 0.2);
             border-radius: 24px;
             padding: 36px 28px 28px;
-            box-shadow: 
-                0 25px 60px rgba(0, 0, 0, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -993,15 +991,6 @@
             background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
             pointer-events: none;
         }
-        .auth-card::after {
-            content: '';
-            position: absolute;
-            bottom: -60px; left: -60px;
-            width: 160px; height: 160px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
 
         .auth-logo {
             width: 72px; height: 72px;
@@ -1010,9 +999,7 @@
             border-radius: 22px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
-            box-shadow: 
-                0 12px 32px var(--primary-glow),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            box-shadow: 0 12px 32px var(--primary-glow);
             position: relative;
             z-index: 1;
         }
@@ -1039,7 +1026,6 @@
             margin-right: auto;
         }
         
-        /* 🆕 Custom Google Button (Mobile Friendly) */
         .google-btn {
             width: 100%;
             max-width: 340px;
@@ -1060,19 +1046,8 @@
             position: relative;
             z-index: 1;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
-            user-select: none;
-            -webkit-user-select: none;
         }
-        .google-btn:hover {
-            background: #f8f9fa;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-color: #c6c6c6;
-        }
-        .google-btn:active { 
-            transform: scale(0.98); 
-            background: #f1f3f4;
-        }
+        .google-btn:active { transform: scale(0.98); background: #f1f3f4; }
         .google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .google-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
         .google-btn .btn-text { font-weight: 700; color: #3c4043; }
@@ -1092,7 +1067,6 @@
             cursor: pointer;
             margin-left: 4px;
             transition: 0.2s;
-            -webkit-tap-highlight-color: rgba(99,102,241,0.2);
             padding: 4px 2px;
             display: inline-block;
         }
@@ -1117,7 +1091,6 @@
         }
         .auth-security-badge svg { width: 12px; height: 12px; color: #34d399; }
 
-        /* Hidden Google container */
         #googleHiddenContainer {
             position: absolute;
             width: 1px;
@@ -1225,7 +1198,6 @@
         .toast-notification.warning svg { color: #fbbf24; }
         .toast-notification.info svg { color: #818cf8; }
 
-        /* RESPONSIVE */
         @media (max-width: 400px) {
             .pro-card { padding: 16px 14px; }
             .hero-card { padding: 16px; }
@@ -1242,7 +1214,6 @@
 <body>
     <div class="ambient-layer"></div>
 
-    <!-- SVG ICON LIBRARY -->
     <svg style="display:none;">
         <symbol id="icon-flash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/>
@@ -1442,12 +1413,11 @@
     </header>
 
     <main class="content-wrap">
-        <!-- ============ AUTH SECTION (GOOGLE-ONLY) ============ -->
+        <!-- AUTH SECTION -->
         <div id="authSection" class="auth-screen">
             <div class="auth-card">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
                 
-                <!-- SIGN IN VIEW (DEFAULT) -->
                 <div id="signInView">
                     <h2 class="auth-title">Welcome Back</h2>
                     <p class="auth-subtitle">Sign in with your Google account to access your dashboard</p>
@@ -1463,7 +1433,6 @@
                     </div>
                 </div>
                 
-                <!-- SIGN UP VIEW -->
                 <div id="signUpView" style="display:none;">
                     <h2 class="auth-title">Create Account</h2>
                     <p class="auth-subtitle">Sign up with Google to start your journey</p>
@@ -1486,7 +1455,7 @@
             </div>
         </div>
 
-        <!-- ============ DASHBOARD SECTION ============ -->
+        <!-- DASHBOARD SECTION -->
         <div id="dashboardSection">
             <div class="welcome-header">
                 <div class="welcome-title">
@@ -1495,7 +1464,6 @@
                 </div>
             </div>
 
-            <!-- HERO CARD -->
             <div class="hero-card">
                 <div class="hero-card-top">
                     <div class="hero-icon"><svg><use href="#icon-rocket"/></svg></div>
@@ -1512,7 +1480,6 @@
                 <div class="hero-limit-info" id="heroLimitInfo">Loading limit info...</div>
             </div>
 
-            <!-- PLAN DAYS PROGRESS -->
             <div class="plan-days-card" id="planDaysCard" style="display:none;">
                 <div class="plan-days-header">
                     <div class="plan-days-label"><svg><use href="#icon-calendar"/></svg> Plan Validity</div>
@@ -1527,7 +1494,6 @@
                 </div>
             </div>
 
-            <!-- LINK SELECTOR -->
             <div class="link-selector-card">
                 <div class="link-info-box">
                     <div class="link-title-badge">
@@ -1552,7 +1518,6 @@
                 </div>
             </div>
 
-            <!-- TIMELINE -->
             <div class="timeline-card">
                 <div class="timeline-header">
                     <span class="timeline-label">Link Validity Status</span>
@@ -1565,7 +1530,6 @@
                 </div>
             </div>
 
-            <!-- DATE FILTER DROPDOWN -->
             <div class="date-filter-box">
                 <div class="date-filter-header">
                     <div class="date-filter-label">
@@ -1629,7 +1593,6 @@
                 </div>
             </div>
 
-            <!-- STATS -->
             <div class="stats-row">
                 <div class="metric-card highlight">
                     <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
@@ -1653,7 +1616,6 @@
                 </div>
             </div>
 
-            <!-- HISTORY -->
             <div class="pro-card">
                 <h3 style="font-size:14px; font-weight:800; margin-bottom:12px;">Recent Renewal History</h3>
                 <div style="width:100%; overflow-x:auto; border-radius:10px; border:1px solid var(--border-subtle);">
@@ -1675,7 +1637,7 @@
         </div>
     </main>
 
-    <!-- Hidden Google GSI Container (for desktop fallback) -->
+    <!-- Hidden Google container -->
     <div id="googleHiddenContainer">
         <div id="g_id_onload"
              data-client_id="793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com"
@@ -1690,7 +1652,7 @@
         <div class="profile-card">
             <div class="profile-icon"><svg><use href="#icon-user"/></svg></div>
             <div class="profile-title">Complete Your Profile</div>
-            <div class="profile-subtitle">Just one more step to activate your account</div>
+            <div class="profile-subtitle">Just one more step to activate your account with Free Trial</div>
             
             <div class="profile-email-badge">
                 <svg><use href="#icon-check-circle"/></svg>
@@ -1708,7 +1670,7 @@
 
             <button class="btn-action" id="btnCompleteProfile" onclick="submitProfile()" style="margin-top:8px;">
                 <svg><use href="#icon-check-circle"/></svg>
-                <span>Complete Registration</span>
+                <span>Complete & Get Free Trial</span>
             </button>
             <button class="btn-action btn-secondary" onclick="cancelProfile()" style="margin-top:8px;">
                 <span>Cancel</span>
@@ -1963,7 +1925,7 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
+    <!-- TOAST -->
     <div class="toast-notification" id="toastNotification">
         <svg id="toastIcon"><use href="#icon-info"/></svg>
         <span id="toastText">Message</span>
@@ -1981,13 +1943,10 @@
         let currentPlanUsage = null;
         let pendingProfileUser = null;
         let currentAuthMode = 'signin';
-        let googleInitialized = false;
         
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
-
-        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
         // ============ TOAST ============
         function showToast(message, type = 'info', duration = 3000) {
@@ -2115,7 +2074,6 @@
             return false;
         }
 
-        // ============ AUTH VIEW SWITCHER ============
         function switchAuthView(mode) {
             currentAuthMode = mode;
             if (mode === 'signup') {
@@ -2127,19 +2085,12 @@
             }
         }
 
-        // ============ 🔥 NEW: GOOGLE AUTH (MOBILE + DESKTOP) ============
         function triggerGoogleAuth(action) {
             currentAuthMode = action;
             
             const btn1 = document.getElementById('googleSignInBtn');
             const btn2 = document.getElementById('googleSignUpBtn');
             
-            // Detect mobile
-            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            
-            console.log(`🔵 Google Auth triggered: action=${action}, isMobile=${isMobile}`);
-            
-            // Wait for Google SDK
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
                 showToast('Google Sign-In loading... Please wait', 'info');
                 let attempts = 0;
@@ -2150,7 +2101,7 @@
                         triggerGoogleAuth(action);
                     } else if (attempts > 15) {
                         clearInterval(waitInterval);
-                        showToast('Google Sign-In failed to load. Please refresh the page.', 'error');
+                        showToast('Google Sign-In failed to load. Please refresh.', 'error');
                         if (btn1) btn1.disabled = false;
                         if (btn2) btn2.disabled = false;
                     }
@@ -2158,59 +2109,16 @@
                 return;
             }
             
-            // Disable buttons
             if (btn1) btn1.disabled = true;
             if (btn2) btn2.disabled = true;
             
             try {
-                // 🔥 MOBILE: Use redirect-based OAuth flow (more reliable)
-                if (isMobile) {
-                    // Use google.accounts.oauth2 code client for mobile
-                    // This opens Google's OAuth in a new page (no popup)
-                    const redirectUri = window.location.origin + '/user-dashboard';
-                    
-                    // Store action in localStorage for after redirect
-                    localStorage.setItem('pendingGoogleAuthAction', action);
-                    
-                    // Use the OAuth2 code flow — most reliable on mobile
-                    if (google.accounts.oauth2) {
-                        try {
-                            const codeClient = google.accounts.oauth2.initCodeClient({
-                                client_id: GOOGLE_CLIENT_ID,
-                                scope: 'openid email profile',
-                                ux_mode: 'redirect',
-                                redirect_uri: redirectUri,
-                                state: action,
-                                callback: (response) => {
-                                    // This won't be called on mobile redirect, but safe to have
-                                    console.log('Code client callback:', response);
-                                }
-                            });
-                            codeClient.requestCode();
-                            return;
-                        } catch(err) {
-                            console.error('OAuth2 code client error:', err);
-                        }
-                    }
-                    
-                    // Fallback: Use Google prompt (some mobile browsers support it)
-                    google.accounts.id.prompt((notification) => {
-                        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
-                            if (btn1) btn1.disabled = false;
-                            if (btn2) btn2.disabled = false;
-                            showToast('Please allow popups or try again', 'warning');
-                        }
-                    });
-                    return;
-                }
-                
-                // 🔥 DESKTOP: Use standard prompt
                 google.accounts.id.prompt((notification) => {
                     if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
                         if (btn1) btn1.disabled = false;
                         if (btn2) btn2.disabled = false;
                         
-                        // If prompt not shown on desktop, try One Tap button click
+                        // Try hidden button click as fallback
                         if (notification.isNotDisplayed()) {
                             const hiddenBtn = document.querySelector('#googleBtnHidden div[role="button"]');
                             if (hiddenBtn) hiddenBtn.click();
@@ -2225,9 +2133,8 @@
             }
         }
 
-        // ============ GOOGLE AUTH HANDLER ============
         async function handleGoogleAuth(response) {
-            console.log('📥 Google auth response:', response);
+            console.log('📥 Google auth response received');
             
             if (!response || !response.credential) {
                 showToast('Google authentication failed. Please try again.', 'error');
@@ -2239,9 +2146,7 @@
             }
             
             const credential = response.credential;
-            const action = currentAuthMode || localStorage.getItem('pendingGoogleAuthAction') || 'signin';
-            
-            console.log(`📤 Sending to server: action=${action}`);
+            const action = currentAuthMode || 'signin';
             
             try {
                 const res = await fetch('/api/user/google-auth', {
@@ -2251,29 +2156,22 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 
-                console.log('📨 Server response:', res.status, data);
-                
                 const btn1 = document.getElementById('googleSignInBtn');
                 const btn2 = document.getElementById('googleSignUpBtn');
                 if (btn1) btn1.disabled = false;
                 if (btn2) btn2.disabled = false;
-                localStorage.removeItem('pendingGoogleAuthAction');
                 
-                // SIGN IN MODE
+                // SIGN IN
                 if (action === 'signin') {
                     if (res.status === 404 || data.needsSignup) {
                         return notify(
                             'No account found with this Google email.<br><br>Please <strong>Sign Up</strong> first to create your account.',
-                            'Account Not Found',
-                            'info',
-                            null,
+                            'Account Not Found', 'info', null,
                             () => { closeCustomDialog(); switchAuthView('signup'); },
                             'Go to Sign Up'
                         );
                     }
-                    if (!res.ok) {
-                        return showToast(data.error || 'Sign in failed', 'error');
-                    }
+                    if (!res.ok) return showToast(data.error || 'Sign in failed', 'error');
                     if (data.needsProfile) {
                         pendingProfileUser = data.user;
                         openProfileModal(data.user);
@@ -2288,21 +2186,17 @@
                     }
                 }
                 
-                // SIGN UP MODE
+                // SIGN UP
                 if (action === 'signup') {
                     if (data.alreadyRegistered) {
                         return notify(
                             'This Google account is already registered.<br><br>Please use <strong>Sign In</strong> instead.',
-                            'Already Registered',
-                            'info',
-                            null,
+                            'Already Registered', 'info', null,
                             () => { closeCustomDialog(); switchAuthView('signin'); },
                             'Go to Sign In'
                         );
                     }
-                    if (!res.ok) {
-                        return showToast(data.error || 'Sign up failed', 'error');
-                    }
+                    if (!res.ok) return showToast(data.error || 'Sign up failed', 'error');
                     if (data.needsProfile) {
                         pendingProfileUser = data.user;
                         openProfileModal(data.user);
@@ -2323,7 +2217,6 @@
                 const btn2 = document.getElementById('googleSignUpBtn');
                 if (btn1) btn1.disabled = false;
                 if (btn2) btn2.disabled = false;
-                localStorage.removeItem('pendingGoogleAuthAction');
             }
         }
 
@@ -2350,12 +2243,8 @@
             const name = document.getElementById('profileName').value.trim();
             const phone = document.getElementById('profilePhone').value.trim();
             
-            if (!name || name.length < 2) {
-                return showToast('Please enter your full name', 'warning');
-            }
-            if (!/^[6-9]\d{9}$/.test(phone)) {
-                return showToast('Please enter a valid 10-digit mobile number', 'warning');
-            }
+            if (!name || name.length < 2) return showToast('Please enter your full name', 'warning');
+            if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Please enter a valid 10-digit mobile number', 'warning');
             
             const btn = document.getElementById('btnCompleteProfile');
             btn.disabled = true;
@@ -2389,9 +2278,8 @@
                     pendingProfileUser = null;
                     
                     notify(
-                        'Your registration is complete!<br><br>Please wait for <strong>admin approval</strong>. You will be notified on WhatsApp once approved.',
-                        'Registration Complete',
-                        'success'
+                        'Your registration is complete!<br><br><strong>Free Trial activated!</strong> You can now create links.',
+                        'Registration Complete', 'success'
                     );
                     
                     showDashboardView();
@@ -2446,7 +2334,6 @@
                 'custom': 'Custom Range'
             };
             triggerText.textContent = filterLabels[filterType] || 'Select';
-            
             document.getElementById('dateFilterDropdown').classList.remove('open');
             
             if (filterType === 'custom') {
@@ -2460,7 +2347,6 @@
             }
             
             document.getElementById('customDatePanel').classList.remove('show');
-            
             currentDateFilter = filterType;
             currentStartDate = '';
             currentEndDate = '';
@@ -2490,7 +2376,7 @@
         // ============ CREATE LINK MODAL ============
         async function openCreateLinkModal() {
             toggleSidebar(false);
-
+            
             if (!currentPlanUsage) {
                 showToast('Loading plan info. Please wait...', 'info');
                 return;
@@ -2503,9 +2389,7 @@
             if (planKey === 'no-plan' || planKey === 'none' || !planKey) {
                 notify(
                     'You need an active plan to create links.<br><br>Please activate the <strong>Free Trial</strong> or purchase a plan to get started.',
-                    'No Active Plan',
-                    'warning',
-                    null,
+                    'No Active Plan', 'warning', null,
                     () => { closeCustomDialog(); openPlansModal(); },
                     'View Plans'
                 );
@@ -2515,9 +2399,7 @@
             if (planIsExpired && !lifetimeUnlimited) {
                 notify(
                     'Your plan has expired.<br><br>Please renew your plan to continue creating links.',
-                    'Plan Expired',
-                    'warning',
-                    null,
+                    'Plan Expired', 'warning', null,
                     () => { closeCustomDialog(); openPlansModal(); },
                     'Renew Now'
                 );
@@ -2527,9 +2409,7 @@
             if (currentPlanUsage.linkLimitReached && !lifetimeUnlimited) {
                 notify(
                     `You have reached your plan's link limit (<strong>${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}</strong>).<br><br>Please upgrade your plan to create more links.`,
-                    'Link Limit Reached',
-                    'error',
-                    null,
+                    'Link Limit Reached', 'error', null,
                     () => { closeCustomDialog(); openPlansModal(); },
                     'Upgrade Plan'
                 );
@@ -2575,7 +2455,9 @@
 
             try {
                 const payload = {
-                    userName: userProfile.name,
+                    userName: userProfile.name || '',
+                    userEmail: userProfile.email || '',
+                    userId: userProfile.id || '',
                     linkName: linkName,
                     video: video,
                     claim: document.getElementById('clClaim').value.trim() || '#',
@@ -2587,6 +2469,8 @@
                     popupButtonText: document.getElementById('clPopBtn').value.trim() || 'Claim Now',
                     popupImage: document.getElementById('clPopImg').value.trim() || null
                 };
+                
+                console.log('📤 Creating link:', payload);
 
                 const res = await fetch('/api/user/create-link', {
                     method: 'POST',
@@ -2597,6 +2481,14 @@
                 const data = await res.json().catch(() => ({}));
 
                 if (res.ok && data.success) {
+                    // Update name if server auto-fixed it
+                    if (data.userName && data.userName !== userProfile.name) {
+                        userProfile.name = data.userName;
+                        localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                        document.getElementById('labelUserName').textContent = userProfile.name;
+                        document.getElementById('navUserName').textContent = userProfile.name;
+                        document.getElementById('sbUserName').textContent = userProfile.name;
+                    }
                     closeCreateLinkModal();
                     notify(`Link "<strong>${data.link.linkName}</strong>" created successfully!`, 'Link Created', 'success');
                     setTimeout(() => fetchUserLinkData(data.link.id), 500);
@@ -2605,15 +2497,10 @@
                     btn.innerHTML = originalHtml;
                     const errMsg = data.error || 'Failed to create link.';
                     
-                    if (data.reason === 'LINK_LIMIT_REACHED') {
-                        notify(errMsg, 'Link Limit Reached', 'error');
-                    } else if (data.reason === 'PLAN_EXPIRED') {
-                        notify(errMsg, 'Plan Expired', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'Renew Now');
-                    } else if (data.reason === 'NO_ACTIVE_PLAN' || data.reason === 'NO_PLAN') {
-                        notify(errMsg, 'No Active Plan', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'View Plans');
-                    } else {
-                        notify(errMsg, 'Create Failed', 'error');
-                    }
+                    if (data.reason === 'LINK_LIMIT_REACHED') notify(errMsg, 'Link Limit Reached', 'error');
+                    else if (data.reason === 'PLAN_EXPIRED') notify(errMsg, 'Plan Expired', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'Renew Now');
+                    else if (data.reason === 'NO_ACTIVE_PLAN' || data.reason === 'NO_PLAN') notify(errMsg, 'No Active Plan', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'View Plans');
+                    else notify(errMsg, 'Create Failed', 'error');
                 }
             } catch (err) {
                 btn.disabled = false;
@@ -2677,7 +2564,11 @@
             try {
                 const res = await fetch('/api/user/select-free-plan', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name })
+                    body: JSON.stringify({ 
+                        userName: userProfile.name, 
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.success) {
@@ -2699,10 +2590,21 @@
             document.getElementById('displayLinkId').textContent = 'Fetching...';
             document.getElementById('displayLinkName').textContent = 'Loading...';
             const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
+            
+            const payload = { 
+                userName: userProfile.name || '',
+                userEmail: userProfile.email || '',
+                userId: userProfile.id || '',
+                linkInput: cachedId, 
+                filter: currentDateFilter, 
+                startDate: currentStartDate, 
+                endDate: currentEndDate 
+            };
+            
             try {
                 const res = await fetch('/api/user/link-details', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name, linkInput: cachedId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json().catch(() => ({}));
                 
@@ -2736,6 +2638,7 @@
                 const cnt = document.getElementById('menuLinkCount');
                 if (cnt) cnt.textContent = myLinksList.length;
             } catch (err) {
+                console.error('fetchUserLinkData error:', err);
                 document.getElementById('displayLinkId').textContent = 'Offline';
                 document.getElementById('displayLinkName').textContent = 'Connection error';
                 displayEmptyState();
@@ -2762,25 +2665,25 @@
             const limitHit = pu.linkLimitReached && !pu.lifetimeUnlimited;
             
             if (noPlan) {
-                if (btn) { btn.disabled = false; }
+                if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'No Active Plan';
                 if (heroSubtitle) heroSubtitle.textContent = 'Activate a plan to start creating links';
                 if (btnText) btnText.textContent = 'Activate Plan Now';
                 if (info) info.innerHTML = '<strong>No active plan.</strong> Activate Free Trial or purchase a plan to create links.';
             } else if (expired && !pu.lifetimeUnlimited) {
-                if (btn) { btn.disabled = false; }
+                if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'Plan Expired';
                 if (heroSubtitle) heroSubtitle.textContent = 'Renew your plan to continue creating links';
                 if (btnText) btnText.textContent = 'Renew Plan Now';
                 if (info) info.innerHTML = '<strong>Your plan expired.</strong> Please renew to create new links.';
             } else if (limitHit) {
-                if (btn) { btn.disabled = false; }
+                if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'Link Limit Reached';
                 if (heroSubtitle) heroSubtitle.textContent = 'Upgrade your plan to create more links';
                 if (btnText) btnText.textContent = 'Upgrade Plan';
                 if (info) info.innerHTML = `You've used all <strong>${linksLimit}</strong> link${linksLimit > 1 ? 's' : ''}. Upgrade to create more.`;
             } else {
-                if (btn) { btn.disabled = false; }
+                if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'Create New Link';
                 if (heroSubtitle) heroSubtitle.textContent = 'Generate a fresh rewarded tracking link and start earning';
                 if (btnText) btnText.textContent = 'Create New Link';
@@ -3115,15 +3018,17 @@
             
             notify(
                 `Are you sure you want to delete this link?<br><br><strong>"${linkName}"</strong><br><br>This action cannot be undone.`,
-                'Delete Link?',
-                'warning',
-                'confirm',
+                'Delete Link?', 'warning', 'confirm',
                 async () => {
                     try {
                         const res = await fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
                             method: 'DELETE',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userName: userProfile.name })
+                            body: JSON.stringify({ 
+                                userName: userProfile.name,
+                                userEmail: userProfile.email || '',
+                                userId: userProfile.id || ''
+                            })
                         });
                         const data = await res.json().catch(() => ({}));
                         if (res.ok && data.success) {
@@ -3228,6 +3133,8 @@
                         linkId: currentId,
                         linkName: currentLinkTitle,
                         userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || '',
                         plan: activePlan.key,
                         days: activePlan.days,
                         amount: activePlan.cost,
@@ -3235,9 +3142,7 @@
                     })
                 });
                 const data = await res.json().catch(() => ({}));
-                if (res.status === 403) {
-                    return showToast(data.error || 'Cannot purchase this plan', 'error');
-                }
+                if (res.status === 403) return showToast(data.error || 'Cannot purchase this plan', 'error');
             } catch(e) { console.warn('Renewal request error:', e); }
 
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -3284,7 +3189,12 @@
             const c = document.getElementById('userShortLinksList');
             c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
-                const res = await fetch(`/api/user/short-links?userName=${encodeURIComponent(userProfile.name)}`);
+                const params = new URLSearchParams({
+                    userName: userProfile.name || '',
+                    userEmail: userProfile.email || '',
+                    userId: userProfile.id || ''
+                });
+                const res = await fetch(`/api/user/short-links?${params.toString()}`);
                 const data = await res.json().catch(() => ({}));
                 const links = data.links || [];
                 if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
@@ -3308,7 +3218,16 @@
             const title = document.getElementById('uShortTitle').value.trim();
             if (!originalUrl) return showToast('Please enter a URL', 'warning');
             try {
-                const res = await fetch('/api/user/short-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalUrl, title, userName: userProfile.name }) });
+                const res = await fetch('/api/user/short-links', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        originalUrl, title, 
+                        userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    }) 
+                });
                 const data = await res.json().catch(() => ({}));
                 if (data.success) { showToast('Short link created!', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
                 else showToast(data.error || 'Failed', 'error');
@@ -3329,7 +3248,6 @@
         function performLogout() { 
             localStorage.removeItem('activeUserSession'); 
             localStorage.removeItem('userActiveLinkId'); 
-            localStorage.removeItem('pendingGoogleAuthAction');
             window.location.reload(); 
         }
 
@@ -3337,33 +3255,16 @@
         window.handleGoogleAuth = handleGoogleAuth;
 
         window.addEventListener('load', () => {
-            // Check for OAuth redirect callback
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const state = urlParams.get('state');
-            
-            if (code && state) {
-                // Handle OAuth redirect response on mobile
-                handleOAuthRedirect(code, state);
-                // Clean URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                return;
-            }
-            
-            // Initialize Google GSI
             setTimeout(() => {
-                if (typeof google !== 'undefined' && google.accounts && google.accounts.id && !googleInitialized) {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
                     try {
                         google.accounts.id.initialize({
-                            client_id: GOOGLE_CLIENT_ID,
+                            client_id: '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com',
                             callback: handleGoogleAuth,
                             auto_select: false,
-                            cancel_on_tap_outside: true,
-                            use_fedcm_for_prompt: false
+                            cancel_on_tap_outside: true
                         });
-                        googleInitialized = true;
                         
-                        // Render hidden button (for desktop)
                         const hiddenBtn = document.getElementById('googleBtnHidden');
                         if (hiddenBtn) {
                             google.accounts.id.renderButton(hiddenBtn, {
@@ -3381,38 +3282,6 @@
             }, 800);
         });
 
-        // Handle OAuth redirect (mobile flow)
-        async function handleOAuthRedirect(code, action) {
-            console.log(`📥 OAuth redirect: code=${code}, action=${action}`);
-            
-            try {
-                // For OAuth2 code flow, we need to exchange code for tokens
-                // Since we don't have a server-side exchange endpoint, use the code directly
-                // Google's ID token flow actually returns ID token in the callback
-                // For redirect mode, we can use the code with Google's token endpoint
-                
-                // Instead, let's use the redirect with response_type=id_token (implicit flow)
-                // This will give us id_token in the URL hash
-                // But since we've already redirected, use a different approach:
-                
-                // Send code to server for exchange
-                const res = await fetch('/api/user/google-oauth-callback', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, action })
-                });
-                
-                // Fallback: If server doesn't have this endpoint, show error
-                if (!res.ok) {
-                    console.error('Server OAuth exchange failed');
-                    showToast('Authentication failed. Please try again.', 'error');
-                }
-            } catch(err) {
-                console.error('OAuth redirect error:', err);
-                showToast('Authentication error', 'error');
-            }
-        }
-
         // Session verification
         setInterval(async () => {
             if (!userProfile || !userProfile.name) return;
@@ -3420,7 +3289,11 @@
             try {
                 const res = await fetch('/api/user/verify-session', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name })
+                    body: JSON.stringify({ 
+                        userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    })
                 });
                 if (res.status === 404 || res.status === 403) {
                     const data = await res.json().catch(() => ({}));
@@ -3438,9 +3311,18 @@
                 
                 const s = document.getElementById('userLinkSelect');
                 const targetId = s?.value || localStorage.getItem('userActiveLinkId');
+                
                 fetch('/api/user/link-details', { 
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ userName: userProfile.name, linkInput: targetId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate }) 
+                    body: JSON.stringify({ 
+                        userName: userProfile.name || '',
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || '',
+                        linkInput: targetId, 
+                        filter: currentDateFilter, 
+                        startDate: currentStartDate, 
+                        endDate: currentEndDate 
+                    }) 
                 })
                 .then(r => r.json().catch(() => ({})))
                 .then(data => { 
