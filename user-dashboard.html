@@ -5,13 +5,13 @@
     <title>Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0a0e17">
-    
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+
     <script>
         (function() {
             document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
@@ -22,7 +22,7 @@
             }, true);
         })();
     </script>
-    
+
     <style>
         :root {
             --bg-base: #0a0e17;
@@ -41,10 +41,10 @@
             --text-muted: #64748b;
         }
 
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
@@ -66,7 +66,7 @@
             width: 100vw; height: 100vh;
             pointer-events: none;
             z-index: 0;
-            background: 
+            background:
                 radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.12) 0%, transparent 40%),
                 radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
                 radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
@@ -130,8 +130,8 @@
             display: flex; align-items: center; gap: 6px;
             max-width: 130px;
         }
-        .user-pill .live-indicator { 
-            width: 6px; height: 6px; border-radius: 50%; 
+        .user-pill .live-indicator {
+            width: 6px; height: 6px; border-radius: 50%;
             background: #34d399; animation: pulseDot 1.5s infinite; flex-shrink: 0;
         }
         .user-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -177,10 +177,10 @@
         .sidebar-head .sb-logo-icon svg { width: 18px; height: 18px; }
         .sidebar-head h2 { font-size: 14px; font-weight: 800; color: #fff; line-height: 1; }
         .sidebar-head p { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
-        .sidebar-close { 
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); 
-            width: 32px; height: 32px; border-radius: 10px; color: var(--text-muted); 
-            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+        .sidebar-close {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+            width: 32px; height: 32px; border-radius: 10px; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
             transition: 0.2s; padding: 0;
         }
         .sidebar-close:active { background: rgba(239,68,68,0.15); color: #fff; }
@@ -202,14 +202,14 @@
         }
         .drawer-item .drawer-icon svg { width: 17px; height: 17px; }
         .drawer-item.danger { color: #f87171; }
-        .drawer-item .drawer-badge { 
-            margin-left: auto; font-size: 10px; font-weight: 800; 
-            padding: 2px 8px; border-radius: 10px; 
-            background: rgba(99,102,241,0.2); color: #a5b4fc; 
+        .drawer-item .drawer-badge {
+            margin-left: auto; font-size: 10px; font-weight: 800;
+            padding: 2px 8px; border-radius: 10px;
+            background: rgba(99,102,241,0.2); color: #a5b4fc;
         }
-        .drawer-item.primary-highlight { 
-            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)); 
-            color: #fff; border-left-color: var(--primary-light); 
+        .drawer-item.primary-highlight {
+            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+            color: #fff; border-left-color: var(--primary-light);
         }
 
         .sidebar-footer {
@@ -230,11 +230,11 @@
         .sidebar-footer .sb-user-status { font-size: 10px; color: #34d399; font-weight: 600; }
 
         /* ============ CONTENT ============ */
-        .content-wrap { 
-            max-width: 900px; 
-            margin: 18px auto 0; 
-            padding: 0 14px; 
-            position: relative; 
+        .content-wrap {
+            max-width: 900px;
+            margin: 18px auto 0;
+            padding: 0 14px;
+            position: relative;
             z-index: 1;
         }
 
@@ -700,6 +700,7 @@
         <symbol id="icon-google" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></symbol>
         <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
         <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+        <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
     </svg>
 
     <!-- SIDEBAR -->
@@ -742,6 +743,10 @@
             <a href="https://wa.me/916372923348" target="_blank" class="drawer-item" id="supportLink">
                 <span class="drawer-icon"><svg><use href="#icon-headphones"/></svg></span>
                 <span>Support</span>
+            </a>
+            <a href="mailto:" id="supportEmailSidebar" class="drawer-item support-email-link" style="display:none;">
+                <span class="drawer-icon"><svg><use href="#icon-mail"/></svg></span>
+                <span>Email Support</span>
             </a>
             <div class="drawer-item" onclick="openTermsModal()">
                 <span class="drawer-icon"><svg><use href="#icon-file-text"/></svg></span>
@@ -790,34 +795,34 @@
         <div id="authSection" class="auth-screen">
             <div class="auth-card">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
-                
+
                 <div id="signInView">
                     <h2 class="auth-title">Welcome Back</h2>
                     <p class="auth-subtitle">Sign in with your Google account</p>
-                    
+
                     <div class="google-btn-container" id="googleSignInContainer">
                         <div class="google-loading">
                             <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
                             Loading...
                         </div>
                     </div>
-                    
+
                     <div class="auth-switch-text">
                         Don't have an account? <a onclick="switchAuthView('signup')">Sign Up</a>
                     </div>
                 </div>
-                
+
                 <div id="signUpView" style="display:none;">
                     <h2 class="auth-title">Create Account</h2>
                     <p class="auth-subtitle">Sign up with Google to request access</p>
-                    
+
                     <div class="google-btn-container" id="googleSignUpContainer">
                         <div class="google-loading">
                             <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
                             Loading...
                         </div>
                     </div>
-                    
+
                     <div class="auth-switch-text">
                         Already have an account? <a onclick="switchAuthView('signin')">Sign In</a>
                     </div>
@@ -1034,6 +1039,8 @@
             <a onclick="openGuideModal()">How to Use</a>
             <span class="sep"></span>
             <a href="https://wa.me/916372923348" target="_blank">Support</a>
+            <span class="sep support-email-link" style="display:none;"></span>
+            <a href="mailto:" class="support-email-link" style="display:none;">Email Support</a>
         </div>
     </div>
 
@@ -1051,7 +1058,7 @@
             <div class="profile-icon"><svg><use href="#icon-user"/></svg></div>
             <div class="profile-title">Complete Your Profile</div>
             <div class="profile-subtitle">Just one more step to send request for Admin approval</div>
-            
+
             <div class="profile-email-badge">
                 <svg><use href="#icon-check-circle"/></svg>
                 <span id="profileEmailDisplay">user@example.com</span>
@@ -1330,12 +1337,16 @@
     </div>
 
     <script>
+        // ✅ Google Client ID
+        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
+
         let userProfile = null;
         let activeLinkRecord = null;
         let myLinksList = [];
         let activePlan = { key: null, days: 0, cost: 0 };
         let activeAdminUpi = 'admin@upi';
         let adminPhone = '916372923348';
+        let supportEmail = '';
         let showUpiToUser = true;
         let loadedPlans = null;
         let currentPlanUsage = null;
@@ -1343,12 +1354,11 @@
         let currentAuthMode = 'signin';
         let googleInitialized = false;
         let googleButtonsRendered = false;
-        
+        let pendingApprovalState = null;
+
         let currentDateFilter = 'today';
         let currentStartDate = '';
         let currentEndDate = '';
-
-        const GOOGLE_CLIENT_ID = '793442201657-dvpb8ial4v08ilkjjs4ek0ffjav7dhat.apps.googleusercontent.com';
 
         function showToast(message, type = 'info', duration = 3000) {
             try {
@@ -1356,7 +1366,6 @@
                 const icon = document.getElementById('toastIcon');
                 const text = document.getElementById('toastText');
                 if (!toast) return;
-                
                 const iconMap = { success: 'icon-check-circle', error: 'icon-x-circle', warning: 'icon-alert-circle', info: 'icon-info' };
                 icon.innerHTML = '<use href="#' + (iconMap[type] || 'icon-info') + '"/>';
                 text.textContent = message;
@@ -1376,19 +1385,14 @@
             };
             let detectedType = type || icon;
             if (!typeMap[detectedType]) detectedType = 'info';
-            
             const card = document.getElementById('dialogCard');
             card.className = 'custom-dialog-card ' + typeMap[detectedType].cls;
-            
             const wrap = document.getElementById('dialogIconWrap');
             wrap.className = 'custom-dialog-icon-wrap ' + typeMap[detectedType].cls;
-            
             const iconSvg = document.getElementById('dialogIconSvg');
             iconSvg.innerHTML = '<use href="#' + typeMap[detectedType].svg + '"/>';
-            
             document.getElementById('dialogTitle').textContent = title;
             document.getElementById('dialogMessage').innerHTML = message;
-            
             const actions = document.getElementById('dialogActions');
             if (detectedType === 'confirm') {
                 actions.innerHTML = `
@@ -1402,10 +1406,9 @@
             } else {
                 actions.innerHTML = `<button class="custom-dialog-btn primary" onclick="closeCustomDialog()">${confirmText}</button>`;
             }
-            
             document.getElementById('customDialog').classList.add('active');
         }
-        
+
         function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
 
         function showAccountDeletedScreen() {
@@ -1467,16 +1470,33 @@
                         adminPhone = data.whatsappNumber;
                         const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
                     }
+                    if (data.supportEmail !== undefined) {
+                        supportEmail = data.supportEmail || '';
+                        updateSupportEmailLinks();
+                    }
                     return true;
                 }
             } catch(e) {}
             return false;
         }
 
+        function updateSupportEmailLinks() {
+            const links = document.querySelectorAll('.support-email-link');
+            links.forEach(link => {
+                if (supportEmail) {
+                    if (link.tagName === 'A') {
+                        link.href = 'mailto:' + supportEmail;
+                    }
+                    link.style.display = link.tagName === 'SPAN' ? 'inline-block' : 'flex';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        }
+
         function switchAuthView(mode) {
             currentAuthMode = mode;
             document.getElementById('pendingView').style.display = 'none';
-            
             if (mode === 'signup') {
                 document.getElementById('signInView').style.display = 'none';
                 document.getElementById('signUpView').style.display = 'block';
@@ -1493,49 +1513,48 @@
                 return;
             }
             if (googleButtonsRendered) return;
-            
+
             try {
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CLIENT_ID,
                     callback: handleGoogleAuth,
                     auto_select: false,
                     cancel_on_tap_outside: true,
-                    ux_mode: 'popup'
+                    ux_mode: 'popup',
+                    use_fedcm_for_prompt: false
                 });
                 googleInitialized = true;
-                
-                const signInContainer = document.getElementById('googleSignInContainer');
-                if (signInContainer) {
-                    signInContainer.innerHTML = '';
+
+                const btnWidth = Math.min(300, Math.max(220, window.innerWidth - 100));
+
+                function renderInto(containerId, btnId, btnText) {
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+                    container.innerHTML = '';
                     const btnDiv = document.createElement('div');
-                    btnDiv.id = 'googleSignInBtn';
+                    btnDiv.id = btnId;
                     btnDiv.style.width = '100%';
                     btnDiv.style.display = 'flex';
                     btnDiv.style.justifyContent = 'center';
-                    signInContainer.appendChild(btnDiv);
-                    
-                    google.accounts.id.renderButton(btnDiv, {
-                        type: 'standard', theme: 'filled_black', size: 'large',
-                        text: 'signin_with', shape: 'rectangular', logo_alignment: 'left', width: 280
-                    });
+                    container.appendChild(btnDiv);
+                    try {
+                        google.accounts.id.renderButton(btnDiv, {
+                            type: 'standard',
+                            theme: 'filled_black',
+                            size: 'large',
+                            text: btnText,
+                            shape: 'rectangular',
+                            logo_alignment: 'left',
+                            width: btnWidth
+                        });
+                    } catch(err) {
+                        console.error('Render error:', err);
+                    }
                 }
-                
-                const signUpContainer = document.getElementById('googleSignUpContainer');
-                if (signUpContainer) {
-                    signUpContainer.innerHTML = '';
-                    const btnDiv2 = document.createElement('div');
-                    btnDiv2.id = 'googleSignUpBtn';
-                    btnDiv2.style.width = '100%';
-                    btnDiv2.style.display = 'flex';
-                    btnDiv2.style.justifyContent = 'center';
-                    signUpContainer.appendChild(btnDiv2);
-                    
-                    google.accounts.id.renderButton(btnDiv2, {
-                        type: 'standard', theme: 'filled_black', size: 'large',
-                        text: 'signup_with', shape: 'rectangular', logo_alignment: 'left', width: 280
-                    });
-                }
-                
+
+                renderInto('googleSignInContainer', 'googleSignInBtn', 'signin_with');
+                renderInto('googleSignUpContainer', 'googleSignUpBtn', 'signup_with');
+
                 googleButtonsRendered = true;
             } catch(e) {
                 console.error('Google Button Error:', e);
@@ -1546,10 +1565,10 @@
             if (!response || !response.credential) {
                 return showToast('Google authentication failed. Please try again.', 'error');
             }
-            
+
             const credential = response.credential;
-            const action = currentAuthMode || 'signin';
-            
+            const action = currentAuthMode === 'signup' ? 'signup' : 'signin';
+
             try {
                 const res = await fetch('/api/user/google-auth', {
                     method: 'POST',
@@ -1557,7 +1576,8 @@
                     body: JSON.stringify({ credential, action })
                 });
                 const data = await res.json().catch(() => ({}));
-                
+
+                // SIGN IN FLOW
                 if (action === 'signin') {
                     if (res.status === 404 || data.needsSignup) {
                         return notify(
@@ -1568,13 +1588,18 @@
                         );
                     }
                     if (!res.ok) return showToast(data.error || 'Sign in failed', 'error');
-                    
-                    if (data.needsProfile) {
+
+                    if (data.needsApproval === true) {
+                        showPendingApprovalScreen(data.hoursRemaining || 24, data.user?.email || '');
+                        return;
+                    }
+
+                    if (data.needsProfile === true) {
                         pendingProfileUser = data.user;
                         openProfileModal(data.user);
                         return;
                     }
-                    
+
                     if (data.success && data.user) {
                         userProfile = data.user;
                         localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
@@ -1583,7 +1608,8 @@
                         return;
                     }
                 }
-                
+
+                // SIGN UP FLOW
                 if (action === 'signup') {
                     if (data.alreadyRegistered) {
                         return notify(
@@ -1594,18 +1620,15 @@
                         );
                     }
                     if (!res.ok) return showToast(data.error || 'Sign up failed', 'error');
-                    
-                    if (data.needsProfile) {
+
+                    if (data.needsProfile === true) {
                         pendingProfileUser = data.user;
                         openProfileModal(data.user);
                         return;
                     }
-                    
-                    if (data.success && data.user && data.user.name && data.user.phone) {
-                        userProfile = data.user;
-                        localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
-                        showDashboardView();
-                        showToast(`Welcome, ${userProfile.name}!`, 'success');
+
+                    if (data.needsApproval === true) {
+                        showPendingApprovalScreen(data.hoursRemaining || 24, data.user?.email || '');
                         return;
                     }
                 }
@@ -1613,6 +1636,35 @@
                 console.error('Google auth error:', err);
                 showToast('Connection error. Please try again.', 'error');
             }
+        }
+
+        // ============ PENDING APPROVAL SCREEN ============
+        function showPendingApprovalScreen(hoursRemaining, email) {
+            pendingApprovalState = { hoursRemaining: hoursRemaining || 24, email: email || '' };
+
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('authFooterSection').style.display = 'block';
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('signInView').style.display = 'none';
+            document.getElementById('signUpView').style.display = 'none';
+
+            const pendingView = document.getElementById('pendingView');
+            if (pendingView) {
+                pendingView.style.display = 'block';
+                const msgEl = pendingView.querySelector('.pending-sub');
+                if (msgEl) {
+                    msgEl.innerHTML = `
+                        Your registration request has been sent to the Admin.<br>
+                        <strong style="color:#fbbf24;">Please wait for approval (max 24 hours).</strong><br>
+                        ${email ? `<span style="color:#64748b;font-size:12px;">${escapeHTML(email)}</span><br>` : ''}
+                        <span style="color:#94a3b8;font-size:12px;margin-top:6px;display:inline-block;">
+                            Time remaining: ~${hoursRemaining} hour${hoursRemaining === 1 ? '' : 's'}
+                        </span>
+                    `;
+                }
+            }
+            hideHamburger();
+            document.getElementById('navUserBadge').style.display = 'none';
         }
 
         // ============ PROFILE MODAL ============
@@ -1630,18 +1682,18 @@
 
         async function submitProfile() {
             if (!pendingProfileUser) return;
-            
+
             const name = document.getElementById('profileName').value.trim();
             const phone = document.getElementById('profilePhone').value.trim();
-            
+
             if (!name || name.length < 2) return showToast('Please enter your full name', 'warning');
             if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Please enter a valid 10-digit mobile number', 'warning');
-            
+
             const btn = document.getElementById('btnCompleteProfile');
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span>Submitting...</span>';
-            
+
             try {
                 const res = await fetch('/api/user/complete-profile', {
                     method: 'POST',
@@ -1653,18 +1705,13 @@
                         phone: phone
                     })
                 });
-                
+
                 const data = await res.json().catch(() => ({}));
-                
+
                 if (res.ok && data.success) {
                     document.getElementById('profileOverlay').classList.remove('active');
                     pendingProfileUser = null;
-                    
-                    // 🔥 SHOW PENDING SCREEN
-                    document.getElementById('signInView').style.display = 'none';
-                    document.getElementById('signUpView').style.display = 'none';
-                    document.getElementById('pendingView').style.display = 'block';
-                    
+                    showPendingApprovalScreen(24, '');
                     showToast('Request sent to Admin for approval.', 'success');
                 } else {
                     btn.disabled = false;
@@ -1697,7 +1744,7 @@
             const dd = document.getElementById('dateFilterDropdown');
             dd.classList.toggle('open');
         }
-        
+
         document.addEventListener('click', function(e) {
             const dd = document.getElementById('dateFilterDropdown');
             if (dd && !dd.contains(e.target)) dd.classList.remove('open');
@@ -1707,7 +1754,6 @@
             document.querySelectorAll('.date-filter-option').forEach(opt => {
                 opt.classList.toggle('active', opt.dataset.filter === filterType);
             });
-            
             const triggerText = document.getElementById('dateFilterTriggerText');
             const filterLabels = {
                 'today': 'Today',
@@ -1719,7 +1765,6 @@
             };
             triggerText.textContent = filterLabels[filterType] || 'Select';
             document.getElementById('dateFilterDropdown').classList.remove('open');
-            
             if (filterType === 'custom') {
                 document.getElementById('customDatePanel').classList.add('show');
                 const today = new Date().toISOString().split('T')[0];
@@ -1729,7 +1774,6 @@
                 if (!input2.value) input2.value = today;
                 return;
             }
-            
             document.getElementById('customDatePanel').classList.remove('show');
             currentDateFilter = filterType;
             currentStartDate = '';
@@ -1740,18 +1784,14 @@
         function applyCustomDateRange() {
             const s = document.getElementById('customDateInput').value;
             const e = document.getElementById('customEndDateInput').value || s;
-            
             if (!s) return showToast('Please select a start date', 'warning');
             if (s > e) return showToast('Start date cannot be greater than end date', 'warning');
-            
             currentDateFilter = 'custom';
             currentStartDate = s;
             currentEndDate = e;
-            
             const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             document.getElementById('dateFilterTriggerText').textContent = `${sF} - ${eF}`;
-            
             document.getElementById('customDatePanel').classList.remove('show');
             document.getElementById('dateFilterDropdown').classList.remove('open');
             fetchUserLinkData();
@@ -1760,16 +1800,14 @@
         // ============ CREATE LINK MODAL ============
         async function openCreateLinkModal() {
             toggleSidebar(false);
-            
             if (!currentPlanUsage) {
                 showToast('Loading plan info. Please wait...', 'info');
                 return;
             }
-            
             const planKey = currentPlanUsage.planKey;
             const planIsExpired = currentPlanUsage.planIsExpired;
             const lifetimeUnlimited = currentPlanUsage.lifetimeUnlimited;
-            
+
             if (planKey === 'no-plan' || planKey === 'none' || !planKey) {
                 notify(
                     'You need an active plan to create links.<br><br>Please activate the <strong>Free Trial</strong> or purchase a plan to get started.',
@@ -1779,7 +1817,7 @@
                 );
                 return;
             }
-            
+
             if (planIsExpired && !lifetimeUnlimited) {
                 notify(
                     'Your plan has expired.<br><br>Please renew your plan to continue creating links.',
@@ -1812,7 +1850,6 @@
             document.getElementById('clPopSub').value = 'Tap below to unlock your reward';
             document.getElementById('clPopImg').value = '';
             toggleUidDesc();
-
             document.getElementById('createLinkModal').classList.add('active');
         }
 
@@ -1829,14 +1866,11 @@
             const btn = document.getElementById('btnCreateLink');
             const linkName = document.getElementById('clLinkName').value.trim();
             const video = document.getElementById('clVideo').value.trim();
-
             if (!linkName) return showToast('Please enter a link name', 'warning');
             if (!video) return showToast('Please enter a video URL', 'warning');
-
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span>Creating...</span>';
-
             try {
                 const payload = {
                     userName: userProfile.name || '',
@@ -1853,15 +1887,12 @@
                     popupButtonText: document.getElementById('clPopBtn').value.trim() || 'Claim Now',
                     popupImage: document.getElementById('clPopImg').value.trim() || null
                 };
-
                 const res = await fetch('/api/user/create-link', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 const data = await res.json().catch(() => ({}));
-
                 if (res.ok && data.success) {
                     if (data.userName && data.userName !== userProfile.name) {
                         userProfile.name = data.userName;
@@ -1877,7 +1908,6 @@
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                     const errMsg = data.error || 'Failed to create link.';
-                    
                     if (data.reason === 'LINK_LIMIT_REACHED') notify(errMsg, 'Link Limit Reached', 'error');
                     else if (data.reason === 'PLAN_EXPIRED') notify(errMsg, 'Plan Expired', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'Renew Now');
                     else if (data.reason === 'NO_ACTIVE_PLAN' || data.reason === 'NO_PLAN') notify(errMsg, 'No Active Plan', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'View Plans');
@@ -1945,8 +1975,8 @@
             try {
                 const res = await fetch('/api/user/select-free-plan', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        userName: userProfile.name, 
+                    body: JSON.stringify({
+                        userName: userProfile.name,
                         userEmail: userProfile.email || '',
                         userId: userProfile.id || ''
                     })
@@ -1971,26 +2001,31 @@
             document.getElementById('displayLinkId').textContent = 'Fetching...';
             document.getElementById('displayLinkName').textContent = 'Loading...';
             const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
-            
-            const payload = { 
+            const payload = {
                 userName: userProfile.name || '',
                 userEmail: userProfile.email || '',
                 userId: userProfile.id || '',
-                linkInput: cachedId, 
-                filter: currentDateFilter, 
-                startDate: currentStartDate, 
-                endDate: currentEndDate 
+                linkInput: cachedId,
+                filter: currentDateFilter,
+                startDate: currentStartDate,
+                endDate: currentEndDate
             };
-            
             try {
                 const res = await fetch('/api/user/link-details', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json().catch(() => ({}));
-                
+
                 if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
-                
+
+                // Pending approval → kick back to pending screen
+                if (data && data.pendingApproval === true) {
+                    showPendingApprovalScreen(24, userProfile?.email || '');
+                    showToast('Your account is pending approval. Please wait.', 'warning');
+                    return;
+                }
+
                 if (data.planUsage) { currentPlanUsage = data.planUsage; updateHeroUI(); updatePlanDaysUI(); }
                 if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
                 if (data.paymentSettings) {
@@ -1998,8 +2033,9 @@
                     showUpiToUser = data.paymentSettings?.showUpi !== false;
                 }
                 if (data.whatsappNumber) adminPhone = data.whatsappNumber;
+                if (data.supportEmail !== undefined) { supportEmail = data.supportEmail || ''; updateSupportEmailLinks(); }
                 const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
-                
+
                 if (res.ok && data.success && data.hasAnyLink === true && data.link) {
                     activeLinkRecord = data.link;
                     myLinksList = data.userLinks || [];
@@ -2031,20 +2067,16 @@
             const pu = currentPlanUsage;
             const linksUsed = pu.linksUsed || 0;
             const linksLimit = pu.lifetimeUnlimited ? '∞' : (pu.linkLimit || 0);
-            
             const badge = document.getElementById('heroLinkBadge');
             if (badge) badge.textContent = `${linksUsed} / ${linksLimit}`;
-            
             const info = document.getElementById('heroLimitInfo');
             const btn = document.getElementById('heroCreateBtn');
             const heroTitle = document.getElementById('heroTitle');
             const heroSubtitle = document.getElementById('heroSubtitle');
             const btnText = document.getElementById('heroBtnText');
-            
             const noPlan = !pu.planKey || pu.planKey === 'no-plan' || pu.planKey === 'none';
             const expired = pu.planIsExpired === true;
             const limitHit = pu.linkLimitReached && !pu.lifetimeUnlimited;
-            
             if (noPlan) {
                 if (btn) btn.disabled = false;
                 if (heroTitle) heroTitle.textContent = 'No Active Plan';
@@ -2077,41 +2109,34 @@
             if (!currentPlanUsage) return;
             const pu = currentPlanUsage;
             const card = document.getElementById('planDaysCard');
-            
             if (!pu.planStartDate || !pu.planExpiryDate || pu.lifetimeUnlimited) {
                 card.style.display = 'none';
                 return;
             }
-            
             card.style.display = 'block';
             card.classList.remove('warn', 'danger');
-            
             const daysLeft = pu.planDaysLeft || 0;
             const progressPct = pu.planProgressPct || 0;
-            
             const valueEl = document.getElementById('planDaysValue');
             const barEl = document.getElementById('planDaysBarFill');
-            
             valueEl.textContent = `${daysLeft} Day${daysLeft === 1 ? '' : 's'} Left`;
             barEl.style.width = `${progressPct}%`;
             barEl.className = 'plan-days-bar-fill';
-            
             if (daysLeft <= 2) { card.classList.add('danger'); barEl.classList.add('danger'); }
             else if (daysLeft <= 5) { card.classList.add('warn'); barEl.classList.add('warn'); }
-            
             document.getElementById('planStartDate').textContent = pu.planStartDate ? new Date(pu.planStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--';
             document.getElementById('planExpiryDate').textContent = pu.planExpiryDate ? new Date(pu.planExpiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--';
         }
 
         function displayEmptyState() {
-            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => { 
-                const e = document.getElementById(id); if (e) e.textContent = '0'; 
+            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => {
+                const e = document.getElementById(id); if (e) e.textContent = '0';
             });
             document.getElementById('displayLinkName').textContent = 'No link selected';
             document.getElementById('displayLinkId').textContent = '--';
-            const be = document.getElementById('badgeExpiry'); 
+            const be = document.getElementById('badgeExpiry');
             if (be) { be.className = 'badge-status none'; be.textContent = 'No Link'; }
-            const bp = document.getElementById('barExpiryProgress'); 
+            const bp = document.getElementById('barExpiryProgress');
             if (bp) { bp.className = 'progress-bar-fill none'; bp.style.width = '0%'; }
             const te = document.getElementById('txtExpiryDate'); if (te) te.textContent = 'No link yet';
             const tc = document.getElementById('txtCreatedDate'); if (tc) tc.textContent = '--';
@@ -2121,9 +2146,7 @@
             const el = document.getElementById('myPlanContent');
             if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Loading...</p>'; return; }
             const pu = currentPlanUsage;
-            
             const hasNoPlan = pu.planKey === 'no-plan' || pu.planIsExpired || pu.planKey === 'none' || !pu.planKey;
-            
             if (hasNoPlan) {
                 el.innerHTML = `
                     <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:22px; margin-bottom:14px; text-align:center;">
@@ -2134,24 +2157,19 @@
                 `;
                 return;
             }
-            
             const isVip = pu.lifetimeUnlimited === true;
             const linksLimitText = isVip ? 'Unlimited' : ((pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : (pu.linkLimit || 0));
             const visitorLimitText = isVip ? 'Unlimited' : ((pu.visitorLimit === 'unlimited' || pu.visitorLimit === -1) ? 'Unlimited' : (pu.visitorLimit || 0));
-
             let featuresHtml = '';
             if (Array.isArray(pu.features) && pu.features.length) {
                 featuresHtml = '<ul style="list-style:none; padding:0; margin:12px 0 0;">' +
                     pu.features.map(f => `<li style="padding:5px 0; color:#cbd5e1; font-size:12px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">•</span> <span>${f}</span></li>`).join('') +
                     '</ul>';
             }
-
             let cardBg = 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))';
             let cardBorder = 'rgba(99,102,241,0.35)';
             if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.1))'; cardBorder = 'rgba(245,158,11,0.6)'; }
-
             const daysLeftText = isVip ? 'Lifetime' : ((pu.durationDays || 0) + ' Days (' + (pu.planDaysLeft || 0) + ' left)');
-
             el.innerHTML = `
                 <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; margin-bottom:14px;">
                     <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
@@ -2195,20 +2213,16 @@
                 footer.innerHTML = '';
                 return;
             }
-
             const planOrder = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
             const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
-            
             const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
             const currentPlanKey = currentPlanUsage?.planKey || 'none';
             const isLifetimeUnlimited = currentPlanUsage?.lifetimeUnlimited === true;
             const planIsExpired = currentPlanUsage?.planIsExpired === true;
             const hasActivePlan = !planIsExpired && currentPlanKey !== 'none' && currentPlanKey !== 'no-plan';
-            
             let currentPlanIndex = -1;
             if (isLifetimeUnlimited) currentPlanIndex = 999;
             else if (hasActivePlan) currentPlanIndex = planOrder.indexOf(currentPlanKey);
-
             const plansToShow = availablePlans.filter(k => {
                 if (k === 'free-trial' && freeTrialUsed) return false;
                 if (isLifetimeUnlimited) return false;
@@ -2218,7 +2232,6 @@
                 }
                 return true;
             });
-
             if (isLifetimeUnlimited || plansToShow.length === 0) {
                 container.innerHTML = `
                     <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
@@ -2231,7 +2244,6 @@
                 footer.innerHTML = '';
                 return;
             }
-
             if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || !plansToShow.includes(activePlan.key)) {
                 const defKey = plansToShow[0];
                 if (defKey) {
@@ -2239,7 +2251,6 @@
                     activePlan = { key: defKey, days: p.durationDays, cost: p.price };
                 }
             }
-
             const iconMap = {
                 'free-trial': 'icon-gift',
                 'basic': 'icon-link',
@@ -2248,7 +2259,6 @@
                 'business': 'icon-shield',
                 'enterprise-vip': 'icon-crown'
             };
-
             container.innerHTML = plansToShow.map(key => {
                 const p = loadedPlans[key];
                 const isSelected = (key === activePlan.key);
@@ -2261,10 +2271,8 @@
                 const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Active Links`;
                 const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
                 const perDay = p.durationDays > 0 && p.price > 0 ? (p.price / p.durationDays).toFixed(1) : '0';
-                
                 const features = Array.isArray(p.features) && p.features.length ? p.features : [linksLabel, visitorLabel, `${p.durationDays} Days Validity`];
                 const featuresHtml = features.map(f => `<div class="plan-feature-item"><span class="check-icon">•</span><span>${escapeHTML(f)}</span></div>`).join('');
-
                 return `
                     <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
                         <div class="plan-card-icon-wrap"><svg><use href="#${iconName}"/></svg></div>
@@ -2272,7 +2280,6 @@
                             <span>${escapeHTML(p.name)}</span>
                             ${isOwned ? `<span class="plan-card-badge-pill owned">OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
                         </div>
-                        
                         <div class="plan-card-price-section">
                             <div class="plan-card-price">
                                 ${p.price === 0 ? `<span class="price-free">FREE</span>` : `<span class="price-currency">₹</span><span class="price-amount">${p.price}</span>`}
@@ -2280,22 +2287,18 @@
                             <div class="plan-card-price-sub">${p.price > 0 ? `₹${perDay} per day` : 'No cost'}</div>
                             <div class="plan-card-duration">${p.durationDays} Days Validity</div>
                         </div>
-
                         <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
                             ${isOwned ? 'Current Plan' : (isSelected ? 'Selected' : 'Choose Plan')}
                         </button>
-
                         <div class="plan-card-includes-title">WHAT'S INCLUDED</div>
                         <div class="plan-features-list">${featuresHtml}</div>
                     </div>
                 `;
             }).join('');
-
             setTimeout(() => {
                 const selected = container.querySelector('.plan-card-screenshot.selected');
                 if (selected) { try { selected.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {} }
             }, 100);
-
             renderPaymentPanel();
         }
 
@@ -2304,11 +2307,9 @@
             if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
             const p = loadedPlans[activePlan.key];
             if (!p) { footer.innerHTML = ''; return; }
-            
             const currentPlanKey = currentPlanUsage?.planKey || 'none';
             const planIsExpired = currentPlanUsage?.planIsExpired === true;
             const isOwned = currentPlanKey === activePlan.key && !planIsExpired;
-            
             if (isOwned) {
                 footer.innerHTML = `
                     <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1px dashed rgba(16,185,129,0.4); border-radius:12px; padding:16px; text-align:center;">
@@ -2318,7 +2319,6 @@
                 `;
                 return;
             }
-
             let paymentHtml = '';
             if (showUpiToUser && p.price > 0) {
                 const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${p.price}&cu=INR`;
@@ -2353,7 +2353,6 @@
             } else {
                 paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Contact Admin on WhatsApp</span></button>`;
             }
-
             footer.innerHTML = `
                 <div style="background:rgba(99,102,241,0.08); border:1px dashed rgba(99,102,241,0.4); border-radius:12px; padding:12px; margin-bottom:14px; text-align:center; font-size:11.5px; color:var(--text-secondary);">
                     Selected: <strong style="color:#fff;">${p.name} - ${p.durationDays} Days</strong> • Amount: <strong style="color:#38bdf8;">₹${p.price}</strong>
@@ -2394,9 +2393,7 @@
 
         async function deleteCurrentLink() {
             if (!activeLinkRecord || !activeLinkRecord.id) return showToast('No link selected', 'warning');
-            
             const linkName = activeLinkRecord.name || activeLinkRecord.title || 'Untitled';
-            
             notify(
                 `Are you sure you want to delete this link?<br><br><strong>"${linkName}"</strong><br><br>This action cannot be undone.`,
                 'Delete Link?', 'warning', 'confirm',
@@ -2405,7 +2402,7 @@
                         const res = await fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
                             method: 'DELETE',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
+                            body: JSON.stringify({
                                 userName: userProfile.name,
                                 userEmail: userProfile.email || '',
                                 userId: userProfile.id || ''
@@ -2434,17 +2431,14 @@
             document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
             document.getElementById('btnDeleteLink').disabled = false;
             document.getElementById('btnCopyLink').disabled = false;
-
             const totalVisitsVal = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || data.visits || 0);
             const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : ((l.claims !== undefined) ? l.claims : ((data.totalClaims !== undefined) ? data.totalClaims : 0));
             document.getElementById('metricTotalVisits').textContent = totalVisitsVal;
             document.getElementById('metricTotalClaims').textContent = totalClaimsVal;
-
             const rangeVisits = (data.dateRange && data.dateRange.visits !== undefined) ? data.dateRange.visits : (l.todayVisits || 0);
             const rangeClaims = (data.dateRange && data.dateRange.claims !== undefined) ? data.dateRange.claims : (l.todayClaims || 0);
             document.getElementById('metricFilteredVisits').textContent = rangeVisits;
             document.getElementById('metricFilteredClaims').textContent = rangeClaims;
-
             const filterLabel = document.getElementById('lblFilteredVisits');
             const subFilterLabel = document.getElementById('subFilteredVisits');
             if (currentDateFilter === 'custom' && currentStartDate) {
@@ -2473,13 +2467,10 @@
                 document.getElementById('lblFilteredClaims').textContent = "Today Claims";
                 subFilterLabel.textContent = "Unique in 48h";
             }
-
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-
             const badge = document.getElementById('badgeExpiry');
             const progress = document.getElementById('barExpiryProgress');
             const expText = document.getElementById('txtExpiryDate');
-
             if (l.isExpired === true) {
                 badge.className = 'badge-status expired';
                 badge.textContent = 'Expired';
@@ -2505,7 +2496,6 @@
             const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || null;
             const p = loadedPlans ? loadedPlans[activePlan.key] : null;
             const planName = p ? p.name : activePlan.key;
-
             try {
                 const res = await fetch('/api/user/renew-payment', {
                     method: 'POST',
@@ -2525,7 +2515,6 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.status === 403) return showToast(data.error || 'Cannot purchase this plan', 'error');
             } catch(e) { console.warn('Renewal request error:', e); }
-
             const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             let message = `Hello Admin, I want to activate/renew my plan:\n\n`;
             message += `👤 User: ${userProfile.name}\n`;
@@ -2539,11 +2528,9 @@
             message += `💰 Amount: ₹${activePlan.cost}\n`;
             message += `📅 Date: ${today}\n\n`;
             message += `Please verify and approve. Thank you!`;
-
             window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
             closePlansModal();
             showToast('Renewal request sent to admin!', 'success');
-            
             if (currentId) setTimeout(() => fetchHistoryRecords(currentId), 1500);
         }
 
@@ -2599,15 +2586,15 @@
             const title = document.getElementById('uShortTitle').value.trim();
             if (!originalUrl) return showToast('Please enter a URL', 'warning');
             try {
-                const res = await fetch('/api/user/short-links', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        originalUrl, title, 
+                const res = await fetch('/api/user/short-links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        originalUrl, title,
                         userName: userProfile.name,
                         userEmail: userProfile.email || '',
                         userId: userProfile.id || ''
-                    }) 
+                    })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (data.success) { showToast('Short link created!', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
@@ -2626,10 +2613,10 @@
             try { const div = document.createElement('div'); div.textContent = String(str); return div.innerHTML; } catch(e) { return ''; }
         }
 
-        function performLogout() { 
-            localStorage.removeItem('activeUserSession'); 
-            localStorage.removeItem('userActiveLinkId'); 
-            window.location.reload(); 
+        function performLogout() {
+            localStorage.removeItem('activeUserSession');
+            localStorage.removeItem('userActiveLinkId');
+            window.location.reload();
         }
 
         // ============ INIT ============
@@ -2646,6 +2633,7 @@
                 }
             };
             check();
+            refreshPricingData().then(() => updateSupportEmailLinks());
         });
 
         // Session verification
@@ -2655,7 +2643,7 @@
             try {
                 const res = await fetch('/api/user/verify-session', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         userName: userProfile.name,
                         userEmail: userProfile.email || '',
                         userId: userProfile.id || ''
@@ -2664,6 +2652,13 @@
                 if (res.status === 404 || res.status === 403) {
                     const data = await res.json().catch(() => ({}));
                     if (data && data.deleted === true) showAccountDeletedScreen();
+                } else if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data && data.needsApproval === true) {
+                        showPendingApprovalScreen(data.hoursRemaining || 24, userProfile?.email || '');
+                        localStorage.removeItem('activeUserSession');
+                        userProfile = null;
+                    }
                 }
             } catch(e) {}
         }, 10000);
@@ -2674,24 +2669,22 @@
                 if (document.getElementById('activatePopup').classList.contains('active')) return;
                 if (document.getElementById('createLinkModal').classList.contains('active')) return;
                 if (document.getElementById('profileOverlay').classList.contains('active')) return;
-                
                 const s = document.getElementById('userLinkSelect');
                 const targetId = s?.value || localStorage.getItem('userActiveLinkId');
-                
-                fetch('/api/user/link-details', { 
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
+                fetch('/api/user/link-details', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         userName: userProfile.name || '',
                         userEmail: userProfile.email || '',
                         userId: userProfile.id || '',
-                        linkInput: targetId, 
-                        filter: currentDateFilter, 
-                        startDate: currentStartDate, 
-                        endDate: currentEndDate 
-                    }) 
+                        linkInput: targetId,
+                        filter: currentDateFilter,
+                        startDate: currentStartDate,
+                        endDate: currentEndDate
+                    })
                 })
                 .then(r => r.json().catch(() => ({})))
-                .then(data => { 
+                .then(data => {
                     if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                     if (data && data.planUsage) { currentPlanUsage = data.planUsage; updateHeroUI(); updatePlanDaysUI(); }
                     if (data && data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
