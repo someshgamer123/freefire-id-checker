@@ -741,49 +741,59 @@
             <div class="auth-card">
                 <div class="auth-logo"><svg><use href="#icon-flash"/></svg></div>
 
-                <!-- STEP 1: EMAIL ENTRY -->
-                <div id="emailStepView">
-                    <h2 class="auth-title">Welcome to LinkForge</h2>
-                    <p class="auth-subtitle">Enter your email address to receive a one-time password</p>
+                <!-- TABS -->
+                <div id="authTabs" style="display:flex; gap:6px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; padding:4px; margin-bottom:22px; position:relative; z-index:1;">
+                    <button id="tabSignIn" onclick="switchAuthTab('signin')" style="flex:1; padding:10px; border:none; border-radius:9px; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; font-size:13px; font-weight:800; cursor:pointer; transition:0.2s;">Sign In</button>
+                    <button id="tabSignUp" onclick="switchAuthTab('signup')" style="flex:1; padding:10px; border:none; border-radius:9px; background:transparent; color:var(--text-secondary); font-size:13px; font-weight:800; cursor:pointer; transition:0.2s;">Sign Up</button>
+                </div>
 
-                    <div style="margin-bottom:16px; text-align:left;">
+                <!-- ============ STEP 1: EMAIL ENTRY ============ -->
+                <div id="emailStepView">
+                    <h2 class="auth-title" id="authTitleText">Welcome Back</h2>
+                    <p class="auth-subtitle" id="authSubtitleText">Sign in to your LinkForge account</p>
+
+                    <!-- Sign Up: Name field (hidden in Sign In) -->
+                    <div id="signupOnlyFields" style="display:none;">
+                        <div style="margin-bottom:12px; text-align:left;">
+                            <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Your Full Name</label>
+                            <input type="text" id="authNameInput" placeholder="Enter your full name" autocomplete="name" maxlength="50" style="width:100%; padding:14px 16px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:15px; font-weight:600; outline:none; transition:0.2s;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:12px; text-align:left;">
                         <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Email Address</label>
                         <input type="email" id="authEmailInput" placeholder="you@gmail.com" autocomplete="email" style="width:100%; padding:14px 16px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:15px; font-weight:600; outline:none; transition:0.2s;">
+                    </div>
+
+                    <div style="margin-bottom:16px; text-align:left;">
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Phone Number (10 digits)</label>
+                        <input type="tel" id="authPhoneInput" placeholder="Enter 10-digit mobile number" maxlength="10" inputmode="numeric" autocomplete="tel" style="width:100%; padding:14px 16px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:15px; font-weight:600; outline:none; transition:0.2s;">
                     </div>
 
                     <button id="btnSendOtp" onclick="sendOtp()" style="width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:800; cursor:pointer; background:linear-gradient(135deg, var(--primary), var(--primary-light)); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 28px rgba(79,70,229,0.4); transition:0.2s;">
                         <svg style="width:18px;height:18px;"><use href="#icon-mail"/></svg>
                         <span>Send OTP</span>
                     </button>
-
-                    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border-subtle); text-align:left;">
-                        <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
-                            <span>No password needed</span>
-                        </div>
-                        <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
-                            <span>Secure OTP-based login</span>
-                        </div>
-                        <div style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                            <span style="color:#34d399; font-weight:800; flex-shrink:0;">✓</span>
-                            <span>Free trial available after approval</span>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- STEP 2: OTP VERIFICATION -->
+                <!-- ============ STEP 2: OTP VERIFICATION ============ -->
                 <div id="otpStepView" style="display:none;">
                     <h2 class="auth-title">Check Your Email</h2>
                     <p class="auth-subtitle">We sent a 6-digit code to<br><strong id="otpEmailDisplay" style="color:var(--primary-light);"></strong></p>
 
-                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:24px;">
+                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:16px;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
                         <input type="tel" class="otp-box" maxlength="1" inputmode="numeric" style="width:46px; height:56px; background:#080c14; border:1px solid var(--border-subtle); border-radius:12px; color:#fff; font-size:22px; font-weight:800; text-align:center; outline:none; transition:0.2s;">
+                    </div>
+
+                    <!-- OTP Live Timer -->
+                    <div id="otpLiveTimerWrap" style="text-align:center; margin-bottom:16px;">
+                        <div style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px;">⏱ OTP Expires In</div>
+                        <div id="otpLiveTimer" style="font-size:18px; font-weight:900; color:#fbbf24; font-family:'Courier New',monospace; margin-top:4px;">01:00</div>
                     </div>
 
                     <button id="btnVerifyOtp" onclick="verifyOtp()" style="width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:800; cursor:pointer; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 28px rgba(16,185,129,0.4); transition:0.2s;">
@@ -1004,9 +1014,10 @@
                 <span>How to Use</span>
             </div>
             <ul class="auth-footer-list">
-                <li><strong>Enter your email</strong> to receive OTP</li>
-                <li>Wait for <strong>Admin Approval</strong> to activate your account</li>
-                <li>Create tracking links and start earning</li>
+                <li><strong>Sign Up</strong> with your name, email, and phone</li>
+                <li>Enter the <strong>OTP</strong> sent to your email</li>
+                <li>Wait for <strong>Admin Approval</strong> (max 24 hours)</li>
+                <li>Sign In with your email and phone to start creating links</li>
             </ul>
         </div>
 
@@ -1346,8 +1357,11 @@
         let currentStartDate = '';
         let currentEndDate = '';
 
+        let currentAuthMode = 'signin';
         let currentEmailForOtp = '';
         let resendCountdownInterval = null;
+        let otpLiveTimerInterval = null;
+        let pendingSignupData = null;
 
         function showToast(message, type = 'info', duration = 3000) {
             try {
@@ -1433,12 +1447,9 @@
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('authFooterSection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
-            const emailView = document.getElementById('emailStepView');
-            const otpView = document.getElementById('otpStepView');
-            const pendingView = document.getElementById('pendingView');
-            if (emailView) emailView.style.display = 'block';
-            if (otpView) otpView.style.display = 'none';
-            if (pendingView) pendingView.style.display = 'none';
+            
+            // Default to Sign In
+            switchAuthTab('signin');
         }
 
         function hideHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'none'; toggleSidebar(false); }
@@ -1469,23 +1480,8 @@
             return false;
         }
 
-        // ==================== OTP AUTH FLOW ====================
+        // ==================== AUTH FLOW ====================
         document.addEventListener('DOMContentLoaded', function() {
-            const emailInput = document.getElementById('authEmailInput');
-            if (emailInput) {
-                emailInput.addEventListener('focus', function() {
-                    this.style.borderColor = '#6366f1';
-                    this.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
-                });
-                emailInput.addEventListener('blur', function() {
-                    this.style.borderColor = 'var(--border-subtle)';
-                    this.style.boxShadow = 'none';
-                });
-                emailInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') sendOtp();
-                });
-            }
-
             const otpBoxes = document.querySelectorAll('.otp-box');
             otpBoxes.forEach((box, i) => {
                 box.addEventListener('input', function() {
@@ -1525,13 +1521,61 @@
             });
         });
 
+        function switchAuthTab(mode) {
+            currentAuthMode = mode;
+            const tabSignIn = document.getElementById('tabSignIn');
+            const tabSignUp = document.getElementById('tabSignUp');
+            const titleText = document.getElementById('authTitleText');
+            const subtitleText = document.getElementById('authSubtitleText');
+            const signupFields = document.getElementById('signupOnlyFields');
+            const nameInput = document.getElementById('authNameInput');
+            const btnSpan = document.querySelector('#btnSendOtp span');
+
+            if (mode === 'signup') {
+                tabSignUp.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-light))';
+                tabSignUp.style.color = '#fff';
+                tabSignIn.style.background = 'transparent';
+                tabSignIn.style.color = 'var(--text-secondary)';
+                titleText.textContent = 'Create Account';
+                subtitleText.textContent = 'Sign up to get started with LinkForge';
+                signupFields.style.display = 'block';
+                if (nameInput) nameInput.required = true;
+                if (btnSpan) btnSpan.textContent = 'Send OTP to Sign Up';
+            } else {
+                tabSignIn.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-light))';
+                tabSignIn.style.color = '#fff';
+                tabSignUp.style.background = 'transparent';
+                tabSignUp.style.color = 'var(--text-secondary)';
+                titleText.textContent = 'Welcome Back';
+                subtitleText.textContent = 'Sign in to your LinkForge account';
+                signupFields.style.display = 'none';
+                if (nameInput) nameInput.required = false;
+                if (btnSpan) btnSpan.textContent = 'Send OTP';
+            }
+
+            // Reset to email step
+            document.getElementById('emailStepView').style.display = 'block';
+            document.getElementById('otpStepView').style.display = 'none';
+            document.getElementById('pendingView').style.display = 'none';
+        }
+
         async function sendOtp() {
             const emailInput = document.getElementById('authEmailInput');
-            const email = emailInput?.value.trim().toLowerCase() || '';
+            const phoneInput = document.getElementById('authPhoneInput');
+            const nameInput = document.getElementById('authNameInput');
             const btn = document.getElementById('btnSendOtp');
 
+            const email = emailInput?.value.trim().toLowerCase() || '';
+            const phone = phoneInput?.value.trim() || '';
+            const name = nameInput?.value.trim() || '';
+
+            if (currentAuthMode === 'signup') {
+                if (!name || name.length < 2) return showToast('Please enter your full name', 'warning');
+            }
             if (!email) return showToast('Please enter your email', 'warning');
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email address', 'warning');
+            if (!phone) return showToast('Please enter your phone number', 'warning');
+            if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Please enter a valid 10-digit mobile number', 'warning');
 
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
@@ -1541,12 +1585,19 @@
                 const res = await fetch('/api/auth/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, purpose: 'signin' })
+                    body: JSON.stringify({
+                        email,
+                        phone,
+                        name: currentAuthMode === 'signup' ? name : undefined,
+                        purpose: currentAuthMode
+                    })
                 });
                 const data = await res.json();
 
                 if (res.ok && data.success) {
                     currentEmailForOtp = email;
+                    pendingSignupData = currentAuthMode === 'signup' ? { name, phone, email } : { phone, email };
+
                     document.getElementById('otpEmailDisplay').textContent = email;
                     document.getElementById('emailStepView').style.display = 'none';
                     document.getElementById('otpStepView').style.display = 'block';
@@ -1556,12 +1607,14 @@
                     document.querySelectorAll('.otp-box')[0]?.focus();
 
                     document.getElementById('spamWarningModal').classList.add('active');
-
                     startResendCountdown();
-
+                    startOtpLiveTimer(60);
                     showToast('OTP sent to your email', 'success');
                 } else {
                     showToast(data.error || 'Failed to send OTP', 'error');
+                    if (data.needsSignup) {
+                        setTimeout(() => switchAuthTab('signup'), 1500);
+                    }
                 }
             } catch(e) {
                 showToast('Network error. Please try again.', 'error');
@@ -1587,7 +1640,13 @@
                 const res = await fetch('/api/auth/verify-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentEmailForOtp, otp })
+                    body: JSON.stringify({
+                        email: currentEmailForOtp,
+                        otp,
+                        phone: pendingSignupData?.phone,
+                        name: pendingSignupData?.name,
+                        purpose: currentAuthMode
+                    })
                 });
                 const data = await res.json();
 
@@ -1598,9 +1657,9 @@
                     return;
                 }
 
-                if (data.needsProfile === true) {
-                    pendingProfileUser = data.user;
-                    openProfileModal(data.user);
+                if (currentAuthMode === 'signup' && data.needsApproval === true) {
+                    showPendingApprovalScreen(data.hoursRemaining || 24, currentEmailForOtp);
+                    showToast('Account created! Please wait for admin approval.', 'success');
                     return;
                 }
 
@@ -1649,6 +1708,31 @@
             }, 1000);
         }
 
+        function startOtpLiveTimer(secondsTotal) {
+            if (otpLiveTimerInterval) clearInterval(otpLiveTimerInterval);
+            
+            const timerEl = document.getElementById('otpLiveTimer');
+            if (!timerEl) return;
+
+            let remaining = secondsTotal;
+            
+            const updateTimer = () => {
+                if (remaining <= 0) {
+                    clearInterval(otpLiveTimerInterval);
+                    timerEl.textContent = 'EXPIRED';
+                    timerEl.style.color = '#ef4444';
+                    return;
+                }
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                timerEl.textContent = `0${m}:${s < 10 ? '0' : ''}${s}`;
+                remaining--;
+            };
+
+            updateTimer();
+            otpLiveTimerInterval = setInterval(updateTimer, 1000);
+        }
+
         async function resendOtp() {
             if (!currentEmailForOtp) return;
             const btn = document.getElementById('btnResendOtp');
@@ -1661,7 +1745,12 @@
                 const res = await fetch('/api/auth/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentEmailForOtp, purpose: 'signin' })
+                    body: JSON.stringify({
+                        email: currentEmailForOtp,
+                        phone: pendingSignupData?.phone,
+                        name: pendingSignupData?.name,
+                        purpose: currentAuthMode
+                    })
                 });
                 const data = await res.json();
 
@@ -1669,6 +1758,7 @@
                     document.querySelectorAll('.otp-box').forEach(b => b.value = '');
                     document.querySelectorAll('.otp-box')[0]?.focus();
                     startResendCountdown();
+                    startOtpLiveTimer(60);
                     document.getElementById('spamWarningModal').classList.add('active');
                     showToast('New OTP sent!', 'success');
                 } else {
@@ -1688,11 +1778,18 @@
                 clearInterval(resendCountdownInterval);
                 resendCountdownInterval = null;
             }
+            if (otpLiveTimerInterval) {
+                clearInterval(otpLiveTimerInterval);
+                otpLiveTimerInterval = null;
+            }
             currentEmailForOtp = '';
+            pendingSignupData = null;
             document.getElementById('emailStepView').style.display = 'block';
             document.getElementById('otpStepView').style.display = 'none';
             document.getElementById('pendingView').style.display = 'none';
             document.getElementById('authEmailInput').value = '';
+            document.getElementById('authPhoneInput').value = '';
+            if (document.getElementById('authNameInput')) document.getElementById('authNameInput').value = '';
             document.getElementById('authEmailInput').focus();
         }
 
