@@ -35,11 +35,10 @@
 
         .admin-container { max-width: 1400px; margin: 0 auto; position: relative; }
 
-        /* ============ SVG ICON UTILITY ============ */
         .svg-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .svg-icon svg { width: 100%; height: 100%; display: block; }
 
-        /* ============ HEADER (COMPACT) ============ */
+        /* ============ HEADER ============ */
         .header {
             background: var(--card-bg);
             padding: 12px 18px;
@@ -77,7 +76,6 @@
 
         .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-        /* Compact icon action button */
         .icon-action-btn {
             width: 36px;
             height: 36px;
@@ -108,7 +106,6 @@
 
         .icon-action-btn .svg-icon { width: 16px; height: 16px; }
 
-        /* Theme toggle (compact) */
         .theme-toggle {
             display: flex;
             gap: 2px;
@@ -135,7 +132,6 @@
         .theme-toggle button:hover:not(.active) { color: #fff; background: rgba(99, 102, 241, 0.15); }
         .theme-toggle button .svg-icon { width: 13px; height: 13px; }
 
-        /* Hamburger button */
         .btn-hamburger {
             width: 36px;
             height: 36px;
@@ -1636,16 +1632,24 @@
                     <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Update Passcode
                 </button>
             </div>
+
+            <!-- ✅ UPDATED: Contact & OTP Settings with Support Email -->
             <div class="card">
                 <h3><span class="svg-icon"><svg><use href="#icon-phone"/></svg></span> Contact & OTP Settings</h3>
                 <div class="grid-2">
                     <input type="email" id="adminEmail" placeholder="admin@example.com">
                     <input type="text" id="adminPhone" placeholder="+919876543210">
                 </div>
+                <div style="margin-top:10px;">
+                    <label style="display:block;font-size:12px;color:var(--text-light);margin-bottom:5px;">Support Email (दिखेगा User Dashboard में):</label>
+                    <input type="email" id="adminSupportEmail" placeholder="support@yoursite.com" style="width:100%;padding:11px 14px;margin:0;border:1px solid var(--border);border-radius:10px;background:#090a0f;color:var(--text);font-size:13px;">
+                    <div style="font-size:11px;color:var(--text-light);margin-top:4px;">यह email user dashboard के sidebar और footer में "Email Support" link के रूप में दिखेगी।</div>
+                </div>
                 <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">
                     <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save Contact
                 </button>
             </div>
+
             <div class="card">
                 <h3><span class="svg-icon"><svg><use href="#icon-image"/></svg></span> UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
@@ -2254,7 +2258,7 @@
             try {
                 const selectEl = document.getElementById('cUserSelect');
                 if (!selectEl) return;
-                selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' + 
+                selectEl.innerHTML = '<option value="">-- Standalone Link (No User Assigned) --</option>' +
                     allUsers.map(u => { const uName = u?.name || 'Unnamed'; return `<option value="${escapeHTML(uName)}">${escapeHTML(uName)} (${escapeHTML(u?.email || u?.phone || 'Client')})</option>`; }).join('');
             } catch(e) {}
         }
@@ -2347,7 +2351,7 @@
                     const isVip = u.lifetimeUnlimited === true;
                     const statusBadge = u.status === 'approved' ? '<span class="status-badge status-active">APPROVED</span>' : (u.status === 'pending' ? '<span class="status-badge status-pending">PENDING</span>' : '<span class="status-badge status-disabled">REJECTED</span>');
                     const vipBadge = isVip ? '<span class="status-badge status-vip">LIFETIME VIP</span>' : '';
-                    
+
                     let actionButtons = '';
                     if (u.status === 'pending') {
                         actionButtons += `<button class="btn btn-sm btn-success" onclick="approveAndPromptWhatsApp('${escapeHTML(uid)}')"><span class="svg-icon"><svg><use href="#icon-check"/></svg></span> Approve</button>
@@ -2401,7 +2405,7 @@
                 const enable = checkboxEl.checked;
                 const id = checkboxEl.getAttribute('data-user-id');
                 const name = checkboxEl.getAttribute('data-user-name');
-                
+
                 if (enable === true) {
                     const confirmed = confirm(`Make "${name}" LIFETIME UNLIMITED?\n\nUnlimited Links\nUnlimited Visitors\nNo Expiry\nAll features unlocked`);
                     if (!confirmed) { checkboxEl.checked = false; return; }
@@ -2409,13 +2413,13 @@
                     const confirmed = confirm(`Remove Lifetime Unlimited for "${name}"?`);
                     if (!confirmed) { checkboxEl.checked = true; return; }
                 }
-                
+
                 const res = await fetchWithAuth(`/api/admin/users/${encodeURIComponent(id)}/lifetime-unlimited`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ enable })
                 });
                 const data = await res.json();
-                
+
                 if (res && res.ok && data.success) {
                     showToast(enable ? 'User set to Lifetime Unlimited!' : 'Lifetime Unlimited removed', 'success');
                     await loadAllUsers();
@@ -2423,9 +2427,9 @@
                     showToast('❌ ' + (data.error || 'Failed'), 'error');
                     await loadAllUsers();
                 }
-            } catch(e) { 
-                showToast('Failed: ' + e.message, 'error'); 
-                await loadAllUsers(); 
+            } catch(e) {
+                showToast('Failed: ' + e.message, 'error');
+                await loadAllUsers();
             }
         }
 
@@ -2486,18 +2490,18 @@
             try {
                 const container = document.getElementById('plansEditorsContainer');
                 if (!container) return;
-                
+
                 container.innerHTML = PLAN_KEYS_ORDER.map(key => {
                     const plan = plans[key] || {};
                     const meta = PLAN_LABELS[key];
                     const badgeClass = plan.badge === 'POPULAR' ? 'popular' : (plan.badge === 'SAVE 20%' ? 'save' : (plan.badge === 'BEST VALUE' ? 'best' : ''));
                     const isEnabled = plan.enabled !== false;
-                    
+
                     const linksIsUnlimited = plan.linkLimit === 'unlimited' || plan.linkLimit === -1;
                     const visitorsIsUnlimited = plan.visitorLimit === 'unlimited' || plan.visitorLimit === -1;
                     const linksVal = linksIsUnlimited ? '' : (plan.linkLimit || 1);
                     const visitorsVal = visitorsIsUnlimited ? '' : (plan.visitorLimit || 1000);
-                    
+
                     return `
                         <div class="plan-editor-card" data-plan-key="${key}">
                             <div class="plan-editor-header">
@@ -2552,9 +2556,9 @@
                 const input = document.getElementById(inputId);
                 const modeInput = document.getElementById(modeInputId);
                 const buttons = input.parentElement.querySelectorAll('.limit-toggle-btn');
-                
+
                 buttons.forEach(btn => { btn.classList.remove('active', 'unlimited-active'); });
-                
+
                 if (mode === 'unlimited') {
                     input.disabled = true; input.value = ''; modeInput.value = 'unlimited';
                     buttons[1].classList.add('unlimited-active');
@@ -2584,16 +2588,16 @@
                 const linksModeEl = document.getElementById(`plan-${key}-links-mode`);
                 const visitorsModeEl = document.getElementById(`plan-${key}-visitors-mode`);
                 const enabledEl = document.querySelector(`.plan-editor-card[data-plan-key="${key}"] input[type="checkbox"]`);
-                
+
                 const linksMode = linksModeEl ? linksModeEl.value : 'custom';
                 const visitorsMode = visitorsModeEl ? visitorsModeEl.value : 'custom';
-                
+
                 let linkLimit = 'unlimited';
                 if (linksMode === 'custom' && linksEl) { const num = parseInt(linksEl.value, 10); linkLimit = isNaN(num) ? 1 : num; }
-                
+
                 let visitorLimit = 'unlimited';
                 if (visitorsMode === 'custom' && visitorsEl) { const num = parseInt(visitorsEl.value, 10); visitorLimit = isNaN(num) ? 1000 : num; }
-                
+
                 plans[key] = {
                     name: PLAN_LABELS[key].name,
                     icon: PLAN_LABELS[key].icon,
@@ -2641,7 +2645,7 @@
                 if (sRes && sRes.ok) {
                     const sData = await sRes.json();
                     loadedPricingData = sData.pricing || {};
-                    
+
                     const rList = document.getElementById('renewalReqsList');
                     const pendingReqs = (sData.requests || []).filter(r => r && r.status === 'pending');
                     if (!pendingReqs.length) rList.innerHTML = '<p style="color:#94a3b8;font-size:12px;padding:8px 0;">No pending renewal requests.</p>';
@@ -2653,7 +2657,10 @@
                     if (si) si.value = sData.paymentSettings?.details?.upiId || sData.pricing?.paymentSettings?.details?.upiId || '';
                     const sw = document.getElementById('setWaNumber');
                     if (sw) sw.value = sData.paymentSettings?.whatsappNumber || sData.pricing?.whatsappNumber || '';
-                    
+                    // ✅ Support email
+                    const se = document.getElementById('adminSupportEmail');
+                    if (se && sData.supportEmail !== undefined) se.value = sData.supportEmail || '';
+
                     const showUpi = sData.paymentSettings?.showUpi !== false;
                     const toggle = document.getElementById('showUpiToggle');
                     if (toggle) { toggle.checked = showUpi; toggleUpiVisibility(); }
@@ -2683,13 +2690,14 @@
                 const plans = collectPlansData();
                 const upiId = document.getElementById('setUpiId')?.value.trim();
                 const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
+                const supportEmail = document.getElementById('adminSupportEmail')?.value.trim();
                 const showUpi = document.getElementById('showUpiToggle')?.checked !== false;
 
                 const res = await fetchWithAuth('/api/admin/renewal-settings', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, showUpi })
+                    body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, supportEmail, showUpi })
                 });
-                
+
                 if (res && res.ok) { showToast('All plans & settings saved!', 'success'); loadRenewalSystem(); }
                 else showToast('Failed to save', 'error');
             } catch(e) { showToast('Failed to save', 'error'); }
@@ -2778,6 +2786,7 @@
             try { await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' }); showToast('Device blocked!', 'success'); loadActiveDevices(); } catch(e) { showToast('Failed', 'error'); }
         }
 
+        // ✅ UPDATED: loadContactInfo with supportEmail
         async function loadContactInfo() {
             try {
                 const res = await fetch('/api/settings');
@@ -2786,6 +2795,7 @@
                     if (d) {
                         const e = document.getElementById('adminEmail'); if (d.adminEmail && e) e.value = d.adminEmail;
                         const p = document.getElementById('adminPhone'); if (d.adminPhone && p) p.value = d.adminPhone;
+                        const se = document.getElementById('adminSupportEmail'); if (se) se.value = d.supportEmail || '';
                         if (d.background) {
                             const bi = document.getElementById('bgImgUrl'); if (bi) bi.value = d.background;
                             const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = d.background;
@@ -2796,12 +2806,18 @@
             } catch(e) {}
         }
 
+        // ✅ UPDATED: updateContactInfo with supportEmail
         async function updateContactInfo() {
             const email = document.getElementById('adminEmail')?.value.trim();
             const phone = document.getElementById('adminPhone')?.value.trim();
+            const supportEmailVal = document.getElementById('adminSupportEmail')?.value.trim();
             try {
-                await fetchWithAuth('/api/admin/update-contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, phone }) });
-                showToast('Contact saved!', 'success');
+                await fetchWithAuth('/api/admin/update-contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, phone, supportEmail: supportEmailVal })
+                });
+                showToast('Contact & Support Email saved!', 'success');
             } catch(e) { showToast('Failed', 'error'); }
         }
 
