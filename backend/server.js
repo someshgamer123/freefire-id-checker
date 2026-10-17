@@ -11,7 +11,6 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 
 const { OAuth2Client } = require('google-auth-library');
@@ -21,7 +20,6 @@ console.log('✅ Built-in injection protection ENABLED');
 
 const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
-const APPROVAL_PENDING_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 let googleClient = null;
 if (process.env.GOOGLE_CLIENT_ID) {
@@ -34,11 +32,9 @@ if (process.env.GOOGLE_CLIENT_ID) {
 let connectDB;
 try {
     connectDB = require('./config/db');
-    console.log('✅ Loaded DB config from ./config/db');
 } catch(e1) {
     try {
         connectDB = require('./db');
-        console.log('✅ Loaded DB config from ./db');
     } catch(e2) {
         console.warn('⚠️ No db.js found — using inline fallback');
         connectDB = async () => {
@@ -112,7 +108,6 @@ const RenewalUser = safeLoadModel('RenewalUser', {
     approvedAt: { type: Date, default: null }
 });
 
-// ✅ Pricing model with supportEmail
 const Pricing = safeLoadModel('Pricing', {
     plans: { type: Object, default: {} },
     paymentSettings: { type: Object, default: {} },
@@ -666,10 +661,9 @@ const authLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
-// ✅ FIX: Tighter Google auth rate limit (anti-attack)
 const googleAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 15,
+    max: 50,
     keyGenerator: (req) => {
         const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || 'unknown';
         return 'google_' + ip;
@@ -777,7 +771,6 @@ app.get(['/admin/unblock-all', '/api/admin/unblock-all'], async (req, res) => {
     res.status(403).send(`<!DOCTYPE html><html><head><title>Forbidden</title><style>body{background:#090a10;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;margin:0;}.card{background:#131722;padding:40px;border-radius:20px;border:1px solid rgba(239,68,68,0.4);max-width:450px;}h1{color:#ef4444;font-size:22px;margin-bottom:10px;}p{color:#94a3b8;font-size:14px;line-height:1.6;}</style></head><body><div class="card"><h1>⛔ ACCESS DENIED</h1><p>Only an authorized administrator can unblock devices.</p></div></body></html>`);
 });
 
-// ✅ UPDATED: /api/pricing with supportEmail
 app.get('/api/pricing', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -802,7 +795,6 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== VISITOR LINK RESOLVER ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -1006,7 +998,6 @@ app.get('/api/renewal/history/:linkId', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ UPDATED: /api/settings with supportEmail
 app.get('/api/settings', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -1025,7 +1016,7 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== GOOGLE-ONLY AUTH (FIXED) ====================
+// ==================== GOOGLE-ONLY AUTH ====================
 app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
     try {
         const { credential, action } = req.body;
@@ -1097,7 +1088,6 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                 return res.status(403).json({ error: 'Your account has been rejected by admin.' });
             }
 
-            // ✅ FIX: If profile not completed → needs profile
             if (!user.profileCompleted || !user.name || !user.phone || user.phone.length < 10) {
                 return res.json({
                     success: true,
@@ -1106,7 +1096,6 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                 });
             }
 
-            // ✅ FIX: If status is pending → show pending screen
             if (user.status === 'pending') {
                 const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
                 const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60);
@@ -1119,7 +1108,6 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                 });
             }
 
-            // Approved → activate free trial if needed
             user = await autoActivateFreeTrialIfNeeded(user);
 
             console.log(`✅ Sign in success: ${user.name}`);
@@ -1137,9 +1125,7 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
 
         // SIGN UP
         if (user) {
-            // Profile complete → already registered
             if (user.name && user.phone && user.profileCompleted === true) {
-                // If approved or pending, tell them to sign in
                 if (user.status === 'approved' || user.status === 'pending') {
                     return res.status(400).json({
                         error: 'This Google account is already registered. Please Sign In instead.',
@@ -1147,7 +1133,6 @@ app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
                     });
                 }
             }
-            // Not profile complete → let them complete
             return res.json({
                 success: true,
                 needsProfile: true,
@@ -1235,14 +1220,12 @@ app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
         });
         if (nameExists) return res.status(400).json({ error: 'This name is already taken.' });
 
-        // ✅ FIX: Just complete profile, set status pending (admin approval needed)
-        // DO NOT auto-activate free trial here
         const updateData = {
             name: cleanName,
             phone: cleanPhone,
             profileCompleted: true,
             status: 'pending',
-            createdAt: new Date()  // reset approval timer start
+            createdAt: new Date()
         };
 
         await RenewalUser.collection.updateOne({ _id: user._id }, { $set: updateData });
@@ -1269,7 +1252,6 @@ app.post('/api/user/signin', authLimiter, (req, res) => {
     res.status(410).json({ error: 'Email signin is disabled. Please use Google Sign In.', useGoogle: true });
 });
 
-// ✅ UPDATED: verify-session with pending status
 app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
     try {
         const { userName, userId, userEmail } = req.body;
@@ -1280,7 +1262,6 @@ app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
         if (!user) return res.status(404).json({ success: false, deleted: true, error: 'Account has been removed by admin.' });
         if (user.status === 'rejected') return res.status(403).json({ success: false, deleted: true, error: 'Your account has been rejected.' });
 
-        // ✅ Pending → tell frontend to show pending screen
         if (user.status === 'pending') {
             const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
             const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60);
@@ -1517,7 +1498,6 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
     }
 });
 
-// ==================== USER LINK DETAILS ====================
 app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1757,7 +1737,6 @@ app.post('/api/user/link-details', userApiLimiter, async (req, res) => {
     }
 });
 
-// ==================== USER DELETE OWN LINK ====================
 app.delete('/api/user/delete-link/:linkId', userApiLimiter, async (req, res) => {
     try {
         const { userName, userEmail, userId } = req.body;
@@ -1778,7 +1757,6 @@ app.delete('/api/user/delete-link/:linkId', userApiLimiter, async (req, res) => 
     } catch (e) { res.status(500).json({ error: 'Failed to delete link' }); }
 });
 
-// ==================== RENEWAL PAYMENT ====================
 app.post('/api/user/renew-payment', userApiLimiter, async (req, res) => {
     try {
         const { linkId, linkName, plan, days, amount, refNo, userName, userEmail, userId } = req.body;
@@ -1944,7 +1922,6 @@ app.delete('/api/admin/users/:id', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed: ' + e.message }); }
 });
 
-// ==================== LIFETIME UNLIMITED ====================
 app.post('/api/admin/users/:id/lifetime-unlimited', authMiddleware, async (req, res) => {
     try {
         const { enable } = req.body;
@@ -2014,7 +1991,6 @@ app.get('/api/admin/renewal-users', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== USER APPROVAL ACTION ====================
 const handleUserApprovalAction = async (req, res) => {
     try {
         const { action } = req.body;
@@ -2076,7 +2052,6 @@ const handleUserApprovalAction = async (req, res) => {
 app.post('/api/admin/renewal-users/:id/action', authMiddleware, handleUserApprovalAction);
 app.post('/api/admin/users/:id/action', authMiddleware, handleUserApprovalAction);
 
-// ==================== ADMIN RENEWAL ====================
 app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -2097,7 +2072,6 @@ app.get('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ UPDATED: save with supportEmail
 app.post('/api/admin/renewal-settings', authMiddleware, async (req, res) => {
     try {
         const { plans, paymentSettings, upiId, whatsappNumber, supportEmail, showUpi } = req.body;
@@ -2332,7 +2306,6 @@ app.post('/api/admin/background', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ✅ UPDATED: update-contact with supportEmail
 app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
     try {
         const admin = await User.findOne();
@@ -2341,7 +2314,6 @@ app.post('/api/admin/update-contact', authMiddleware, async (req, res) => {
             if (req.body.phone) admin.phone = req.body.phone;
             await admin.save();
         }
-        // ✅ Save supportEmail to Pricing
         if (req.body.supportEmail !== undefined) {
             const pricingDoc = await getPricingDoc();
             pricingDoc.supportEmail = (req.body.supportEmail || '').toString().trim();
@@ -2590,7 +2562,6 @@ app.delete(['/api/links/:id', '/api/link/:id'], authMiddleware, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== ADMIN ALL STATS ====================
 app.get('/api/all-stats', authMiddleware, async (req, res) => {
     try {
         const { filter, startDate, endDate } = req.query;
@@ -2658,7 +2629,6 @@ app.get('/api/all-stats', authMiddleware, async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== DEVICES & SESSIONS ====================
 app.get('/api/admin/blocked-devices', authMiddleware, async (req, res) => {
     try {
         const devices = await BlockedDevice.find({}).sort({ lastAttempt: -1 }).lean();
@@ -2731,7 +2701,6 @@ app.post('/api/admin/sessions/:id/block', authMiddleware, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== SHORT LINKS ====================
 app.get('/s/:code', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const link = await ShortLink.findOne({ code: req.params.code });
