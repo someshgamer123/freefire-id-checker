@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>LinkForge — Creator Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0a0e17">
+    <meta name="theme-color" content="#070a12">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,24 +22,21 @@
     </script>
 
     <style>
-        /* ============ ORIGINAL COLORS RETAINED ============ */
+        /* UI Palette based on Screenshot: Slate/Navy Dark Theme */
         :root {
-            --bg-base: #070a12;
-            --surface-1: #101623;
-            --surface-2: #151d2e;
-            --surface-3: #1c263b;
-            --border-subtle: rgba(255, 255, 255, 0.06);
-            --border-strong: rgba(255, 255, 255, 0.12);
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --primary-glow: rgba(79, 70, 229, 0.3);
-            --accent-cyan: #06b6d4;
+            --bg-base: #0b1120;
+            --bg-panel: #1e293b;
+            --bg-input: #0f172a;
+            --border-color: #334155;
+            --border-highlight: #475569;
+            --primary: #3b82f6; 
+            --primary-hover: #2563eb;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dark: #64748b;
         }
 
         * {
@@ -52,22 +49,13 @@
 
         body {
             background-color: var(--bg-base);
-            color: var(--text-primary);
+            color: var(--text-main);
             min-height: 100vh;
             min-height: 100dvh;
             overflow-x: hidden;
             padding-bottom: 30px;
-        }
-
-        .ambient-layer {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none;
-            z-index: 0;
-            background:
-                radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
         }
 
         .svg-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -78,59 +66,59 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-entry { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-entry { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* ============ NAVBAR ============ */
+        /* ============ TOP NAVBAR ============ */
         .top-navbar {
             position: sticky; top: 0; z-index: 100;
-            background: rgba(7, 10, 18, 0.85);
+            background: rgba(11, 17, 32, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 16px;
-            padding-top: max(12px, env(safe-area-inset-top));
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 20px;
+            padding-top: max(16px, env(safe-area-inset-top));
             display: flex; align-items: center; justify-content: space-between;
             transition: all 0.3s ease;
         }
-        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .nav-left { display: flex; align-items: center; gap: 14px; }
         .btn-menu-toggle {
-            width: 40px; height: 40px;
-            background: var(--surface-2);
-            border: 1px solid var(--border-strong);
-            border-radius: 12px;
+            width: 42px; height: 42px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+            gap: 5px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
             padding: 0;
         }
-        .btn-menu-toggle:hover { background: var(--surface-3); border-color: var(--primary-light); }
+        .btn-menu-toggle:hover { border-color: var(--primary); }
         .btn-menu-toggle:active { transform: scale(0.92); }
         .btn-menu-toggle .line { display: block; height: 2px; background: #fff; border-radius: 3px; transition: 0.2s; }
-        .btn-menu-toggle .line.l1 { width: 16px; }
-        .btn-menu-toggle .line.l2 { width: 12px; }
-        .btn-menu-toggle .line.l3 { width: 16px; }
+        .btn-menu-toggle .line.l1 { width: 18px; }
+        .btn-menu-toggle .line.l2 { width: 14px; }
+        .btn-menu-toggle .line.l3 { width: 18px; }
         
         .navbar-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
         .brand-badge-icon {
-            width: 38px; height: 38px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
-            box-shadow: 0 4px 15px var(--primary-glow);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
             transition: transform 0.3s ease;
         }
         .navbar-brand:hover .brand-badge-icon { transform: rotate(5deg) scale(1.05); }
-        .brand-badge-icon svg { width: 20px; height: 20px; }
-        .brand-title { font-size: 15px; font-weight: 800; letter-spacing: 0.5px; color: #fff; line-height: 1.1; }
-        .brand-subtitle { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; margin-top: 2px; text-transform: uppercase; }
+        .brand-badge-icon svg { width: 22px; height: 22px; }
+        .brand-title { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; color: #fff; line-height: 1.1; }
+        .brand-subtitle { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; margin-top: 2px; text-transform: uppercase; }
         
-        .navbar-right { display: flex; align-items: center; gap: 8px; }
+        .navbar-right { display: flex; align-items: center; gap: 12px; }
         .user-pill {
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
             color: #34d399;
-            padding: 6px 14px; border-radius: 20px;
-            font-size: 12px; font-weight: 700;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 700;
             display: flex; align-items: center; gap: 8px;
             max-width: 150px;
             transition: 0.3s;
@@ -144,106 +132,8 @@
         .user-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
 
-        /* ============ SIDEBAR ============ */
-        .sidebar-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
-        }
-        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
-        .sidebar-drawer {
-            position: fixed; top: 0; left: 0;
-            width: 290px; max-width: 85vw; height: 100vh;
-            height: 100dvh;
-            background: var(--surface-1);
-            border-right: 1px solid var(--border-subtle);
-            z-index: 9999; transform: translateX(-100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; flex-direction: column;
-            box-shadow: 20px 0 60px rgba(0,0,0,0.8);
-        }
-        .sidebar-drawer.show { transform: translateX(0); }
-        .sidebar-head {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 24px 20px;
-            padding-top: max(24px, env(safe-area-inset-top));
-            border-bottom: 1px solid var(--border-subtle);
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
-        }
-        .sidebar-head .sb-logo { display: flex; align-items: center; gap: 12px; }
-        .sidebar-head .sb-logo-icon {
-            width: 42px; height: 42px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff;
-            box-shadow: 0 6px 20px var(--primary-glow);
-        }
-        .sidebar-head .sb-logo-icon svg { width: 22px; height: 22px; }
-        .sidebar-head h2 { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.2; }
-        .sidebar-head p { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
-        .sidebar-close {
-            background: var(--surface-2); border: 1px solid var(--border-subtle);
-            width: 34px; height: 34px; border-radius: 10px; color: var(--text-muted);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; padding: 0;
-        }
-        .sidebar-close:hover { background: rgba(239,68,68,0.15); color: #fff; border-color: rgba(239,68,68,0.3); }
-        .sidebar-close:active { transform: scale(0.9); }
-        .sidebar-close svg { width: 16px; height: 16px; }
-        
-        .sidebar-links-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; padding: 16px 12px; }
-        .drawer-item {
-            display: flex; align-items: center; gap: 14px;
-            padding: 14px 16px; border-radius: 12px;
-            color: var(--text-secondary); font-size: 14px; font-weight: 600;
-            cursor: pointer; transition: all 0.2s; text-decoration: none;
-            border: 1px solid transparent;
-        }
-        .drawer-item:hover { background: var(--surface-2); color: #fff; border-color: var(--border-subtle); transform: translateX(4px); }
-        .drawer-item:active { transform: scale(0.98); }
-        .drawer-item .drawer-icon {
-            width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; color: var(--primary-light); transition: 0.2s;
-        }
-        .drawer-item:hover .drawer-icon { color: #fff; }
-        .drawer-item .drawer-icon svg { width: 18px; height: 18px; }
-        .drawer-item.danger { color: #f87171; }
-        .drawer-item.danger:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); }
-        .drawer-item.danger .drawer-icon { color: #f87171; }
-        
-        .drawer-item .drawer-badge {
-            margin-left: auto; font-size: 11px; font-weight: 800;
-            padding: 3px 9px; border-radius: 12px;
-            background: var(--surface-3); color: #a5b4fc;
-            transition: 0.2s;
-        }
-        .drawer-item:hover .drawer-badge { background: var(--primary); color: #fff; }
-        .drawer-item.primary-highlight {
-            background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
-            color: #fff; border-color: rgba(99,102,241,0.3);
-        }
-        
-        .sidebar-footer {
-            padding: 20px;
-            padding-bottom: max(20px, env(safe-area-inset-bottom));
-            border-top: 1px solid var(--border-subtle);
-            background: var(--surface-2);
-        }
-        .sidebar-footer .sb-user { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-        .sidebar-footer .sb-user-avatar {
-            width: 40px; height: 40px; border-radius: 12px;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: 800; color: #fff;
-            flex-shrink: 0; box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-        }
-        .sidebar-footer .sb-user-name { font-size: 13.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sidebar-footer .sb-user-status { font-size: 11px; color: #34d399; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-
         /* ============ MAIN CONTENT ============ */
-        .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; }
+        .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; width: 100%; flex: 1; }
 
         /* ============ AUTH SCREEN ============ */
         .auth-screen {
@@ -254,384 +144,352 @@
             z-index: 1;
         }
         .auth-card {
-            background: var(--surface-1);
-            border: 1px solid var(--border-strong);
-            border-radius: 24px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             padding: 36px 28px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
             text-align: center;
             position: relative;
             overflow: hidden;
         }
-        .auth-card::before {
-            content: ''; position: absolute; top: -100px; right: -100px;
-            width: 250px; height: 250px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
         .auth-logo {
-            width: 72px; height: 72px;
+            width: 64px; height: 64px;
             margin: 0 auto 20px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
             color: #fff;
-            box-shadow: 0 12px 30px var(--primary-glow);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
             position: relative;
             z-index: 1;
         }
-        .auth-logo svg { width: 34px; height: 34px; }
+        .auth-logo svg { width: 32px; height: 32px; }
         .auth-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; position: relative; z-index: 1; }
-        .auth-subtitle { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.5; position: relative; z-index: 1; }
+        .auth-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; position: relative; z-index: 1; }
 
         /* Tabs */
         .auth-tabs {
-            display: flex; gap: 6px; background: var(--bg-base); border: 1px solid var(--border-subtle);
-            border-radius: 14px; padding: 5px; margin-bottom: 24px; position: relative; z-index: 1;
+            display: flex; gap: 6px; background: var(--bg-base); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 4px; margin-bottom: 24px; position: relative; z-index: 1;
         }
         .auth-tab {
-            flex: 1; padding: 12px; border: none; border-radius: 10px;
-            background: transparent; color: var(--text-secondary);
+            flex: 1; padding: 10px; border: none; border-radius: 8px;
+            background: transparent; color: var(--text-muted);
             font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
         }
         .auth-tab.active {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff; box-shadow: 0 4px 15px rgba(79,70,229,0.4);
+            background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
         /* Form Inputs */
         .input-group { margin-bottom: 16px; text-align: left; position: relative; z-index: 1; }
-        .input-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
         .form-input {
-            width: 100%; padding: 16px; background: var(--bg-base); border: 1px solid var(--border-strong);
-            border-radius: 14px; color: #fff; font-size: 15px; font-weight: 600; outline: none;
+            width: 100%; padding: 14px 16px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 12px; color: #fff; font-size: 15px; font-weight: 500; outline: none;
             transition: all 0.3s ease;
         }
-        .form-input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(99,102,241,0.15); background: var(--surface-2); }
-        .form-input::placeholder { color: var(--text-muted); font-weight: 500; }
+        .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .form-input::placeholder { color: var(--text-dark); font-weight: 400; }
 
         /* Buttons */
         .btn-primary {
-            width: 100%; padding: 16px; border: none; border-radius: 14px;
-            font-size: 15px; font-weight: 800; cursor: pointer;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 10px 25px rgba(79,70,229,0.4); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            background: var(--primary);
+            color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); transition: all 0.2s ease;
             position: relative; z-index: 1;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(79,70,229,0.5); }
-        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         
         .btn-verify {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 10px 25px rgba(16,185,129,0.4);
+            background: var(--success);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
         }
-        .btn-verify:hover { box-shadow: 0 15px 35px rgba(16,185,129,0.5); }
+        .btn-verify:hover { background: #059669; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
 
         /* OTP Boxes */
-        .otp-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; position: relative; z-index: 1; }
+        .otp-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; position: relative; z-index: 1; }
         .otp-box {
-            width: 48px; height: 60px; background: var(--bg-base); border: 1px solid var(--border-strong);
-            border-radius: 12px; color: #fff; font-size: 24px; font-weight: 800;
+            width: 48px; height: 56px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 10px; color: #fff; font-size: 24px; font-weight: 800;
             text-align: center; outline: none; transition: all 0.2s ease;
         }
-        .otp-box:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); background: var(--surface-2); transform: translateY(-2px); }
+        .otp-box:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); background: var(--bg-panel); transform: translateY(-2px); }
 
         /* Pending View */
         .pending-screen { display: none; text-align: center; padding: 20px 0; position: relative; z-index: 1; }
         .pending-icon {
             width: 80px; height: 80px; margin: 0 auto 20px;
-            border-radius: 24px; background: rgba(245, 158, 11, 0.1);
-            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px; background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
             display: flex; align-items: center; justify-content: center;
             color: #fbbf24; font-size: 34px;
             animation: pulseYellow 2s infinite;
         }
         @keyframes pulseYellow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
         }
-        .pending-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 10px; }
-        .pending-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 28px; }
+        .pending-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+        .pending-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
         
         .btn-secondary {
-            padding: 14px 24px; border: 1px solid var(--border-strong); border-radius: 12px;
-            background: var(--surface-2); color: #fff; font-size: 14px;
-            font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%;
+            padding: 12px 24px; border: 1px solid var(--border-color); border-radius: 10px;
+            background: var(--bg-input); color: #fff; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
         }
-        .btn-secondary:hover { background: var(--surface-3); transform: translateY(-2px); }
-        .btn-secondary:active { transform: scale(0.98); }
+        .btn-secondary:hover { background: var(--border-color); }
 
         /* ============ DASHBOARD STYLES ============ */
         #dashboardSection { display: none; }
         #authSection { display: none; }
 
-        .welcome-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .welcome-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
         .welcome-title h2 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-        .welcome-title h2 span { color: var(--primary-light); }
-        .welcome-title p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+        .welcome-title h2 span { color: var(--primary); }
+        .welcome-title p { font-size: 14px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
 
         /* Hero Card */
         .hero-card {
-            background: linear-gradient(145deg, var(--surface-1), var(--surface-2));
-            border: 1px solid var(--border-strong);
-            border-radius: 20px; padding: 24px; margin-bottom: 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 24px; margin-bottom: 24px;
             position: relative; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .hero-card:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
-        .hero-card::before {
-            content: ''; position: absolute; top: -50px; right: -50px;
-            width: 180px; height: 180px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%); pointer-events: none;
-        }
-        .hero-card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; position: relative; z-index: 1; }
+        .hero-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .hero-card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; position: relative; z-index: 1; }
         .hero-icon {
-            width: 56px; height: 56px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 16px;
-            display: flex; align-items: center; justify-content: center; color: #fff;
-            box-shadow: 0 8px 25px rgba(79,70,229,0.4); flex-shrink: 0;
-            transition: transform 0.3s ease;
+            width: 56px; height: 56px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--primary);
+            flex-shrink: 0;
         }
-        .hero-card:hover .hero-icon { transform: scale(1.05) rotate(-5deg); }
         .hero-icon svg { width: 28px; height: 28px; }
         .hero-text { flex: 1; min-width: 0; }
-        .hero-text h3 { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-        .hero-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+        .hero-text h3 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .hero-text p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
         
         .hero-create-btn {
-            width: 100%; padding: 16px; border: none; border-radius: 14px;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 15px; font-weight: 800;
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: var(--primary); color: #fff; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease; 
             display: flex; align-items: center; justify-content: center;
-            gap: 10px; box-shadow: 0 10px 30px rgba(79,70,229,0.4); position: relative; z-index: 1;
+            gap: 8px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); position: relative; z-index: 1;
         }
-        .hero-create-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(79,70,229,0.5); }
+        .hero-create-btn:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
         .hero-create-btn:active:not(:disabled) { transform: scale(0.98); }
-        .hero-create-btn:disabled { background: var(--surface-3); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+        .hero-create-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; box-shadow: none; }
         .hero-create-btn svg { width: 20px; height: 20px; }
-        .hero-create-btn .btn-badge { font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 12px; margin-left: auto; }
+        .hero-create-btn .btn-badge { font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 10px; margin-left: auto; }
         
-        .hero-limit-info { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 14px; position: relative; z-index: 1; font-weight: 600; line-height: 1.5; }
-        .hero-limit-info strong { color: #a5b4fc; font-weight: 800; }
+        .hero-limit-info { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 16px; position: relative; z-index: 1; font-weight: 500; line-height: 1.5; }
+        .hero-limit-info strong { color: var(--primary); font-weight: 700; }
 
         /* Plan Days Card */
-        .plan-days-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; transition: 0.3s; }
-        .plan-days-card:hover { border-color: rgba(255,255,255,0.15); }
-        .plan-days-card.warn { background: linear-gradient(145deg, rgba(245,158,11,0.08), var(--surface-1)); border-color: rgba(245,158,11,0.3); }
-        .plan-days-card.danger { background: linear-gradient(145deg, rgba(239,68,68,0.08), var(--surface-1)); border-color: rgba(239,68,68,0.3); }
+        .plan-days-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
         .plan-days-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-        .plan-days-label { font-size: 12px; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .plan-days-label { font-size: 13px; font-weight: 700; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
         .plan-days-label svg { width: 16px; height: 16px; }
-        .plan-days-card.warn .plan-days-label { color: #fbbf24; }
-        .plan-days-card.danger .plan-days-label { color: #f87171; }
-        .plan-days-value { font-size: 15px; font-weight: 800; color: #fff; }
-        .plan-days-bar { width: 100%; height: 8px; background: var(--bg-base); border-radius: 10px; overflow: hidden; margin-bottom: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
-        .plan-days-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #10b981, #34d399); transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
-        .plan-days-bar-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite; }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        .plan-days-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .plan-days-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
-        .plan-days-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); font-weight: 600; gap: 10px; flex-wrap: wrap; }
-        .plan-days-meta strong { color: #fff; font-weight: 700; }
+        .plan-days-value { font-size: 15px; font-weight: 700; color: #fff; }
+        .plan-days-bar { width: 100%; height: 8px; background: var(--bg-input); border-radius: 10px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border-color); }
+        .plan-days-bar-fill { height: 100%; border-radius: 10px; background: var(--success); transition: width 0.5s ease; }
+        .plan-days-bar-fill.warn { background: var(--warning); }
+        .plan-days-bar-fill.danger { background: var(--danger); }
+        .plan-days-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); font-weight: 500; gap: 10px; flex-wrap: wrap; }
+        .plan-days-meta strong { color: #fff; font-weight: 600; }
 
         /* Link Selector Card */
-        .link-selector-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; transition: 0.3s; }
-        .link-selector-card:hover { border-color: var(--border-strong); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+        .link-selector-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
         @media (min-width: 640px) { .link-selector-card { flex-direction: row; align-items: center; justify-content: space-between; } }
         .link-info-box { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
-        .link-title-badge { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; color: #fff; min-width: 0; }
-        .link-title-badge svg { width: 18px; height: 18px; color: var(--primary-light); flex-shrink: 0; }
+        .link-title-badge { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: #fff; min-width: 0; }
+        .link-title-badge svg { width: 18px; height: 18px; color: var(--primary); flex-shrink: 0; }
         .link-title-badge span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .link-id-sub { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
-        .link-id-sub strong { color: var(--accent-cyan); font-family: monospace; font-size: 13px; background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 6px; }
+        .link-id-sub { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+        .link-id-sub strong { color: #38bdf8; font-family: monospace; font-size: 13px; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 6px; }
         
         .link-actions-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .link-actions-row select { flex: 1; min-width: 160px; padding: 12px 16px; font-size: 13px; background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: 12px; color: #fff; cursor: pointer; font-weight: 600; outline: none; transition: 0.2s; }
-        .link-actions-row select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .link-actions-row select { flex: 1; min-width: 160px; padding: 12px 16px; font-size: 14px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; cursor: pointer; font-weight: 500; outline: none; transition: 0.2s; }
+        .link-actions-row select:focus { border-color: var(--primary); }
         
-        .icon-btn { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-base); border: 1px solid var(--border-strong); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; padding: 0; }
+        .icon-btn { width: 44px; height: 44px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; padding: 0; }
         .icon-btn svg { width: 18px; height: 18px; }
-        .icon-btn:hover { background: var(--surface-2); color: #fff; border-color: var(--primary-light); transform: translateY(-2px); }
-        .icon-btn:active { transform: scale(0.95); }
-        .icon-btn.danger:hover { background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.3); }
-        .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .icon-btn:hover { background: var(--border-color); color: #fff; }
+        .icon-btn.danger:hover { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* Stats Grid */
-        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-        @media (min-width: 640px) { .stats-row { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
-        .metric-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px 16px; position: relative; overflow: hidden; transition: all 0.3s ease; }
-        .metric-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--border-strong); }
-        .metric-card.highlight { border-color: rgba(99, 102, 241, 0.3); background: linear-gradient(145deg, rgba(79, 70, 229, 0.1), var(--surface-1)); }
-        .metric-card.highlight-success { border-color: rgba(16, 185, 129, 0.3); background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), var(--surface-1)); }
-        .metric-value { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px; line-height: 1.1; letter-spacing: -0.5px; }
-        .metric-title { font-size: 11px; font-weight: 700; color: var(--text-muted); line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px; }
-        .metric-subtitle { font-size: 10px; color: var(--accent-cyan); margin-top: 6px; font-weight: 700; }
+        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (min-width: 640px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
+        .metric-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; transition: all 0.2s ease; }
+        .metric-card:hover { border-color: var(--border-highlight); }
+        .metric-value { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; line-height: 1.1; letter-spacing: -0.5px; }
+        .metric-title { font-size: 12px; font-weight: 600; color: var(--text-muted); line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* Date Filter */
-        .date-filter-box { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; transition: 0.3s; }
+        .date-filter-box { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 20px; margin-bottom: 24px; }
         .date-filter-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-        .date-filter-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
-        .date-filter-label svg { width: 16px; height: 16px; color: var(--primary-light); }
+        .date-filter-label { font-size: 14px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+        .date-filter-label svg { width: 16px; height: 16px; color: var(--primary); }
         
         .date-filter-dropdown { position: relative; flex: 1; max-width: 240px; }
-        .date-filter-trigger { width: 100%; padding: 12px 16px; background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: 12px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: 0.2s; }
-        .date-filter-trigger:hover { border-color: var(--primary-light); }
+        .date-filter-trigger { width: 100%; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: 0.2s; }
+        .date-filter-trigger:hover { border-color: var(--border-highlight); }
         .date-filter-trigger .trigger-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .date-filter-trigger .trigger-label svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--primary-light); }
+        .date-filter-trigger .trigger-label svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--primary); }
         .date-filter-trigger .chevron { width: 16px; height: 16px; transition: transform 0.3s; flex-shrink: 0; color: var(--text-muted); }
         .date-filter-dropdown.open .chevron { transform: rotate(180deg); }
         
-        .date-filter-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px; padding: 8px; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: none; opacity: 0; transform: translateY(-10px); transition: all 0.3s ease; }
+        .date-filter-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: none; opacity: 0; transform: translateY(-10px); transition: all 0.2s ease; }
         .date-filter-dropdown.open .date-filter-menu { display: block; opacity: 1; transform: translateY(0); }
         
-        .date-filter-option { padding: 12px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; margin-bottom: 2px; }
+        .date-filter-option { padding: 12px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; margin-bottom: 2px; }
         .date-filter-option:last-child { margin-bottom: 0; }
-        .date-filter-option:hover { background: var(--surface-3); color: #fff; }
-        .date-filter-option.active { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+        .date-filter-option:hover { background: var(--bg-input); color: #fff; }
+        .date-filter-option.active { background: var(--primary); color: #fff; }
         .date-filter-option svg { width: 16px; height: 16px; flex-shrink: 0; }
-        .date-filter-option .check { margin-left: auto; width: 16px; height: 16px; opacity: 0; transition: 0.2s; }
+        .date-filter-option .check { margin-left: auto; width: 16px; height: 16px; opacity: 0; }
         .date-filter-option.active .check { opacity: 1; }
 
-        .custom-date-panel { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-subtle); display: none; flex-direction: column; gap: 12px; }
+        .custom-date-panel { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); display: none; flex-direction: column; gap: 12px; }
         .custom-date-panel.show { display: flex; }
         .custom-date-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .custom-date-row label { font-size: 12px; color: var(--text-secondary); font-weight: 700; }
-        .custom-date-row input[type="date"] { flex: 1; min-width: 130px; background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 13px; outline: none; transition: 0.2s; }
-        .custom-date-row input[type="date"]:focus { border-color: var(--primary-light); }
-        .custom-date-apply-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .custom-date-apply-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,70,229,0.4); }
-        .custom-date-apply-btn svg { width: 16px; height: 16px; }
+        .custom-date-row label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+        .custom-date-row input[type="date"] { flex: 1; min-width: 130px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; transition: 0.2s; }
+        .custom-date-row input[type="date"]:focus { border-color: var(--primary); }
+        .custom-date-apply-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .custom-date-apply-btn:hover { background: var(--primary-hover); }
 
         /* Timeline */
-        .timeline-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px; transition: 0.3s; }
-        .timeline-card:hover { border-color: var(--border-strong); }
-        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
-        .timeline-label { font-size: 14px; font-weight: 800; color: #fff; }
-        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .timeline-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+        .timeline-label { font-size: 15px; font-weight: 700; color: #fff; }
+        .badge-status { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .badge-status.active { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
         .badge-status.warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
         .badge-status.expired { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
-        .badge-status.none { background: var(--surface-3); color: var(--text-secondary); border: 1px solid var(--border-strong); }
+        .badge-status.none { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); }
         
-        .progress-bar-bg { width: 100%; height: 8px; background: var(--bg-base); border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
-        .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
-        .progress-bar-fill.active { background: linear-gradient(90deg, var(--success), #34d399); }
-        .progress-bar-fill.warning { background: linear-gradient(90deg, var(--warning), #fbbf24); }
-        .progress-bar-fill.expired { background: linear-gradient(90deg, var(--danger), #f87171); }
-        .progress-bar-fill.none { background: var(--surface-3); width: 0%; }
+        .progress-bar-bg { width: 100%; height: 8px; background: var(--bg-input); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+        .progress-bar-fill.active { background: var(--success); }
+        .progress-bar-fill.warning { background: var(--warning); }
+        .progress-bar-fill.expired { background: var(--danger); }
+        .progress-bar-fill.none { background: var(--border-color); width: 0%; }
 
         /* Pro Card / Table */
-        .pro-card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
-        .pro-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 16px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .pro-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .pro-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #fff; display: flex; align-items: center; gap: 10px; }
 
         /* Modals */
-        .app-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(12px); z-index: 10000; display: none; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; opacity: 0; transition: opacity 0.3s ease; }
+        .app-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(11, 17, 32, 0.85); backdrop-filter: blur(8px); z-index: 10000; display: none; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; opacity: 0; transition: opacity 0.2s ease; }
         .app-modal.active { display: flex; opacity: 1; }
-        .modal-body-card { background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: 24px; max-width: 600px; width: 100%; padding: 24px; margin: auto 0; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8); transform: translateY(20px); transition: transform 0.3s ease; }
+        .modal-body-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 20px; max-width: 600px; width: 100%; padding: 24px; margin: auto 0; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); transform: translateY(20px); transition: transform 0.2s ease; }
         .app-modal.active .modal-body-card { transform: translateY(0); }
         .modal-body-card.wide { max-width: 900px; }
-        .modal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; gap: 12px; }
-        .modal-header-row h3 { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
-        .modal-header-row h3 svg { width: 22px; height: 22px; color: var(--primary-light); }
-        .modal-close-btn { background: var(--surface-2); border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 18px; cursor: pointer; transition: 0.2s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; padding: 0; }
-        .modal-close-btn:hover { background: rgba(239,68,68,0.15); color: #fff; border-color: rgba(239,68,68,0.3); }
+        .modal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; gap: 12px; }
+        .modal-header-row h3 { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .modal-header-row h3 svg { width: 22px; height: 22px; color: var(--primary); }
+        .modal-close-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 18px; cursor: pointer; transition: 0.2s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; padding: 0; }
+        .modal-close-btn:hover { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.3); }
 
         /* Plan Carousel */
         .plans-carousel-wrap { position: relative; margin-bottom: 20px; overflow: hidden; padding: 10px 0; }
-        .plans-carousel { display: flex; gap: 16px; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; scroll-snap-type: x mandatory; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.5) transparent; }
+        .plans-carousel { display: flex; gap: 16px; overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; scroll-snap-type: x mandatory; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
         .plans-carousel::-webkit-scrollbar { height: 6px; }
         .plans-carousel::-webkit-scrollbar-track { background: transparent; }
-        .plans-carousel::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 6px; }
+        .plans-carousel::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 6px; }
         
-        .plan-card-screenshot { flex: 0 0 280px; scroll-snap-align: center; background: var(--surface-2); border: 2px solid var(--border-subtle); border-radius: 20px; padding: 24px 20px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; height: 480px; }
-        @media (max-width: 500px) { .plan-card-screenshot { flex: 0 0 85%; padding: 20px 16px; height: 460px; } }
-        .plan-card-screenshot:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-color: var(--border-strong); }
-        .plan-card-screenshot.selected { border-color: var(--primary-light); background: linear-gradient(165deg, rgba(99,102,241,0.15), var(--surface-2)); box-shadow: 0 20px 50px rgba(99, 102, 241, 0.2); transform: translateY(-5px); }
-        .plan-card-screenshot.owned-plan { border-color: rgba(16, 185, 129, 0.4) !important; background: linear-gradient(165deg, rgba(16,185,129,0.1), var(--surface-2)) !important; cursor: default; }
-        .plan-card-screenshot.selected::before { content: '✓'; position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 4px 15px rgba(79,70,229,0.4); }
-        .plan-card-screenshot.owned-plan::before { content: '★'; position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 5; box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+        .plan-card-screenshot { flex: 0 0 280px; scroll-snap-align: center; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px 20px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; height: 460px; }
+        @media (max-width: 500px) { .plan-card-screenshot { flex: 0 0 85%; padding: 20px 16px; height: 440px; } }
+        .plan-card-screenshot:hover { border-color: var(--border-highlight); }
+        .plan-card-screenshot.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15); }
+        .plan-card-screenshot.owned-plan { border-color: var(--success) !important; background: rgba(16, 185, 129, 0.05) !important; cursor: default; }
         
-        .plan-card-icon-wrap { width: 50px; height: 50px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; color: var(--primary-light); margin-bottom: 16px; flex-shrink: 0; transition: 0.3s; }
-        .plan-card-screenshot:hover .plan-card-icon-wrap { transform: scale(1.1); color: #fff; background: var(--primary); }
+        .plan-card-icon-wrap { width: 50px; height: 50px; border-radius: 12px; background: var(--bg-panel); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 16px; flex-shrink: 0; }
         .plan-card-icon-wrap svg { width: 24px; height: 24px; }
         
-        .plan-card-name { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
-        .plan-card-badge-pill { font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-        .plan-card-badge-pill.save { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-        .plan-card-badge-pill.free { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .plan-card-badge-pill.owned { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+        .plan-card-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+        .plan-card-badge-pill { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .plan-card-badge-pill.popular { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .plan-card-badge-pill.save { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .plan-card-badge-pill.best { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .plan-card-badge-pill.free { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .plan-card-badge-pill.owned { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         
-        .plan-card-price-section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+        .plan-card-price-section { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .plan-card-price { display: flex; align-items: baseline; gap: 4px; color: #fff; }
-        .plan-card-price .price-currency { font-size: 18px; font-weight: 800; color: var(--text-secondary); }
-        .plan-card-price .price-amount { font-size: 32px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
-        .plan-card-price .price-free { font-size: 28px; font-weight: 900; color: #34d399; line-height: 1; }
-        .plan-card-price-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
-        .plan-card-duration { display: inline-flex; align-items: center; gap: 6px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: #38bdf8; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 8px; }
+        .plan-card-price .price-currency { font-size: 18px; font-weight: 700; color: var(--text-muted); }
+        .plan-card-price .price-amount { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+        .plan-card-price .price-free { font-size: 28px; font-weight: 800; color: var(--success); line-height: 1; }
+        .plan-card-price-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
         
-        .plan-card-btn { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid rgba(99, 102, 241, 0.3); background: transparent; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.3s; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; }
-        .plan-card-btn:hover { background: rgba(99,102,241,0.1); border-color: var(--primary-light); }
-        .plan-card-screenshot.selected .plan-card-btn { background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-color: transparent; box-shadow: 0 6px 20px rgba(79,70,229,0.4); }
-        .plan-card-screenshot.owned-plan .plan-card-btn { background: rgba(16,185,129,0.15) !important; border-color: rgba(16,185,129,0.3) !important; cursor: default; }
+        .plan-card-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; }
+        .plan-card-btn:hover { background: var(--bg-panel); }
+        .plan-card-screenshot.selected .plan-card-btn { background: var(--primary); border-color: var(--primary); }
+        .plan-card-screenshot.owned-plan .plan-card-btn { background: rgba(16,185,129,0.1) !important; border-color: rgba(16,185,129,0.3) !important; cursor: default; color: var(--success); }
         
-        .plan-card-includes-title { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; flex-shrink: 0; }
+        .plan-card-includes-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; flex-shrink: 0; }
         .plan-features-list { display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; overflow-y: auto; padding-right: 4px; min-height: 0; }
-        .plan-feature-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+        .plan-feature-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
         .plan-feature-item .check-icon { width: 18px; height: 18px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
 
         /* Forms */
         .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
-        .form-control { width: 100%; padding: 14px 16px; background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600; outline: none; transition: 0.2s; }
-        .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(99,102,241,0.15); }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .form-control { width: 100%; padding: 14px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; outline: none; transition: 0.2s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         
         /* Custom Dialogs */
-        .custom-dialog-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(4, 7, 15, 0.85); backdrop-filter: blur(12px); z-index: 26000; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: 0.3s; }
+        .custom-dialog-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(11, 17, 32, 0.85); backdrop-filter: blur(8px); z-index: 26000; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: 0.2s; }
         .custom-dialog-overlay.active { display: flex; opacity: 1; }
-        .custom-dialog-card { background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: 24px; padding: 32px 24px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8); transform: scale(0.95); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .custom-dialog-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 20px; padding: 32px 24px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7); transform: scale(0.95); transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
         .custom-dialog-overlay.active .custom-dialog-card { transform: scale(1); }
-        .custom-dialog-icon-wrap { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 24px; display: flex; align-items: center; justify-content: center; }
+        .custom-dialog-icon-wrap { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
         .custom-dialog-icon-wrap svg { width: 34px; height: 34px; }
         .custom-dialog-icon-wrap.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #10b981; }
         .custom-dialog-icon-wrap.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; }
         .custom-dialog-icon-wrap.warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .custom-dialog-icon-wrap.info { background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .custom-dialog-icon-wrap.info { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #3b82f6; }
         .custom-dialog-title { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px; }
-        .custom-dialog-message { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+        .custom-dialog-message { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
         .custom-dialog-actions { display: flex; gap: 10px; }
-        .custom-dialog-btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .custom-dialog-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .custom-dialog-btn:active { transform: scale(0.97); }
-        .custom-dialog-btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; box-shadow: 0 6px 20px rgba(79,70,229,0.3); }
-        .custom-dialog-btn.secondary { background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border-strong); }
-        .custom-dialog-btn.danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; box-shadow: 0 6px 20px rgba(239,68,68,0.3); }
+        .custom-dialog-btn.primary { background: var(--primary); color: #fff; }
+        .custom-dialog-btn.primary:hover { background: var(--primary-hover); }
+        .custom-dialog-btn.secondary { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); }
+        .custom-dialog-btn.danger { background: var(--danger); color: #fff; }
+        .custom-dialog-btn.danger:hover { background: #dc2626; }
 
         /* Toast */
-        .toast-notification { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; font-size: 14px; font-weight: 700; color: #fff; z-index: 30000; opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); max-width: 90vw; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; }
+        .toast-notification { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 20px; font-size: 14px; font-weight: 600; color: #fff; z-index: 30000; opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; }
         .toast-notification.show { transform: translateX(-50%) translateY(0); opacity: 1; }
         .toast-notification svg { width: 20px; height: 20px; flex-shrink: 0; }
-        .toast-notification.success { border-color: rgba(16, 185, 129, 0.3); }
+        .toast-notification.success { border-color: rgba(16, 185, 129, 0.4); }
         .toast-notification.success svg { color: #34d399; }
-        .toast-notification.error { border-color: rgba(239, 68, 68, 0.3); }
+        .toast-notification.error { border-color: rgba(239, 68, 68, 0.4); }
         .toast-notification.error svg { color: #f87171; }
-        .toast-notification.warning { border-color: rgba(245, 158, 11, 0.3); }
+        .toast-notification.warning { border-color: rgba(245, 158, 11, 0.4); }
         .toast-notification.warning svg { color: #fbbf24; }
-        .toast-notification.info { border-color: rgba(99, 102, 241, 0.3); }
-        .toast-notification.info svg { color: #818cf8; }
+        .toast-notification.info { border-color: rgba(59, 130, 246, 0.4); }
+        .toast-notification.info svg { color: #60a5fa; }
 
         @media (max-width: 480px) {
-            .auth-card { padding: 28px 20px; border-radius: 20px; }
+            .auth-card { padding: 28px 20px; }
             .auth-title { font-size: 22px; }
-            .otp-box { width: 42px; height: 54px; font-size: 20px; }
+            .otp-box { width: 42px; height: 50px; font-size: 20px; }
+            .stats-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="ambient-layer"></div>
-
     <!-- SVG ICONS -->
     <svg style="display:none;">
         <symbol id="icon-flash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/></symbol>
@@ -665,69 +523,9 @@
         <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
     </svg>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
-    <aside class="sidebar-drawer" id="sidebarDrawer">
-        <div class="sidebar-head">
-            <div class="sb-logo">
-                <div class="sb-logo-icon"><svg><use href="#icon-flash"/></svg></div>
-                <div>
-                    <h2>LINKFORGE</h2>
-                    <p>Creator Control Center</p>
-                </div>
-            </div>
-            <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close Menu">
-                <svg><use href="#icon-x-circle"/></svg>
-            </button>
-        </div>
-        <div class="sidebar-links-list">
-            <div class="drawer-item primary-highlight" onclick="openCreateLinkModal()">
-                <span class="drawer-icon"><svg><use href="#icon-plus"/></svg></span>
-                <span>Create New Link</span>
-                <span class="drawer-badge" id="menuLinkCount">0</span>
-            </div>
-            <div class="drawer-item" onclick="openMyPlanModal()">
-                <span class="drawer-icon"><svg><use href="#icon-crown"/></svg></span>
-                <span>My Current Plan</span>
-            </div>
-            <div class="drawer-item" onclick="openPlansModal()">
-                <span class="drawer-icon"><svg><use href="#icon-dollar"/></svg></span>
-                <span>Renewal Plans</span>
-            </div>
-            <div class="drawer-item" onclick="openShortenerModal()">
-                <span class="drawer-icon"><svg><use href="#icon-link"/></svg></span>
-                <span>URL Shortener</span>
-            </div>
-            <a href="mailto:REPLACE_WITH_YOUR_SUPPORT_EMAIL" class="drawer-item">
-                <span class="drawer-icon"><svg><use href="#icon-headphones"/></svg></span>
-                <span>Support</span>
-            </a>
-            <div class="drawer-item" onclick="openTermsModal()">
-                <span class="drawer-icon"><svg><use href="#icon-file-text"/></svg></span>
-                <span>Terms & Rules</span>
-            </div>
-        </div>
-        <div class="sidebar-footer">
-            <div class="sb-user">
-                <div class="sb-user-avatar" id="sbUserAvatar">U</div>
-                <div style="min-width:0;flex:1;">
-                    <div class="sb-user-name" id="sbUserName">User</div>
-                    <div class="sb-user-status"><span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block;"></span> Online</div>
-                </div>
-            </div>
-            <div class="drawer-item danger" onclick="performLogout()" style="padding: 12px 14px; margin: 0; border-radius: 10px;">
-                <span class="drawer-icon"><svg><use href="#icon-log-out"/></svg></span>
-                <span>Logout</span>
-            </div>
-        </div>
-    </aside>
-
     <!-- NAVBAR -->
     <header class="top-navbar">
         <div class="nav-left">
-            <button class="btn-menu-toggle" id="btnHamburger" onclick="toggleSidebar(true)" title="Menu">
-                <span class="line l1"></span><span class="line l2"></span><span class="line l3"></span>
-            </button>
             <a href="#" class="navbar-brand">
                 <div class="brand-badge-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
@@ -759,7 +557,7 @@
                 <!-- STEP 1: FORM ENTRY -->
                 <div id="emailStepView">
                     <h2 class="auth-title" id="authTitleText">Welcome Back</h2>
-                    <p class="auth-subtitle" id="authSubtitleText">Sign in to access your LinkForge account</p>
+                    <p class="auth-subtitle" id="authSubtitleText">Sign in to your LinkForge account</p>
 
                     <div id="signupOnlyFields" style="display:none;">
                         <div class="input-group">
@@ -954,37 +752,33 @@
 
             <div class="stats-row">
                 <div class="metric-card highlight">
-                    <div class="metric-value" id="metricTotalVisits" style="color:#818cf8;">0</div>
+                    <div class="metric-value" id="metricTotalVisits" style="color:#60a5fa;">0</div>
                     <div class="metric-title">Total Visits</div>
-                    <div class="metric-subtitle">Unique in 48h</div>
                 </div>
                 <div class="metric-card highlight-success">
                     <div class="metric-value" id="metricTotalClaims" style="color:var(--success);">0</div>
                     <div class="metric-title">Total Claims</div>
-                    <div class="metric-subtitle">Video Only</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricFilteredVisits">0</div>
                     <div class="metric-title" id="lblFilteredVisits">Today Visits</div>
-                    <div class="metric-subtitle" id="subFilteredVisits">Unique IP</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value" id="metricFilteredClaims" style="color:var(--success);">0</div>
                     <div class="metric-title" id="lblFilteredClaims">Today Claims</div>
-                    <div class="metric-subtitle">Video Claims</div>
                 </div>
             </div>
 
             <div class="pro-card">
-                <h3><svg style="width:20px;height:20px;color:var(--primary-light);"><use href="#icon-refresh"/></svg> Recent Renewal History</h3>
-                <div style="width:100%; overflow-x:auto; border-radius:12px; border:1px solid var(--border-subtle);">
+                <h3><svg style="width:20px;height:20px;color:var(--primary);"><use href="#icon-refresh"/></svg> Recent Renewal History</h3>
+                <div style="width:100%; overflow-x:auto; border-radius:10px; border:1px solid var(--border-color);">
                     <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:360px;">
                         <thead>
-                            <tr style="background:var(--surface-2);">
-                                <th style="padding:12px 16px; color:var(--text-secondary); font-weight:700; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Date</th>
-                                <th style="padding:12px 16px; color:var(--text-secondary); font-weight:700; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Plan</th>
-                                <th style="padding:12px 16px; color:var(--text-secondary); font-weight:700; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Amount</th>
-                                <th style="padding:12px 16px; color:var(--text-secondary); font-weight:700; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Status</th>
+                            <tr style="background:var(--bg-input);">
+                                <th style="padding:12px 16px; color:var(--text-muted); font-weight:600; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border-color);">Date</th>
+                                <th style="padding:12px 16px; color:var(--text-muted); font-weight:600; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border-color);">Plan</th>
+                                <th style="padding:12px 16px; color:var(--text-muted); font-weight:600; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border-color);">Amount</th>
+                                <th style="padding:12px 16px; color:var(--text-muted); font-weight:600; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border-color);">Status</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableRows">
@@ -1027,16 +821,17 @@
                 <label class="form-label">Headline</label>
                 <input type="text" id="clHeadline" class="form-control" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150">
             </div>
-            <div style="background:var(--surface-2); border:1px solid var(--border-strong); border-radius:14px; padding:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div>
-                    <div style="font-size:14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
-                        <svg style="width:16px;height:16px;color:var(--primary-light);"><use href="#icon-shield"/></svg> UID Checking
+                    <div style="font-size:14px; font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
+                        <svg style="width:16px;height:16px;color:var(--primary);"><use href="#icon-shield"/></svg> UID Checking
                     </div>
-                    <div id="uidToggleDesc" style="font-size:12px; color:var(--text-secondary); margin-top:4px;">ON — Visitors must enter UID first</div>
+                    <div id="uidToggleDesc" style="font-size:12px; color:var(--text-muted); margin-top:4px;">ON — Visitors must enter UID first</div>
                 </div>
-                <label class="switch-toggle">
-                    <input type="checkbox" id="clUidChecking" checked onchange="toggleUidDesc()">
-                    <span></span>
+                <label style="position:relative; display:inline-block; width:42px; height:22px;">
+                    <input type="checkbox" id="clUidChecking" checked onchange="toggleUidDesc()" style="opacity:0;width:0;height:0;">
+                    <span style="position:absolute;cursor:pointer;inset:0;background:#334155;transition:.4s;border-radius:22px;"></span>
+                    <span style="position:absolute;content:'';height:16px;width:16px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%;"></span>
                 </label>
             </div>
             <div class="form-group">
@@ -1068,7 +863,7 @@
                 <h3><svg><use href="#icon-dollar"/></svg> Choose Your Plan</h3>
                 <button class="modal-close-btn" onclick="closePlansModal()">✕</button>
             </div>
-            <div style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; text-align:center; font-weight:500;">Swipe sideways to browse plans.</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px; text-align:center; font-weight:500;">Swipe sideways to browse plans.</div>
             <div class="plans-carousel-wrap">
                 <div class="plans-carousel" id="plansCarousel">
                     <p style="color:var(--text-muted); font-size:14px; text-align:center; padding:40px; width:100%;">Loading plans...</p>
@@ -1096,7 +891,7 @@
             <button onclick="createUserShortLink()" class="btn-primary" style="margin-bottom:20px;">
                 <span>Create Short Link</span>
             </button>
-            <div style="border-top:1px solid var(--border-subtle); padding-top:16px;">
+            <div style="border-top:1px solid var(--border-color); padding-top:16px;">
                 <h4 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:200px; overflow-y:auto; font-size:13px;">Loading...</div>
             </div>
@@ -1121,7 +916,7 @@
                 <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
                 <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
             </div>
-            <div style="font-size:14px; color:var(--text-secondary); line-height:1.7;">
+            <div style="font-size:14px; color:var(--text-muted); line-height:1.7;">
                 <p style="margin-bottom:12px;"><strong>1. Account Integrity</strong><br>Users must register via Email OTP. Each link is private and exclusively managed by its owner.</p>
                 <p style="margin-bottom:12px;"><strong>2. Link Ownership</strong><br>All links you create are permanently associated with your account.</p>
                 <p style="margin-bottom:12px;"><strong>3. Plan Expiry</strong><br>When plan expires, all your links become inactive immediately. Renew to continue.</p>
@@ -1253,14 +1048,14 @@
             localStorage.removeItem('activeUserSession');
             localStorage.removeItem('userActiveLinkId');
             document.body.innerHTML = `
-                <div style="position:fixed; inset:0; background:#070a12; display:flex; align-items:center; justify-content:center; padding:20px; z-index:99999; font-family:'Plus Jakarta Sans',sans-serif;">
-                    <div style="background:#101623; border:1px solid rgba(239,68,68,0.3); border-radius:24px; padding:36px 28px; max-width:420px; width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
-                        <div style="width:80px; height:80px; margin:0 auto 20px; border-radius:24px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); display:flex; align-items:center; justify-content:center; color:#f87171;">
+                <div style="position:fixed; inset:0; background:#0b1120; display:flex; align-items:center; justify-content:center; padding:20px; z-index:99999; font-family:'Plus Jakarta Sans',sans-serif;">
+                    <div style="background:#1e293b; border:1px solid rgba(239,68,68,0.3); border-radius:20px; padding:36px 28px; max-width:420px; width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+                        <div style="width:80px; height:80px; margin:0 auto 20px; border-radius:16px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); display:flex; align-items:center; justify-content:center; color:#f87171;">
                             <svg style="width:36px;height:36px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         </div>
                         <div style="font-size:22px; font-weight:800; color:#ef4444; margin-bottom:10px;">Account Removed</div>
                         <div style="font-size:14px; color:#94a3b8; line-height:1.6; margin-bottom:24px;">Your account has been removed by the administrator.</div>
-                        <button onclick="localStorage.clear(); window.location.reload();" style="padding:14px 28px; border:none; border-radius:12px; background:linear-gradient(135deg, #4f46e5, #6366f1); color:#fff; font-size:14px; font-weight:700; cursor:pointer; width:100%; transition:0.2s;">Return to Login</button>
+                        <button onclick="localStorage.clear(); window.location.reload();" style="padding:14px 28px; border:none; border-radius:10px; background:#3b82f6; color:#fff; font-size:14px; font-weight:700; cursor:pointer; width:100%; transition:0.2s;">Return to Login</button>
                     </div>
                 </div>
             `;
@@ -1277,19 +1072,9 @@
                     }
                 } catch(e) { localStorage.removeItem('activeUserSession'); }
             }
-            hideHamburger();
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('dashboardSection').style.display = 'none';
             switchAuthTab('signin');
-        }
-
-        function hideHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'none'; toggleSidebar(false); }
-        function showHamburger() { const b = document.getElementById('btnHamburger'); if (b) b.style.display = 'flex'; }
-
-        function toggleSidebar(open) {
-            const sb = document.getElementById('sidebarDrawer'); const ov = document.getElementById('sidebarOverlay');
-            if (open) { if (sb) sb.classList.add('show'); if (ov) ov.classList.add('show'); }
-            else { if (sb) sb.classList.remove('show'); if (ov) ov.classList.remove('show'); }
         }
 
         async function refreshPricingData() {
@@ -1532,7 +1317,7 @@
                     clearInterval(resendCountdownInterval);
                     resendCountdownInterval = null;
                     btn.disabled = false;
-                    btn.style.color = 'var(--primary-light)';
+                    btn.style.color = 'var(--primary)';
                     btn.innerHTML = '🔄 Resend OTP';
                 }
             }, 1000);
@@ -1618,7 +1403,6 @@
                     (email ? '<span style="color:#64748b;font-size:13px;margin-top:8px;display:inline-block;">' + escapeHTML(email) + '</span><br>' : '') +
                     '<span style="color:#94a3b8;font-size:13px;margin-top:8px;display:inline-block;">Time remaining: ~' + hoursRemaining + ' hour' + (hoursRemaining === 1 ? '' : 's') + '</span>';
             }
-            hideHamburger();
             document.getElementById('navUserBadge').style.display = 'none';
         }
 
@@ -1626,11 +1410,8 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             document.getElementById('navUserBadge').style.display = 'flex';
-            showHamburger();
             document.getElementById('navUserName').textContent = userProfile.name || 'User';
             document.getElementById('labelUserName').textContent = userProfile.name || 'User';
-            document.getElementById('sbUserName').textContent = userProfile.name || 'User';
-            document.getElementById('sbUserAvatar').textContent = (userProfile.name || 'U').charAt(0).toUpperCase();
             fetchUserLinkData();
         }
 
@@ -1681,7 +1462,6 @@
         }
 
         async function openCreateLinkModal() {
-            toggleSidebar(false);
             if (!currentPlanUsage) return showToast('Loading plan info. Please wait...', 'info');
             var planKey = currentPlanUsage.planKey;
             var planIsExpired = currentPlanUsage.planIsExpired;
@@ -1754,7 +1534,6 @@
                         localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
                         document.getElementById('labelUserName').textContent = userProfile.name;
                         document.getElementById('navUserName').textContent = userProfile.name;
-                        document.getElementById('sbUserName').textContent = userProfile.name;
                     }
                     closeCreateLinkModal();
                     notify('Link "<strong>' + result.data.link.linkName + '</strong>" created successfully!', 'Link Created', 'success');
@@ -1777,7 +1556,6 @@
         }
 
         async function openPlansModal() {
-            toggleSidebar(false);
             document.getElementById('plansModal').classList.add('active');
             document.getElementById('plansCarousel').innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center; padding:40px; width:100%;">Loading plans...</p>';
             await refreshPricingData();
@@ -1785,11 +1563,10 @@
         }
         function closePlansModal() { document.getElementById('plansModal').classList.remove('active'); }
 
-        function openMyPlanModal() { toggleSidebar(false); document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
+        function openMyPlanModal() { document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
         function closeMyPlanModal() { document.getElementById('myPlanModal').classList.remove('active'); }
 
         function openShortenerModal() {
-            toggleSidebar(false);
             var activeCount = (myLinksList && myLinksList.length) ? myLinksList.length : 0;
             if (activeCount < 3) openLockModal(activeCount);
             else { document.getElementById('shortenerModal').classList.add('active'); loadUserShortLinks(); }
@@ -1797,11 +1574,10 @@
         function closeShortenerModal() { document.getElementById('shortenerModal').classList.remove('active'); }
 
         function openLockModal(count) {
-            var pct = Math.min(100, Math.round((count / 3) * 100));
             notify('You need at least <strong>3 active links</strong> to unlock the URL Shortener feature.', 'Feature Locked', 'warning');
         }
 
-        function openTermsModal(e) { if (e) e.preventDefault(); toggleSidebar(false); document.getElementById('termsModal').classList.add('active'); }
+        function openTermsModal(e) { if (e) e.preventDefault(); document.getElementById('termsModal').classList.add('active'); }
         function closeTermsModal() { document.getElementById('termsModal').classList.remove('active'); }
 
         async function openActivateFreePlan() {
@@ -1877,8 +1653,6 @@
                     document.getElementById('btnDeleteLink').disabled = true;
                     document.getElementById('btnCopyLink').disabled = true;
                 }
-                var cnt = document.getElementById('menuLinkCount');
-                if (cnt) cnt.textContent = myLinksList.length;
             } catch (err) {
                 document.getElementById('displayLinkId').textContent = 'Offline';
                 document.getElementById('displayLinkName').textContent = 'Connection error';
@@ -1935,7 +1709,6 @@
             var card = document.getElementById('planDaysCard');
             if (!pu.planStartDate || !pu.planExpiryDate || pu.lifetimeUnlimited) { card.style.display = 'none'; return; }
             card.style.display = 'block';
-            card.classList.remove('warn', 'danger');
             var daysLeft = pu.planDaysLeft || 0;
             var progressPct = pu.planProgressPct || 0;
             var valueEl = document.getElementById('planDaysValue');
@@ -1943,8 +1716,8 @@
             valueEl.textContent = daysLeft + ' Day' + (daysLeft === 1 ? '' : 's') + ' Left';
             barEl.style.width = progressPct + '%';
             barEl.className = 'plan-days-bar-fill';
-            if (daysLeft <= 2) { card.classList.add('danger'); barEl.classList.add('danger'); }
-            else if (daysLeft <= 5) { card.classList.add('warn'); barEl.classList.add('warn'); }
+            if (daysLeft <= 2) barEl.classList.add('danger');
+            else if (daysLeft <= 5) barEl.classList.add('warn');
             document.getElementById('planStartDate').textContent = pu.planStartDate ? new Date(pu.planStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--';
             document.getElementById('planExpiryDate').textContent = pu.planExpiryDate ? new Date(pu.planExpiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '--';
         }
@@ -1969,9 +1742,9 @@
             var pu = currentPlanUsage;
             var hasNoPlan = pu.planKey === 'no-plan' || pu.planIsExpired || pu.planKey === 'none' || !pu.planKey;
             if (hasNoPlan) {
-                el.innerHTML = '<div style="background:var(--surface-2); border:1px solid var(--border-strong); border-radius:16px; padding:24px; margin-bottom:16px; text-align:center;">' +
+                el.innerHTML = '<div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:16px; padding:24px; margin-bottom:16px; text-align:center;">' +
                     '<div style="font-size:20px; font-weight:800; color:#fff; margin-bottom:10px;">No Active Plan</div>' +
-                    '<div style="font-size:14px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px;">Activate a plan to start creating links.</div>' +
+                    '<div style="font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:20px;">Activate a plan to start creating links.</div>' +
                     '<button onclick="closeMyPlanModal(); openPlansModal();" class="btn-primary" style="padding:14px;">Activate Plan</button></div>';
                 return;
             }
@@ -1981,25 +1754,25 @@
             var featuresHtml = '';
             if (Array.isArray(pu.features) && pu.features.length) {
                 featuresHtml = '<ul style="list-style:none; padding:0; margin:16px 0 0;">' +
-                    pu.features.map(function(f) { return '<li style="padding:8px 0; color:var(--text-secondary); font-size:13px; display:flex; align-items:flex-start; gap:10px;"><span style="color:#10b981; font-weight:800;">•</span> <span>' + f + '</span></li>'; }).join('') +
+                    pu.features.map(function(f) { return '<li style="padding:8px 0; color:var(--text-muted); font-size:13px; display:flex; align-items:flex-start; gap:10px;"><span style="color:#10b981; font-weight:800;">•</span> <span>' + f + '</span></li>'; }).join('') +
                     '</ul>';
             }
-            var cardBg = 'var(--surface-2)';
-            var cardBorder = 'rgba(99,102,241,0.3)';
-            if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.1), var(--surface-2))'; cardBorder = 'rgba(245,158,11,0.4)'; }
+            var cardBg = 'var(--bg-input)';
+            var cardBorder = 'var(--border-color)';
+            if (isVip) { cardBg = 'rgba(245,158,11,0.05)'; cardBorder = 'rgba(245,158,11,0.3)'; }
             var daysLeftText = isVip ? 'Lifetime' : ((pu.durationDays || 0) + ' Days (' + (pu.planDaysLeft || 0) + ' left)');
             
             el.innerHTML = '<div style="background:' + cardBg + '; border:1px solid ' + cardBorder + '; border-radius:16px; padding:24px; margin-bottom:16px;">' +
-                '<div style="font-size:12px; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Current Plan</div>' +
+                '<div style="font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Current Plan</div>' +
                 '<div style="font-size:24px; font-weight:800; color:#fff; margin-top:6px;">' + (pu.planName || 'Free Trial') + '</div>' +
-                '<div style="font-size:13px; color:var(--text-secondary); margin-top:8px;">Duration: <b style="color:#fff;">' + daysLeftText + '</b>' + (!isVip ? ' • Price: <b style="color:#38bdf8;">₹' + (pu.price || 0) + '</b>' : '') + '</div>' +
+                '<div style="font-size:13px; color:var(--text-muted); margin-top:8px;">Duration: <b style="color:#fff;">' + daysLeftText + '</b>' + (!isVip ? ' • Price: <b style="color:#60a5fa;">₹' + (pu.price || 0) + '</b>' : '') + '</div>' +
                 featuresHtml + '</div>' +
-                '<div style="background:var(--surface-2); border:1px solid var(--border-strong); border-radius:16px; padding:20px;">' +
-                '<div style="font-size:12px; color:var(--text-secondary); font-weight:700; text-transform:uppercase; margin-bottom:16px; letter-spacing:0.5px;">Usage Summary</div>' +
-                '<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-subtle);"><span style="color:var(--text-secondary); font-size:14px;">Links Used</span><span style="color:#fff; font-weight:700;">' + (pu.linksUsed || 0) + ' / ' + linksLimitText + '</span></div>' +
-                '<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-subtle);"><span style="color:var(--text-secondary); font-size:14px;">Visitors Used</span><span style="color:#fff; font-weight:700;">' + (pu.visitorsUsed || 0) + ' / ' + visitorLimitText + '</span></div>' +
-                '<div style="display:flex; justify-content:space-between; padding:10px 0;"><span style="color:var(--text-secondary); font-size:14px;">Claims Used</span><span style="color:#fff; font-weight:700;">' + (pu.claimsUsed || 0) + '</span></div></div>' +
-                (isVip ? '<div style="margin-top:16px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:16px; text-align:center;"><div style="font-size:14px; font-weight:800; color:#fbbf24;">Lifetime Unlimited access!</div><div style="font-size:12px; color:var(--text-secondary); margin-top:6px;">No renewal needed.</div></div>' : '<button style="margin-top:20px;" class="btn-primary" onclick="closeMyPlanModal(); openPlansModal();"><span>View Plans & Upgrade</span></button>');
+                '<div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:16px; padding:20px;">' +
+                '<div style="font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:16px; letter-spacing:0.5px;">Usage Summary</div>' +
+                '<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color);"><span style="color:var(--text-muted); font-size:14px;">Links Used</span><span style="color:#fff; font-weight:700;">' + (pu.linksUsed || 0) + ' / ' + linksLimitText + '</span></div>' +
+                '<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-color);"><span style="color:var(--text-muted); font-size:14px;">Visitors Used</span><span style="color:#fff; font-weight:700;">' + (pu.visitorsUsed || 0) + ' / ' + visitorLimitText + '</span></div>' +
+                '<div style="display:flex; justify-content:space-between; padding:10px 0;"><span style="color:var(--text-muted); font-size:14px;">Claims Used</span><span style="color:#fff; font-weight:700;">' + (pu.claimsUsed || 0) + '</span></div></div>' +
+                (isVip ? '<div style="margin-top:16px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:16px; text-align:center;"><div style="font-size:14px; font-weight:800; color:#fbbf24;">Lifetime Unlimited access!</div><div style="font-size:12px; color:var(--text-muted); margin-top:6px;">No renewal needed.</div></div>' : '<button style="margin-top:20px;" class="btn-primary" onclick="closeMyPlanModal(); openPlansModal();"><span>View Plans & Upgrade</span></button>');
         }
 
         function renderPlansList() {
@@ -2027,7 +1800,7 @@
                 return true;
             });
             if (isLifetimeUnlimited || plansToShow.length === 0) {
-                container.innerHTML = '<div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;"><div style="font-size: 22px; font-weight: 800; color: #fbbf24; margin-bottom: 10px;">Lifetime Unlimited Active</div><div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">You have the highest plan available. No upgrade or renewal needed.</div></div>';
+                container.innerHTML = '<div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;"><div style="font-size: 22px; font-weight: 800; color: #fbbf24; margin-bottom: 10px;">Lifetime Unlimited Active</div><div style="font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 400px; margin: 0 auto;">You have the highest plan available. No upgrade or renewal needed.</div></div>';
                 footer.innerHTML = '';
                 return;
             }
@@ -2076,30 +1849,30 @@
             var planIsExpired = currentPlanUsage && currentPlanUsage.planIsExpired === true;
             var isOwned = currentPlanKey === activePlan.key && !planIsExpired;
             if (isOwned) {
-                footer.innerHTML = '<div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:20px; text-align:center;"><div style="font-size:15px; font-weight:800; color:#34d399;">This is your Current Plan</div><div style="font-size:12px; color:var(--text-secondary); margin-top:6px;">Choose a higher plan to upgrade.</div></div>';
+                footer.innerHTML = '<div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:20px; text-align:center;"><div style="font-size:15px; font-weight:800; color:#34d399;">This is your Current Plan</div><div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Choose a higher plan to upgrade.</div></div>';
                 return;
             }
             var paymentHtml = '';
             if (showUpiToUser && p.price > 0) {
                 var upiString = 'upi://pay?pa=' + encodeURIComponent(activeAdminUpi) + '&pn=LinkForge&am=' + p.price + '&cu=INR';
                 var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' + encodeURIComponent(upiString);
-                paymentHtml = '<div style="background:var(--surface-2); border:1px solid var(--border-strong); border-radius:16px; padding:20px; margin-bottom:16px; text-align:center;">' +
-                    '<div style="margin-bottom:16px;"><img src="' + qrUrl + '" alt="Payment QR" style="width:160px; height:160px; background:#fff; padding:12px; border-radius:16px; display:inline-block;"><div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-top:10px;">Scan to Pay ₹' + p.price + '</div></div>' +
+                paymentHtml = '<div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:16px; padding:20px; margin-bottom:16px; text-align:center;">' +
+                    '<div style="margin-bottom:16px;"><img src="' + qrUrl + '" alt="Payment QR" style="width:160px; height:160px; background:#fff; padding:12px; border-radius:12px; display:inline-block;"><div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-top:10px;">Scan to Pay ₹' + p.price + '</div></div>' +
                     '<div style="font-size:15px; font-weight:800; color:#fff; margin-bottom:12px;">Complete Your Payment</div>' +
-                    '<div style="display:inline-flex; align-items:center; gap:8px; background:var(--bg-base); border:1px solid var(--border-strong); padding:10px 16px; border-radius:12px; font-size:13px; font-weight:700; color:var(--accent-cyan); margin-bottom:16px; cursor:pointer;" onclick="copyUpiText()"><span>UPI: <strong>' + activeAdminUpi + '</strong></span></div>' +
-                    '<div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.6;">Pay <strong style="color:#38bdf8;">₹' + p.price + '</strong> then send screenshot on WhatsApp.</div>' +
-                    '<button onclick="requestAdminRenewal()" class="btn-primary" style="background:linear-gradient(135deg, #10b981, #059669); box-shadow:0 10px 25px rgba(16,185,129,0.4);">Send Screenshot on WhatsApp</button></div>';
+                    '<div style="display:inline-flex; align-items:center; gap:8px; background:var(--bg-panel); border:1px solid var(--border-color); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; color:#38bdf8; margin-bottom:16px; cursor:pointer;" onclick="copyUpiText()"><span>UPI: <strong>' + activeAdminUpi + '</strong></span></div>' +
+                    '<div style="font-size:12px; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">Pay <strong style="color:#60a5fa;">₹' + p.price + '</strong> then send screenshot on WhatsApp.</div>' +
+                    '<button onclick="requestAdminRenewal()" class="btn-primary" style="background:#10b981; box-shadow:0 8px 20px rgba(16,185,129,0.3);">Send Screenshot on WhatsApp</button></div>';
             } else if (p.price === 0) {
                 var freeTrialUsed = currentPlanUsage && currentPlanUsage.freeTrialUsed === true;
                 if (freeTrialUsed) {
                     paymentHtml = '<div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:20px; text-align:center;"><div style="font-size:14px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>';
                 } else {
-                    paymentHtml = '<button onclick="closePlansModal(); openActivateFreePlan();" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 10px 25px rgba(16,185,129,0.4);">Activate Free Trial</button>';
+                    paymentHtml = '<button onclick="closePlansModal(); openActivateFreePlan();" class="btn-primary" style="background:#10b981; box-shadow:0 8px 20px rgba(16,185,129,0.3);">Activate Free Trial</button>';
                 }
             } else {
-                paymentHtml = '<button onclick="requestAdminRenewal()" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 10px 25px rgba(16,185,129,0.4);">Contact Admin on WhatsApp</button>';
+                paymentHtml = '<button onclick="requestAdminRenewal()" class="btn-primary" style="background:#10b981; box-shadow:0 8px 20px rgba(16,185,129,0.3);">Contact Admin on WhatsApp</button>';
             }
-            footer.innerHTML = '<div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.3); border-radius:12px; padding:14px; margin-bottom:20px; text-align:center; font-size:13px; color:var(--text-secondary);">Selected: <strong style="color:#fff;">' + p.name + ' - ' + p.durationDays + ' Days</strong> • Amount: <strong style="color:#38bdf8;">₹' + p.price + '</strong></div>' + paymentHtml;
+            footer.innerHTML = '<div style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:14px; margin-bottom:20px; text-align:center; font-size:13px; color:var(--text-muted);">Selected: <strong style="color:#fff;">' + p.name + ' - ' + p.durationDays + ' Days</strong> • Amount: <strong style="color:#60a5fa;">₹' + p.price + '</strong></div>' + paymentHtml;
         }
 
         function pickDynamicPlan(key) {
@@ -2172,27 +1945,21 @@
                 var datePretty = new Date(currentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 filterLabel.textContent = datePretty + ' Visits';
                 document.getElementById('lblFilteredClaims').textContent = datePretty + ' Claims';
-                subFilterLabel.textContent = 'Filtered';
             } else if (currentDateFilter === 'yesterday') {
                 filterLabel.textContent = "Yesterday Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Yesterday Claims";
-                subFilterLabel.textContent = "Unique";
             } else if (currentDateFilter === '7days') {
                 filterLabel.textContent = "Last 7 Days Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Last 7 Days Claims";
-                subFilterLabel.textContent = "Aggregate";
             } else if (currentDateFilter === '30days') {
                 filterLabel.textContent = "Last 30 Days Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Last 30 Days Claims";
-                subFilterLabel.textContent = "Aggregate";
             } else if (currentDateFilter === 'all') {
                 filterLabel.textContent = "All Time Visits";
                 document.getElementById('lblFilteredClaims').textContent = "All Time Claims";
-                subFilterLabel.textContent = "Lifetime";
             } else {
                 filterLabel.textContent = "Today Visits";
                 document.getElementById('lblFilteredClaims').textContent = "Today Claims";
-                subFilterLabel.textContent = "Unique in 48h";
             }
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
             var badge = document.getElementById('badgeExpiry');
@@ -2265,7 +2032,7 @@
                     tbody.innerHTML = past.map(function(record) {
                         var dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         var statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
-                        return '<tr style="border-bottom:1px solid var(--border-subtle);"><td style="padding:12px 16px; color:var(--text-secondary); font-weight:500;">' + dateStr + '</td><td style="padding:12px 16px; color:var(--text-secondary);"><strong style="color:#fff;">' + (record.plan || '').toUpperCase() + '</strong></td><td style="padding:12px 16px; color:var(--text-secondary);">₹' + (record.amount || 0) + '</td><td style="padding:12px 16px; color:var(--text-secondary);"><span class="badge-status ' + statusClass + '">' + (record.status || '').toUpperCase() + '</span></td></tr>';
+                        return '<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:12px 16px; color:var(--text-muted); font-weight:500;">' + dateStr + '</td><td style="padding:12px 16px; color:var(--text-muted);"><strong style="color:#fff;">' + (record.plan || '').toUpperCase() + '</strong></td><td style="padding:12px 16px; color:var(--text-muted);">₹' + (record.amount || 0) + '</td><td style="padding:12px 16px; color:var(--text-muted);"><span class="badge-status ' + statusClass + '">' + (record.status || '').toUpperCase() + '</span></td></tr>';
                     }).join('');
                 }
             } catch(e) {}
@@ -2281,9 +2048,9 @@
                 var links = data.links || [];
                 if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:13px;">No short links yet.</p>';
                 c.innerHTML = links.map(function(l) {
-                    return '<div style="background:var(--bg-base); padding:14px; margin-bottom:10px; border-radius:12px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">' +
-                        '<div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (l.title || 'Untitled') + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;word-break:break-all;"><b>' + window.location.origin + '/s/' + l.code + '</b> | Clicks: <b style="color:var(--accent-cyan);">' + (l.visits || 0) + '</b></div></div>' +
-                        '<div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="navigator.clipboard.writeText(\'' + window.location.origin + '/s/' + l.code + '\').then(function(){showToast(\'Copied!\',\'success\');})" style="padding:8px 14px;font-size:12px;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;color:#fff;cursor:pointer;font-weight:600;transition:0.2s;">Copy</button><button onclick="deleteUserShortLink(\'' + l._id + '\')" style="padding:8px 14px;font-size:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#f87171;cursor:pointer;font-weight:600;transition:0.2s;">Delete</button></div></div>';
+                    return '<div style="background:var(--bg-panel); padding:14px; margin-bottom:10px; border-radius:12px; border:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">' +
+                        '<div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (l.title || 'Untitled') + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;word-break:break-all;"><b>' + window.location.origin + '/s/' + l.code + '</b> | Clicks: <b style="color:#60a5fa;">' + (l.visits || 0) + '</b></div></div>' +
+                        '<div style="display:flex;gap:8px;flex-shrink:0;"><button onclick="navigator.clipboard.writeText(\'' + window.location.origin + '/s/' + l.code + '\').then(function(){showToast(\'Copied!\',\'success\');})" style="padding:8px 14px;font-size:12px;background:var(--bg-input);border:1px solid var(--border-color);border-radius:8px;color:#fff;cursor:pointer;font-weight:600;transition:0.2s;">Copy</button><button onclick="deleteUserShortLink(\'' + l._id + '\')" style="padding:8px 14px;font-size:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#f87171;cursor:pointer;font-weight:600;transition:0.2s;">Delete</button></div></div>';
                 }).join('');
             } catch(e) { c.innerHTML = '<p style="color:#94a3b8;font-size:13px;">Failed to load.</p>'; }
         }
