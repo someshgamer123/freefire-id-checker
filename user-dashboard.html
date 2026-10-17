@@ -81,16 +81,18 @@
             transition: all 0.3s ease;
         }
         .nav-left { display: flex; align-items: center; gap: 14px; }
+        
+        /* ✅ Fixed Menu Button Visible */
         .btn-menu-toggle {
             width: 42px; height: 42px;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: 10px;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             gap: 5px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
             padding: 0;
         }
-        .btn-menu-toggle:hover { border-color: var(--primary); }
+        .btn-menu-toggle:hover { border-color: var(--primary); background: var(--bg-input); }
         .btn-menu-toggle:active { transform: scale(0.92); }
         .btn-menu-toggle .line { display: block; height: 2px; background: #fff; border-radius: 3px; transition: 0.2s; }
         .btn-menu-toggle .line.l1 { width: 18px; }
@@ -132,22 +134,75 @@
         .user-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
 
-        /* ============ MAIN CONTENT ============ */
-        .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; width: 100%; flex: 1; }
+        /* ============ SIDEBAR ============ */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(11, 17, 32, 0.8); backdrop-filter: blur(4px);
+            z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.show { display: block; opacity: 1; pointer-events: auto; }
+        
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: 280px; height: 100vh;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            z-index: 9999; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
+            padding: 24px 20px;
+            box-shadow: 10px 0 40px rgba(0,0,0,0.5);
+        }
+        .sidebar.show { transform: translateX(0); }
+        
+        .sidebar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-header h2 { font-size: 16px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .sidebar-header h2 .svg-icon { width: 20px; height: 20px; color: var(--primary); }
+        
+        .sidebar-close {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            width: 32px; height: 32px; border-radius: 8px;
+            color: var(--text-muted); font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .sidebar-close:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        
+        .sidebar-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+        .sidebar-btn {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; border-radius: 10px;
+            background: transparent; color: var(--text-muted);
+            font-size: 14px; font-weight: 600;
+            border: 1px solid transparent; cursor: pointer;
+            transition: 0.2s; text-align: left; width: 100%;
+        }
+        .sidebar-btn:hover { background: var(--bg-input); color: var(--text-main); }
+        .sidebar-btn .svg-icon { width: 20px; height: 20px; }
 
-        /* ============ AUTH SCREEN ============ */
+        /* ============ MAIN CONTENT ============ */
+        .content-wrap { max-width: 900px; margin: 24px auto 0; padding: 0 16px; position: relative; z-index: 1; width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+        /* ============ AUTH SCREEN (Fitted) ============ */
         .auth-screen {
-            max-width: 440px;
-            margin: 40px auto 20px;
+            width: 100%;
+            max-width: 420px;
+            margin: auto;
             padding: 0 16px;
             position: relative;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .auth-card {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 36px 28px;
+            padding: 30px 24px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
             text-align: center;
             position: relative;
@@ -213,16 +268,16 @@
         .btn-verify:hover { background: #059669; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
 
         /* OTP Boxes */
-        .otp-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; position: relative; z-index: 1; }
+        .otp-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; position: relative; z-index: 1; }
         .otp-box {
-            width: 48px; height: 56px; background: var(--bg-input); border: 1px solid var(--border-color);
-            border-radius: 10px; color: #fff; font-size: 24px; font-weight: 800;
+            width: 45px; height: 52px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 10px; color: #fff; font-size: 22px; font-weight: 800;
             text-align: center; outline: none; transition: all 0.2s ease;
         }
         .otp-box:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); background: var(--bg-panel); transform: translateY(-2px); }
 
         /* Pending View */
-        .pending-screen { display: none; text-align: center; padding: 20px 0; position: relative; z-index: 1; }
+        .pending-screen { display: none; text-align: center; padding: 10px 0; position: relative; z-index: 1; }
         .pending-icon {
             width: 80px; height: 80px; margin: 0 auto 20px;
             border-radius: 20px; background: rgba(245, 158, 11, 0.1);
@@ -246,8 +301,8 @@
         .btn-secondary:hover { background: var(--border-color); }
 
         /* ============ DASHBOARD STYLES ============ */
-        #dashboardSection { display: none; }
-        #authSection { display: none; }
+        #dashboardSection { display: none; width: 100%; }
+        #authSection { display: none; width: 100%; }
 
         .welcome-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
         .welcome-title h2 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
@@ -363,8 +418,11 @@
         .custom-date-row label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
         .custom-date-row input[type="date"] { flex: 1; min-width: 130px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; transition: 0.2s; }
         .custom-date-row input[type="date"]:focus { border-color: var(--primary); }
-        .custom-date-apply-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        
+        /* ✅ FIXED: Apply Custom Range Button Size */
+        .custom-date-apply-btn { width: auto; min-width: 200px; padding: 10px 20px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; align-self: flex-start; }
         .custom-date-apply-btn:hover { background: var(--primary-hover); }
+        .custom-date-apply-btn svg { width: 16px; height: 16px; }
 
         /* Timeline */
         .timeline-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
@@ -429,6 +487,7 @@
         .plan-card-price .price-amount { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
         .plan-card-price .price-free { font-size: 28px; font-weight: 800; color: var(--success); line-height: 1; }
         .plan-card-price-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+        .plan-card-duration { font-size: 13px; color: #38bdf8; font-weight: 600; margin-top: 4px; }
         
         .plan-card-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; }
         .plan-card-btn:hover { background: var(--bg-panel); }
@@ -446,6 +505,14 @@
         .form-control { width: 100%; padding: 14px 16px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; outline: none; transition: 0.2s; }
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         
+        /* ✅ Fixed UID Toggle Switch */
+        .uid-toggle-wrapper { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .uid-toggle-wrapper input { opacity: 0; width: 0; height: 0; }
+        .uid-toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: #334155; transition: .4s; border-radius: 24px; border: 1px solid var(--border-color); }
+        .uid-toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .uid-toggle-wrapper input:checked + .uid-toggle-slider { background-color: var(--primary); border-color: var(--primary); }
+        .uid-toggle-wrapper input:checked + .uid-toggle-slider:before { transform: translateX(22px); }
+
         /* Custom Dialogs */
         .custom-dialog-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(11, 17, 32, 0.85); backdrop-filter: blur(8px); z-index: 26000; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: 0.2s; }
         .custom-dialog-overlay.active { display: flex; opacity: 1; }
@@ -482,9 +549,9 @@
         .toast-notification.info svg { color: #60a5fa; }
 
         @media (max-width: 480px) {
-            .auth-card { padding: 28px 20px; }
+            .auth-card { padding: 24px 20px; }
             .auth-title { font-size: 22px; }
-            .otp-box { width: 42px; height: 50px; font-size: 20px; }
+            .otp-box { width: 40px; height: 48px; font-size: 20px; }
             .stats-row { grid-template-columns: 1fr; }
         }
     </style>
@@ -496,9 +563,6 @@
         <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
         <symbol id="icon-crown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18l-2-11-5 5-2-7-2 7-5-5z" fill="currentColor" stroke="none"/><rect x="4" y="18" width="16" height="2" rx="0.5" fill="currentColor" stroke="none"/></symbol>
         <symbol id="icon-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
-        <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
-        <symbol id="icon-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
-        <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
         <symbol id="icon-log-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
         <symbol id="icon-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
         <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
@@ -508,8 +572,6 @@
         <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
         <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></symbol>
         <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
-        <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
-        <symbol id="icon-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></symbol>
         <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="icon-dollar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
         <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
@@ -523,9 +585,43 @@
         <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
     </svg>
 
+    <!-- SIDEBAR OVERLAY & MENU -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><span class="svg-icon"><svg><use href="#icon-flash"/></svg></span> Menu</h2>
+            <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
+        </div>
+        <div class="sidebar-menu">
+            <button class="sidebar-btn" onclick="closeSidebarAndScroll('dashboardSection')">
+                <span class="svg-icon"><svg><use href="#icon-user"/></svg></span> Dashboard
+            </button>
+            <button class="sidebar-btn" onclick="closeSidebarAndScroll('planDaysCard')">
+                <span class="svg-icon"><svg><use href="#icon-crown"/></svg></span> My Plan
+            </button>
+            <button class="sidebar-btn" onclick="closeSidebarAndScroll('linkSelectorCard')">
+                <span class="svg-icon"><svg><use href="#icon-link"/></svg></span> My Links
+            </button>
+            <button class="sidebar-btn" onclick="closeSidebarAndScroll('dateFilterBox')">
+                <span class="svg-icon"><svg><use href="#icon-filter"/></svg></span> Filter Stats
+            </button>
+        </div>
+        <div style="padding-top:20px;border-top:1px solid var(--border-color);margin-top:auto;">
+            <button class="btn-secondary" style="color: var(--danger); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="performLogout()">
+                <span class="svg-icon" style="width:18px;height:18px;"><svg><use href="#icon-log-out"/></svg></span> Logout
+            </button>
+        </div>
+    </aside>
+
     <!-- NAVBAR -->
     <header class="top-navbar">
         <div class="nav-left">
+            <!-- ✅ Fixed Menu Button added here -->
+            <button class="btn-menu-toggle" onclick="toggleSidebar(true)" title="Menu">
+                <span class="line l1"></span>
+                <span class="line l2"></span>
+                <span class="line l3"></span>
+            </button>
             <a href="#" class="navbar-brand">
                 <div class="brand-badge-icon"><svg><use href="#icon-flash"/></svg></div>
                 <div>
@@ -614,7 +710,7 @@
 
         <!-- DASHBOARD SECTION -->
         <div id="dashboardSection" class="animate-entry">
-            <div class="welcome-header">
+            <div class="welcome-header" id="dashboardSection">
                 <div class="welcome-title">
                     <h2>Welcome, <span id="labelUserName">User</span></h2>
                     <p>Manage your links, track performance, and grow your reach</p>
@@ -651,7 +747,7 @@
                 </div>
             </div>
 
-            <div class="link-selector-card">
+            <div class="link-selector-card" id="linkSelectorCard">
                 <div class="link-info-box">
                     <div class="link-title-badge">
                         <svg><use href="#icon-link"/></svg>
@@ -687,7 +783,7 @@
                 </div>
             </div>
 
-            <div class="date-filter-box">
+            <div class="date-filter-box" id="dateFilterBox">
                 <div class="date-filter-header">
                     <div class="date-filter-label">
                         <svg><use href="#icon-filter"/></svg>
@@ -744,6 +840,7 @@
                         <label>To:</label>
                         <input type="date" id="customEndDateInput">
                     </div>
+                    <!-- ✅ Fixed button size -->
                     <button class="custom-date-apply-btn" onclick="applyCustomDateRange()">
                         <svg><use href="#icon-check"/></svg> Apply Custom Range
                     </button>
@@ -821,6 +918,8 @@
                 <label class="form-label">Headline</label>
                 <input type="text" id="clHeadline" class="form-control" placeholder="Watch Video & Unlock Reward" value="Watch Video & Unlock Reward" maxlength="150">
             </div>
+            
+            <!-- ✅ Fixed UID Toggle Switch -->
             <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div>
                     <div style="font-size:14px; font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
@@ -828,12 +927,12 @@
                     </div>
                     <div id="uidToggleDesc" style="font-size:12px; color:var(--text-muted); margin-top:4px;">ON — Visitors must enter UID first</div>
                 </div>
-                <label style="position:relative; display:inline-block; width:42px; height:22px;">
-                    <input type="checkbox" id="clUidChecking" checked onchange="toggleUidDesc()" style="opacity:0;width:0;height:0;">
-                    <span style="position:absolute;cursor:pointer;inset:0;background:#334155;transition:.4s;border-radius:22px;"></span>
-                    <span style="position:absolute;content:'';height:16px;width:16px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%;"></span>
+                <label class="uid-toggle-wrapper">
+                    <input type="checkbox" id="clUidChecking" checked onchange="toggleUidDesc()">
+                    <span class="uid-toggle-slider"></span>
                 </label>
             </div>
+
             <div class="form-group">
                 <label class="form-label">Popup Title</label>
                 <input type="text" id="clPopTitle" class="form-control" placeholder="Claim Your Reward" value="Claim Your Reward" maxlength="100">
@@ -895,35 +994,6 @@
                 <h4 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#fff;">Your Active Short Links:</h4>
                 <div id="userShortLinksList" style="max-height:200px; overflow-y:auto; font-size:13px;">Loading...</div>
             </div>
-        </div>
-    </div>
-
-    <!-- MY PLAN MODAL -->
-    <div class="app-modal" id="myPlanModal">
-        <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3><svg><use href="#icon-crown"/></svg> My Current Plan</h3>
-                <button class="modal-close-btn" onclick="closeMyPlanModal()">✕</button>
-            </div>
-            <div id="myPlanContent">Loading...</div>
-        </div>
-    </div>
-
-    <!-- TERMS MODAL -->
-    <div class="app-modal" id="termsModal">
-        <div class="modal-body-card">
-            <div class="modal-header-row">
-                <h3><svg><use href="#icon-file-text"/></svg> Terms & Guidelines</h3>
-                <button class="modal-close-btn" onclick="closeTermsModal()">✕</button>
-            </div>
-            <div style="font-size:14px; color:var(--text-muted); line-height:1.7;">
-                <p style="margin-bottom:12px;"><strong>1. Account Integrity</strong><br>Users must register via Email OTP. Each link is private and exclusively managed by its owner.</p>
-                <p style="margin-bottom:12px;"><strong>2. Link Ownership</strong><br>All links you create are permanently associated with your account.</p>
-                <p style="margin-bottom:12px;"><strong>3. Plan Expiry</strong><br>When plan expires, all your links become inactive immediately. Renew to continue.</p>
-                <p style="margin-bottom:12px;"><strong>4. Content Policy</strong><br>Do not create links for illegal or misleading content. Violation leads to account termination.</p>
-                <p style="margin-bottom:24px;"><strong>5. Data Privacy</strong><br>Your visitor analytics are computed using IP + device fingerprint.</p>
-            </div>
-            <button onclick="closeTermsModal()" class="btn-primary"><span>I Understand</span></button>
         </div>
     </div>
 
@@ -1043,6 +1113,19 @@
 
         function closeCustomDialog() { document.getElementById('customDialog').classList.remove('active'); }
         function closeSpamWarning() { document.getElementById('spamWarningModal').classList.remove('active'); }
+
+        function toggleSidebar(open) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (open) { sb.classList.add('show'); ov.classList.add('show'); }
+            else { sb.classList.remove('show'); ov.classList.remove('show'); }
+        }
+
+        function closeSidebarAndScroll(id) {
+            toggleSidebar(false);
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         function showAccountDeletedScreen() {
             localStorage.removeItem('activeUserSession');
@@ -1493,6 +1576,7 @@
         }
 
         function closeCreateLinkModal() { document.getElementById('createLinkModal').classList.remove('active'); }
+        
         function toggleUidDesc() {
             var cb = document.getElementById('clUidChecking');
             var desc = document.getElementById('uidToggleDesc');
@@ -1908,7 +1992,7 @@
         function deleteCurrentLink() {
             if (!activeLinkRecord || !activeLinkRecord.id) return showToast('No link selected', 'warning');
             var linkName = activeLinkRecord.name || activeLinkRecord.title || 'Untitled';
-            notify('Are you sure you want to delete this link?<br><br><strong>"' + linkName + '"</strong><br><br>This action cannot be undone.', 'Delete Link?', 'warning', 'confirm', function() {
+            notify('Are you sure you want to delete this link?<br><br><strong>"' + linkName + '"</strong><br><br>This action cannot be undone and your limit will not be restored.', 'Delete Link?', 'warning', 'confirm', function() {
                 fetch('/api/user/delete-link/' + encodeURIComponent(activeLinkRecord.id), {
                     method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName: userProfile.name, userEmail: userProfile.email || '', userId: userProfile.id || '' })
                 })
@@ -1940,7 +2024,6 @@
             document.getElementById('metricFilteredVisits').textContent = rangeVisits;
             document.getElementById('metricFilteredClaims').textContent = rangeClaims;
             var filterLabel = document.getElementById('lblFilteredVisits');
-            var subFilterLabel = document.getElementById('subFilteredVisits');
             if (currentDateFilter === 'custom' && currentStartDate) {
                 var datePretty = new Date(currentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 filterLabel.textContent = datePretty + ' Visits';
