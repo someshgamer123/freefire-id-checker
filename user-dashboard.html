@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0a0e17">
     
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -277,16 +279,32 @@
         .auth-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.3px; position: relative; z-index: 1; }
         .auth-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5; position: relative; z-index: 1; }
 
-        /* Custom Google Button Fix */
-        .google-btn-custom {
-            width: 100%; max-width: 300px; margin: 0 auto 16px; padding: 12px;
-            background: #ffffff; border: 1px solid #dadce0; border-radius: 10px;
-            color: #3c4043; font-size: 14px; font-weight: 700; cursor: pointer;
-            transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; gap: 10px;
-            position: relative; z-index: 2;
+        /* Google Button Container Fix */
+        .google-btn-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+            min-height: 44px;
         }
-        .google-btn-custom:active { transform: scale(0.98); background: #f1f3f4; }
-        .google-btn-custom svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .google-btn-container > div {
+            width: 100% !important;
+            max-width: 300px !important;
+        }
+        .google-btn-container iframe {
+            margin: 0 auto !important;
+            display: block !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+        }
+        .google-loading {
+            width: 100%; max-width: 300px; padding: 12px;
+            background: #ffffff; border: 1px solid #dadce0; border-radius: 10px;
+            color: #3c4043; font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
 
         .auth-switch-text { font-size: 13px; color: var(--text-secondary); position: relative; z-index: 1; line-height: 1.5; }
         .auth-switch-text a { color: var(--primary-light); text-decoration: none; font-weight: 700; cursor: pointer; margin-left: 4px; }
@@ -777,9 +795,12 @@
                     <h2 class="auth-title">Welcome Back</h2>
                     <p class="auth-subtitle">Sign in with your Google account</p>
                     
-                    <button type="button" class="google-btn-custom" onclick="triggerGoogleAuth('signin')">
-                        <svg><use href="#icon-google"/></svg> Sign in with Google
-                    </button>
+                    <div class="google-btn-container" id="googleSignInContainer">
+                        <div class="google-loading">
+                            <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
+                            Loading...
+                        </div>
+                    </div>
                     
                     <div class="auth-switch-text">
                         Don't have an account? <a onclick="switchAuthView('signup')">Sign Up</a>
@@ -790,9 +811,12 @@
                     <h2 class="auth-title">Create Account</h2>
                     <p class="auth-subtitle">Sign up with Google to request access</p>
                     
-                    <button type="button" class="google-btn-custom" onclick="triggerGoogleAuth('signup')">
-                        <svg><use href="#icon-google"/></svg> Sign up with Google
-                    </button>
+                    <div class="google-btn-container" id="googleSignUpContainer">
+                        <div class="google-loading">
+                            <svg style="width:20px;height:20px;"><use href="#icon-google"/></svg>
+                            Loading...
+                        </div>
+                    </div>
                     
                     <div class="auth-switch-text">
                         Already have an account? <a onclick="switchAuthView('signin')">Sign In</a>
@@ -802,7 +826,7 @@
                 <div id="pendingView" class="pending-screen">
                     <div class="pending-icon">⏳</div>
                     <div class="pending-title">Pending Approval</div>
-                    <div class="pending-sub">Your request has been sent to Admin.<br>Please wait for approval before signing in.</div>
+                    <div class="pending-sub">Your registration request has been sent to the Admin.<br>Please wait for approval before signing in.</div>
                     <button class="pending-btn" onclick="switchAuthView('signin')">Back to Sign In</button>
                 </div>
             </div>
@@ -1462,89 +1486,196 @@
             }
         }
 
-        function triggerGoogleAuth(action) {
-            currentAuthMode = action;
-            if (typeof google === 'undefined' || !google.accounts) {
-                return showToast('Google SDK loading. Please wait...', 'warning');
+        // ============ GOOGLE AUTH ============
+        function renderGoogleButtons() {
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+                setTimeout(renderGoogleButtons, 300);
+                return;
             }
+            if (googleButtonsRendered) return;
+            
             try {
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CLIENT_ID,
-                    callback: handleCredentialResponse,
-                    ux_mode: 'popup',
-                    auto_select: false
+                    callback: handleGoogleAuth,
+                    auto_select: false,
+                    cancel_on_tap_outside: true,
+                    ux_mode: 'popup'
                 });
-                google.accounts.id.prompt((n) => {
-                    if (n.isNotDisplayed() || n.isSkippedMoment()) {
-                        document.cookie = "g_state=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-                        google.accounts.id.prompt();
-                    }
-                });
-            } catch (err) {
-                showToast('Google Login failed.', 'error');
+                googleInitialized = true;
+                
+                const signInContainer = document.getElementById('googleSignInContainer');
+                if (signInContainer) {
+                    signInContainer.innerHTML = '';
+                    const btnDiv = document.createElement('div');
+                    btnDiv.id = 'googleSignInBtn';
+                    btnDiv.style.width = '100%';
+                    btnDiv.style.display = 'flex';
+                    btnDiv.style.justifyContent = 'center';
+                    signInContainer.appendChild(btnDiv);
+                    
+                    google.accounts.id.renderButton(btnDiv, {
+                        type: 'standard', theme: 'filled_black', size: 'large',
+                        text: 'signin_with', shape: 'rectangular', logo_alignment: 'left', width: 280
+                    });
+                }
+                
+                const signUpContainer = document.getElementById('googleSignUpContainer');
+                if (signUpContainer) {
+                    signUpContainer.innerHTML = '';
+                    const btnDiv2 = document.createElement('div');
+                    btnDiv2.id = 'googleSignUpBtn';
+                    btnDiv2.style.width = '100%';
+                    btnDiv2.style.display = 'flex';
+                    btnDiv2.style.justifyContent = 'center';
+                    signUpContainer.appendChild(btnDiv2);
+                    
+                    google.accounts.id.renderButton(btnDiv2, {
+                        type: 'standard', theme: 'filled_black', size: 'large',
+                        text: 'signup_with', shape: 'rectangular', logo_alignment: 'left', width: 280
+                    });
+                }
+                
+                googleButtonsRendered = true;
+            } catch(e) {
+                console.error('Google Button Error:', e);
             }
         }
 
-        async function handleCredentialResponse(response) {
-            if (!response || !response.credential) return showToast('Login failed.', 'error');
+        async function handleGoogleAuth(response) {
+            if (!response || !response.credential) {
+                return showToast('Google authentication failed. Please try again.', 'error');
+            }
+            
+            const credential = response.credential;
+            const action = currentAuthMode || 'signin';
+            
             try {
                 const res = await fetch('/api/user/google-auth', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ credential: response.credential, action: currentAuthMode })
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential, action })
                 });
-                const data = await res.json();
-
-                if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                
+                if (action === 'signin') {
+                    if (res.status === 404 || data.needsSignup) {
+                        return notify(
+                            'No account found with this Google email.<br><br>Please <strong>Sign Up</strong> first to create your account.',
+                            'Account Not Found', 'info', null,
+                            () => { closeCustomDialog(); switchAuthView('signup'); },
+                            'Go to Sign Up'
+                        );
+                    }
+                    if (!res.ok) return showToast(data.error || 'Sign in failed', 'error');
+                    
                     if (data.needsProfile) {
                         pendingProfileUser = data.user;
-                        document.getElementById('profileEmailDisplay').textContent = data.user.email;
-                        document.getElementById('profileOverlay').classList.add('active');
-                    } else if (data.success && data.user) {
+                        openProfileModal(data.user);
+                        return;
+                    }
+                    
+                    if (data.success && data.user) {
                         userProfile = data.user;
                         localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
                         showDashboardView();
-                        showToast(`Welcome, ${userProfile.name}!`);
+                        showToast(`Welcome back, ${userProfile.name}!`, 'success');
+                        return;
                     }
-                } else {
-                    if (data.needsSignup) { showToast('Account not found. Sign Up.', 'error'); switchAuthView('signup'); }
-                    else if (data.alreadyRegistered) { showToast('Account exists. Sign In.', 'error'); switchAuthView('signin'); }
-                    else if (data.error && data.error.includes('pending')) {
-                        document.getElementById('signInView').style.display = 'none';
-                        document.getElementById('signUpView').style.display = 'none';
-                        document.getElementById('pendingView').style.display = 'block';
-                    } else { showToast(data.error || 'Auth failed', 'error'); }
                 }
-            } catch(e) { showToast('Network error.', 'error'); }
+                
+                if (action === 'signup') {
+                    if (data.alreadyRegistered) {
+                        return notify(
+                            'This Google account is already registered.<br><br>Please use <strong>Sign In</strong> instead.',
+                            'Already Registered', 'info', null,
+                            () => { closeCustomDialog(); switchAuthView('signin'); },
+                            'Go to Sign In'
+                        );
+                    }
+                    if (!res.ok) return showToast(data.error || 'Sign up failed', 'error');
+                    
+                    if (data.needsProfile) {
+                        pendingProfileUser = data.user;
+                        openProfileModal(data.user);
+                        return;
+                    }
+                    
+                    if (data.success && data.user && data.user.name && data.user.phone) {
+                        userProfile = data.user;
+                        localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                        showDashboardView();
+                        showToast(`Welcome, ${userProfile.name}!`, 'success');
+                        return;
+                    }
+                }
+            } catch(err) {
+                console.error('Google auth error:', err);
+                showToast('Connection error. Please try again.', 'error');
+            }
         }
 
-        async function submitProfile() {
-            if (!pendingProfileUser) return;
-            const name = document.getElementById('profileName').value.trim();
-            const phone = document.getElementById('profilePhone').value.trim();
-            if (!name || name.length < 2) return showToast('Enter valid name', 'warning');
-            if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Enter valid 10-digit number', 'warning');
-            
-            const btn = document.getElementById('btnCompleteProfile');
-            btn.disabled = true; btn.textContent = 'Submitting...';
-            try {
-                const res = await fetch('/api/user/complete-profile', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: pendingProfileUser.id, name, phone })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    document.getElementById('profileOverlay').classList.remove('active');
-                    document.getElementById('signInView').style.display = 'none';
-                    document.getElementById('signUpView').style.display = 'none';
-                    document.getElementById('pendingView').style.display = 'block';
-                    showToast('Request sent! Wait for approval.');
-                } else { showToast(data.error || 'Failed', 'error'); btn.disabled = false; btn.textContent = 'Submit Request'; }
-            } catch(e) { showToast('Network error', 'error'); btn.disabled = false; btn.textContent = 'Submit Request'; }
+        // ============ PROFILE MODAL ============
+        function openProfileModal(user) {
+            document.getElementById('profileEmailDisplay').textContent = user.email;
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profilePhone').value = user.phone || '';
+            document.getElementById('profileOverlay').classList.add('active');
         }
 
         function cancelProfile() {
             pendingProfileUser = null;
             document.getElementById('profileOverlay').classList.remove('active');
+        }
+
+        async function submitProfile() {
+            if (!pendingProfileUser) return;
+            
+            const name = document.getElementById('profileName').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            
+            if (!name || name.length < 2) return showToast('Please enter your full name', 'warning');
+            if (!/^[6-9]\d{9}$/.test(phone)) return showToast('Please enter a valid 10-digit mobile number', 'warning');
+            
+            const btn = document.getElementById('btnCompleteProfile');
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>Submitting...</span>';
+            
+            try {
+                const res = await fetch('/api/user/complete-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: pendingProfileUser.id,
+                        googleId: pendingProfileUser.googleId,
+                        name: name,
+                        phone: phone
+                    })
+                });
+                
+                const data = await res.json().catch(() => ({}));
+                
+                if (res.ok && data.success) {
+                    document.getElementById('profileOverlay').classList.remove('active');
+                    pendingProfileUser = null;
+                    
+                    // 🔥 SHOW PENDING SCREEN
+                    document.getElementById('signInView').style.display = 'none';
+                    document.getElementById('signUpView').style.display = 'none';
+                    document.getElementById('pendingView').style.display = 'block';
+                    
+                    showToast('Request sent to Admin for approval.', 'success');
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    showToast(data.error || 'Failed to submit profile', 'error');
+                }
+            } catch(err) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                showToast('Connection error. Please try again.', 'error');
+            }
         }
 
         function showDashboardView() {
@@ -1560,21 +1691,312 @@
             fetchUserLinkData();
         }
 
+        // ============ DATE FILTER ============
+        function toggleDateDropdown(event) {
+            if (event) event.stopPropagation();
+            const dd = document.getElementById('dateFilterDropdown');
+            dd.classList.toggle('open');
+        }
+        
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('dateFilterDropdown');
+            if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+        });
+
+        function selectDateFilter(filterType) {
+            document.querySelectorAll('.date-filter-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.filter === filterType);
+            });
+            
+            const triggerText = document.getElementById('dateFilterTriggerText');
+            const filterLabels = {
+                'today': 'Today',
+                'yesterday': 'Yesterday',
+                '7days': 'Last 7 Days',
+                '30days': 'Last 30 Days',
+                'all': 'All Time',
+                'custom': 'Custom Range'
+            };
+            triggerText.textContent = filterLabels[filterType] || 'Select';
+            document.getElementById('dateFilterDropdown').classList.remove('open');
+            
+            if (filterType === 'custom') {
+                document.getElementById('customDatePanel').classList.add('show');
+                const today = new Date().toISOString().split('T')[0];
+                const input1 = document.getElementById('customDateInput');
+                const input2 = document.getElementById('customEndDateInput');
+                if (!input1.value) input1.value = today;
+                if (!input2.value) input2.value = today;
+                return;
+            }
+            
+            document.getElementById('customDatePanel').classList.remove('show');
+            currentDateFilter = filterType;
+            currentStartDate = '';
+            currentEndDate = '';
+            fetchUserLinkData();
+        }
+
+        function applyCustomDateRange() {
+            const s = document.getElementById('customDateInput').value;
+            const e = document.getElementById('customEndDateInput').value || s;
+            
+            if (!s) return showToast('Please select a start date', 'warning');
+            if (s > e) return showToast('Start date cannot be greater than end date', 'warning');
+            
+            currentDateFilter = 'custom';
+            currentStartDate = s;
+            currentEndDate = e;
+            
+            const sF = new Date(s + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const eF = new Date(e + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('dateFilterTriggerText').textContent = `${sF} - ${eF}`;
+            
+            document.getElementById('customDatePanel').classList.remove('show');
+            document.getElementById('dateFilterDropdown').classList.remove('open');
+            fetchUserLinkData();
+        }
+
+        // ============ CREATE LINK MODAL ============
+        async function openCreateLinkModal() {
+            toggleSidebar(false);
+            
+            if (!currentPlanUsage) {
+                showToast('Loading plan info. Please wait...', 'info');
+                return;
+            }
+            
+            const planKey = currentPlanUsage.planKey;
+            const planIsExpired = currentPlanUsage.planIsExpired;
+            const lifetimeUnlimited = currentPlanUsage.lifetimeUnlimited;
+            
+            if (planKey === 'no-plan' || planKey === 'none' || !planKey) {
+                notify(
+                    'You need an active plan to create links.<br><br>Please activate the <strong>Free Trial</strong> or purchase a plan to get started.',
+                    'No Active Plan', 'warning', null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'View Plans'
+                );
+                return;
+            }
+            
+            if (planIsExpired && !lifetimeUnlimited) {
+                notify(
+                    'Your plan has expired.<br><br>Please renew your plan to continue creating links.',
+                    'Plan Expired', 'warning', null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'Renew Now'
+                );
+                return;
+            }
+
+            if (currentPlanUsage.linkLimitReached && !lifetimeUnlimited) {
+                notify(
+                    `You have reached your plan's link limit (<strong>${currentPlanUsage.linksUsed}/${currentPlanUsage.linkLimit}</strong>).<br><br>Please upgrade your plan to create more links.`,
+                    'Link Limit Reached', 'error', null,
+                    () => { closeCustomDialog(); openPlansModal(); },
+                    'Upgrade Plan'
+                );
+                return;
+            }
+
+            document.getElementById('clClientName').value = userProfile.name || '';
+            document.getElementById('clLinkName').value = '';
+            document.getElementById('clVideo').value = '';
+            document.getElementById('clClaim').value = '';
+            document.getElementById('clButtonText').value = 'Claim Now';
+            document.getElementById('clHeadline').value = 'Watch Video & Unlock Reward';
+            document.getElementById('clUidChecking').checked = true;
+            document.getElementById('clPopTitle').value = 'Claim Your Reward';
+            document.getElementById('clPopBtn').value = 'Claim Now';
+            document.getElementById('clPopSub').value = 'Tap below to unlock your reward';
+            document.getElementById('clPopImg').value = '';
+            toggleUidDesc();
+
+            document.getElementById('createLinkModal').classList.add('active');
+        }
+
+        function closeCreateLinkModal() { document.getElementById('createLinkModal').classList.remove('active'); }
+
+        function toggleUidDesc() {
+            const cb = document.getElementById('clUidChecking');
+            const desc = document.getElementById('uidToggleDesc');
+            if (cb.checked) desc.textContent = 'ON — Visitors must enter UID first';
+            else desc.textContent = 'OFF — Direct popup & video';
+        }
+
+        async function submitCreateLink() {
+            const btn = document.getElementById('btnCreateLink');
+            const linkName = document.getElementById('clLinkName').value.trim();
+            const video = document.getElementById('clVideo').value.trim();
+
+            if (!linkName) return showToast('Please enter a link name', 'warning');
+            if (!video) return showToast('Please enter a video URL', 'warning');
+
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>Creating...</span>';
+
+            try {
+                const payload = {
+                    userName: userProfile.name || '',
+                    userEmail: userProfile.email || '',
+                    userId: userProfile.id || '',
+                    linkName: linkName,
+                    video: video,
+                    claim: document.getElementById('clClaim').value.trim() || '#',
+                    buttonText: document.getElementById('clButtonText').value.trim() || 'Claim Now',
+                    headline: document.getElementById('clHeadline').value.trim() || 'Watch Video & Unlock Reward',
+                    uidChecking: document.getElementById('clUidChecking').checked,
+                    popupTitle: document.getElementById('clPopTitle').value.trim() || 'Claim Your Reward',
+                    popupSubtitle: document.getElementById('clPopSub').value.trim() || 'Tap below to unlock your reward',
+                    popupButtonText: document.getElementById('clPopBtn').value.trim() || 'Claim Now',
+                    popupImage: document.getElementById('clPopImg').value.trim() || null
+                };
+
+                const res = await fetch('/api/user/create-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.success) {
+                    if (data.userName && data.userName !== userProfile.name) {
+                        userProfile.name = data.userName;
+                        localStorage.setItem('activeUserSession', JSON.stringify(userProfile));
+                        document.getElementById('labelUserName').textContent = userProfile.name;
+                        document.getElementById('navUserName').textContent = userProfile.name;
+                        document.getElementById('sbUserName').textContent = userProfile.name;
+                    }
+                    closeCreateLinkModal();
+                    notify(`Link "<strong>${data.link.linkName}</strong>" created successfully!`, 'Link Created', 'success');
+                    setTimeout(() => fetchUserLinkData(data.link.id), 500);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    const errMsg = data.error || 'Failed to create link.';
+                    
+                    if (data.reason === 'LINK_LIMIT_REACHED') notify(errMsg, 'Link Limit Reached', 'error');
+                    else if (data.reason === 'PLAN_EXPIRED') notify(errMsg, 'Plan Expired', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'Renew Now');
+                    else if (data.reason === 'NO_ACTIVE_PLAN' || data.reason === 'NO_PLAN') notify(errMsg, 'No Active Plan', 'warning', null, () => { closeCustomDialog(); openPlansModal(); }, 'View Plans');
+                    else notify(errMsg, 'Create Failed', 'error');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                showToast('Server error: ' + err.message, 'error');
+            }
+        }
+
+        // ============ PLANS MODAL ============
+        async function openPlansModal() {
+            toggleSidebar(false);
+            document.getElementById('plansModal').classList.add('active');
+            document.getElementById('plansCarousel').innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">Loading plans...</p>';
+            await refreshPricingData();
+            renderPlansList();
+        }
+        function closePlansModal() { document.getElementById('plansModal').classList.remove('active'); }
+
+        function openMyPlanModal() { toggleSidebar(false); document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
+        function closeMyPlanModal() { document.getElementById('myPlanModal').classList.remove('active'); }
+
+        function openShortenerModal() {
+            toggleSidebar(false);
+            const activeCount = (myLinksList && myLinksList.length) ? myLinksList.length : 0;
+            if (activeCount < 3) openLockModal(activeCount);
+            else { document.getElementById('shortenerModal').classList.add('active'); loadUserShortLinks(); }
+        }
+        function closeShortenerModal() { document.getElementById('shortenerModal').classList.remove('active'); }
+
+        function openLockModal(count) {
+            const pct = Math.min(100, Math.round((count / 3) * 100));
+            document.getElementById('lockCountDisplay').textContent = `${count} / 3`;
+            document.getElementById('lockBarFill').style.width = `${pct}%`;
+            document.getElementById('lockModal').classList.add('active');
+        }
+        function closeLockModal() { document.getElementById('lockModal').classList.remove('active'); }
+
+        function openGuideModal() { toggleSidebar(false); document.getElementById('guideModal').classList.add('active'); }
+        function closeGuideModal() { document.getElementById('guideModal').classList.remove('active'); }
+        function openTermsModal(e) { if (e) e.preventDefault(); toggleSidebar(false); document.getElementById('termsModal').classList.add('active'); }
+        function closeTermsModal() { document.getElementById('termsModal').classList.remove('active'); }
+
+        async function openActivateFreePlan() {
+            await refreshPricingData();
+            if (!loadedPlans || !loadedPlans['free-trial']) return showToast('Free trial not available', 'warning');
+            if (currentPlanUsage?.freeTrialUsed === true) return showToast('You have already used your Free Trial', 'error');
+            const ftPlan = loadedPlans['free-trial'];
+            document.getElementById('apLinksLimit').textContent = (ftPlan.linkLimit === 'unlimited' || ftPlan.linkLimit === -1) ? 'Unlimited' : `${ftPlan.linkLimit} Link${ftPlan.linkLimit > 1 ? 's' : ''}`;
+            document.getElementById('apVisitorsLimit').textContent = (ftPlan.visitorLimit === 'unlimited' || ftPlan.visitorLimit === -1) ? 'Unlimited' : `${(ftPlan.visitorLimit || 0).toLocaleString()} Visitors`;
+            document.getElementById('apDuration').textContent = `${ftPlan.durationDays} Days`;
+            document.getElementById('activatePopup').classList.add('active');
+        }
+        function closeActivatePopup() { document.getElementById('activatePopup').classList.remove('active'); }
+
+        async function confirmActivateFreePlan() {
+            const btn = document.getElementById('btnActivateNow');
+            if (!userProfile || !userProfile.name) return showToast('Session expired', 'error');
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>Activating...</span>';
+            try {
+                const res = await fetch('/api/user/select-free-plan', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userName: userProfile.name, 
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.success) {
+                    closeActivatePopup();
+                    notify('Free Trial activated successfully! You can now create links.', 'Activated', 'success');
+                    setTimeout(() => fetchUserLinkData(), 500);
+                } else {
+                    btn.disabled = false; btn.innerHTML = originalHtml;
+                    showToast(data.error || 'Failed to activate', 'error');
+                }
+            } catch (err) {
+                btn.disabled = false; btn.innerHTML = originalHtml;
+                showToast('Server error', 'error');
+            }
+        }
+
+        // ============ FETCH DATA ============
         async function fetchUserLinkData(explicitLinkId) {
             document.getElementById('displayLinkId').textContent = 'Fetching...';
             document.getElementById('displayLinkName').textContent = 'Loading...';
             const cachedId = explicitLinkId || localStorage.getItem('userActiveLinkId') || null;
-            const payload = { userName: userProfile.name || '', userEmail: userProfile.email || '', userId: userProfile.id || '', linkInput: cachedId, filter: currentDateFilter, startDate: currentStartDate, endDate: currentEndDate };
+            
+            const payload = { 
+                userName: userProfile.name || '',
+                userEmail: userProfile.email || '',
+                userId: userProfile.id || '',
+                linkInput: cachedId, 
+                filter: currentDateFilter, 
+                startDate: currentStartDate, 
+                endDate: currentEndDate 
+            };
             
             try {
-                const res = await fetch('/api/user/link-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await fetch('/api/user/link-details', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
                 const data = await res.json().catch(() => ({}));
                 
                 if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
                 
                 if (data.planUsage) { currentPlanUsage = data.planUsage; updateHeroUI(); updatePlanDaysUI(); }
                 if (data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
-                if (data.paymentSettings) { activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi'; showUpiToUser = data.paymentSettings?.showUpi !== false; }
+                if (data.paymentSettings) {
+                    activeAdminUpi = data.paymentSettings?.details?.upiId || 'admin@upi';
+                    showUpiToUser = data.paymentSettings?.showUpi !== false;
+                }
                 if (data.whatsappNumber) adminPhone = data.whatsappNumber;
                 const sup = document.getElementById('supportLink'); if (sup) sup.href = `https://wa.me/${adminPhone}`;
                 
@@ -1597,6 +2019,7 @@
                 const cnt = document.getElementById('menuLinkCount');
                 if (cnt) cnt.textContent = myLinksList.length;
             } catch (err) {
+                console.error('fetchUserLinkData error:', err);
                 document.getElementById('displayLinkId').textContent = 'Offline';
                 document.getElementById('displayLinkName').textContent = 'Connection error';
                 displayEmptyState();
@@ -1681,13 +2104,273 @@
         }
 
         function displayEmptyState() {
-            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = '0'; });
+            ['metricTotalVisits','metricTotalClaims','metricFilteredVisits','metricFilteredClaims'].forEach(id => { 
+                const e = document.getElementById(id); if (e) e.textContent = '0'; 
+            });
             document.getElementById('displayLinkName').textContent = 'No link selected';
             document.getElementById('displayLinkId').textContent = '--';
-            const be = document.getElementById('badgeExpiry'); if (be) { be.className = 'badge-status none'; be.textContent = 'No Link'; }
-            const bp = document.getElementById('barExpiryProgress'); if (bp) { bp.className = 'progress-bar-fill none'; bp.style.width = '0%'; }
+            const be = document.getElementById('badgeExpiry'); 
+            if (be) { be.className = 'badge-status none'; be.textContent = 'No Link'; }
+            const bp = document.getElementById('barExpiryProgress'); 
+            if (bp) { bp.className = 'progress-bar-fill none'; bp.style.width = '0%'; }
             const te = document.getElementById('txtExpiryDate'); if (te) te.textContent = 'No link yet';
             const tc = document.getElementById('txtCreatedDate'); if (tc) tc.textContent = '--';
+        }
+
+        function renderMyPlan() {
+            const el = document.getElementById('myPlanContent');
+            if (!currentPlanUsage) { el.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">Loading...</p>'; return; }
+            const pu = currentPlanUsage;
+            
+            const hasNoPlan = pu.planKey === 'no-plan' || pu.planIsExpired || pu.planKey === 'none' || !pu.planKey;
+            
+            if (hasNoPlan) {
+                el.innerHTML = `
+                    <div style="background:linear-gradient(135deg, rgba(100,116,139,0.15), rgba(71,85,105,0.08)); border:1px solid rgba(100,116,139,0.35); border-radius:16px; padding:22px; margin-bottom:14px; text-align:center;">
+                        <div style="font-size:18px; font-weight:800; color:#fff; margin-bottom:8px;">No Active Plan</div>
+                        <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:16px;">Activate a plan to start creating links.</div>
+                        <button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;"><span>Activate Plan</span></button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const isVip = pu.lifetimeUnlimited === true;
+            const linksLimitText = isVip ? 'Unlimited' : ((pu.linkLimit === 'unlimited' || pu.linkLimit === -1) ? 'Unlimited' : (pu.linkLimit || 0));
+            const visitorLimitText = isVip ? 'Unlimited' : ((pu.visitorLimit === 'unlimited' || pu.visitorLimit === -1) ? 'Unlimited' : (pu.visitorLimit || 0));
+
+            let featuresHtml = '';
+            if (Array.isArray(pu.features) && pu.features.length) {
+                featuresHtml = '<ul style="list-style:none; padding:0; margin:12px 0 0;">' +
+                    pu.features.map(f => `<li style="padding:5px 0; color:#cbd5e1; font-size:12px; display:flex; align-items:flex-start; gap:8px;"><span style="color:#10b981; font-weight:800;">•</span> <span>${f}</span></li>`).join('') +
+                    '</ul>';
+            }
+
+            let cardBg = 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))';
+            let cardBorder = 'rgba(99,102,241,0.35)';
+            if (isVip) { cardBg = 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(251,191,36,0.1))'; cardBorder = 'rgba(245,158,11,0.6)'; }
+
+            const daysLeftText = isVip ? 'Lifetime' : ((pu.durationDays || 0) + ' Days (' + (pu.planDaysLeft || 0) + ' left)');
+
+            el.innerHTML = `
+                <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:14px; padding:16px; margin-bottom:14px;">
+                    <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase;">Current Plan</div>
+                    <div style="font-size:20px; font-weight:800; color:#fff; margin-top:4px;">${pu.planName || 'Free Trial'}</div>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Duration: <b style="color:#fff;">${daysLeftText}</b>${!isVip ? ` • Price: <b style="color:#38bdf8;">₹${pu.price || 0}</b>` : ''}</div>
+                    ${featuresHtml}
+                </div>
+                <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
+                    <div style="font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; margin-bottom:12px;">Usage Summary</div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Links Used</span>
+                        <span style="color:#fff; font-weight:700;">${pu.linksUsed || 0} / ${linksLimitText}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);">
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Visitors Used</span>
+                        <span style="color:#fff; font-weight:700;">${pu.visitorsUsed || 0} / ${visitorLimitText}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0;">
+                        <span style="color:var(--text-secondary); font-size:12.5px;">Claims Used</span>
+                        <span style="color:#fff; font-weight:700;">${pu.claimsUsed || 0}</span>
+                    </div>
+                </div>
+                ${isVip ? `
+                    <div style="margin-top:14px; background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06)); border:1px dashed rgba(245,158,11,0.4); border-radius:12px; padding:14px; text-align:center;">
+                        <div style="font-size:13px; font-weight:700; color:#fbbf24;">Lifetime Unlimited access!</div>
+                        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">No renewal needed.</div>
+                    </div>
+                ` : `
+                    <button class="btn-action" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;" onclick="closeMyPlanModal(); openPlansModal();">
+                        <span>View Plans & Upgrade</span>
+                    </button>
+                `}
+            `;
+        }
+
+        function renderPlansList() {
+            const container = document.getElementById('plansCarousel');
+            const footer = document.getElementById('plansModalFooter');
+            if (!loadedPlans || !Object.keys(loadedPlans).length) {
+                container.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:20px; width:100%;">No plans available.</p>';
+                footer.innerHTML = '';
+                return;
+            }
+
+            const planOrder = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
+            const availablePlans = planOrder.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
+            
+            const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
+            const currentPlanKey = currentPlanUsage?.planKey || 'none';
+            const isLifetimeUnlimited = currentPlanUsage?.lifetimeUnlimited === true;
+            const planIsExpired = currentPlanUsage?.planIsExpired === true;
+            const hasActivePlan = !planIsExpired && currentPlanKey !== 'none' && currentPlanKey !== 'no-plan';
+            
+            let currentPlanIndex = -1;
+            if (isLifetimeUnlimited) currentPlanIndex = 999;
+            else if (hasActivePlan) currentPlanIndex = planOrder.indexOf(currentPlanKey);
+
+            const plansToShow = availablePlans.filter(k => {
+                if (k === 'free-trial' && freeTrialUsed) return false;
+                if (isLifetimeUnlimited) return false;
+                if (currentPlanIndex >= 0) {
+                    const planIdx = planOrder.indexOf(k);
+                    return planIdx >= currentPlanIndex;
+                }
+                return true;
+            });
+
+            if (isLifetimeUnlimited || plansToShow.length === 0) {
+                container.innerHTML = `
+                    <div style="flex: 0 0 100%; text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 20px; font-weight: 800; color: #fbbf24; margin-bottom: 8px;">Lifetime Unlimited Active</div>
+                        <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; max-width: 400px; margin: 0 auto;">
+                            You have the highest plan available. No upgrade or renewal needed.
+                        </div>
+                    </div>
+                `;
+                footer.innerHTML = '';
+                return;
+            }
+
+            if (!activePlan || !activePlan.key || !loadedPlans[activePlan.key] || !plansToShow.includes(activePlan.key)) {
+                const defKey = plansToShow[0];
+                if (defKey) {
+                    const p = loadedPlans[defKey];
+                    activePlan = { key: defKey, days: p.durationDays, cost: p.price };
+                }
+            }
+
+            const iconMap = {
+                'free-trial': 'icon-gift',
+                'basic': 'icon-link',
+                'creator': 'icon-eye',
+                'pro': 'icon-rocket',
+                'business': 'icon-shield',
+                'enterprise-vip': 'icon-crown'
+            };
+
+            container.innerHTML = plansToShow.map(key => {
+                const p = loadedPlans[key];
+                const isSelected = (key === activePlan.key);
+                const isCurrentPlan = currentPlanKey === key && !planIsExpired;
+                const isOwned = isCurrentPlan;
+                const badgeClass = p.badge === 'POPULAR' ? 'popular' : (p.badge === 'SAVE 20%' ? 'save' : (p.badge === 'BEST VALUE' ? 'best' : (p.badge === 'FREE' ? 'free' : '')));
+                const extraClass = p.badge === 'POPULAR' ? 'popular-plan' : (p.badge === 'BEST VALUE' ? 'best-plan' : '');
+                const ownedClass = isOwned ? 'owned-plan' : '';
+                const iconName = iconMap[key] || 'icon-gift';
+                const linksLabel = (p.linkLimit === 'unlimited' || p.linkLimit === -1) ? 'Unlimited Links' : `${p.linkLimit} Active Links`;
+                const visitorLabel = (p.visitorLimit === 'unlimited' || p.visitorLimit === -1) ? 'Unlimited Visitors' : `${(p.visitorLimit || 0).toLocaleString()} Visitors`;
+                const perDay = p.durationDays > 0 && p.price > 0 ? (p.price / p.durationDays).toFixed(1) : '0';
+                
+                const features = Array.isArray(p.features) && p.features.length ? p.features : [linksLabel, visitorLabel, `${p.durationDays} Days Validity`];
+                const featuresHtml = features.map(f => `<div class="plan-feature-item"><span class="check-icon">•</span><span>${escapeHTML(f)}</span></div>`).join('');
+
+                return `
+                    <div class="plan-card-screenshot ${isSelected && !isOwned ? 'selected' : ''} ${extraClass} ${ownedClass}" data-plan-key="${key}" onclick="${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
+                        <div class="plan-card-icon-wrap"><svg><use href="#${iconName}"/></svg></div>
+                        <div class="plan-card-name">
+                            <span>${escapeHTML(p.name)}</span>
+                            ${isOwned ? `<span class="plan-card-badge-pill owned">OWNED</span>` : (p.badge ? `<span class="plan-card-badge-pill ${badgeClass}">${escapeHTML(p.badge)}</span>` : '')}
+                        </div>
+                        
+                        <div class="plan-card-price-section">
+                            <div class="plan-card-price">
+                                ${p.price === 0 ? `<span class="price-free">FREE</span>` : `<span class="price-currency">₹</span><span class="price-amount">${p.price}</span>`}
+                            </div>
+                            <div class="plan-card-price-sub">${p.price > 0 ? `₹${perDay} per day` : 'No cost'}</div>
+                            <div class="plan-card-duration">${p.durationDays} Days Validity</div>
+                        </div>
+
+                        <button class="plan-card-btn" onclick="event.stopPropagation(); ${isOwned ? `showToast('This is your current plan', 'info')` : `pickDynamicPlan('${key}')`}">
+                            ${isOwned ? 'Current Plan' : (isSelected ? 'Selected' : 'Choose Plan')}
+                        </button>
+
+                        <div class="plan-card-includes-title">WHAT'S INCLUDED</div>
+                        <div class="plan-features-list">${featuresHtml}</div>
+                    </div>
+                `;
+            }).join('');
+
+            setTimeout(() => {
+                const selected = container.querySelector('.plan-card-screenshot.selected');
+                if (selected) { try { selected.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {} }
+            }, 100);
+
+            renderPaymentPanel();
+        }
+
+        function renderPaymentPanel() {
+            const footer = document.getElementById('plansModalFooter');
+            if (!activePlan || !activePlan.key) { footer.innerHTML = ''; return; }
+            const p = loadedPlans[activePlan.key];
+            if (!p) { footer.innerHTML = ''; return; }
+            
+            const currentPlanKey = currentPlanUsage?.planKey || 'none';
+            const planIsExpired = currentPlanUsage?.planIsExpired === true;
+            const isOwned = currentPlanKey === activePlan.key && !planIsExpired;
+            
+            if (isOwned) {
+                footer.innerHTML = `
+                    <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06)); border:1px dashed rgba(16,185,129,0.4); border-radius:12px; padding:16px; text-align:center;">
+                        <div style="font-size:13.5px; font-weight:800; color:#34d399;">This is your Current Plan</div>
+                        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">Choose a higher plan to upgrade.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let paymentHtml = '';
+            if (showUpiToUser && p.price > 0) {
+                const upiString = `upi://pay?pa=${encodeURIComponent(activeAdminUpi)}&pn=Dashboard_Extension&am=${p.price}&cu=INR`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(upiString)}`;
+                paymentHtml = `
+                    <div class="payment-panel-screenshot">
+                        <div class="qr-wrapper">
+                            <img src="${qrUrl}" alt="Payment QR">
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:600;">Scan to Pay ₹${p.price}</span>
+                        </div>
+                        <div class="payment-info">
+                            <div style="font-size:13.5px; font-weight:800; color:#fff; margin-bottom:10px;">Complete Your Payment</div>
+                            <div class="upi-copy-chip" onclick="copyUpiText()">
+                                <span>UPI: <strong>${activeAdminUpi}</strong></span>
+                            </div>
+                            <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.5; text-align:center;">
+                                Pay <strong style="color:#38bdf8;">₹${p.price}</strong> then send screenshot on WhatsApp.
+                            </div>
+                            <button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="max-width:340px;background:linear-gradient(135deg, #10b981, #059669);color:#fff;width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;">
+                                <span>Send Screenshot on WhatsApp</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (p.price === 0) {
+                const freeTrialUsed = currentPlanUsage?.freeTrialUsed === true;
+                if (freeTrialUsed) {
+                    paymentHtml = `<div style="background:rgba(239,68,68,0.1); border:1px dashed rgba(239,68,68,0.4); border-radius:14px; padding:16px; text-align:center;"><div style="font-size:12.5px; font-weight:700; color:#fca5a5;">Free Trial Already Used</div></div>`;
+                } else {
+                    paymentHtml = `<button class="btn-action btn-whatsapp" onclick="closePlansModal(); openActivateFreePlan();" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Activate Free Trial</span></button>`;
+                }
+            } else {
+                paymentHtml = `<button class="btn-action btn-whatsapp" onclick="requestAdminRenewal()" style="width:100%;padding:14px;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;"><span>Contact Admin on WhatsApp</span></button>`;
+            }
+
+            footer.innerHTML = `
+                <div style="background:rgba(99,102,241,0.08); border:1px dashed rgba(99,102,241,0.4); border-radius:12px; padding:12px; margin-bottom:14px; text-align:center; font-size:11.5px; color:var(--text-secondary);">
+                    Selected: <strong style="color:#fff;">${p.name} - ${p.durationDays} Days</strong> • Amount: <strong style="color:#38bdf8;">₹${p.price}</strong>
+                </div>
+                ${paymentHtml}
+            `;
+        }
+
+        function pickDynamicPlan(key) {
+            const p = loadedPlans[key];
+            if (!p) return;
+            activePlan = { key: key, days: p.durationDays, cost: p.price };
+            renderPlansList();
+        }
+
+        function copyUpiText() {
+            navigator.clipboard.writeText(activeAdminUpi).then(() => showToast('UPI copied: ' + activeAdminUpi, 'success'));
         }
 
         function populateUserLinksDropdown(links, currentActiveId) {
@@ -1709,39 +2392,99 @@
             navigator.clipboard.writeText(url).then(() => showToast('Link URL copied!', 'success'));
         }
 
-        function deleteCurrentLink() {
+        async function deleteCurrentLink() {
             if (!activeLinkRecord || !activeLinkRecord.id) return showToast('No link selected', 'warning');
-            if (!confirm('Are you sure you want to delete this link? This action cannot be undone.')) return;
-            fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
-                method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userName: userProfile.name, userEmail: userProfile.email || '', userId: userProfile.id || '' })
-            }).then(r => r.json()).then(data => {
-                if (data.success) { showToast('Link deleted successfully', 'success'); localStorage.removeItem('userActiveLinkId'); setTimeout(() => fetchUserLinkData(), 500); }
-                else showToast(data.error || 'Failed to delete link', 'error');
-            });
+            
+            const linkName = activeLinkRecord.name || activeLinkRecord.title || 'Untitled';
+            
+            notify(
+                `Are you sure you want to delete this link?<br><br><strong>"${linkName}"</strong><br><br>This action cannot be undone.`,
+                'Delete Link?', 'warning', 'confirm',
+                async () => {
+                    try {
+                        const res = await fetch(`/api/user/delete-link/${encodeURIComponent(activeLinkRecord.id)}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                userName: userProfile.name,
+                                userEmail: userProfile.email || '',
+                                userId: userProfile.id || ''
+                            })
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok && data.success) {
+                            showToast('Link deleted successfully', 'success');
+                            localStorage.removeItem('userActiveLinkId');
+                            setTimeout(() => fetchUserLinkData(), 500);
+                        } else {
+                            showToast(data.error || 'Failed to delete link', 'error');
+                        }
+                    } catch (err) {
+                        showToast('Server error: ' + err.message, 'error');
+                    }
+                },
+                'Delete Link'
+            );
         }
 
         function populateDashboardMetrics(data) {
             const l = data.link || data;
-            document.getElementById('displayLinkName').textContent = l.name || l.title || 'Untitled Campaign';
-            document.getElementById('displayLinkId').textContent = l.id || '--';
+            const linkTitle = l.name || l.title || l.linkName || 'Untitled Campaign';
+            document.getElementById('displayLinkName').textContent = linkTitle;
+            document.getElementById('displayLinkId').textContent = l.id || l.linkId || '--';
             document.getElementById('btnDeleteLink').disabled = false;
             document.getElementById('btnCopyLink').disabled = false;
 
-            document.getElementById('metricTotalVisits').textContent = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || 0);
-            document.getElementById('metricTotalClaims').textContent = (l.totalClaims !== undefined) ? l.totalClaims : (l.claims || data.totalClaims || 0);
-            
+            const totalVisitsVal = (l.totalVisits !== undefined) ? l.totalVisits : (l.visits || data.totalVisits || data.visits || 0);
+            const totalClaimsVal = (l.totalClaims !== undefined) ? l.totalClaims : ((l.claims !== undefined) ? l.claims : ((data.totalClaims !== undefined) ? data.totalClaims : 0));
+            document.getElementById('metricTotalVisits').textContent = totalVisitsVal;
+            document.getElementById('metricTotalClaims').textContent = totalClaimsVal;
+
             const rangeVisits = (data.dateRange && data.dateRange.visits !== undefined) ? data.dateRange.visits : (l.todayVisits || 0);
             const rangeClaims = (data.dateRange && data.dateRange.claims !== undefined) ? data.dateRange.claims : (l.todayClaims || 0);
             document.getElementById('metricFilteredVisits').textContent = rangeVisits;
             document.getElementById('metricFilteredClaims').textContent = rangeClaims;
 
+            const filterLabel = document.getElementById('lblFilteredVisits');
+            const subFilterLabel = document.getElementById('subFilteredVisits');
+            if (currentDateFilter === 'custom' && currentStartDate) {
+                const datePretty = new Date(currentStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                filterLabel.textContent = `${datePretty} Visits`;
+                document.getElementById('lblFilteredClaims').textContent = `${datePretty} Claims`;
+                subFilterLabel.textContent = 'Filtered';
+            } else if (currentDateFilter === 'yesterday') {
+                filterLabel.textContent = "Yesterday Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Yesterday Claims";
+                subFilterLabel.textContent = "Unique";
+            } else if (currentDateFilter === '7days') {
+                filterLabel.textContent = "Last 7 Days Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Last 7 Days Claims";
+                subFilterLabel.textContent = "Aggregate";
+            } else if (currentDateFilter === '30days') {
+                filterLabel.textContent = "Last 30 Days Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Last 30 Days Claims";
+                subFilterLabel.textContent = "Aggregate";
+            } else if (currentDateFilter === 'all') {
+                filterLabel.textContent = "All Time Visits";
+                document.getElementById('lblFilteredClaims').textContent = "All Time Claims";
+                subFilterLabel.textContent = "Lifetime";
+            } else {
+                filterLabel.textContent = "Today Visits";
+                document.getElementById('lblFilteredClaims').textContent = "Today Claims";
+                subFilterLabel.textContent = "Unique in 48h";
+            }
+
             document.getElementById('txtCreatedDate').textContent = l.created ? new Date(l.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
             const badge = document.getElementById('badgeExpiry');
             const progress = document.getElementById('barExpiryProgress');
             const expText = document.getElementById('txtExpiryDate');
 
             if (l.isExpired === true) {
-                badge.className = 'badge-status expired'; badge.textContent = 'Expired'; progress.className = 'progress-bar-fill expired'; progress.style.width = '100%';
+                badge.className = 'badge-status expired';
+                badge.textContent = 'Expired';
+                progress.className = 'progress-bar-fill expired';
+                progress.style.width = '100%';
                 expText.textContent = l.expiryDate ? new Date(l.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Expired';
             } else if (l.expiryDate) {
                 const d = new Date(l.expiryDate);
@@ -1751,9 +2494,57 @@
                 else if (left <= 3) { badge.className = 'badge-status warning'; badge.textContent = `Expiring (${left}d)`; progress.className = 'progress-bar-fill warning'; progress.style.width = `${Math.min(100, left * 33)}%`; }
                 else { badge.className = 'badge-status active'; badge.textContent = `Active (${left}d)`; progress.className = 'progress-bar-fill active'; progress.style.width = '100%'; }
             } else {
-                badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active'; progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
+                badge.className = 'badge-status active'; badge.textContent = 'Lifetime Active';
+                progress.className = 'progress-bar-fill active'; progress.style.width = '100%';
                 expText.textContent = 'Lifetime Active';
             }
+        }
+
+        async function requestAdminRenewal() {
+            const currentId = (activeLinkRecord && activeLinkRecord.id) || localStorage.getItem('userActiveLinkId') || null;
+            const currentLinkTitle = (activeLinkRecord && (activeLinkRecord.name || activeLinkRecord.title)) || null;
+            const p = loadedPlans ? loadedPlans[activePlan.key] : null;
+            const planName = p ? p.name : activePlan.key;
+
+            try {
+                const res = await fetch('/api/user/renew-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        linkId: currentId,
+                        linkName: currentLinkTitle,
+                        userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || '',
+                        plan: activePlan.key,
+                        days: activePlan.days,
+                        amount: activePlan.cost,
+                        refNo: 'Manual-WhatsApp'
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 403) return showToast(data.error || 'Cannot purchase this plan', 'error');
+            } catch(e) { console.warn('Renewal request error:', e); }
+
+            const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            let message = `Hello Admin, I want to activate/renew my plan:\n\n`;
+            message += `👤 User: ${userProfile.name}\n`;
+            if (currentId) {
+                message += `🔗 Link: ${currentLinkTitle || 'N/A'}\n`;
+                message += `🆔 Link ID: ${currentId}\n`;
+            } else {
+                message += `📌 Status: New user (no link created yet)\n`;
+            }
+            message += `📦 Plan: ${planName} (${activePlan.days} Days)\n`;
+            message += `💰 Amount: ₹${activePlan.cost}\n`;
+            message += `📅 Date: ${today}\n\n`;
+            message += `Please verify and approve. Thank you!`;
+
+            window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
+            closePlansModal();
+            showToast('Renewal request sent to admin!', 'success');
+            
+            if (currentId) setTimeout(() => fetchHistoryRecords(currentId), 1500);
         }
 
         async function fetchHistoryRecords(linkId) {
@@ -1761,11 +2552,12 @@
             try {
                 const res = await fetch(`/api/renewal/history/${linkId}?nocache=${Date.now()}`);
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = await res.json().catch(() => ({}));
                     const list = data.history || [];
                     const tbody = document.getElementById('historyTableRows');
-                    if (!list.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>'; return; }
-                    tbody.innerHTML = list.slice(0, 7).map(record => {
+                    const past = list.slice(0, 7);
+                    if (!past.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:18px; color:var(--text-muted);">No transaction records found</td></tr>'; return; }
+                    tbody.innerHTML = past.map(record => {
                         const dateStr = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
                         const statusClass = record.status === 'approved' ? 'active' : (record.status === 'pending' ? 'warning' : 'expired');
                         return `<tr><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">${dateStr}</td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><strong style="color:#fff;">${(record.plan || '').toUpperCase()}</strong></td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">₹${record.amount || 0}</td><td style="padding:10px 12px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);"><span class="badge-status ${statusClass}">${(record.status || '').toUpperCase()}</span></td></tr>`;
@@ -1774,108 +2566,149 @@
             } catch(e) {}
         }
 
-        // Modals
-        function openCreateLinkModal() { toggleSidebar(false); document.getElementById('clClientName').value = userProfile.name || ''; document.getElementById('createLinkModal').classList.add('active'); }
-        function closeCreateLinkModal() { document.getElementById('createLinkModal').classList.remove('active'); }
-        
-        function toggleUidDesc() {
-            const cb = document.getElementById('clUidChecking');
-            const desc = document.getElementById('uidToggleDesc');
-            if (cb.checked) desc.textContent = 'ON — Visitors must enter UID first'; else desc.textContent = 'OFF — Direct popup & video';
-        }
-
-        async function submitCreateLink() {
-            const btn = document.getElementById('btnCreateLink');
-            const linkName = document.getElementById('clLinkName').value.trim();
-            const video = document.getElementById('clVideo').value.trim();
-            if (!linkName) return showToast('Please enter a link name', 'warning');
-            if (!video) return showToast('Please enter a video URL', 'warning');
-            
-            btn.disabled = true; btn.innerHTML = '<span>Creating...</span>';
+        async function loadUserShortLinks() {
+            const c = document.getElementById('userShortLinksList');
+            c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Loading...</p>';
             try {
-                const res = await fetch('/api/user/create-link', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userName: userProfile.name, userEmail: userProfile.email, userId: userProfile.id, linkName, video, claim: document.getElementById('clClaim').value.trim() || '#', buttonText: document.getElementById('clButtonText').value.trim() || 'Claim Now', headline: document.getElementById('clHeadline').value.trim() || 'Watch Video', uidChecking: document.getElementById('clUidChecking').checked, popupTitle: document.getElementById('clPopTitle').value.trim(), popupSubtitle: document.getElementById('clPopSub').value.trim(), popupButtonText: document.getElementById('clPopBtn').value.trim(), popupImage: document.getElementById('clPopImg').value.trim() || null })
+                const params = new URLSearchParams({
+                    userName: userProfile.name || '',
+                    userEmail: userProfile.email || '',
+                    userId: userProfile.id || ''
                 });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    closeCreateLinkModal();
-                    showToast('Link created successfully!', 'success');
-                    setTimeout(() => fetchUserLinkData(data.link.id), 500);
-                } else {
-                    showToast(data.error || 'Failed to create link', 'error');
-                }
+                const res = await fetch(`/api/user/short-links?${params.toString()}`);
+                const data = await res.json().catch(() => ({}));
+                const links = data.links || [];
+                if (!links.length) return c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">No short links yet.</p>';
+                c.innerHTML = links.map(l => `
+                    <div class="short-item">
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-weight:700;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.title || 'Untitled'}</div>
+                            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;word-break:break-all;"><b>${window.location.origin}/s/${l.code}</b> | Clicks: <b style="color:var(--accent-cyan);">${l.visits || 0}</b></div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-shrink:0;">
+                            <button class="btn-action btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/s/${l.code}').then(()=>showToast('Copied!','success'))" style="width:auto;padding:6px 10px;font-size:11px;">Copy</button>
+                            <button class="btn-action" onclick="deleteUserShortLink('${l._id}')" style="width:auto;padding:6px 10px;font-size:11px;background:var(--danger);">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { c.innerHTML = '<p style="color:#94a3b8;font-size:12px;">Failed to load.</p>'; }
+        }
+
+        async function createUserShortLink() {
+            const originalUrl = document.getElementById('uShortUrl').value.trim();
+            const title = document.getElementById('uShortTitle').value.trim();
+            if (!originalUrl) return showToast('Please enter a URL', 'warning');
+            try {
+                const res = await fetch('/api/user/short-links', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        originalUrl, title, 
+                        userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    }) 
+                });
+                const data = await res.json().catch(() => ({}));
+                if (data.success) { showToast('Short link created!', 'success'); document.getElementById('uShortUrl').value = ''; document.getElementById('uShortTitle').value = ''; loadUserShortLinks(); }
+                else showToast(data.error || 'Failed', 'error');
             } catch(e) { showToast('Server error', 'error'); }
-            btn.disabled = false; btn.innerHTML = '<svg style="width:18px;height:18px;"><use href="#icon-rocket"/></svg> Generate My Link';
         }
 
-        function openMyPlanModal() { toggleSidebar(false); document.getElementById('myPlanModal').classList.add('active'); renderMyPlan(); }
-        function closeMyPlanModal() { document.getElementById('myPlanModal').classList.remove('active'); }
-        
-        function renderMyPlan() {
-            const el = document.getElementById('myPlanContent');
-            if (!currentPlanUsage) { el.innerHTML = '<p style="text-align:center;">Loading...</p>'; return; }
-            const pu = currentPlanUsage;
-            if (pu.planKey === 'no-plan' || pu.planIsExpired) {
-                el.innerHTML = `<div style="text-align:center; padding:20px;"><h3 style="color:#fff; margin-bottom:10px;">No Active Plan</h3><button class="btn-action" onclick="closeMyPlanModal(); openPlansModal();">View Plans</button></div>`;
-                return;
+        async function deleteUserShortLink(id) {
+            notify('Delete this short link?', 'Confirm', 'warning', 'confirm', async () => {
+                try { await fetch(`/api/user/short-links/${id}`, { method: 'DELETE' }); showToast('Deleted', 'info'); loadUserShortLinks(); } catch(e) {}
+            }, 'Delete');
+        }
+
+        function escapeHTML(str) {
+            if (!str && str !== 0) return '';
+            try { const div = document.createElement('div'); div.textContent = String(str); return div.innerHTML; } catch(e) { return ''; }
+        }
+
+        function performLogout() { 
+            localStorage.removeItem('activeUserSession'); 
+            localStorage.removeItem('userActiveLinkId'); 
+            window.location.reload(); 
+        }
+
+        // ============ INIT ============
+        window.handleGoogleAuth = handleGoogleAuth;
+
+        window.addEventListener('load', () => {
+            let attempts = 0;
+            const check = () => {
+                attempts++;
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                    renderGoogleButtons();
+                } else if (attempts < 50) {
+                    setTimeout(check, 300);
+                }
+            };
+            check();
+        });
+
+        // Session verification
+        setInterval(async () => {
+            if (!userProfile || !userProfile.name) return;
+            if (document.getElementById('dashboardSection').style.display === 'none') return;
+            try {
+                const res = await fetch('/api/user/verify-session', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userName: userProfile.name,
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || ''
+                    })
+                });
+                if (res.status === 404 || res.status === 403) {
+                    const data = await res.json().catch(() => ({}));
+                    if (data && data.deleted === true) showAccountDeletedScreen();
+                }
+            } catch(e) {}
+        }, 10000);
+
+        // Auto-refresh
+        setInterval(() => {
+            if (userProfile && document.getElementById('dashboardSection').style.display !== 'none') {
+                if (document.getElementById('activatePopup').classList.contains('active')) return;
+                if (document.getElementById('createLinkModal').classList.contains('active')) return;
+                if (document.getElementById('profileOverlay').classList.contains('active')) return;
+                
+                const s = document.getElementById('userLinkSelect');
+                const targetId = s?.value || localStorage.getItem('userActiveLinkId');
+                
+                fetch('/api/user/link-details', { 
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        userName: userProfile.name || '',
+                        userEmail: userProfile.email || '',
+                        userId: userProfile.id || '',
+                        linkInput: targetId, 
+                        filter: currentDateFilter, 
+                        startDate: currentStartDate, 
+                        endDate: currentEndDate 
+                    }) 
+                })
+                .then(r => r.json().catch(() => ({})))
+                .then(data => { 
+                    if (data && data.deleted === true) { showAccountDeletedScreen(); return; }
+                    if (data && data.planUsage) { currentPlanUsage = data.planUsage; updateHeroUI(); updatePlanDaysUI(); }
+                    if (data && data.plans && Object.keys(data.plans).length > 0) loadedPlans = data.plans;
+                    if (data && data.success && data.hasAnyLink) {
+                        populateDashboardMetrics(data);
+                        if (data.userLinks) {
+                            myLinksList = data.userLinks;
+                            const cnt = document.getElementById('menuLinkCount');
+                            if (cnt) cnt.textContent = myLinksList.length;
+                        }
+                    }
+                })
+                .catch(() => {});
             }
-            el.innerHTML = `
-                <div style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08)); border:1px solid rgba(99,102,241,0.35); border-radius:14px; padding:16px; margin-bottom:14px;">
-                    <div style="font-size:20px; font-weight:800; color:#fff;">${pu.planName}</div>
-                    <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Status: <b style="color:#10b981;">Active</b> • Days Left: <b style="color:#fff;">${pu.planDaysLeft}</b></div>
-                </div>
-                <div style="background:#080c14; border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
-                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);"><span style="color:var(--text-secondary);">Links Used</span><span style="color:#fff; font-weight:700;">${pu.linksUsed} / ${pu.linkLimit}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-subtle);"><span style="color:var(--text-secondary);">Visitors Used</span><span style="color:#fff; font-weight:700;">${pu.visitorsUsed} / ${pu.visitorLimit}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:8px 0;"><span style="color:var(--text-secondary);">Claims</span><span style="color:#fff; font-weight:700;">${pu.claimsUsed}</span></div>
-                </div>
-                <button class="btn-action" style="margin-top:14px;" onclick="closeMyPlanModal(); openPlansModal();">Upgrade Plan</button>
-            `;
-        }
+        }, 10000);
 
-        function openPlansModal() { toggleSidebar(false); document.getElementById('plansModal').classList.add('active'); document.getElementById('plansCarousel').innerHTML = '<p style="text-align:center; padding:20px;">Loading plans...</p>'; fetch('/api/pricing').then(r=>r.json()).then(d=>{ loadedPlans=d.plans; renderPlansList(); }); }
-        function closePlansModal() { document.getElementById('plansModal').classList.remove('active'); }
-
-        function renderPlansList() {
-            const c = document.getElementById('plansCarousel');
-            const order = ['free-trial', 'basic', 'creator', 'pro', 'business', 'enterprise-vip'];
-            const available = order.filter(k => loadedPlans[k] && loadedPlans[k].enabled !== false);
-            c.innerHTML = available.map(k => {
-                const p = loadedPlans[k];
-                return `<div class="plan-card-screenshot" onclick="selectPlan('${k}')">
-                    <div class="plan-card-name">${p.name}</div>
-                    <div class="plan-card-price"><span class="price-currency">₹</span><span class="price-amount">${p.price}</span></div>
-                    <div class="plan-card-duration">${p.durationDays} Days</div>
-                    <button class="plan-card-btn">Select</button>
-                </div>`;
-            }).join('');
-        }
-
-        function selectPlan(k) {
-            const p = loadedPlans[k];
-            activePlan = { key: k, days: p.durationDays, cost: p.price };
-            showToast(`Selected ${p.name}`);
-            const footer = document.getElementById('plansModalFooter');
-            footer.innerHTML = `<div style="text-align:center; margin-top:10px;"><button class="btn-action" onclick="requestAdminRenewal()">Pay ₹${p.price} via WhatsApp</button></div>`;
-        }
-
-        function requestAdminRenewal() {
-            const msg = `Hello Admin, I want to purchase ${loadedPlans[activePlan.key].name} plan for ₹${activePlan.cost}.`;
-            window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function openShortenerModal() { toggleSidebar(false); document.getElementById('shortenerModal').classList.add('active'); }
-        function closeShortenerModal() { document.getElementById('shortenerModal').classList.remove('active'); }
-        function openGuideModal() { toggleSidebar(false); document.getElementById('guideModal').classList.add('active'); }
-        function closeGuideModal() { document.getElementById('guideModal').classList.remove('active'); }
-        function openTermsModal(e) { if(e) e.preventDefault(); toggleSidebar(false); document.getElementById('termsModal').classList.add('active'); }
-        function closeTermsModal() { document.getElementById('termsModal').classList.remove('active'); }
-
-        function performLogout() { localStorage.removeItem('activeUserSession'); window.location.reload(); }
-
-        window.handleGoogleAuth = handleCredentialResponse;
-        window.onload = initApp;
+        initApp();
     </script>
 </body>
 </html>
