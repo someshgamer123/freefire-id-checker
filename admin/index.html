@@ -1622,34 +1622,7 @@
                     <div id="activeDeviceList">Loading...</div>
                 </div>
             </div>
-            <div class="card">
-                <h3><span class="svg-icon"><svg><use href="#icon-key"/></svg></span> Change Admin Passcode</h3>
-                <div class="grid-2">
-                    <input type="password" id="oldPasscode" placeholder="Old Passcode (6 digits)">
-                    <input type="password" id="newPasscode" placeholder="New Passcode (6 digits)">
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;width:auto;" onclick="changePasscode()">
-                    <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Update Passcode
-                </button>
-            </div>
-
-            <!-- ✅ UPDATED: Contact & OTP Settings with Support Email -->
-            <div class="card">
-                <h3><span class="svg-icon"><svg><use href="#icon-phone"/></svg></span> Contact & OTP Settings</h3>
-                <div class="grid-2">
-                    <input type="email" id="adminEmail" placeholder="admin@example.com">
-                    <input type="text" id="adminPhone" placeholder="+919876543210">
-                </div>
-                <div style="margin-top:10px;">
-                    <label style="display:block;font-size:12px;color:var(--text-light);margin-bottom:5px;">Support Email (दिखेगा User Dashboard में):</label>
-                    <input type="email" id="adminSupportEmail" placeholder="support@yoursite.com" style="width:100%;padding:11px 14px;margin:0;border:1px solid var(--border);border-radius:10px;background:#090a0f;color:var(--text);font-size:13px;">
-                    <div style="font-size:11px;color:var(--text-light);margin-top:4px;">यह email user dashboard के sidebar और footer में "Email Support" link के रूप में दिखेगी।</div>
-                </div>
-                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="updateContactInfo()">
-                    <span class="svg-icon"><svg><use href="#icon-save"/></svg></span> Save Contact
-                </button>
-            </div>
-
+            
             <div class="card">
                 <h3><span class="svg-icon"><svg><use href="#icon-image"/></svg></span> UID Background Image (9:16)</h3>
                 <input type="text" id="bgImgUrl" placeholder="Enter background image URL" oninput="previewBackgroundInput(this.value)">
@@ -1798,7 +1771,7 @@
                 if (id === 'create') loadCreateUserDropdown();
                 if (id === 'renewals') loadRenewalSystem();
                 if (id === 'shortener') loadShortLinks();
-                if (id === 'settings') { refreshDeviceTabs(); loadContactInfo(); }
+                if (id === 'settings') { refreshDeviceTabs(); loadBackgroundSettings(); }
             } catch(e) {}
         }
 
@@ -2657,9 +2630,6 @@
                     if (si) si.value = sData.paymentSettings?.details?.upiId || sData.pricing?.paymentSettings?.details?.upiId || '';
                     const sw = document.getElementById('setWaNumber');
                     if (sw) sw.value = sData.paymentSettings?.whatsappNumber || sData.pricing?.whatsappNumber || '';
-                    // ✅ Support email
-                    const se = document.getElementById('adminSupportEmail');
-                    if (se && sData.supportEmail !== undefined) se.value = sData.supportEmail || '';
 
                     const showUpi = sData.paymentSettings?.showUpi !== false;
                     const toggle = document.getElementById('showUpiToggle');
@@ -2690,12 +2660,11 @@
                 const plans = collectPlansData();
                 const upiId = document.getElementById('setUpiId')?.value.trim();
                 const whatsappNumber = document.getElementById('setWaNumber')?.value.trim();
-                const supportEmail = document.getElementById('adminSupportEmail')?.value.trim();
                 const showUpi = document.getElementById('showUpiToggle')?.checked !== false;
 
                 const res = await fetchWithAuth('/api/admin/renewal-settings', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, supportEmail, showUpi })
+                    body: JSON.stringify({ plans, autoPaymentEnabled: false, upiId, whatsappNumber, showUpi })
                 });
 
                 if (res && res.ok) { showToast('All plans & settings saved!', 'success'); loadRenewalSystem(); }
@@ -2786,16 +2755,13 @@
             try { await fetchWithAuth(`/api/admin/sessions/${encodeURIComponent(id)}/block`, { method: 'POST' }); showToast('Device blocked!', 'success'); loadActiveDevices(); } catch(e) { showToast('Failed', 'error'); }
         }
 
-        // ✅ UPDATED: loadContactInfo with supportEmail
-        async function loadContactInfo() {
+        // ✅ UPDATED: background settings only (contact & passcode removed)
+        async function loadBackgroundSettings() {
             try {
                 const res = await fetch('/api/settings');
                 if (res && res.ok) {
                     const d = await res.json();
                     if (d) {
-                        const e = document.getElementById('adminEmail'); if (d.adminEmail && e) e.value = d.adminEmail;
-                        const p = document.getElementById('adminPhone'); if (d.adminPhone && p) p.value = d.adminPhone;
-                        const se = document.getElementById('adminSupportEmail'); if (se) se.value = d.supportEmail || '';
                         if (d.background) {
                             const bi = document.getElementById('bgImgUrl'); if (bi) bi.value = d.background;
                             const bp = document.getElementById('bgPreviewImg'); if (bp) bp.src = d.background;
@@ -2804,21 +2770,6 @@
                     }
                 }
             } catch(e) {}
-        }
-
-        // ✅ UPDATED: updateContactInfo with supportEmail
-        async function updateContactInfo() {
-            const email = document.getElementById('adminEmail')?.value.trim();
-            const phone = document.getElementById('adminPhone')?.value.trim();
-            const supportEmailVal = document.getElementById('adminSupportEmail')?.value.trim();
-            try {
-                await fetchWithAuth('/api/admin/update-contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, phone, supportEmail: supportEmailVal })
-                });
-                showToast('Contact & Support Email saved!', 'success');
-            } catch(e) { showToast('Failed', 'error'); }
         }
 
         async function saveBackground() {
@@ -2837,18 +2788,6 @@
                 const bpx = document.getElementById('bgImagePreview'); if (bpx) bpx.classList.remove('show');
                 showToast('Background removed', 'info');
             } catch(e) { showToast('Failed', 'error'); }
-        }
-
-        async function changePasscode() {
-            const oldP = document.getElementById('oldPasscode')?.value.trim();
-            const newP = document.getElementById('newPasscode')?.value.trim();
-            if (!oldP || !newP || newP.length !== 6) return showToast('Enter 6-digit passcode', 'error');
-            try {
-                const res = await fetchWithAuth('/api/admin/passcode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ oldPasscode: oldP, newPasscode: newP }) });
-                const d = await res.json();
-                if (d.success) showToast('Passcode updated!', 'success');
-                else showToast('❌ ' + (d.error || 'Failed'), 'error');
-            } catch(e) { showToast('Error', 'error'); }
         }
 
         function toggleAppScheme() {
@@ -2918,7 +2857,7 @@
             try { loadLinks(); } catch(e) {}
             try { loadAllUsers(); } catch(e) {}
             try { loadRenewalSystem(); } catch(e) {}
-            try { loadContactInfo(); } catch(e) {}
+            try { loadBackgroundSettings(); } catch(e) {}
             try { loadBlockedDevices(); } catch(e) {}
             setInterval(() => { try { loadStats(); } catch(e) {} }, 6000);
         });
