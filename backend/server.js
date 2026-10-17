@@ -12,19 +12,15 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-
-const { OAuth2Client } = require('google-auth-library');
 const { doubleCsrf } = require('csrf-csrf');
 
 console.log('✅ Built-in injection protection ENABLED');
 
+// ✅ NEW: Email Helper
+const emailHelper = require('./emailHelper');
+
 const UNIQUE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
-
-let googleClient = null;
-if (process.env.GOOGLE_CLIENT_ID) {
-    googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-}
 
 // ============================================================
 // ✅ DB config loading
@@ -93,7 +89,7 @@ const RenewalUser = safeLoadModel('RenewalUser', {
     email: { type: String, required: true, trim: true, lowercase: true },
     phone: { type: String, default: '', trim: true },
     googleId: { type: String, default: null },
-    authMethod: { type: String, default: 'google' },
+    authMethod: { type: String, default: 'otp' },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     currentPlan: { type: String, default: 'none' },
     planStartDate: { type: Date, default: null },
@@ -124,6 +120,17 @@ const BlockedDevice = safeLoadModel('BlockedDevice', { deviceKey: String, finger
 const OTPVerification = safeLoadModel('OTPVerification', { phone: String, otp: String, expiresAt: Date });
 const ShortLink = safeLoadModel('ShortLink', { code: String, originalUrl: String, title: String, creator: String, visits: { type: Number, default: 0 }, appOpen: Boolean, appScheme: String, createdAt: { type: Date, default: Date.now } });
 const ShortLinkClick = safeLoadModel('ShortLinkClick', { shortLinkId: String, ip: String, userAgent: String, deviceName: String, deviceType: String, referer: String, timestamp: { type: Date, default: Date.now } });
+
+// ✅ NEW: OTP Model (for email OTP)
+const Otp = safeLoadModel('Otp', {
+    email: { type: String, required: true, lowercase: true, trim: true },
+    otp: { type: String, required: true },
+    purpose: { type: String, enum: ['signup', 'signin'], default: 'signin' },
+    attempts: { type: Number, default: 0 },
+    verified: { type: Boolean, default: false },
+    expiresAt: { type: Date, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
 
 const VisitorActivitySchema = new mongoose.Schema({
     linkId: { type: String, required: true, index: true },
@@ -583,9 +590,6 @@ async function initializeDatabase() {
     }
 }
 
-// ==========================================
-// ✅ MAIN START (Fixes the Connection Crash)
-// ==========================================
 async function startServer() {
     try {
         await connectDB();
@@ -593,6 +597,7 @@ async function startServer() {
         
         app.listen(port, '0.0.0.0', () => {
             console.log(`🚀 Server running on port ${port}`);
+            console.log(`📧 Email: ${process.env.SENDER_EMAIL ? '✅ Configured' : '❌ NOT CONFIGURED'}`);
         });
     } catch (err) {
         console.error('❌ Failed to start server:', err.message);
@@ -605,7 +610,6 @@ startServer();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
-// ✅ GOOGLE POPUP FIX: Cross-Origin and Referrer Headers
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
@@ -682,14 +686,15 @@ const authLimiter = rateLimit({
     message: { error: 'Too many login attempts. Please wait 15 minutes.' }
 });
 
-const googleAuthLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 50,
+// ✅ NEW: OTP limiter — 3 OTPs per hour per IP
+const otpSendLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 3,
     keyGenerator: (req) => {
         const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip || 'unknown';
-        return 'google_' + ip;
+        return 'otp_' + ip;
     },
-    message: { error: 'Too many Google sign-in attempts. Please wait 15 minutes.' },
+    message: { error: 'Too many OTP requests. Maximum 3 per hour. Please try again later.' },
     standardHeaders: true, legacyHeaders: false
 });
 
@@ -725,6 +730,7 @@ app.get('/health', (req, res) => {
         database: dbStatus,
         uptime: Math.floor(process.uptime()),
         environment: process.env.NODE_ENV || 'development',
+        emailConfigured: !!process.env.SENDER_EMAIL,
         timestamp: new Date().toISOString()
     });
 });
@@ -816,6 +822,208 @@ app.get('/api/pricing', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// ==================== NEW: OTP AUTH ROUTES ====================
+
+// SEND OTP
+app.post('/api/auth/send-otp', otpSendLimiter, async (req, res) => {
+    try {
+        const { email, purpose } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const cleanEmail = email.toString().trim().toLowerCase();
+        if (!isValidEmailFormat(cleanEmail)) return res.status(400).json({ error: 'Invalid email format' });
+        if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable / temporary emails are not allowed. Please use a valid email.' });
+
+        if (!process.env.SENDER_EMAIL || !process.env.SENDER_APP_PASSWORD) {
+            return res.status(500).json({ error: 'Email service not configured. Contact admin.' });
+        }
+
+        // Rate limit: max 3 OTPs per email per hour (extra safety)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const recentOtpCount = await Otp.countDocuments({
+            email: cleanEmail,
+            createdAt: { $gte: oneHourAgo }
+        });
+        if (recentOtpCount >= 3) {
+            return res.status(429).json({ error: 'Too many OTP requests for this email. Please wait 1 hour.' });
+        }
+
+        // Generate 6-digit OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+        // Invalidate previous unused OTPs for this email
+        await Otp.updateMany(
+            { email: cleanEmail, verified: false },
+            { $set: { verified: true } }
+        );
+
+        await Otp.create({
+            email: cleanEmail,
+            otp: otpCode,
+            purpose: purpose === 'signup' ? 'signup' : 'signin',
+            expiresAt
+        });
+
+        // Send email
+        const result = await emailHelper.sendOtpEmail(cleanEmail, otpCode, purpose || 'signin');
+        if (!result.success) {
+            return res.status(500).json({ error: 'Failed to send OTP email. Please try again.' });
+        }
+
+        console.log(`📧 OTP sent to: ${cleanEmail}`);
+
+        res.json({
+            success: true,
+            message: 'OTP sent to your email',
+            spamWarning: true,
+            spamMessage: "If you don't see the OTP in your Inbox, please check your Spam / Junk folder."
+        });
+    } catch (err) {
+        console.error('Send OTP error:', err);
+        res.status(500).json({ error: 'Failed to send OTP: ' + err.message });
+    }
+});
+
+// VERIFY OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
+
+        const cleanEmail = email.toString().trim().toLowerCase();
+        const cleanOtp = otp.toString().trim();
+
+        if (!/^\d{6}$/.test(cleanOtp)) return res.status(400).json({ error: 'OTP must be 6 digits' });
+
+        // Find latest valid OTP
+        const otpRecord = await Otp.findOne({
+            email: cleanEmail,
+            verified: false,
+            expiresAt: { $gt: new Date() }
+        }).sort({ createdAt: -1 });
+
+        if (!otpRecord) {
+            return res.status(400).json({ error: 'OTP expired or not found. Please request a new one.' });
+        }
+
+        // Check attempts
+        if (otpRecord.attempts >= 5) {
+            await Otp.updateOne({ _id: otpRecord._id }, { $set: { verified: true } });
+            return res.status(400).json({ error: 'Too many wrong attempts. Please request a new OTP.' });
+        }
+
+        // Verify OTP
+        if (otpRecord.otp !== cleanOtp) {
+            await Otp.updateOne({ _id: otpRecord._id }, { $inc: { attempts: 1 } });
+            return res.status(400).json({ error: `Invalid OTP. ${4 - otpRecord.attempts} attempts remaining.` });
+        }
+
+        // Mark verified
+        await Otp.updateOne({ _id: otpRecord._id }, { $set: { verified: true } });
+
+        // Find or create user
+        let user = await RenewalUser.findOne({ email: cleanEmail });
+
+        if (!user) {
+            // New signup
+            const emailPrefix = cleanEmail.split('@')[0] || 'User';
+            const initialName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+
+            user = await RenewalUser.create({
+                name: initialName,
+                email: cleanEmail,
+                phone: '',
+                googleId: null,
+                authMethod: 'otp',
+                status: 'pending',
+                currentPlan: 'none',
+                planStartDate: null,
+                planExpiryDate: null,
+                lifetimeUnlimited: false,
+                freeTrialUsed: false,
+                profileCompleted: false,
+                createdAt: new Date()
+            });
+
+            console.log(`🆕 New user created via OTP: ${cleanEmail}`);
+
+            // Send welcome email
+            emailHelper.sendWelcomeEmail(cleanEmail, initialName).catch(() => {});
+
+            return res.json({
+                success: true,
+                needsProfile: true,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name,
+                    phone: ''
+                }
+            });
+        }
+
+        // Existing user
+        user = await autoFixUserFields(user);
+
+        if (user.status === 'rejected') {
+            return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
+        }
+
+        // Needs profile completion?
+        if (!user.profileCompleted || !user.phone || user.phone.length < 10) {
+            return res.json({
+                success: true,
+                needsProfile: true,
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name || '',
+                    phone: user.phone || ''
+                }
+            });
+        }
+
+        // Pending approval
+        if (user.status === 'pending') {
+            const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
+            const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60);
+            return res.json({
+                success: true,
+                needsApproval: true,
+                pendingHours: Math.floor(hoursElapsed),
+                hoursRemaining: Math.max(0, 24 - Math.floor(hoursElapsed)),
+                user: { id: user._id, email: user.email, name: user.name, phone: user.phone }
+            });
+        }
+
+        // Approved — auto activate free trial if needed
+        user = await autoActivateFreeTrialIfNeeded(user);
+
+        console.log(`✅ OTP login success: ${user.name} (${user.email})`);
+
+        return res.json({
+            success: true,
+            needsProfile: false,
+            needsApproval: false,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                authMethod: 'otp',
+                currentPlan: user.currentPlan,
+                lifetimeUnlimited: user.lifetimeUnlimited === true,
+                status: user.status
+            }
+        });
+    } catch (err) {
+        console.error('Verify OTP error:', err);
+        res.status(500).json({ error: 'Verification failed: ' + err.message });
+    }
+});
+
+// ==================== LINK API ====================
 app.get('/api/link/:id', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -849,12 +1057,7 @@ app.get('/api/link/:id', async (req, res) => {
             }).lean();
             if (!ownerUser) {
                 await Link.collection.deleteOne({ _id: link._id }).catch(() => {});
-                return res.status(403).json({
-                    error: 'owner_deleted',
-                    message: 'The owner of this link no longer exists.',
-                    status: 'expired',
-                    expired: true
-                });
+                return res.status(403).json({ error: 'owner_deleted', message: 'The owner of this link no longer exists.', status: 'expired', expired: true });
             }
             if (isPlanExpired(ownerUser)) {
                 return res.status(403).json({ error: 'plan_expired', message: 'Your plan has expired. Please renew.', status: 'expired', expired: true });
@@ -1037,187 +1240,13 @@ app.get('/api/settings', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// ==================== GOOGLE-ONLY AUTH ====================
-app.post('/api/user/google-auth', googleAuthLimiter, async (req, res) => {
-    try {
-        const { credential, action } = req.body;
-
-        console.log(`\n📥 ============ GOOGLE AUTH REQUEST ============`);
-        console.log(`   Action: ${action}`);
-
-        if (!credential) return res.status(400).json({ error: 'Google credential missing' });
-        if (!googleClient || !process.env.GOOGLE_CLIENT_ID) {
-            return res.status(500).json({ error: 'Google login not configured on server. Please contact admin.' });
-        }
-
-        let payload;
-        try {
-            const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
-            payload = ticket.getPayload();
-        } catch(err) {
-            console.error('❌ Token verify failed:', err.message);
-            return res.status(401).json({ error: 'Invalid Google token. Please try again.' });
-        }
-
-        if (!payload || !payload.email) return res.status(400).json({ error: 'Invalid Google token - no email' });
-        if (!payload.email_verified) return res.status(400).json({ error: 'Google email is not verified' });
-
-        const cleanEmail = payload.email.toLowerCase();
-        const googleSub = payload.sub;
-        const googleName = payload.name || '';
-
-        console.log(`   Email: ${cleanEmail}`);
-        console.log(`   Name: ${googleName}`);
-
-        if (isDisposableEmail(cleanEmail)) return res.status(400).json({ error: 'Disposable emails not allowed' });
-
-        let user = await RenewalUser.findOne({ googleId: googleSub });
-        console.log(`   Found by googleId: ${!!user}`);
-
-        if (!user) {
-            user = await RenewalUser.findOne({ email: cleanEmail });
-            console.log(`   Found by email: ${!!user}`);
-
-            if (user) {
-                console.log(`🔗 Auto-linking Google to existing account: ${user.email}`);
-                const autoLinkUpdate = {
-                    googleId: googleSub,
-                    authMethod: 'google'
-                };
-                if (user.phone === undefined || user.phone === null) autoLinkUpdate.phone = '';
-                if (!user.name || user.name.trim() === '' || user.name === 'undefined') {
-                    if (googleName) autoLinkUpdate.name = googleName;
-                }
-                await RenewalUser.collection.updateOne(
-                    { _id: user._id },
-                    { $set: autoLinkUpdate }
-                );
-                user = await RenewalUser.findById(user._id);
-            }
-        }
-
-        if (user) {
-            user = await autoFixUserFields(user);
-        }
-
-        // SIGN IN
-        if (action === 'signin') {
-            if (!user) {
-                return res.status(404).json({ error: 'No account found. Please Sign Up first.', needsSignup: true });
-            }
-            if (user.status === 'rejected') {
-                return res.status(403).json({ error: 'Your account has been rejected by admin.' });
-            }
-
-            if (!user.profileCompleted || !user.name || !user.phone || user.phone.length < 10) {
-                return res.json({
-                    success: true,
-                    needsProfile: true,
-                    user: { id: user._id, email: user.email, name: user.name || '', phone: user.phone || '', googleId: googleSub }
-                });
-            }
-
-            if (user.status === 'pending') {
-                const createdAt = user.createdAt ? new Date(user.createdAt).getTime() : Date.now();
-                const hoursElapsed = (Date.now() - createdAt) / (1000 * 60 * 60);
-                return res.json({
-                    success: true,
-                    needsApproval: true,
-                    pendingHours: Math.floor(hoursElapsed),
-                    hoursRemaining: Math.max(0, 24 - Math.floor(hoursElapsed)),
-                    user: { id: user._id, email: user.email, name: user.name || '', phone: user.phone || '' }
-                });
-            }
-
-            user = await autoActivateFreeTrialIfNeeded(user);
-
-            console.log(`✅ Sign in success: ${user.name}`);
-            return res.json({
-                success: true,
-                needsProfile: false,
-                needsApproval: false,
-                user: {
-                    id: user._id, name: user.name, email: user.email, phone: user.phone,
-                    authMethod: 'google', currentPlan: user.currentPlan,
-                    lifetimeUnlimited: user.lifetimeUnlimited === true, status: user.status
-                }
-            });
-        }
-
-        // SIGN UP
-        if (user) {
-            if (user.name && user.phone && user.profileCompleted === true) {
-                if (user.status === 'approved' || user.status === 'pending') {
-                    return res.status(400).json({
-                        error: 'This Google account is already registered. Please Sign In instead.',
-                        alreadyRegistered: true
-                    });
-                }
-            }
-            return res.json({
-                success: true,
-                needsProfile: true,
-                needsApproval: false,
-                user: { id: user._id, email: user.email, name: user.name || googleName || '', phone: user.phone || '', googleId: googleSub }
-            });
-        }
-
-        console.log(`🆕 Creating new user: ${cleanEmail}`);
-
-        let newUser;
-        try {
-            newUser = await RenewalUser.create({
-                name: googleName || '',
-                email: cleanEmail,
-                phone: '',
-                googleId: googleSub,
-                authMethod: 'google',
-                status: 'pending',
-                currentPlan: 'none',
-                planStartDate: null,
-                planExpiryDate: null,
-                lifetimeUnlimited: false,
-                freeTrialUsed: false,
-                profileCompleted: false,
-                createdAt: new Date()
-            });
-        } catch(err) {
-            if (err.code === 11000) {
-                console.warn(`⚠️ Duplicate email detected: ${cleanEmail} — trying to link existing account`);
-                const existing = await RenewalUser.findOne({ email: cleanEmail });
-                if (existing) {
-                    await RenewalUser.collection.updateOne(
-                        { _id: existing._id },
-                        { $set: { googleId: googleSub, authMethod: 'google', phone: existing.phone || '' } }
-                    );
-                    return res.status(400).json({
-                        error: 'This Google account is already registered. Please Sign In instead.',
-                        alreadyRegistered: true
-                    });
-                }
-            }
-            console.error('❌ User create error:', err);
-            return res.status(500).json({ error: 'Failed to create account: ' + err.message });
-        }
-
-        console.log(`   ✅ User created: ${newUser._id}`);
-
-        res.json({
-            success: true,
-            needsProfile: true,
-            needsApproval: false,
-            user: { id: newUser._id, email: newUser.email, name: newUser.name || '', phone: '', googleId: googleSub }
-        });
-    } catch (e) {
-        console.error('❌ Google auth error:', e);
-        res.status(500).json({ error: 'Google authentication failed: ' + e.message });
-    }
-});
+// ==================== REMOVED: /api/user/google-auth ====================
+// Google Sign-In completely removed.
 
 // Complete Profile
 app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
     try {
-        const { userId, googleId, name, phone } = req.body;
+        const { userId, name, phone } = req.body;
 
         console.log(`\n📥 Complete Profile: userId=${userId}`);
 
@@ -1230,7 +1259,7 @@ app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
         if (!isValidMobile(cleanPhone)) return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number' });
 
         const user = await RenewalUser.findById(userId);
-        if (!user) return res.status(404).json({ error: 'User session expired. Please sign up again.' });
+        if (!user) return res.status(404).json({ error: 'User session expired. Please sign in again.' });
 
         const phoneExists = await RenewalUser.findOne({ phone: cleanPhone, _id: { $ne: user._id } });
         if (phoneExists) return res.status(400).json({ error: 'This phone number is already registered.' });
@@ -1266,11 +1295,13 @@ app.post('/api/user/complete-profile', profileLimiter, async (req, res) => {
     }
 });
 
+// REMOVED: /api/user/signup and /api/user/signin (Google removed)
+// These routes now return 410
 app.post('/api/user/signup', authLimiter, (req, res) => {
-    res.status(410).json({ error: 'Email signup is disabled. Please use Google Sign Up.', useGoogle: true });
+    res.status(410).json({ error: 'Signup is via OTP. Please use /api/auth/send-otp.', useOtp: true });
 });
 app.post('/api/user/signin', authLimiter, (req, res) => {
-    res.status(410).json({ error: 'Email signin is disabled. Please use Google Sign In.', useGoogle: true });
+    res.status(410).json({ error: 'Signin is via OTP. Please use /api/auth/send-otp.', useOtp: true });
 });
 
 app.post('/api/user/verify-session', userApiLimiter, async (req, res) => {
@@ -1500,6 +1531,12 @@ app.post('/api/user/create-link', createLinkLimiter, async (req, res) => {
         await Link.collection.insertOne(linkDoc);
 
         console.log(`✅ Link created: ${linkId} for user: ${finalUserName}`);
+
+        // ✅ NEW: Send email notification
+        if (user.email) {
+            const fullUrl = `${process.env.APP_URL || 'http://localhost:3001'}/uid?link=${linkId}`;
+            emailHelper.sendLinkCreatedEmail(user.email, finalUserName, cleanLinkName, fullUrl).catch(() => {});
+        }
 
         res.json({
             success: true,
@@ -2063,6 +2100,16 @@ const handleUserApprovalAction = async (req, res) => {
 
         const updatedUser = await RenewalUser.findOne({ _id: user._id }).lean();
         const waData = generateWhatsAppApprovalData(updatedUser, req);
+
+        // ✅ NEW: Send approval/rejection email
+        if (updatedUser.email) {
+            if (targetAction === 'approved') {
+                emailHelper.sendApprovalEmail(updatedUser.email, updatedUser.name).catch(() => {});
+            } else if (targetAction === 'rejected') {
+                emailHelper.sendRejectionEmail(updatedUser.email, updatedUser.name).catch(() => {});
+            }
+        }
+
         res.json({ success: true, message: `User ${targetAction}!`, status: targetAction, user: updatedUser, whatsappUrl: waData.whatsappUrl, whatsappMessage: waData.message });
     } catch (e) {
         console.error('Approval action error:', e);
@@ -2190,6 +2237,11 @@ app.post('/api/admin/renewal-requests/:id/approve', authMiddleware, async (req, 
                         { $or: [{ assignedUser: userRegex }, { userName: userRegex }, { creator: userRegex }, { name: userRegex }] },
                         { $set: { expiryDate: planExpiry, status: 'active' } }
                     );
+
+                    // ✅ NEW: Send payment approved email
+                    if (ownerUser.email) {
+                        emailHelper.sendPaymentEmail(ownerUser.email, ownerUser.name, 'approved', planDetails.name, reqDoc.amount).catch(() => {});
+                    }
                 }
             }
         }
@@ -2997,5 +3049,6 @@ setInterval(async () => {
     try {
         if (Session) await Session.deleteMany({ expiresAt: { $lt: new Date() } });
         await OTPVerification.deleteMany({ expiresAt: { $lt: new Date() } });
+        await Otp.deleteMany({ expiresAt: { $lt: new Date() } });
     } catch (error) { console.error('Cleanup error:', error); }
 }, 60 * 60 * 1000);
