@@ -4,7 +4,7 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL;
 const SENDER_APP_PASSWORD = process.env.SENDER_APP_PASSWORD;
 const SENDER_NAME = process.env.SENDER_NAME || 'LinkForge Support';
 const APP_NAME = 'LinkForge';
-const APP_URL = process.env.APP_URL || 'http://localhost:3001';
+const APP_URL = process.env.APP_URL || 'https://free-redeemcode.online';
 
 let transporter = null;
 
